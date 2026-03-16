@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,10 +22,7 @@ interface ExpenseTableProps {
   expenses: Expense[];
   loading: boolean;
   onDeleted: () => void;
-  filters: {
-    period: string;
-    category: string;
-  };
+  filters: { period: string; category: string };
   onFilterChange: (key: string, value: string) => void;
   page: number;
   totalPages: number;
@@ -50,7 +46,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
         <Select value={filters.period} onValueChange={v => onFilterChange('period', v)}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px] rounded-xl">
             <SelectValue placeholder="Período" />
           </SelectTrigger>
           <SelectContent>
@@ -61,7 +57,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
           </SelectContent>
         </Select>
         <Select value={filters.category} onValueChange={v => onFilterChange('category', v)}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px] rounded-xl">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -73,16 +69,16 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
         </Select>
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-2xl border bg-card overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Status IA</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+            <TableRow className="bg-secondary/50">
+              <TableHead className="font-semibold">Data</TableHead>
+              <TableHead className="font-semibold">Descrição</TableHead>
+              <TableHead className="text-right font-semibold">Valor</TableHead>
+              <TableHead className="font-semibold">Categoria</TableHead>
+              <TableHead className="font-semibold">Status IA</TableHead>
+              <TableHead className="text-right font-semibold">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -95,7 +91,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
             ) : expenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Nenhuma despesa encontrada. Clique em "+ Nova Despesa" para começar.
+                  Nenhuma despesa encontrada. Clique em "Nova Despesa" para começar.
                 </TableCell>
               </TableRow>
             ) : (
@@ -105,7 +101,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
                   <TableRow key={exp.id}>
                     <TableCell className="font-medium">{formatDate(exp.date)}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{exp.description}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatCurrency(exp.value)}</TableCell>
+                    <TableCell className="text-right font-bold">{formatCurrency(exp.value)}</TableCell>
                     <TableCell>
                       <Badge variant={catInfo.variant}>{catInfo.label}</Badge>
                     </TableCell>
@@ -125,11 +121,11 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
                     <TableCell className="text-right">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="rounded-2xl">
                           <AlertDialogHeader>
                             <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
                             <AlertDialogDescription>
@@ -137,8 +133,8 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(exp.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(exp.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
                               Excluir
                             </AlertDialogAction>
                           </AlertDialogFooter>
@@ -159,10 +155,10 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
             Página {page} de {totalPages}
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="rounded-xl">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} className="rounded-xl">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

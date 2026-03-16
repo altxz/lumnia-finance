@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,16 +44,16 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-lg bg-primary flex items-center justify-center mb-2">
-            <DollarSign className="h-6 w-6 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-primary p-4">
+      <Card className="w-full max-w-md rounded-2xl shadow-2xl border-0">
+        <CardHeader className="text-center space-y-3 pb-2">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-accent flex items-center justify-center mb-1">
+            <DollarSign className="h-8 w-8 text-accent-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-3xl font-bold">
             {isLogin ? 'Entrar' : 'Criar Conta'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-base">
             {isLogin
               ? 'Acesse sua conta para gerenciar suas despesas'
               : 'Crie sua conta e comece a categorizar despesas com IA'}
@@ -70,6 +70,7 @@ export default function AuthPage() {
                   onChange={e => setName(e.target.value)}
                   placeholder="Seu nome"
                   required
+                  className="rounded-xl h-12"
                 />
               </div>
             )}
@@ -82,6 +83,7 @@ export default function AuthPage() {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
+                className="rounded-xl h-12"
               />
             </div>
             <div className="space-y-2">
@@ -94,17 +96,18 @@ export default function AuthPage() {
                 placeholder="••••••••"
                 required
                 minLength={6}
+                className="rounded-xl h-12"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
               {loading ? 'Carregando...' : isLogin ? 'Entrar' : 'Criar Conta'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
+          <div className="mt-6 text-center text-sm text-muted-foreground">
             {isLogin ? 'Não tem conta?' : 'Já tem conta?'}{' '}
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="text-ai font-medium hover:underline"
+              className="text-primary font-semibold hover:underline"
             >
               {isLogin ? 'Criar conta' : 'Fazer login'}
             </button>

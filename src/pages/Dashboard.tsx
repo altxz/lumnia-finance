@@ -6,7 +6,7 @@ import { ExpenseTable, Expense } from '@/components/ExpenseTable';
 import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { AppSidebar } from '@/components/AppSidebar';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getCategoryInfo } from '@/lib/constants';
@@ -64,7 +64,6 @@ export default function Dashboard() {
   };
 
   const summary = useMemo(() => {
-    // We use all fetched expenses for the current filter for summary
     const total = expenses.reduce((sum, e) => sum + e.value, 0);
     const byCategory: Record<string, number> = {};
     expenses.forEach(e => {
@@ -74,14 +73,14 @@ export default function Dashboard() {
     return {
       totalMonth: total,
       largestCategory: largest ? { name: getCategoryInfo(largest[0]).label, total: largest[1] } : null,
-      projectedSavings: Math.max(0, 5000 - total), // placeholder target
+      projectedSavings: Math.max(0, 5000 - total),
     };
   }, [expenses]);
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Carregando...</div>
+        <div className="text-muted-foreground font-medium">Carregando...</div>
       </div>
     );
   }
@@ -94,14 +93,14 @@ export default function Dashboard() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 p-4 lg:p-6 space-y-6 overflow-auto">
+          <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Despesas</h1>
-                <p className="text-sm text-muted-foreground">Gerencie e categorize suas despesas com inteligência artificial</p>
+                <h1 className="text-3xl font-bold tracking-tight">Despesas</h1>
+                <p className="text-sm text-muted-foreground mt-1">Gerencie e categorize suas despesas com inteligência artificial</p>
               </div>
-              <Button variant="success" onClick={() => setModalOpen(true)} className="gap-2">
-                <PlusCircle className="h-4 w-4" />
+              <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                <PlusCircle className="h-5 w-5" />
                 Nova Despesa
               </Button>
             </div>

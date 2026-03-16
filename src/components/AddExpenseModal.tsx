@@ -89,14 +89,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl">Nova Despesa</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Nova Despesa</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="expense-date">Data</Label>
-            <Input id="expense-date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+            <Input id="expense-date" type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl h-11" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="expense-desc">Descrição detalhada</Label>
@@ -105,6 +105,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               placeholder="Ex: Almoço no restaurante do centro"
               value={description}
               onChange={e => setDescription(e.target.value)}
+              className="rounded-xl h-11"
             />
           </div>
           <div className="space-y-2">
@@ -117,6 +118,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               placeholder="0,00"
               value={value}
               onChange={e => setValue(e.target.value)}
+              className="rounded-xl h-11"
             />
           </div>
           <div className="space-y-2">
@@ -127,7 +129,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 size="sm"
                 onClick={handleAiCategorize}
                 disabled={aiLoading || !description.trim()}
-                className="gap-1.5"
+                className="gap-1.5 rounded-xl"
               >
                 {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 {aiLoading ? 'Processando...' : 'Categorizar com IA'}
@@ -146,7 +148,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
           <div className="space-y-2">
             <Label htmlFor="final-category">Categoria final</Label>
             <Select value={finalCategory} onValueChange={setFinalCategory}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl h-11">
                 <SelectValue placeholder="Selecione a categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -158,8 +160,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button variant="success" onClick={handleSave} disabled={saving}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
             {saving ? 'Salvando...' : 'Salvar Despesa'}
           </Button>
         </DialogFooter>

@@ -9,18 +9,18 @@ export function DashboardHeader() {
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
 
   return (
-    <header className="h-14 border-b bg-card flex items-center justify-between px-4 lg:px-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="lg:hidden">
+    <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-8">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="lg:hidden rounded-xl">
           <Menu className="h-5 w-5" />
         </Button>
-        <h2 className="text-lg font-semibold hidden sm:block">Painel de Despesas</h2>
+        <h2 className="text-lg font-bold hidden sm:block">Painel de Despesas</h2>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <span className="text-sm text-muted-foreground hidden sm:inline">
-          Olá, <span className="font-medium text-foreground">{displayName}</span>
+          Olá, <span className="font-semibold text-foreground">{displayName}</span>
         </span>
-        <Button variant="ghost" size="sm" onClick={signOut} className="gap-2">
+        <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 rounded-xl">
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Sair</span>
         </Button>
