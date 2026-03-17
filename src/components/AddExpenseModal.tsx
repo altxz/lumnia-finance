@@ -48,8 +48,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   useEffect(() => {
     if (!user || !open) return;
-    supabase.from('credit_cards').select('id, name').eq('user_id', user.id).order('name').then(({ data }) => {
-      setCreditCards((data || []) as CreditCardOption[]);
+    Promise.all([
+      supabase.from('credit_cards').select('id, name').eq('user_id', user.id).order('name'),
+      supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
+    ]).then(([cards, walletsRes]) => {
+      setCreditCards((cards.data || []) as CreditCardOption[]);
+      setWallets((walletsRes.data || []) as WalletOption[]);
     });
   }, [user, open]);
 
