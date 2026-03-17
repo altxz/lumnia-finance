@@ -50,11 +50,15 @@ const ASSET_ICONS: Record<string, typeof Wallet> = {
 
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--ai))', '#F59E0B'];
 
+// Calculated balance map (from transactions)
+const walletBalanceMap = new Map<string, number>();
+
 function getWalletValue(w: WalletRow): number {
   if (w.asset_type === 'crypto' && w.crypto_amount && w.crypto_price) {
     return w.crypto_amount * w.crypto_price;
   }
-  return w.current_balance;
+  const txBalance = walletBalanceMap.get(w.id) || 0;
+  return w.initial_balance + txBalance;
 }
 
 export default function WealthPage() {
