@@ -199,16 +199,6 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
             <Input id="expense-date" type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl h-11" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="expense-desc">Descrição detalhada</Label>
-            <Input
-              id="expense-desc"
-              placeholder="Ex: Almoço no restaurante do centro"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              className="rounded-xl h-11"
-            />
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="expense-value">Valor (R$)</Label>
             <Input
               id="expense-value"
@@ -222,117 +212,162 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
             />
           </div>
 
-          {/* Wallet select (required when no credit card) */}
-          {wallets.length > 0 && (
-            <div className="space-y-2">
-              <Label>Conta / Carteira {!(creditCardId && creditCardId !== 'none') && <span className="text-destructive">*</span>}</Label>
-              <Select value={walletId} onValueChange={setWalletId}>
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue placeholder="Selecione a conta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {wallets.map(w => (
-                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Credit card + installments (only for expenses) */}
-          {type === 'expense' && creditCards.length > 0 && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-2">
-                <Label>Cartão de crédito</Label>
-                <Select value={creditCardId} onValueChange={setCreditCardId}>
+          {type === 'transfer' ? (
+            <>
+              {/* Transfer: origin + destination wallets */}
+              <div className="space-y-2">
+                <Label>Conta de Origem <span className="text-destructive">*</span></Label>
+                <Select value={walletId} onValueChange={setWalletId}>
                   <SelectTrigger className="rounded-xl h-11">
-                    <SelectValue placeholder="Nenhum (opcional)" />
+                    <SelectValue placeholder="Selecione a conta de origem" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {creditCards.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    {wallets.map(w => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Parcelas</Label>
+                <Label>Conta de Destino <span className="text-destructive">*</span></Label>
+                <Select value={destinationWalletId} onValueChange={setDestinationWalletId}>
+                  <SelectTrigger className="rounded-xl h-11">
+                    <SelectValue placeholder="Selecione a conta de destino" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {wallets.filter(w => w.id !== walletId).map(w => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="expense-desc">Descrição detalhada</Label>
                 <Input
-                  type="number"
-                  min="1"
-                  max="48"
-                  value={installments}
-                  onChange={e => setInstallments(e.target.value)}
+                  id="expense-desc"
+                  placeholder="Ex: Almoço no restaurante do centro"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
                   className="rounded-xl h-11"
                 />
               </div>
-            </div>
-          )}
 
-          <label className="flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isRecurring}
-              onChange={e => setIsRecurring(e.target.checked)}
-              className="h-4 w-4 rounded border-muted-foreground accent-primary"
-            />
-            <div>
-              <span className="text-sm font-medium">Transação recorrente / assinatura</span>
-              <p className="text-xs text-muted-foreground">Conta fixa mensal ou anual</p>
-            </div>
-          </label>
-          {isRecurring && (
-            <div className="space-y-2">
-              <Label>Frequência</Label>
-              <Select value={frequency} onValueChange={setFrequency}>
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Mensal</SelectItem>
-                  <SelectItem value="annual">Anual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Categoria sugerida pela IA</Label>
-              <Button
-                variant="ai"
-                size="sm"
-                onClick={handleAiCategorize}
-                disabled={aiLoading || !description.trim()}
-                className="gap-1.5 rounded-xl"
-              >
-                {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                {aiLoading ? 'Processando...' : 'Categorizar com IA'}
-              </Button>
-            </div>
-            {aiLoading && (
-              <div className="flex items-center gap-2 text-sm text-ai">
-                <div className="w-2 h-2 rounded-full bg-ai animate-pulse-slow" />
-                Analisando despesa...
+              {/* Wallet select */}
+              {wallets.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Conta / Carteira {!(creditCardId && creditCardId !== 'none') && <span className="text-destructive">*</span>}</Label>
+                  <Select value={walletId} onValueChange={setWalletId}>
+                    <SelectTrigger className="rounded-xl h-11">
+                      <SelectValue placeholder="Selecione a conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {wallets.map(w => (
+                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Credit card + installments (only for expenses) */}
+              {type === 'expense' && creditCards.length > 0 && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2 space-y-2">
+                    <Label>Cartão de crédito</Label>
+                    <Select value={creditCardId} onValueChange={setCreditCardId}>
+                      <SelectTrigger className="rounded-xl h-11">
+                        <SelectValue placeholder="Nenhum (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {creditCards.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Parcelas</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="48"
+                      value={installments}
+                      onChange={e => setInstallments(e.target.value)}
+                      className="rounded-xl h-11"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <label className="flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={e => setIsRecurring(e.target.checked)}
+                  className="h-4 w-4 rounded border-muted-foreground accent-primary"
+                />
+                <div>
+                  <span className="text-sm font-medium">Transação recorrente / assinatura</span>
+                  <p className="text-xs text-muted-foreground">Conta fixa mensal ou anual</p>
+                </div>
+              </label>
+              {isRecurring && (
+                <div className="space-y-2">
+                  <Label>Frequência</Label>
+                  <Select value={frequency} onValueChange={setFrequency}>
+                    <SelectTrigger className="rounded-xl h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Mensal</SelectItem>
+                      <SelectItem value="annual">Anual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Categoria sugerida pela IA</Label>
+                  <Button
+                    variant="ai"
+                    size="sm"
+                    onClick={handleAiCategorize}
+                    disabled={aiLoading || !description.trim()}
+                    className="gap-1.5 rounded-xl"
+                  >
+                    {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    {aiLoading ? 'Processando...' : 'Categorizar com IA'}
+                  </Button>
+                </div>
+                {aiLoading && (
+                  <div className="flex items-center gap-2 text-sm text-ai">
+                    <div className="w-2 h-2 rounded-full bg-ai animate-pulse-slow" />
+                    Analisando despesa...
+                  </div>
+                )}
+                {aiCategoryInfo && !aiLoading && (
+                  <Badge variant={aiCategoryInfo.variant}>{aiCategoryInfo.label}</Badge>
+                )}
               </div>
-            )}
-            {aiCategoryInfo && !aiLoading && (
-              <Badge variant={aiCategoryInfo.variant}>{aiCategoryInfo.label}</Badge>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="final-category">Categoria final</Label>
-            <Select value={finalCategory} onValueChange={setFinalCategory}>
-              <SelectTrigger className="rounded-xl h-11">
-                <SelectValue placeholder="Selecione a categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map(cat => (
-                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="final-category">Categoria final</Label>
+                <Select value={finalCategory} onValueChange={setFinalCategory}>
+                  <SelectTrigger className="rounded-xl h-11">
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(cat => (
+                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
