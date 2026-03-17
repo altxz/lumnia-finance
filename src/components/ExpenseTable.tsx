@@ -94,8 +94,8 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
               </TableRow>
             ) : expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Nenhuma despesa encontrada. Clique em "Nova Despesa" para começar.
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  Nenhuma transação encontrada. Clique em "Nova Transação" para começar.
                 </TableCell>
               </TableRow>
             ) : (
