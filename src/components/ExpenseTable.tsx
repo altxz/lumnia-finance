@@ -16,6 +16,9 @@ export interface Expense {
   category_ai: string | null;
   final_category: string;
   created_at: string;
+  type: 'income' | 'expense';
+  is_recurring: boolean;
+  frequency: string | null;
 }
 
 interface ExpenseTableProps {
@@ -75,6 +78,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
             <TableRow className="bg-secondary/50">
               <TableHead className="font-semibold">Data</TableHead>
               <TableHead className="font-semibold">Descrição</TableHead>
+              <TableHead className="font-semibold">Tipo</TableHead>
               <TableHead className="text-right font-semibold">Valor</TableHead>
               <TableHead className="font-semibold">Categoria</TableHead>
               <TableHead className="font-semibold">Status IA</TableHead>
@@ -84,24 +88,32 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Carregando despesas...
                 </TableCell>
               </TableRow>
             ) : expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Nenhuma despesa encontrada. Clique em "Nova Despesa" para começar.
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  Nenhuma transação encontrada. Clique em "Nova Transação" para começar.
                 </TableCell>
               </TableRow>
             ) : (
               expenses.map(exp => {
                 const catInfo = getCategoryInfo(exp.final_category);
                 return (
-                  <TableRow key={exp.id}>
+                    <TableRow key={exp.id}>
                     <TableCell className="font-medium">{formatDate(exp.date)}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{exp.description}</TableCell>
-                    <TableCell className="text-right font-bold">{formatCurrency(exp.value)}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {exp.description}
+                      {exp.is_recurring && <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0">{exp.frequency === 'annual' ? 'Anual' : 'Mensal'}</Badge>}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={exp.type === 'income' ? 'default' : 'secondary'} className="text-xs">
+                        {exp.type === 'income' ? 'Receita' : 'Despesa'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className={`text-right font-bold ${exp.type === 'income' ? 'text-green-600' : ''}`}>{exp.type === 'income' ? '+' : ''}{formatCurrency(exp.value)}</TableCell>
                     <TableCell>
                       <Badge variant={catInfo.variant}>{catInfo.label}</Badge>
                     </TableCell>

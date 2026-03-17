@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { CATEGORIES, getCategoryInfo } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
@@ -21,6 +22,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
+  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<string>('monthly');
   const [categoryAi, setCategoryAi] = useState('');
   const [finalCategory, setFinalCategory] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -65,11 +69,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
       value: parseFloat(value),
       category_ai: categoryAi || null,
       final_category: finalCategory,
+      type,
+      is_recurring: isRecurring,
+      frequency: isRecurring ? frequency : null,
     });
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Despesa salva!', description: 'Sua despesa foi registrada com sucesso.' });
+      toast({ title: type === 'income' ? 'Receita salva!' : 'Despesa salva!', description: 'Registro salvo com sucesso.' });
       resetForm();
       onOpenChange(false);
       onExpenseAdded();
@@ -81,6 +88,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     setDate(new Date().toISOString().split('T')[0]);
     setDescription('');
     setValue('');
+    setType('expense');
+    setIsRecurring(false);
+    setFrequency('monthly');
     setCategoryAi('');
     setFinalCategory('');
   };
@@ -91,9 +101,21 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Nova Despesa</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Nova Transação</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Tipo</Label>
+            <Select value={type} onValueChange={(v: 'income' | 'expense') => setType(v)}>
+              <SelectTrigger className="rounded-xl h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expense">Despesa</SelectItem>
+                <SelectItem value="income">Receita</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="expense-date">Data</Label>
             <Input id="expense-date" type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl h-11" />
@@ -121,6 +143,27 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               className="rounded-xl h-11"
             />
           </div>
+          <div className="flex items-center justify-between rounded-xl border p-3">
+            <div>
+              <Label htmlFor="recurring-toggle" className="text-sm font-medium">Recorrente</Label>
+              <p className="text-xs text-muted-foreground">Assinatura ou conta fixa</p>
+            </div>
+            <Switch id="recurring-toggle" checked={isRecurring} onCheckedChange={setIsRecurring} />
+          </div>
+          {isRecurring && (
+            <div className="space-y-2">
+              <Label>Frequência</Label>
+              <Select value={frequency} onValueChange={setFrequency}>
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mensal</SelectItem>
+                  <SelectItem value="annual">Anual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Categoria sugerida pela IA</Label>
@@ -162,7 +205,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
           <Button onClick={handleSave} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-            {saving ? 'Salvando...' : 'Salvar Despesa'}
+            {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </DialogFooter>
       </DialogContent>
