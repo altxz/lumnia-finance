@@ -86,7 +86,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
       type,
       is_recurring: isRecurring,
       frequency: isRecurring ? frequency : null,
-      credit_card_id: creditCardId || null,
+      credit_card_id: creditCardId && creditCardId !== 'none' ? creditCardId : null,
       installments: parseInt(installments) || 1,
     });
     if (error) {
