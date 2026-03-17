@@ -106,6 +106,7 @@ export default function WealthPage() {
       user_id: user?.id,
       name: form.name.trim(),
       asset_type: form.asset_type,
+      initial_balance: isCrypto ? 0 : parseFloat(form.current_balance) || 0,
       current_balance: isCrypto ? 0 : parseFloat(form.current_balance) || 0,
       crypto_symbol: isCrypto ? (form.crypto_symbol.trim().toUpperCase() || 'BTC') : null,
       crypto_amount: isCrypto ? parseFloat(form.crypto_amount) || 0 : null,
