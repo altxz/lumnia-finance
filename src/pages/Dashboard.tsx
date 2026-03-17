@@ -99,19 +99,20 @@ export default function Dashboard() {
           <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Despesas</h1>
-                <p className="text-sm text-muted-foreground mt-1">Gerencie e categorize suas despesas com inteligência artificial</p>
+                <h1 className="text-3xl font-bold tracking-tight">Transações</h1>
+                <p className="text-sm text-muted-foreground mt-1">Gerencie receitas e despesas com inteligência artificial</p>
               </div>
               <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
                 <PlusCircle className="h-5 w-5" />
-                Nova Despesa
+                Nova Transação
               </Button>
             </div>
 
             <SummaryCards
-              totalMonth={summary.totalMonth}
+              balance={summary.balance}
+              totalIncome={summary.totalIncome}
+              totalExpense={summary.totalExpense}
               largestCategory={summary.largestCategory}
-              projectedSavings={summary.projectedSavings}
             />
 
             <ExpenseTable
