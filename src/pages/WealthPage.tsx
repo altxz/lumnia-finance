@@ -25,9 +25,12 @@ interface WalletRow {
   name: string;
   asset_type: 'checking_account' | 'savings' | 'stocks' | 'crypto';
   current_balance: number;
+  initial_balance: number;
   crypto_symbol: string | null;
   crypto_amount: number | null;
   crypto_price: number | null;
+  created_at: string;
+}
   created_at: string;
 }
 
