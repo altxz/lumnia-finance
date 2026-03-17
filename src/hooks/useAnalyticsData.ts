@@ -56,7 +56,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
         .gte('date', prevFrom.toISOString().split('T')[0])
         .lt('date', fromDate.toISOString().split('T')[0])
         .order('date', { ascending: true });
-      setPreviousExpenses(prev || []);
+      setPreviousExpenses((prev || []) as Expense[]);
     } else {
       setPreviousExpenses([]);
     }
