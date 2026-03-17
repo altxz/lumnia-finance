@@ -83,34 +83,50 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   };
 
   const handleSave = async () => {
+    const isTransfer = type === 'transfer';
     const hasCreditCard = creditCardId && creditCardId !== 'none';
-    if (!description.trim() || !value || !finalCategory) {
-      toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
-      return;
+
+    if (isTransfer) {
+      if (!value || !walletId || !destinationWalletId) {
+        toast({ title: 'Erro', description: 'Preencha conta de origem, destino e valor.', variant: 'destructive' });
+        return;
+      }
+      if (walletId === destinationWalletId) {
+        toast({ title: 'Erro', description: 'Conta de origem e destino devem ser diferentes.', variant: 'destructive' });
+        return;
+      }
+    } else {
+      if (!description.trim() || !value || !finalCategory) {
+        toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
+        return;
+      }
+      if (!hasCreditCard && !walletId) {
+        toast({ title: 'Erro', description: 'Selecione uma conta (carteira) ou um cartão de crédito.', variant: 'destructive' });
+        return;
+      }
     }
-    if (!hasCreditCard && !walletId) {
-      toast({ title: 'Erro', description: 'Selecione uma conta (carteira) ou um cartão de crédito.', variant: 'destructive' });
-      return;
-    }
+
     setSaving(true);
     const { error } = await supabase.from('expenses').insert({
       user_id: user?.id,
       date,
-      description: description.trim(),
+      description: isTransfer ? 'Transferência entre contas' : description.trim(),
       value: parseFloat(value),
-      category_ai: categoryAi || null,
-      final_category: finalCategory,
+      category_ai: isTransfer ? null : (categoryAi || null),
+      final_category: isTransfer ? 'transferencia' : finalCategory,
       type,
-      is_recurring: isRecurring,
-      frequency: isRecurring ? frequency : null,
-      credit_card_id: hasCreditCard ? creditCardId : null,
-      installments: parseInt(installments) || 1,
-      wallet_id: hasCreditCard ? null : walletId,
+      is_recurring: isTransfer ? false : isRecurring,
+      frequency: isRecurring && !isTransfer ? frequency : null,
+      credit_card_id: isTransfer ? null : (hasCreditCard ? creditCardId : null),
+      installments: isTransfer ? 1 : (parseInt(installments) || 1),
+      wallet_id: walletId || null,
+      destination_wallet_id: isTransfer ? destinationWalletId : null,
     });
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: type === 'income' ? 'Receita salva!' : 'Despesa salva!', description: 'Registro salvo com sucesso.' });
+      const msg = isTransfer ? 'Transferência salva!' : (type === 'income' ? 'Receita salva!' : 'Despesa salva!');
+      toast({ title: msg, description: 'Registro salvo com sucesso.' });
       resetForm();
       onOpenChange(false);
       onExpenseAdded();
