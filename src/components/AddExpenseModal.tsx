@@ -36,6 +36,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   const [frequency, setFrequency] = useState<string>('monthly');
   const [creditCardId, setCreditCardId] = useState<string>('');
   const [installments, setInstallments] = useState('1');
+  const [walletId, setWalletId] = useState<string>('');
+  const [wallets, setWallets] = useState<WalletOption[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCardOption[]>([]);
   const [categoryAi, setCategoryAi] = useState('');
   const [finalCategory, setFinalCategory] = useState('');
