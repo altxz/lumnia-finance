@@ -25,6 +25,7 @@ interface WalletRow {
   name: string;
   asset_type: 'checking_account' | 'savings' | 'stocks' | 'crypto';
   current_balance: number;
+  initial_balance: number;
   crypto_symbol: string | null;
   crypto_amount: number | null;
   crypto_price: number | null;
@@ -47,11 +48,15 @@ const ASSET_ICONS: Record<string, typeof Wallet> = {
 
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--ai))', '#F59E0B'];
 
+// Calculated balance map (from transactions)
+const walletBalanceMap = new Map<string, number>();
+
 function getWalletValue(w: WalletRow): number {
   if (w.asset_type === 'crypto' && w.crypto_amount && w.crypto_price) {
     return w.crypto_amount * w.crypto_price;
   }
-  return w.current_balance;
+  const txBalance = walletBalanceMap.get(w.id) || 0;
+  return w.initial_balance + txBalance;
 }
 
 export default function WealthPage() {
@@ -69,8 +74,20 @@ export default function WealthPage() {
   const fetchWallets = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase.from('wallets').select('*').eq('user_id', user.id).order('asset_type');
-    setWallets((data || []) as WalletRow[]);
+    const [{ data: walletsData }, { data: txData }] = await Promise.all([
+      supabase.from('wallets').select('*').eq('user_id', user.id).order('asset_type'),
+      supabase.from('expenses').select('wallet_id, value, type').eq('user_id', user.id).not('wallet_id', 'is', null),
+    ]);
+
+    // Build balance map: income adds, expense subtracts
+    walletBalanceMap.clear();
+    (txData || []).forEach((tx: any) => {
+      if (!tx.wallet_id) return;
+      const prev = walletBalanceMap.get(tx.wallet_id) || 0;
+      walletBalanceMap.set(tx.wallet_id, prev + (tx.type === 'income' ? tx.value : -tx.value));
+    });
+
+    setWallets((walletsData || []) as WalletRow[]);
     setLoading(false);
   }, [user]);
 
@@ -89,6 +106,7 @@ export default function WealthPage() {
       user_id: user?.id,
       name: form.name.trim(),
       asset_type: form.asset_type,
+      initial_balance: isCrypto ? 0 : parseFloat(form.current_balance) || 0,
       current_balance: isCrypto ? 0 : parseFloat(form.current_balance) || 0,
       crypto_symbol: isCrypto ? (form.crypto_symbol.trim().toUpperCase() || 'BTC') : null,
       crypto_amount: isCrypto ? parseFloat(form.crypto_amount) || 0 : null,

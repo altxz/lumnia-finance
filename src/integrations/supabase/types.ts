@@ -196,6 +196,7 @@ export type Database = {
           type: string
           user_id: string
           value: number
+          wallet_id: string | null
         }
         Insert: {
           category_ai?: string | null
@@ -211,6 +212,7 @@ export type Database = {
           type?: string
           user_id: string
           value: number
+          wallet_id?: string | null
         }
         Update: {
           category_ai?: string | null
@@ -226,6 +228,7 @@ export type Database = {
           type?: string
           user_id?: string
           value?: number
+          wallet_id?: string | null
         }
         Relationships: [
           {
@@ -233,6 +236,13 @@ export type Database = {
             columns: ["credit_card_id"]
             isOneToOne: false
             referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
             referencedColumns: ["id"]
           },
         ]
@@ -318,6 +328,7 @@ export type Database = {
           crypto_symbol: string | null
           current_balance: number
           id: string
+          initial_balance: number
           name: string
           updated_at: string
           user_id: string
@@ -330,6 +341,7 @@ export type Database = {
           crypto_symbol?: string | null
           current_balance?: number
           id?: string
+          initial_balance?: number
           name: string
           updated_at?: string
           user_id: string
@@ -342,6 +354,7 @@ export type Database = {
           crypto_symbol?: string | null
           current_balance?: number
           id?: string
+          initial_balance?: number
           name?: string
           updated_at?: string
           user_id?: string

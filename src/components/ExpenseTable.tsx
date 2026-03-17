@@ -21,6 +21,7 @@ export interface Expense {
   frequency: string | null;
   credit_card_id: string | null;
   installments: number;
+  wallet_id: string | null;
 }
 
 interface ExpenseTableProps {

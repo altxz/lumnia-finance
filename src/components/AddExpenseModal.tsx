@@ -16,6 +16,11 @@ interface CreditCardOption {
   name: string;
 }
 
+interface WalletOption {
+  id: string;
+  name: string;
+}
+
 interface AddExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,6 +36,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   const [frequency, setFrequency] = useState<string>('monthly');
   const [creditCardId, setCreditCardId] = useState<string>('');
   const [installments, setInstallments] = useState('1');
+  const [walletId, setWalletId] = useState<string>('');
+  const [wallets, setWallets] = useState<WalletOption[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCardOption[]>([]);
   const [categoryAi, setCategoryAi] = useState('');
   const [finalCategory, setFinalCategory] = useState('');
@@ -41,8 +48,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   useEffect(() => {
     if (!user || !open) return;
-    supabase.from('credit_cards').select('id, name').eq('user_id', user.id).order('name').then(({ data }) => {
-      setCreditCards((data || []) as CreditCardOption[]);
+    Promise.all([
+      supabase.from('credit_cards').select('id, name').eq('user_id', user.id).order('name'),
+      supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
+    ]).then(([cards, walletsRes]) => {
+      setCreditCards((cards.data || []) as CreditCardOption[]);
+      setWallets((walletsRes.data || []) as WalletOption[]);
     });
   }, [user, open]);
 
@@ -71,8 +82,13 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   };
 
   const handleSave = async () => {
+    const hasCreditCard = creditCardId && creditCardId !== 'none';
     if (!description.trim() || !value || !finalCategory) {
       toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
+      return;
+    }
+    if (!hasCreditCard && !walletId) {
+      toast({ title: 'Erro', description: 'Selecione uma conta (carteira) ou um cartão de crédito.', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -86,8 +102,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
       type,
       is_recurring: isRecurring,
       frequency: isRecurring ? frequency : null,
-      credit_card_id: creditCardId && creditCardId !== 'none' ? creditCardId : null,
+      credit_card_id: hasCreditCard ? creditCardId : null,
       installments: parseInt(installments) || 1,
+      wallet_id: hasCreditCard ? null : walletId,
     });
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
@@ -109,6 +126,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     setFrequency('monthly');
     setCreditCardId('');
     setInstallments('1');
+    setWalletId('');
     setCategoryAi('');
     setFinalCategory('');
   };
@@ -174,6 +192,23 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               className="rounded-xl h-11"
             />
           </div>
+
+          {/* Wallet select (required when no credit card) */}
+          {wallets.length > 0 && (
+            <div className="space-y-2">
+              <Label>Conta / Carteira {!(creditCardId && creditCardId !== 'none') && <span className="text-destructive">*</span>}</Label>
+              <Select value={walletId} onValueChange={setWalletId}>
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(w => (
+                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Credit card + installments (only for expenses) */}
           {type === 'expense' && creditCards.length > 0 && (
