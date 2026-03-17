@@ -282,6 +282,45 @@ export type Database = {
         }
         Relationships: []
       }
+      wallets: {
+        Row: {
+          asset_type: string
+          created_at: string
+          crypto_amount: number | null
+          crypto_price: number | null
+          crypto_symbol: string | null
+          current_balance: number
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_type?: string
+          created_at?: string
+          crypto_amount?: number | null
+          crypto_price?: number | null
+          crypto_symbol?: string | null
+          current_balance?: number
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          crypto_amount?: number | null
+          crypto_price?: number | null
+          crypto_symbol?: string | null
+          current_balance?: number
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
