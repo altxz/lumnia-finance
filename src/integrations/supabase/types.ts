@@ -52,6 +52,42 @@ export type Database = {
           },
         ]
       }
+      automation_rules: {
+        Row: {
+          active: boolean
+          applied_count: number
+          condition_field: string
+          condition_operator: string
+          condition_value: string
+          created_at: string
+          id: string
+          target_category: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          applied_count?: number
+          condition_field?: string
+          condition_operator?: string
+          condition_value: string
+          created_at?: string
+          id?: string
+          target_category: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          applied_count?: number
+          condition_field?: string
+          condition_operator?: string
+          condition_value?: string
+          created_at?: string
+          id?: string
+          target_category?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           active: boolean
@@ -118,6 +154,78 @@ export type Database = {
           id?: string
           user_id?: string
           value?: number
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          ai_auto_categorize: boolean
+          ai_learn_corrections: boolean
+          ai_min_confidence: number
+          ai_model: string
+          ai_personal_context: string | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          currency: string
+          full_name: string | null
+          id: string
+          notify_app_achievements: boolean
+          notify_app_reminders: boolean
+          notify_app_suggestions: boolean
+          notify_email_alerts: boolean
+          notify_email_news: boolean
+          notify_email_weekly: boolean
+          plan: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_auto_categorize?: boolean
+          ai_learn_corrections?: boolean
+          ai_min_confidence?: number
+          ai_model?: string
+          ai_personal_context?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          currency?: string
+          full_name?: string | null
+          id?: string
+          notify_app_achievements?: boolean
+          notify_app_reminders?: boolean
+          notify_app_suggestions?: boolean
+          notify_email_alerts?: boolean
+          notify_email_news?: boolean
+          notify_email_weekly?: boolean
+          plan?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_auto_categorize?: boolean
+          ai_learn_corrections?: boolean
+          ai_min_confidence?: number
+          ai_model?: string
+          ai_personal_context?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          currency?: string
+          full_name?: string | null
+          id?: string
+          notify_app_achievements?: boolean
+          notify_app_reminders?: boolean
+          notify_app_suggestions?: boolean
+          notify_email_alerts?: boolean
+          notify_email_news?: boolean
+          notify_email_weekly?: boolean
+          plan?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

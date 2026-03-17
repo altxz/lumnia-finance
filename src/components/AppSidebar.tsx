@@ -17,6 +17,7 @@ const items = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Categorias', url: '/categorias', icon: Tag },
   { title: 'Histórico', url: '/historico', icon: History },
+  { title: 'Configurações', url: '/configuracoes', icon: Settings },
 ];
 
 export function AppSidebar() {
