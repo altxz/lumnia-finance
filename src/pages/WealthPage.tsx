@@ -76,8 +76,20 @@ export default function WealthPage() {
   const fetchWallets = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase.from('wallets').select('*').eq('user_id', user.id).order('asset_type');
-    setWallets((data || []) as WalletRow[]);
+    const [{ data: walletsData }, { data: txData }] = await Promise.all([
+      supabase.from('wallets').select('*').eq('user_id', user.id).order('asset_type'),
+      supabase.from('expenses').select('wallet_id, value, type').eq('user_id', user.id).not('wallet_id', 'is', null),
+    ]);
+
+    // Build balance map: income adds, expense subtracts
+    walletBalanceMap.clear();
+    (txData || []).forEach((tx: any) => {
+      if (!tx.wallet_id) return;
+      const prev = walletBalanceMap.get(tx.wallet_id) || 0;
+      walletBalanceMap.set(tx.wallet_id, prev + (tx.type === 'income' ? tx.value : -tx.value));
+    });
+
+    setWallets((walletsData || []) as WalletRow[]);
     setLoading(false);
   }, [user]);
 
