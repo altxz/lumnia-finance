@@ -1,4 +1,4 @@
-import { LayoutDashboard, Tag, History, Settings, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Tag, History, Settings, DollarSign, BarChart3 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import {
 
 const items = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
+  { title: 'Analytics', url: '/analytics', icon: BarChart3 },
   { title: 'Categorias', url: '/categorias', icon: Tag },
   { title: 'Histórico', url: '/historico', icon: History },
   { title: 'Configurações', url: '/configuracoes', icon: Settings },
