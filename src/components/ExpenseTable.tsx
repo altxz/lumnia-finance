@@ -19,6 +19,8 @@ export interface Expense {
   type: 'income' | 'expense';
   is_recurring: boolean;
   frequency: string | null;
+  credit_card_id: string | null;
+  installments: number;
 }
 
 interface ExpenseTableProps {
