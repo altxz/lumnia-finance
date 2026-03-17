@@ -10,6 +10,7 @@ import CategoriesPage from "./pages/CategoriesPage";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import SubscriptionsPage from "./pages/SubscriptionsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
