@@ -13,6 +13,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import CreditCardsPage from "./pages/CreditCardsPage";
 import WealthPage from "./pages/WealthPage";
+import BudgetPage from "./pages/BudgetPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
