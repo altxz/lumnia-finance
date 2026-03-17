@@ -13,6 +13,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
 import CreditCardsPage from "./pages/CreditCardsPage";
 import WealthPage from "./pages/WealthPage";
+import BudgetPage from "./pages/BudgetPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/assinaturas" element={<SubscriptionsPage />} />
             <Route path="/cartoes" element={<CreditCardsPage />} />
             <Route path="/patrimonio" element={<WealthPage />} />
+            <Route path="/orcamento" element={<BudgetPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

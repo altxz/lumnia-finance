@@ -1,4 +1,4 @@
-import { LayoutDashboard, Tag, History, Settings, DollarSign, BarChart3, Repeat, CreditCard, Landmark } from 'lucide-react';
+import { LayoutDashboard, Tag, History, Settings, DollarSign, BarChart3, Repeat, CreditCard, Landmark, PiggyBank } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import {
 
 const items = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
+  { title: 'Orçamento', url: '/orcamento', icon: PiggyBank },
   { title: 'Analytics', url: '/analytics', icon: BarChart3 },
   { title: 'Património', url: '/patrimonio', icon: Landmark },
   { title: 'Cartões', url: '/cartoes', icon: CreditCard },

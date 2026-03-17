@@ -88,6 +88,33 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          allocated_amount: number
+          category: string
+          created_at: string
+          id: string
+          month_year: string
+          user_id: string
+        }
+        Insert: {
+          allocated_amount?: number
+          category: string
+          created_at?: string
+          id?: string
+          month_year: string
+          user_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          month_year?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           active: boolean
