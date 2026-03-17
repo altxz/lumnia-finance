@@ -16,6 +16,9 @@ export interface Expense {
   category_ai: string | null;
   final_category: string;
   created_at: string;
+  type: 'income' | 'expense';
+  is_recurring: boolean;
+  frequency: string | null;
 }
 
 interface ExpenseTableProps {
