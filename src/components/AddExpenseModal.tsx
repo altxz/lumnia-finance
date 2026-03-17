@@ -82,8 +82,13 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   };
 
   const handleSave = async () => {
+    const hasCreditCard = creditCardId && creditCardId !== 'none';
     if (!description.trim() || !value || !finalCategory) {
       toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
+      return;
+    }
+    if (!hasCreditCard && !walletId) {
+      toast({ title: 'Erro', description: 'Selecione uma conta (carteira) ou um cartão de crédito.', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -97,8 +102,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
       type,
       is_recurring: isRecurring,
       frequency: isRecurring ? frequency : null,
-      credit_card_id: creditCardId && creditCardId !== 'none' ? creditCardId : null,
+      credit_card_id: hasCreditCard ? creditCardId : null,
       installments: parseInt(installments) || 1,
+      wallet_id: hasCreditCard ? null : walletId,
     });
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
