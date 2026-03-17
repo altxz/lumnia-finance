@@ -159,7 +159,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         </DialogHeader>
         <div className="space-y-4 py-2">
           {/* Type toggle */}
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+          <div className="grid grid-cols-3 gap-2 p-1 rounded-xl bg-secondary">
             <button
               type="button"
               onClick={() => setType('expense')}
@@ -181,6 +181,17 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               }`}
             >
               <span>↑</span> Receita
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('transfer')}
+              className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+                type === 'transfer'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>⇄</span> Transferência
             </button>
           </div>
           <div className="space-y-2">
