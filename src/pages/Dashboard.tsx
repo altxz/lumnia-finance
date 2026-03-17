@@ -64,11 +64,12 @@ export default function Dashboard() {
   };
 
   const summary = useMemo(() => {
-    const income = expenses.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
-    const expenseTotal = expenses.filter(e => e.type !== 'income').reduce((s, e) => s + e.value, 0);
+    const nonTransfers = expenses.filter(e => e.type !== 'transfer');
+    const income = nonTransfers.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
+    const expenseTotal = nonTransfers.filter(e => e.type !== 'income').reduce((s, e) => s + e.value, 0);
     const balance = income - expenseTotal;
     const byCategory: Record<string, number> = {};
-    expenses.filter(e => e.type !== 'income').forEach(e => {
+    nonTransfers.filter(e => e.type !== 'income').forEach(e => {
       byCategory[e.final_category] = (byCategory[e.final_category] || 0) + e.value;
     });
     const largest = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
