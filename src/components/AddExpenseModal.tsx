@@ -144,6 +144,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     setCreditCardId('');
     setInstallments('1');
     setWalletId('');
+    setDestinationWalletId('');
     setCategoryAi('');
     setFinalCategory('');
   };
