@@ -124,15 +124,47 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_cards: {
+        Row: {
+          closing_day: number
+          created_at: string
+          due_day: number
+          id: string
+          limit_amount: number
+          name: string
+          user_id: string
+        }
+        Insert: {
+          closing_day?: number
+          created_at?: string
+          due_day?: number
+          id?: string
+          limit_amount?: number
+          name: string
+          user_id: string
+        }
+        Update: {
+          closing_day?: number
+          created_at?: string
+          due_day?: number
+          id?: string
+          limit_amount?: number
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           category_ai: string | null
           created_at: string
+          credit_card_id: string | null
           date: string
           description: string
           final_category: string
           frequency: string | null
           id: string
+          installments: number
           is_recurring: boolean
           type: string
           user_id: string
@@ -141,11 +173,13 @@ export type Database = {
         Insert: {
           category_ai?: string | null
           created_at?: string
+          credit_card_id?: string | null
           date?: string
           description: string
           final_category: string
           frequency?: string | null
           id?: string
+          installments?: number
           is_recurring?: boolean
           type?: string
           user_id: string
@@ -154,17 +188,27 @@ export type Database = {
         Update: {
           category_ai?: string | null
           created_at?: string
+          credit_card_id?: string | null
           date?: string
           description?: string
           final_category?: string
           frequency?: string | null
           id?: string
+          installments?: number
           is_recurring?: boolean
           type?: string
           user_id?: string
           value?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_credit_card_id_fkey"
+            columns: ["credit_card_id"]
+            isOneToOne: false
+            referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_settings: {
         Row: {
