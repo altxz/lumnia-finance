@@ -78,6 +78,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
             <TableRow className="bg-secondary/50">
               <TableHead className="font-semibold">Data</TableHead>
               <TableHead className="font-semibold">Descrição</TableHead>
+              <TableHead className="font-semibold">Tipo</TableHead>
               <TableHead className="text-right font-semibold">Valor</TableHead>
               <TableHead className="font-semibold">Categoria</TableHead>
               <TableHead className="font-semibold">Status IA</TableHead>
