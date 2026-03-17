@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_corrections: {
+        Row: {
+          corrected_category: string
+          created_at: string
+          expense_id: string
+          feedback: string | null
+          id: string
+          original_category: string
+          user_id: string
+        }
+        Insert: {
+          corrected_category: string
+          created_at?: string
+          expense_id: string
+          feedback?: string | null
+          id?: string
+          original_category: string
+          user_id: string
+        }
+        Update: {
+          corrected_category?: string
+          created_at?: string
+          expense_id?: string
+          feedback?: string | null
+          id?: string
+          original_category?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_corrections_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          keywords: string[] | null
+          name: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          keywords?: string[] | null
+          name: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          keywords?: string[] | null
+          name?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           category_ai: string | null
