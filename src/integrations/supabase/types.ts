@@ -131,7 +131,10 @@ export type Database = {
           date: string
           description: string
           final_category: string
+          frequency: string | null
           id: string
+          is_recurring: boolean
+          type: string
           user_id: string
           value: number
         }
@@ -141,7 +144,10 @@ export type Database = {
           date?: string
           description: string
           final_category: string
+          frequency?: string | null
           id?: string
+          is_recurring?: boolean
+          type?: string
           user_id: string
           value: number
         }
@@ -151,7 +157,10 @@ export type Database = {
           date?: string
           description?: string
           final_category?: string
+          frequency?: string | null
           id?: string
+          is_recurring?: boolean
+          type?: string
           user_id?: string
           value?: number
         }
