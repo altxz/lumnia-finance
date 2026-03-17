@@ -193,6 +193,23 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
             />
           </div>
 
+          {/* Wallet select (required when no credit card) */}
+          {wallets.length > 0 && (
+            <div className="space-y-2">
+              <Label>Conta / Carteira {!(creditCardId && creditCardId !== 'none') && <span className="text-destructive">*</span>}</Label>
+              <Select value={walletId} onValueChange={setWalletId}>
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(w => (
+                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Credit card + installments (only for expenses) */}
           {type === 'expense' && creditCards.length > 0 && (
             <div className="grid grid-cols-3 gap-3">
