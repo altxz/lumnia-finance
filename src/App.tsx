@@ -11,8 +11,7 @@ import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SubscriptionsPage from "./pages/SubscriptionsPage";
-import CreditCardsPage from "./pages/CreditCardsPage";
-import WealthPage from "./pages/WealthPage";
+import WalletPage from "./pages/WalletPage";
 import BudgetPage from "./pages/BudgetPage";
 import NotFound from "./pages/NotFound";
 
