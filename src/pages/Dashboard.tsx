@@ -105,11 +105,16 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-bold tracking-tight">Transações</h1>
                 <p className="text-sm text-muted-foreground mt-1">Gerencie receitas e despesas com inteligência artificial</p>
               </div>
-              <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                <PlusCircle className="h-5 w-5" />
-                Nova Transação
-              </Button>
-            </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setImportModalOpen(true)} className="gap-2 rounded-xl h-11 px-5 font-semibold">
+                  <Upload className="h-5 w-5" />
+                  Importar CSV
+                </Button>
+                <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                  <PlusCircle className="h-5 w-5" />
+                  Nova Transação
+                </Button>
+              </div>
 
             <SummaryCards
               balance={summary.balance}
