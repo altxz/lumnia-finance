@@ -115,6 +115,7 @@ export default function Dashboard() {
                   Nova Transação
                 </Button>
               </div>
+            </div>
 
             <SummaryCards
               balance={summary.balance}
