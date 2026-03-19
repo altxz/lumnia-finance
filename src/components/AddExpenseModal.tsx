@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,10 @@ import { useAuth } from '@/contexts/AuthContext';
 interface CreditCardOption {
   id: string;
   name: string;
+  closing_day: number;
+  due_day: number;
+  closing_strategy: string;
+  closing_days_before_due: number;
 }
 
 interface WalletOption {
@@ -27,17 +31,62 @@ interface AddExpenseModalProps {
   onExpenseAdded: () => void;
 }
 
+function calcInvoiceMonth(card: CreditCardOption, expenseDate: string): string {
+  const d = new Date(expenseDate + 'T12:00:00');
+  const year = d.getFullYear();
+  const month = d.getMonth(); // 0-indexed
+  const day = d.getDate();
+
+  let closingDay: number;
+  if (card.closing_strategy === 'relative') {
+    closingDay = card.due_day - card.closing_days_before_due;
+    if (closingDay <= 0) closingDay += 30; // wrap around
+  } else {
+    closingDay = card.closing_day;
+  }
+
+  // If expense date is before closing day → invoice is current month
+  // If expense date is on or after closing day → invoice is next month
+  if (day < closingDay) {
+    const m = month + 1; // 1-indexed
+    return `${year}-${String(m).padStart(2, '0')}`;
+  } else {
+    const next = new Date(year, month + 1, 1);
+    const m = next.getMonth() + 1;
+    return `${next.getFullYear()}-${String(m).padStart(2, '0')}`;
+  }
+}
+
+function formatInvoiceLabel(ym: string): string {
+  const [y, m] = ym.split('-');
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return `${months[parseInt(m) - 1]} ${y}`;
+}
+
+function generateInvoiceOptions(): string[] {
+  const options: string[] = [];
+  const now = new Date();
+  for (let i = -2; i <= 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const m = d.getMonth() + 1;
+    options.push(`${d.getFullYear()}-${String(m).padStart(2, '0')}`);
+  }
+  return options;
+}
+
 export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpenseModalProps) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
   const [type, setType] = useState<'income' | 'expense' | 'transfer'>('expense');
+  const [paymentMethod, setPaymentMethod] = useState<'debit' | 'credit'>('debit');
   const [destinationWalletId, setDestinationWalletId] = useState<string>('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<string>('monthly');
   const [creditCardId, setCreditCardId] = useState<string>('');
   const [installments, setInstallments] = useState('1');
   const [walletId, setWalletId] = useState<string>('');
+  const [invoiceMonth, setInvoiceMonth] = useState<string>('');
   const [wallets, setWallets] = useState<WalletOption[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCardOption[]>([]);
   const [categoryAi, setCategoryAi] = useState('');
@@ -50,13 +99,24 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   useEffect(() => {
     if (!user || !open) return;
     Promise.all([
-      supabase.from('credit_cards').select('id, name').eq('user_id', user.id).order('name'),
+      supabase.from('credit_cards').select('id, name, closing_day, due_day, closing_strategy, closing_days_before_due').eq('user_id', user.id).order('name'),
       supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
     ]).then(([cards, walletsRes]) => {
       setCreditCards((cards.data || []) as CreditCardOption[]);
       setWallets((walletsRes.data || []) as WalletOption[]);
     });
   }, [user, open]);
+
+  // Auto-calculate invoice_month when card or date changes
+  const selectedCard = useMemo(() => creditCards.find(c => c.id === creditCardId), [creditCards, creditCardId]);
+
+  useEffect(() => {
+    if (paymentMethod === 'credit' && selectedCard && date) {
+      setInvoiceMonth(calcInvoiceMonth(selectedCard, date));
+    }
+  }, [paymentMethod, selectedCard, date]);
+
+  const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
 
   const handleAiCategorize = async () => {
     if (!description.trim()) {
@@ -84,7 +144,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   const handleSave = async () => {
     const isTransfer = type === 'transfer';
-    const hasCreditCard = creditCardId && creditCardId !== 'none';
+    const isCredit = type === 'expense' && paymentMethod === 'credit';
 
     if (isTransfer) {
       if (!value || !walletId || !destinationWalletId) {
@@ -100,8 +160,16 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
         return;
       }
-      if (!hasCreditCard && !walletId) {
-        toast({ title: 'Erro', description: 'Selecione uma conta (carteira) ou um cartão de crédito.', variant: 'destructive' });
+      if (type === 'expense' && paymentMethod === 'debit' && !walletId) {
+        toast({ title: 'Erro', description: 'Selecione uma conta.', variant: 'destructive' });
+        return;
+      }
+      if (isCredit && !creditCardId) {
+        toast({ title: 'Erro', description: 'Selecione um cartão de crédito.', variant: 'destructive' });
+        return;
+      }
+      if (type === 'income' && !walletId) {
+        toast({ title: 'Erro', description: 'Selecione uma conta.', variant: 'destructive' });
         return;
       }
     }
@@ -115,12 +183,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
       category_ai: isTransfer ? null : (categoryAi || null),
       final_category: isTransfer ? 'transferencia' : finalCategory,
       type,
+      payment_method: isTransfer ? null : (type === 'expense' ? paymentMethod : 'debit'),
       is_recurring: isTransfer ? false : isRecurring,
       frequency: isRecurring && !isTransfer ? frequency : null,
-      credit_card_id: isTransfer ? null : (hasCreditCard ? creditCardId : null),
-      installments: isTransfer ? 1 : (parseInt(installments) || 1),
-      wallet_id: walletId || null,
+      credit_card_id: isCredit ? creditCardId : null,
+      installments: isCredit ? (parseInt(installments) || 1) : 1,
+      wallet_id: (isTransfer || (type === 'expense' && paymentMethod === 'debit') || type === 'income') ? (walletId || null) : null,
       destination_wallet_id: isTransfer ? destinationWalletId : null,
+      invoice_month: isCredit ? (invoiceMonth || null) : null,
     });
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
@@ -139,6 +209,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     setDescription('');
     setValue('');
     setType('expense');
+    setPaymentMethod('debit');
     setIsRecurring(false);
     setFrequency('monthly');
     setCreditCardId('');
@@ -147,6 +218,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     setDestinationWalletId('');
     setCategoryAi('');
     setFinalCategory('');
+    setInvoiceMonth('');
   };
 
   const aiCategoryInfo = categoryAi ? getCategoryInfo(categoryAi) : null;
@@ -194,6 +266,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               <span>⇄</span> Transferência
             </button>
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="expense-date">Data</Label>
             <Input id="expense-date" type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl h-11" />
@@ -214,7 +287,6 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
           {type === 'transfer' ? (
             <>
-              {/* Transfer: origin + destination wallets */}
               <div className="space-y-2">
                 <Label>Conta de Origem <span className="text-destructive">*</span></Label>
                 <Select value={walletId} onValueChange={setWalletId}>
@@ -255,10 +327,41 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 />
               </div>
 
-              {/* Wallet select */}
-              {wallets.length > 0 && (
+              {/* Payment method toggle (expenses only) */}
+              {type === 'expense' && (
                 <div className="space-y-2">
-                  <Label>Conta / Carteira {!(creditCardId && creditCardId !== 'none') && <span className="text-destructive">*</span>}</Label>
+                  <Label>Método de pagamento</Label>
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInvoiceMonth(''); }}
+                      className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+                        paymentMethod === 'debit'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      💳 Débito
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod('credit'); setWalletId(''); }}
+                      className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+                        paymentMethod === 'credit'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      💳 Crédito
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Debit: show wallet select */}
+              {(type === 'income' || (type === 'expense' && paymentMethod === 'debit')) && wallets.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Conta / Carteira <span className="text-destructive">*</span></Label>
                   <Select value={walletId} onValueChange={setWalletId}>
                     <SelectTrigger className="rounded-xl h-11">
                       <SelectValue placeholder="Selecione a conta" />
@@ -272,35 +375,54 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 </div>
               )}
 
-              {/* Credit card + installments (only for expenses) */}
-              {type === 'expense' && creditCards.length > 0 && (
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2 space-y-2">
-                    <Label>Cartão de crédito</Label>
-                    <Select value={creditCardId} onValueChange={setCreditCardId}>
-                      <SelectTrigger className="rounded-xl h-11">
-                        <SelectValue placeholder="Nenhum (opcional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhum</SelectItem>
-                        {creditCards.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              {/* Credit: show card select + installments + invoice */}
+              {type === 'expense' && paymentMethod === 'credit' && (
+                <>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2 space-y-2">
+                      <Label>Cartão de Crédito <span className="text-destructive">*</span></Label>
+                      <Select value={creditCardId} onValueChange={setCreditCardId}>
+                        <SelectTrigger className="rounded-xl h-11">
+                          <SelectValue placeholder="Selecione o cartão" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {creditCards.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Parcelas</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="48"
+                        value={installments}
+                        onChange={e => setInstallments(e.target.value)}
+                        className="rounded-xl h-11"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Parcelas</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="48"
-                      value={installments}
-                      onChange={e => setInstallments(e.target.value)}
-                      className="rounded-xl h-11"
-                    />
-                  </div>
-                </div>
+
+                  {/* Invoice month - auto-calculated but overridable */}
+                  {creditCardId && (
+                    <div className="space-y-2">
+                      <Label>Fatura</Label>
+                      <Select value={invoiceMonth} onValueChange={setInvoiceMonth}>
+                        <SelectTrigger className="rounded-xl h-11">
+                          <SelectValue placeholder="Mês da fatura" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {invoiceOptions.map(ym => (
+                            <SelectItem key={ym} value={ym}>{formatInvoiceLabel(ym)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Calculado automaticamente. Pode alterar manualmente se necessário.</p>
+                    </div>
+                  )}
+                </>
               )}
 
               <label className="flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none">
