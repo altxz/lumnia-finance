@@ -93,7 +93,7 @@ export default function WalletPage() {
   const [cardsLoading, setCardsLoading] = useState(true);
   const [cardModalOpen, setCardModalOpen] = useState(false);
   const [cardSaving, setCardSaving] = useState(false);
-  const [cardForm, setCardForm] = useState({ name: '', limit_amount: '', closing_day: '25', due_day: '10' });
+  const [cardForm, setCardForm] = useState({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed' as string, closing_days_before_due: '7' });
 
   // ─── Fetch wallets ───
   const fetchWallets = useCallback(async () => {
