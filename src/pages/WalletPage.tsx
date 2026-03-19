@@ -178,14 +178,16 @@ export default function WalletPage() {
       user_id: user?.id,
       name: cardForm.name.trim(),
       limit_amount: parseFloat(cardForm.limit_amount),
-      closing_day: parseInt(cardForm.closing_day) || 25,
+      closing_day: cardForm.closing_strategy === 'fixed' ? (parseInt(cardForm.closing_day) || 25) : 1,
       due_day: parseInt(cardForm.due_day) || 10,
+      closing_strategy: cardForm.closing_strategy,
+      closing_days_before_due: cardForm.closing_strategy === 'relative' ? (parseInt(cardForm.closing_days_before_due) || 7) : 7,
     });
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Cartão adicionado!' });
-      setCardForm({ name: '', limit_amount: '', closing_day: '25', due_day: '10' });
+      setCardForm({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed', closing_days_before_due: '7' });
       setCardModalOpen(false);
       fetchCards();
     }
