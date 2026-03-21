@@ -1,4 +1,4 @@
-import { LayoutDashboard, Tag, History, Settings, DollarSign, BarChart3, Repeat, Wallet, PiggyBank } from 'lucide-react';
+import { LayoutDashboard, Settings, BarChart3, Wallet, PiggyBank, ArrowLeftRight, DollarSign } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar,
@@ -15,12 +15,9 @@ import {
 
 const items = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
+  { title: 'Transações', url: '/historico', icon: ArrowLeftRight },
   { title: 'Orçamento', url: '/orcamento', icon: PiggyBank },
-  { title: 'Analytics', url: '/analytics', icon: BarChart3 },
   { title: 'Minha Carteira', url: '/wallet', icon: Wallet },
-  { title: 'Assinaturas', url: '/assinaturas', icon: Repeat },
-  { title: 'Categorias', url: '/categorias', icon: Tag },
-  { title: 'Histórico', url: '/historico', icon: History },
   { title: 'Configurações', url: '/configuracoes', icon: Settings },
 ];
 

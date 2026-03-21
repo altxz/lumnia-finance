@@ -10,7 +10,6 @@ import CategoriesPage from "./pages/CategoriesPage";
 import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-import SubscriptionsPage from "./pages/SubscriptionsPage";
 import WalletPage from "./pages/WalletPage";
 import BudgetPage from "./pages/BudgetPage";
 import NotFound from "./pages/NotFound";
@@ -31,7 +30,6 @@ const App = () => (
             <Route path="/historico" element={<HistoryPage />} />
             <Route path="/configuracoes" element={<SettingsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/assinaturas" element={<SubscriptionsPage />} />
             <Route path="/wallet" element={<WalletPage />} />
             <Route path="/orcamento" element={<BudgetPage />} />
             <Route path="*" element={<NotFound />} />
