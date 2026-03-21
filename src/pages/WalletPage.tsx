@@ -98,6 +98,14 @@ export default function WalletPage() {
   const [cardSaving, setCardSaving] = useState(false);
   const [cardForm, setCardForm] = useState({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed' as string, closing_days_before_due: '7' });
 
+  // ─── Invoice View state ───
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [invoiceMonth, setInvoiceMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [invoiceTransactions, setInvoiceTransactions] = useState<any[]>([]);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
   // ─── Fetch wallets ───
   const fetchWallets = useCallback(async () => {
     if (!user) return;
