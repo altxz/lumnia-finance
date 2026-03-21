@@ -15,10 +15,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { formatCurrency } from '@/lib/constants';
-import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency, getCategoryInfo } from '@/lib/constants';
+import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 
 // ─── Wallet types ───
 interface WalletRow {
@@ -95,6 +98,14 @@ export default function WalletPage() {
   const [cardSaving, setCardSaving] = useState(false);
   const [cardForm, setCardForm] = useState({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed' as string, closing_days_before_due: '7' });
 
+  // ─── Invoice View state ───
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [invoiceMonth, setInvoiceMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [invoiceTransactions, setInvoiceTransactions] = useState<any[]>([]);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
   // ─── Fetch wallets ───
   const fetchWallets = useCallback(async () => {
     if (!user) return;
@@ -128,7 +139,56 @@ export default function WalletPage() {
     setCardsLoading(false);
   }, [user]);
 
-  useEffect(() => { fetchWallets(); fetchCards(); }, [fetchWallets, fetchCards]);
+  // ─── Fetch invoice transactions ───
+  const fetchInvoiceTransactions = useCallback(async () => {
+    if (!user || !selectedCardId || !invoiceMonth) return;
+    setInvoiceLoading(true);
+    const { data } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('credit_card_id', selectedCardId)
+      .eq('invoice_month', invoiceMonth)
+      .order('date', { ascending: false });
+    setInvoiceTransactions(data || []);
+    setInvoiceLoading(false);
+  }, [user, selectedCardId, invoiceMonth]);
+
+  useEffect(() => { fetchInvoiceTransactions(); }, [fetchInvoiceTransactions]);
+
+  const selectedCard = useMemo(() => cards.find(c => c.id === selectedCardId), [cards, selectedCardId]);
+
+  const invoiceTotal = useMemo(() => invoiceTransactions.reduce((s, t) => s + t.value, 0), [invoiceTransactions]);
+
+  const getInvoiceStatus = useCallback((card: CreditCardRow, month: string): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
+    const now = new Date();
+    const [y, m] = month.split('-').map(Number);
+    const closingDay = card.closing_strategy === 'relative'
+      ? Math.max(card.due_day - card.closing_days_before_due, 1)
+      : card.closing_day;
+    const closingDate = new Date(y, m - 1, closingDay);
+    const dueDate = new Date(y, m - 1, card.due_day);
+    // If due date is before closing date, due is next month
+    const effectiveDue = dueDate <= closingDate ? new Date(y, m, card.due_day) : dueDate;
+
+    if (now < closingDate) return { label: 'Aberta', variant: 'default' };
+    if (now < effectiveDue) return { label: 'Fechada', variant: 'secondary' };
+    return { label: 'Vencida', variant: 'destructive' };
+  }, []);
+
+  const navigateInvoiceMonth = (direction: -1 | 1) => {
+    const [y, m] = invoiceMonth.split('-').map(Number);
+    const d = new Date(y, m - 1 + direction, 1);
+    setInvoiceMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const formatMonthLabel = (month: string) => {
+    const [y, m] = month.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    return format(d, 'MMMM yyyy', { locale: pt }).replace(/^\w/, c => c.toUpperCase());
+  };
+
+
 
   // ─── Wallet handlers ───
   const resetWalletForm = () => setWalletForm({ name: '', asset_type: 'checking_account', current_balance: '', crypto_symbol: '', crypto_amount: '', crypto_price: '' });
@@ -383,89 +443,203 @@ export default function WalletPage() {
 
               {/* ════════ TAB: Cartões de Crédito ════════ */}
               <TabsContent value="cards" className="space-y-6">
-                <div className="flex justify-end">
-                  <Button onClick={() => setCardModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                    <PlusCircle className="h-5 w-5" />
-                    Novo Cartão
-                  </Button>
+                <div className="flex justify-between items-center">
+                  {selectedCardId && (
+                    <Button variant="ghost" onClick={() => setSelectedCardId(null)} className="gap-2 rounded-xl">
+                      <ArrowLeft className="h-4 w-4" />
+                      Voltar aos cartões
+                    </Button>
+                  )}
+                  <div className={selectedCardId ? '' : 'ml-auto'}>
+                    <Button onClick={() => setCardModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                      <PlusCircle className="h-5 w-5" />
+                      Novo Cartão
+                    </Button>
+                  </div>
                 </div>
 
-                {cardsLoading ? (
-                  <p className="text-muted-foreground text-center py-12">Carregando...</p>
-                ) : cards.length === 0 ? (
-                  <Card className="rounded-2xl">
-                    <CardContent className="py-12 text-center text-muted-foreground">
-                      <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                      <p className="font-medium">Nenhum cartão cadastrado</p>
-                      <p className="text-sm mt-1">Adicione seu primeiro cartão de crédito.</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {cards.map(card => {
-                      const used = usageByCard[card.id] || 0;
-                      const pct = card.limit_amount > 0 ? Math.min((used / card.limit_amount) * 100, 100) : 0;
-                      const available = Math.max(card.limit_amount - used, 0);
-                      return (
-                        <Card key={card.id} className="rounded-2xl overflow-hidden">
-                          <div className={`h-2 ${pct > 80 ? 'bg-destructive' : pct > 50 ? 'bg-yellow-500' : 'bg-green-500'}`} />
-                          <CardContent className="p-5 space-y-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                  <CreditCard className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                  <p className="font-semibold">{card.name}</p>
-                                  <p className="text-xs text-muted-foreground">Limite: {formatCurrency(card.limit_amount)}</p>
-                                </div>
-                              </div>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-2xl">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Remover cartão?</AlertDialogTitle>
-                                    <AlertDialogDescription>O cartão será removido mas as transações vinculadas serão mantidas.</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteCard(card.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Remover</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Fatura atual</span>
-                                <span className="font-semibold">{formatCurrency(used)}</span>
-                              </div>
-                              <Progress value={pct} className="h-2.5" />
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>{pct.toFixed(0)}% utilizado</span>
-                                <span>Disponível: {formatCurrency(available)}</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-4 text-xs text-muted-foreground pt-1 border-t">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {card.closing_strategy === 'relative'
-                                  ? `Fecha ${card.closing_days_before_due}d antes`
-                                  : `Fecha dia ${card.closing_day}`}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                Vence dia {card.due_day}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                {selectedCardId && selectedCard ? (
+                  /* ─── Invoice View ─── */
+                  <div className="space-y-5">
+                    {/* Card header */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold">{selectedCard.name}</h2>
+                        <p className="text-sm text-muted-foreground">Limite: {formatCurrency(selectedCard.limit_amount)}</p>
+                      </div>
+                    </div>
+
+                    {/* Month Navigator */}
+                    <Card className="rounded-2xl">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(-1)} className="rounded-xl">
+                            <ChevronLeft className="h-5 w-5" />
+                          </Button>
+                          <div className="text-center">
+                            <p className="text-lg font-bold">{formatMonthLabel(invoiceMonth)}</p>
+                            <p className="text-xs text-muted-foreground">Fatura</p>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(1)} className="rounded-xl">
+                            <ChevronRight className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Invoice Summary */}
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Card className="rounded-2xl">
+                        <CardContent className="p-5 text-center">
+                          <p className="text-sm text-muted-foreground mb-1">Valor Total</p>
+                          <p className="text-2xl font-bold">{formatCurrency(invoiceTotal)}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="rounded-2xl">
+                        <CardContent className="p-5 text-center">
+                          <p className="text-sm text-muted-foreground mb-1">Transações</p>
+                          <p className="text-2xl font-bold">{invoiceTransactions.length}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="rounded-2xl">
+                        <CardContent className="p-5 text-center">
+                          <p className="text-sm text-muted-foreground mb-1">Status</p>
+                          {(() => {
+                            const status = getInvoiceStatus(selectedCard, invoiceMonth);
+                            return <Badge variant={status.variant} className="text-base px-4 py-1">{status.label}</Badge>;
+                          })()}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Invoice Transactions */}
+                    <Card className="rounded-2xl">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base font-semibold">Transações da Fatura</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {invoiceLoading ? (
+                          <p className="text-muted-foreground text-center py-8">Carregando...</p>
+                        ) : invoiceTransactions.length === 0 ? (
+                          <p className="text-muted-foreground text-center py-8">Nenhuma transação nesta fatura.</p>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Data</TableHead>
+                                <TableHead>Descrição</TableHead>
+                                <TableHead>Categoria</TableHead>
+                                <TableHead>Parcelas</TableHead>
+                                <TableHead className="text-right">Valor</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {invoiceTransactions.map(tx => {
+                                const cat = getCategoryInfo(tx.final_category);
+                                return (
+                                  <TableRow key={tx.id}>
+                                    <TableCell className="text-sm">{format(new Date(tx.date + 'T12:00:00'), 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell className="font-medium">{tx.description}</TableCell>
+                                    <TableCell>
+                                      <Badge variant="secondary" className="text-xs">{cat.label}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {tx.installments > 1 ? `${tx.installments}x` : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">{formatCurrency(tx.value)}</TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
+                ) : (
+                  /* ─── Cards Grid ─── */
+                  <>
+                    {cardsLoading ? (
+                      <p className="text-muted-foreground text-center py-12">Carregando...</p>
+                    ) : cards.length === 0 ? (
+                      <Card className="rounded-2xl">
+                        <CardContent className="py-12 text-center text-muted-foreground">
+                          <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                          <p className="font-medium">Nenhum cartão cadastrado</p>
+                          <p className="text-sm mt-1">Adicione seu primeiro cartão de crédito.</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {cards.map(card => {
+                          const used = usageByCard[card.id] || 0;
+                          const pct = card.limit_amount > 0 ? Math.min((used / card.limit_amount) * 100, 100) : 0;
+                          const available = Math.max(card.limit_amount - used, 0);
+                          return (
+                            <Card key={card.id} className="rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedCardId(card.id)}>
+                              <div className={`h-2 ${pct > 80 ? 'bg-destructive' : pct > 50 ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                              <CardContent className="p-5 space-y-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                      <CreditCard className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold">{card.name}</p>
+                                      <p className="text-xs text-muted-foreground">Limite: {formatCurrency(card.limit_amount)}</p>
+                                    </div>
+                                  </div>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={e => e.stopPropagation()}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="rounded-2xl">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Remover cartão?</AlertDialogTitle>
+                                        <AlertDialogDescription>O cartão será removido mas as transações vinculadas serão mantidas.</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteCard(card.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Remover</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Fatura atual</span>
+                                    <span className="font-semibold">{formatCurrency(used)}</span>
+                                  </div>
+                                  <Progress value={pct} className="h-2.5" />
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>{pct.toFixed(0)}% utilizado</span>
+                                    <span>Disponível: {formatCurrency(available)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-4 text-xs text-muted-foreground pt-1 border-t">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {card.closing_strategy === 'relative'
+                                      ? `Fecha ${card.closing_days_before_due}d antes`
+                                      : `Fecha dia ${card.closing_day}`}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    Vence dia {card.due_day}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </TabsContent>
             </Tabs>
