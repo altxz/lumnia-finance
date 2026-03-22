@@ -526,6 +526,7 @@ export default function WalletPage() {
                         ) : invoiceTransactions.length === 0 ? (
                           <p className="text-muted-foreground text-center py-8">Nenhuma transação nesta fatura.</p>
                         ) : (
+                          <>
                           {/* Mobile card view for invoice */}
                           <div className="md:hidden space-y-2">
                             {invoiceTransactions.map(tx => {
