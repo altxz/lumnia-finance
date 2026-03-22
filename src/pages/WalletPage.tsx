@@ -574,6 +574,7 @@ export default function WalletPage() {
                               </TableBody>
                             </Table>
                           </div>
+                          </>
                         )}
                       </CardContent>
                     </Card>
