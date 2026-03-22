@@ -290,16 +290,16 @@ export default function WalletPage() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto">
+          <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Minha Carteira</h1>
-              <p className="text-sm text-muted-foreground mt-1">Gerencie suas contas, ativos e cartões de crédito</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Minha Carteira</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Contas, ativos e cartões de crédito</p>
             </div>
 
             <Tabs defaultValue="accounts" className="w-full">
               <TabsList className="w-full max-w-md">
-                <TabsTrigger value="accounts" className="flex-1">Minhas Contas</TabsTrigger>
-                <TabsTrigger value="cards" className="flex-1">Cartões de Crédito</TabsTrigger>
+                <TabsTrigger value="accounts" className="flex-1 text-xs sm:text-sm">Minhas Contas</TabsTrigger>
+                <TabsTrigger value="cards" className="flex-1 text-xs sm:text-sm">Cartões de Crédito</TabsTrigger>
               </TabsList>
 
               {/* ════════ TAB: Minhas Contas ════════ */}
@@ -313,14 +313,14 @@ export default function WalletPage() {
 
                 {/* Total Net Worth */}
                 <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
-                  <CardContent className="p-6 flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-primary-foreground/20 flex items-center justify-center">
-                      <Wallet className="h-7 w-7" />
+                  <CardContent className="p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
+                      <Wallet className="h-5 w-5 sm:h-7 sm:w-7" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium opacity-80">Património Líquido Total</p>
-                      <p className="text-3xl font-bold tracking-tight">{formatCurrency(totalWealth)}</p>
-                      <p className="text-xs opacity-60 mt-0.5">{wallets.length} ativo{wallets.length !== 1 ? 's' : ''} registrado{wallets.length !== 1 ? 's' : ''}</p>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-medium opacity-80">Património Líquido Total</p>
+                      <p className="text-xl sm:text-3xl font-bold tracking-tight">{formatCurrency(totalWealth)}</p>
+                      <p className="text-[10px] sm:text-xs opacity-60 mt-0.5">{wallets.length} ativo{wallets.length !== 1 ? 's' : ''}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -526,35 +526,53 @@ export default function WalletPage() {
                         ) : invoiceTransactions.length === 0 ? (
                           <p className="text-muted-foreground text-center py-8">Nenhuma transação nesta fatura.</p>
                         ) : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Data</TableHead>
-                                <TableHead>Descrição</TableHead>
-                                <TableHead>Categoria</TableHead>
-                                <TableHead>Parcelas</TableHead>
-                                <TableHead className="text-right">Valor</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {invoiceTransactions.map(tx => {
-                                const cat = getCategoryInfo(tx.final_category);
-                                return (
-                                  <TableRow key={tx.id}>
-                                    <TableCell className="text-sm">{format(new Date(tx.date + 'T12:00:00'), 'dd/MM/yyyy')}</TableCell>
-                                    <TableCell className="font-medium">{tx.description}</TableCell>
-                                    <TableCell>
-                                      <Badge variant="secondary" className="text-xs">{cat.label}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                      {tx.installments > 1 ? `${tx.installments}x` : '—'}
-                                    </TableCell>
-                                    <TableCell className="text-right font-semibold">{formatCurrency(tx.value)}</TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
+                          {/* Mobile card view for invoice */}
+                          <div className="md:hidden space-y-2">
+                            {invoiceTransactions.map(tx => {
+                              const cat = getCategoryInfo(tx.final_category);
+                              return (
+                                <div key={tx.id} className="flex items-start justify-between gap-2 py-2 border-b last:border-0">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium truncate">{tx.description}</p>
+                                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                      <span className="text-xs text-muted-foreground">{format(new Date(tx.date + 'T12:00:00'), 'dd/MM/yyyy')}</span>
+                                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{cat.label}</Badge>
+                                      {tx.installments > 1 && <span className="text-[10px] text-muted-foreground">{tx.installments}x</span>}
+                                    </div>
+                                  </div>
+                                  <span className="text-sm font-semibold shrink-0">{formatCurrency(tx.value)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {/* Desktop table view for invoice */}
+                          <div className="hidden md:block">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Data</TableHead>
+                                  <TableHead>Descrição</TableHead>
+                                  <TableHead>Categoria</TableHead>
+                                  <TableHead>Parcelas</TableHead>
+                                  <TableHead className="text-right">Valor</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {invoiceTransactions.map(tx => {
+                                  const cat = getCategoryInfo(tx.final_category);
+                                  return (
+                                    <TableRow key={tx.id}>
+                                      <TableCell className="text-sm">{format(new Date(tx.date + 'T12:00:00'), 'dd/MM/yyyy')}</TableCell>
+                                      <TableCell className="font-medium">{tx.description}</TableCell>
+                                      <TableCell><Badge variant="secondary" className="text-xs">{cat.label}</Badge></TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">{tx.installments > 1 ? `${tx.installments}x` : '—'}</TableCell>
+                                      <TableCell className="text-right font-semibold">{formatCurrency(tx.value)}</TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
                         )}
                       </CardContent>
                     </Card>

@@ -109,49 +109,49 @@ export default function BudgetPage() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto">
+          <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Orçamento Mensal</h1>
-              <p className="text-sm text-muted-foreground mt-1 capitalize">{monthLabel} — distribua a sua receita pelas categorias</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Orçamento Mensal</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 capitalize">{monthLabel}</p>
             </div>
 
             {/* Summary row */}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">
               <Card className="rounded-2xl border-0 shadow-md bg-green-600 text-white">
-                <CardContent className="p-5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center"><ArrowUpCircle className="h-5 w-5" /></div>
+                <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center"><ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" /></div>
                   <div>
-                    <p className="text-xs font-medium opacity-80">Receita do Mês</p>
-                    <p className="text-xl font-bold">{formatCurrency(totalIncome)}</p>
+                    <p className="text-[10px] sm:text-xs font-medium opacity-80">Receita</p>
+                    <p className="text-base sm:text-xl font-bold">{formatCurrency(totalIncome)}</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
-                <CardContent className="p-5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><PiggyBank className="h-5 w-5" /></div>
+                <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><PiggyBank className="h-4 w-4 sm:h-5 sm:w-5" /></div>
                   <div>
-                    <p className="text-xs font-medium opacity-80">Distribuído</p>
-                    <p className="text-xl font-bold">{formatCurrency(totalAllocated)}</p>
+                    <p className="text-[10px] sm:text-xs font-medium opacity-80">Distribuído</p>
+                    <p className="text-base sm:text-xl font-bold">{formatCurrency(totalAllocated)}</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className={`rounded-2xl border-0 shadow-md ${remaining < 0 ? 'bg-destructive text-destructive-foreground' : 'bg-accent text-accent-foreground'}`}>
-                <CardContent className="p-5 flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${remaining < 0 ? 'bg-destructive-foreground/20' : 'bg-accent-foreground/10'}`}>
-                    <Wallet className="h-5 w-5" />
+                <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${remaining < 0 ? 'bg-destructive-foreground/20' : 'bg-accent-foreground/10'}`}>
+                    <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium opacity-80">Restante</p>
-                    <p className="text-xl font-bold">{formatCurrency(remaining)}</p>
+                    <p className="text-[10px] sm:text-xs font-medium opacity-80">Restante</p>
+                    <p className="text-base sm:text-xl font-bold">{formatCurrency(remaining)}</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="rounded-2xl border-0 shadow-md bg-destructive text-destructive-foreground">
-                <CardContent className="p-5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center"><ArrowDownCircle className="h-5 w-5" /></div>
+                <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center"><ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" /></div>
                   <div>
-                    <p className="text-xs font-medium opacity-80">Total Gasto</p>
-                    <p className="text-xl font-bold">{formatCurrency(totalSpent)}</p>
+                    <p className="text-[10px] sm:text-xs font-medium opacity-80">Total Gasto</p>
+                    <p className="text-base sm:text-xl font-bold">{formatCurrency(totalSpent)}</p>
                   </div>
                 </CardContent>
               </Card>

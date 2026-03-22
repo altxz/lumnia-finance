@@ -171,13 +171,13 @@ export default function HistoryPage() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto">
-            <div className="flex items-center justify-between">
+           <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Transações</h1>
-                <p className="text-sm text-muted-foreground mt-1">Lançamentos, assinaturas e análise de categorização IA</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transações</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Lançamentos, assinaturas e análise IA</p>
               </div>
-              <Button onClick={exportCSV} variant="outline" className="gap-2 rounded-xl">
+              <Button onClick={exportCSV} variant="outline" size="sm" className="gap-2 rounded-xl self-start sm:self-auto">
                 <Download className="h-4 w-4" />
                 Exportar CSV
               </Button>
@@ -185,36 +185,36 @@ export default function HistoryPage() {
 
             <Tabs defaultValue="entries" className="w-full">
               <TabsList className="w-full max-w-md">
-                <TabsTrigger value="entries" className="flex-1">Lançamentos</TabsTrigger>
-                <TabsTrigger value="subscriptions" className="flex-1">Assinaturas Fixas</TabsTrigger>
+                <TabsTrigger value="entries" className="flex-1 text-xs sm:text-sm">Lançamentos</TabsTrigger>
+                <TabsTrigger value="subscriptions" className="flex-1 text-xs sm:text-sm">Assinaturas Fixas</TabsTrigger>
               </TabsList>
 
               {/* ════════ TAB: Lançamentos ════════ */}
-              <TabsContent value="entries" className="space-y-6">
+              <TabsContent value="entries" className="space-y-4 sm:space-y-6">
                 {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
                   <Card className="rounded-2xl border-0 shadow-md bg-ai text-ai-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-ai-foreground/20 flex items-center justify-center"><Target className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">Precisão IA</p><p className="text-xl font-bold">{analytics.accuracy}%</p></div>
+                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-ai-foreground/20 flex items-center justify-center"><Target className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">Precisão IA</p><p className="text-lg sm:text-xl font-bold">{analytics.accuracy}%</p></div>
                     </CardContent>
                   </Card>
                   <Card className="rounded-2xl border-0 shadow-md bg-accent text-accent-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-accent-foreground/10 flex items-center justify-center"><CheckCircle className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">IA Corretas</p><p className="text-xl font-bold">{analytics.correct}</p></div>
+                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-accent-foreground/10 flex items-center justify-center"><CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">IA Corretas</p><p className="text-lg sm:text-xl font-bold">{analytics.correct}</p></div>
                     </CardContent>
                   </Card>
                   <Card className="rounded-2xl border-0 shadow-md bg-pink text-pink-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center"><AlertTriangle className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">Corrigidas</p><p className="text-xl font-bold">{analytics.corrected}</p></div>
+                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center"><AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">Corrigidas</p><p className="text-lg sm:text-xl font-bold">{analytics.corrected}</p></div>
                     </CardContent>
                   </Card>
-                  <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><BarChart3 className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">Total</p><p className="text-xl font-bold">{analytics.total}</p></div>
+                  <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground col-span-2 md:col-span-1">
+                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">Total</p><p className="text-lg sm:text-xl font-bold">{analytics.total}</p></div>
                     </CardContent>
                   </Card>
                 </div>
@@ -222,14 +222,14 @@ export default function HistoryPage() {
                 {/* Charts */}
                 <div className="grid gap-4 lg:grid-cols-2">
                   <Card className="rounded-2xl">
-                    <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Precisão por Categoria</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm sm:text-base font-semibold">Precisão por Categoria</CardTitle></CardHeader>
                     <CardContent>
                       {analytics.accuracyByCategory.length > 0 ? (
-                        <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                        <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px] w-full">
                           <BarChart data={analytics.accuracyByCategory} layout="vertical">
                             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                             <XAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} />
-                            <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
+                            <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} />
                             <ChartTooltip content={<ChartTooltipContent />} />
                             <Bar dataKey="accuracy" fill="hsl(var(--ai))" radius={[0, 6, 6, 0]} />
                           </BarChart>
@@ -240,13 +240,13 @@ export default function HistoryPage() {
                     </CardContent>
                   </Card>
                   <Card className="rounded-2xl">
-                    <CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Top Categorias com Correções</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm sm:text-base font-semibold">Top Categorias com Correções</CardTitle></CardHeader>
                     <CardContent>
                       {analytics.topCorrections.length > 0 ? (
-                        <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                        <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px] w-full">
                           <BarChart data={analytics.topCorrections}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                             <YAxis />
                             <ChartTooltip content={<ChartTooltipContent />} />
                             <Bar dataKey="count" fill="hsl(var(--pink))" radius={[6, 6, 0, 0]} />
@@ -260,41 +260,74 @@ export default function HistoryPage() {
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-wrap gap-3 items-center">
-                  <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
+                  <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar no histórico..." className="pl-9 rounded-xl h-10" />
+                    <Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar..." className="pl-9 rounded-xl h-10 text-sm" />
                   </div>
-                  <Select value={filters.period} onValueChange={v => handleFilterChange('period', v)}>
-                    <SelectTrigger className="w-[140px] rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 mês</SelectItem>
-                      <SelectItem value="3">3 meses</SelectItem>
-                      <SelectItem value="6">6 meses</SelectItem>
-                      <SelectItem value="12">12 meses</SelectItem>
-                      <SelectItem value="all">Todos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filters.status} onValueChange={v => handleFilterChange('status', v)}>
-                    <SelectTrigger className="w-[160px] rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos status</SelectItem>
-                      <SelectItem value="correct">✅ IA correta</SelectItem>
-                      <SelectItem value="corrected">⚠️ Corrigida</SelectItem>
-                      <SelectItem value="manual">Manual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filters.category} onValueChange={v => handleFilterChange('category', v)}>
-                    <SelectTrigger className="w-[160px] rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas categorias</SelectItem>
-                      {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 flex-wrap">
+                    <Select value={filters.period} onValueChange={v => handleFilterChange('period', v)}>
+                      <SelectTrigger className="w-[110px] sm:w-[140px] rounded-xl text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 mês</SelectItem>
+                        <SelectItem value="3">3 meses</SelectItem>
+                        <SelectItem value="6">6 meses</SelectItem>
+                        <SelectItem value="12">12 meses</SelectItem>
+                        <SelectItem value="all">Todos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={filters.status} onValueChange={v => handleFilterChange('status', v)}>
+                      <SelectTrigger className="w-[120px] sm:w-[160px] rounded-xl text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos status</SelectItem>
+                        <SelectItem value="correct">✅ IA correta</SelectItem>
+                        <SelectItem value="corrected">⚠️ Corrigida</SelectItem>
+                        <SelectItem value="manual">Manual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={filters.category} onValueChange={v => handleFilterChange('category', v)}>
+                      <SelectTrigger className="w-[120px] sm:w-[160px] rounded-xl text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas categorias</SelectItem>
+                        {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {/* History Table */}
-                <div className="rounded-2xl border bg-card overflow-hidden">
+                {/* Mobile card view */}
+                <div className="md:hidden space-y-2">
+                  {loading ? (
+                    <div className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" /></div>
+                  ) : expenses.length === 0 ? (
+                    <p className="text-center py-8 text-muted-foreground">Nenhum registro encontrado.</p>
+                  ) : expenses.map(exp => {
+                    const finalInfo = getCategoryInfo(exp.final_category);
+                    return (
+                      <Card key={exp.id} className="rounded-xl">
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm truncate">{exp.description}</p>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className="text-xs text-muted-foreground">{formatDate(exp.date)}</span>
+                                <Badge variant={finalInfo.variant} className="text-[10px] px-1.5 py-0">{finalInfo.label}</Badge>
+                                {exp.status === 'correct' && <span className="text-xs">✅</span>}
+                                {exp.status === 'corrected' && <span className="text-xs">⚠️</span>}
+                                {exp.status === 'manual' && <span className="text-xs">✏️</span>}
+                              </div>
+                            </div>
+                            <span className="text-sm font-bold shrink-0">{formatCurrency(exp.value)}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop table view */}
+                <div className="hidden md:block rounded-2xl border bg-card overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-secondary/50">
@@ -335,7 +368,7 @@ export default function HistoryPage() {
 
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Página {page} de {totalPages} ({totalCount} registros)</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Página {page} de {totalPages} ({totalCount})</p>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-xl"><ChevronLeft className="h-4 w-4" /></Button>
                       <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-xl"><ChevronRight className="h-4 w-4" /></Button>

@@ -11,7 +11,7 @@ export function DashboardHeader() {
   return (
     <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-8">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="lg:hidden rounded-xl">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="rounded-xl">
           <Menu className="h-5 w-5" />
         </Button>
         <h2 className="text-lg font-bold hidden sm:block">Painel de Despesas</h2>

@@ -100,19 +100,21 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Transações</h1>
-                <p className="text-sm text-muted-foreground mt-1">Gerencie receitas e despesas com inteligência artificial</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transações</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Gerencie receitas e despesas com IA</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setImportModalOpen(true)} className="gap-2 rounded-xl h-11 px-5 font-semibold">
-                  <Upload className="h-5 w-5" />
-                  Importar CSV
+                <Button variant="outline" onClick={() => setImportModalOpen(true)} className="gap-2 rounded-xl h-10 sm:h-11 px-3 sm:px-5 font-semibold text-sm">
+                  <Upload className="h-4 w-4" />
+                  <span className="hidden sm:inline">Importar CSV</span>
+                  <span className="sm:hidden">CSV</span>
                 </Button>
-                <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                  <PlusCircle className="h-5 w-5" />
-                  Nova Transação
+                <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-10 sm:h-11 px-4 sm:px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-sm">
+                  <PlusCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Nova Transação</span>
+                  <span className="sm:hidden">Nova</span>
                 </Button>
               </div>
             </div>

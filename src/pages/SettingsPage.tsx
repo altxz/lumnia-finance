@@ -144,24 +144,26 @@ export default function SettingsPage() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto pb-24">
+          <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto pb-24">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-              <p className="text-sm text-muted-foreground mt-1">Personalize sua experiência no FinAI</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Configurações</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Personalize sua experiência no FinAI</p>
             </div>
 
             {loading ? (
               <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
             ) : (
-              <Tabs defaultValue="profile" className="space-y-6">
-                <TabsList className="rounded-xl bg-secondary/50 p-1 h-auto flex-wrap gap-1">
-                  <TabsTrigger value="profile" className="rounded-lg gap-1.5 data-[state=active]:bg-background"><User className="h-4 w-4" />Perfil</TabsTrigger>
-                  <TabsTrigger value="ai" className="rounded-lg gap-1.5 data-[state=active]:bg-background"><Sparkles className="h-4 w-4" />IA</TabsTrigger>
-                  <TabsTrigger value="automation" className="rounded-lg gap-1.5 data-[state=active]:bg-background"><Zap className="h-4 w-4" />Automação</TabsTrigger>
-                  <TabsTrigger value="notifications" className="rounded-lg gap-1.5 data-[state=active]:bg-background"><Bell className="h-4 w-4" />Notificações</TabsTrigger>
-                  <TabsTrigger value="security" className="rounded-lg gap-1.5 data-[state=active]:bg-background"><Shield className="h-4 w-4" />Segurança</TabsTrigger>
-                  <TabsTrigger value="plans" className="rounded-lg gap-1.5 data-[state=active]:bg-background"><Crown className="h-4 w-4" />Planos</TabsTrigger>
-                </TabsList>
+              <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+                <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                  <TabsList className="rounded-xl bg-secondary/50 p-1 h-auto gap-1 w-max sm:w-auto sm:flex-wrap">
+                    <TabsTrigger value="profile" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Perfil</span><span className="sm:hidden">Perfil</span></TabsTrigger>
+                    <TabsTrigger value="ai" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />IA</TabsTrigger>
+                    <TabsTrigger value="automation" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Automação</span><span className="sm:hidden">Auto</span></TabsTrigger>
+                    <TabsTrigger value="notifications" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Notificações</span><span className="sm:hidden">Notif.</span></TabsTrigger>
+                    <TabsTrigger value="security" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden xs:inline">Segurança</span><span className="xs:hidden">Seg.</span></TabsTrigger>
+                    <TabsTrigger value="plans" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Planos</TabsTrigger>
+                  </TabsList>
+                </div>
 
                 <TabsContent value="profile">
                   <ProfileSection settings={settings} onChange={handleChange} user={user} stats={stats} />
