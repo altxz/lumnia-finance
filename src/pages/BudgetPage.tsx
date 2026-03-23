@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { DashboardHeader } from '@/components/DashboardHeader';
+import { MonthSelector } from '@/components/MonthSelector';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,22 +23,13 @@ interface BudgetRow {
 
 export default function BudgetPage() {
   const { user, loading: authLoading } = useAuth();
+  const { startDate, endDate, monthKey, label: monthLabel } = useSelectedDate();
   const { toast } = useToast();
   const [budgets, setBudgets] = useState<Record<string, BudgetRow>>({});
   const [spentByCategory, setSpentByCategory] = useState<Record<string, number>>({});
   const [totalIncome, setTotalIncome] = useState(0);
   const [loading, setLoading] = useState(true);
   const [savingCat, setSavingCat] = useState<string | null>(null);
-
-  const monthYear = useMemo(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  }, []);
-
-  const monthLabel = useMemo(() => {
-    const d = new Date(monthYear);
-    return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  }, [monthYear]);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
