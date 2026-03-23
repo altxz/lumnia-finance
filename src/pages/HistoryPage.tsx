@@ -265,16 +265,6 @@ export default function HistoryPage() {
                     <Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar..." className="pl-9 rounded-xl h-10 text-sm" />
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <Select value={filters.period} onValueChange={v => handleFilterChange('period', v)}>
-                      <SelectTrigger className="w-[110px] sm:w-[140px] rounded-xl text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 mês</SelectItem>
-                        <SelectItem value="3">3 meses</SelectItem>
-                        <SelectItem value="6">6 meses</SelectItem>
-                        <SelectItem value="12">12 meses</SelectItem>
-                        <SelectItem value="all">Todos</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <Select value={filters.status} onValueChange={v => handleFilterChange('status', v)}>
                       <SelectTrigger className="w-[120px] sm:w-[160px] rounded-xl text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>
