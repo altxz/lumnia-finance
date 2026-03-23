@@ -200,8 +200,11 @@ export type Database = {
           id: string
           installments: number
           invoice_month: string | null
+          is_paid: boolean
           is_recurring: boolean
+          notes: string | null
           payment_method: string | null
+          tags: string[] | null
           type: string
           user_id: string
           value: number
@@ -219,8 +222,11 @@ export type Database = {
           id?: string
           installments?: number
           invoice_month?: string | null
+          is_paid?: boolean
           is_recurring?: boolean
+          notes?: string | null
           payment_method?: string | null
+          tags?: string[] | null
           type?: string
           user_id: string
           value: number
@@ -238,8 +244,11 @@ export type Database = {
           id?: string
           installments?: number
           invoice_month?: string | null
+          is_paid?: boolean
           is_recurring?: boolean
+          notes?: string | null
           payment_method?: string | null
+          tags?: string[] | null
           type?: string
           user_id?: string
           value?: number
