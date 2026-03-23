@@ -7,8 +7,10 @@ import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { AppSidebar } from '@/components/AppSidebar';
+import { MonthSelector } from '@/components/MonthSelector';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { getCategoryInfo } from '@/lib/constants';
 import { Navigate } from 'react-router-dom';
@@ -17,13 +19,14 @@ const PAGE_SIZE = 10;
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
+  const { startDate, endDate } = useSelectedDate();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [filters, setFilters] = useState({ period: '1', category: 'all' });
+  const [filters, setFilters] = useState({ category: 'all' });
 
   const fetchExpenses = useCallback(async () => {
     if (!user) return;
@@ -33,14 +36,10 @@ export default function Dashboard() {
       .from('expenses')
       .select('*', { count: 'exact' })
       .eq('user_id', user.id)
+      .gte('date', startDate)
+      .lt('date', endDate)
       .order('date', { ascending: false });
 
-    if (filters.period !== 'all') {
-      const months = parseInt(filters.period);
-      const fromDate = new Date();
-      fromDate.setMonth(fromDate.getMonth() - months);
-      query = query.gte('date', fromDate.toISOString().split('T')[0]);
-    }
     if (filters.category !== 'all') {
       query = query.eq('final_category', filters.category);
     }
@@ -54,7 +53,7 @@ export default function Dashboard() {
       setTotalCount(count || 0);
     }
     setLoading(false);
-  }, [user, page, filters]);
+  }, [user, page, filters, startDate, endDate]);
 
   useEffect(() => {
     fetchExpenses();
@@ -100,6 +99,7 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-auto">
+            <MonthSelector />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transações</h1>
