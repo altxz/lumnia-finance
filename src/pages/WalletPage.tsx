@@ -106,6 +106,9 @@ export default function WalletPage() {
   });
   const [invoiceTransactions, setInvoiceTransactions] = useState<any[]>([]);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [payInvoiceOpen, setPayInvoiceOpen] = useState(false);
+  const [payWalletId, setPayWalletId] = useState('');
+  const [payingSaving, setPayingSaving] = useState(false);
   // ─── Fetch wallets ───
   const fetchWallets = useCallback(async () => {
     if (!user) return;
