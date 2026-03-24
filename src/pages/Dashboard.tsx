@@ -67,10 +67,12 @@ export default function Dashboard() {
   const summary = useMemo(() => {
     const nonTransfers = expenses.filter(e => e.type !== 'transfer');
     const income = nonTransfers.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
-    const expenseTotal = nonTransfers.filter(e => e.type !== 'income').reduce((s, e) => s + e.value, 0);
+    // Exclude credit card purchases from cash flow — they only count when the invoice is paid
+    const cashExpenses = nonTransfers.filter(e => e.type !== 'income' && !e.credit_card_id);
+    const expenseTotal = cashExpenses.reduce((s, e) => s + e.value, 0);
     const balance = income - expenseTotal;
     const byCategory: Record<string, number> = {};
-    nonTransfers.filter(e => e.type !== 'income').forEach(e => {
+    cashExpenses.forEach(e => {
       byCategory[e.final_category] = (byCategory[e.final_category] || 0) + e.value;
     });
     const largest = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
