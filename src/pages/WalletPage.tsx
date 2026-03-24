@@ -550,6 +550,16 @@ export default function WalletPage() {
                       </Card>
                     </div>
 
+                    {/* Pay Invoice Button */}
+                    {invoiceTotal > 0 && (
+                      <div className="flex justify-center">
+                        <Button onClick={() => setPayInvoiceOpen(true)} className="gap-2 rounded-xl h-12 px-8 bg-success text-success-foreground hover:bg-success/90 font-semibold text-base">
+                          <Wallet className="h-5 w-5" />
+                          Pagar Fatura — {formatCurrency(invoiceTotal)}
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Invoice Transactions */}
                     <Card className="rounded-2xl">
                       <CardHeader className="pb-2">
