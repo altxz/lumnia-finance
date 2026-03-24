@@ -106,6 +106,9 @@ export default function WalletPage() {
   });
   const [invoiceTransactions, setInvoiceTransactions] = useState<any[]>([]);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [payInvoiceOpen, setPayInvoiceOpen] = useState(false);
+  const [payWalletId, setPayWalletId] = useState('');
+  const [payingSaving, setPayingSaving] = useState(false);
   // ─── Fetch wallets ───
   const fetchWallets = useCallback(async () => {
     if (!user) return;
@@ -258,6 +261,38 @@ export default function WalletPage() {
     const { error } = await supabase.from('credit_cards').delete().eq('id', id);
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Cartão removido' }); fetchCards(); }
+  };
+
+  // ─── Pay Invoice handler ───
+  const handlePayInvoice = async () => {
+    if (!user || !selectedCard || !payWalletId || invoiceTotal <= 0) return;
+    setPayingSaving(true);
+    const [y, m] = invoiceMonth.split('-').map(Number);
+    const payDate = new Date(y, m - 1, selectedCard.due_day);
+    const { error } = await supabase.from('expenses').insert({
+      user_id: user.id,
+      description: `Pagamento fatura ${selectedCard.name} - ${formatMonthLabel(invoiceMonth)}`,
+      value: invoiceTotal,
+      type: 'expense',
+      final_category: 'Cartão de Crédito',
+      date: payDate.toISOString().split('T')[0],
+      wallet_id: payWalletId,
+      payment_method: 'debit',
+      is_paid: true,
+      notes: `Pagamento automático da fatura do cartão ${selectedCard.name}`,
+    });
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      // Mark all invoice transactions as paid
+      await supabase.from('expenses').update({ is_paid: true }).eq('user_id', user.id).eq('credit_card_id', selectedCardId!).eq('invoice_month', invoiceMonth);
+      toast({ title: 'Fatura paga!', description: `${formatCurrency(invoiceTotal)} debitado da conta.` });
+      setPayInvoiceOpen(false);
+      setPayWalletId('');
+      fetchInvoiceTransactions();
+      fetchWallets();
+    }
+    setPayingSaving(false);
   };
 
   // ─── Computed data ───
@@ -514,6 +549,16 @@ export default function WalletPage() {
                         </CardContent>
                       </Card>
                     </div>
+
+                    {/* Pay Invoice Button */}
+                    {invoiceTotal > 0 && (
+                      <div className="flex justify-center">
+                        <Button onClick={() => setPayInvoiceOpen(true)} className="gap-2 rounded-xl h-12 px-8 bg-success text-success-foreground hover:bg-success/90 font-semibold text-base">
+                          <Wallet className="h-5 w-5" />
+                          Pagar Fatura — {formatCurrency(invoiceTotal)}
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Invoice Transactions */}
                     <Card className="rounded-2xl">
@@ -775,6 +820,43 @@ export default function WalletPage() {
             <Button variant="outline" onClick={() => setCardModalOpen(false)} className="rounded-xl">Cancelar</Button>
             <Button onClick={handleAddCard} disabled={cardSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
               {cardSaving ? 'Salvando...' : 'Adicionar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ Pay Invoice Dialog ═══ */}
+      <Dialog open={payInvoiceOpen} onOpenChange={setPayInvoiceOpen}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pagar Fatura</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-4 rounded-xl bg-muted">
+              <p className="text-sm text-muted-foreground">Valor da fatura</p>
+              <p className="text-3xl font-bold mt-1">{formatCurrency(invoiceTotal)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{selectedCard?.name} — {formatMonthLabel(invoiceMonth)}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Debitar de qual conta?</Label>
+              <Select value={payWalletId} onValueChange={setPayWalletId}>
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(w => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name} — {formatCurrency(getWalletValue(w))}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayInvoiceOpen(false)} className="rounded-xl">Cancelar</Button>
+            <Button onClick={handlePayInvoice} disabled={payingSaving || !payWalletId} className="rounded-xl bg-success text-success-foreground hover:bg-success/90 font-semibold">
+              {payingSaving ? 'Pagando...' : 'Confirmar Pagamento'}
             </Button>
           </DialogFooter>
         </DialogContent>
