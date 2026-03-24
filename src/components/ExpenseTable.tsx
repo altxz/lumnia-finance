@@ -24,6 +24,9 @@ export interface Expense {
   installments: number;
   wallet_id: string | null;
   destination_wallet_id: string | null;
+  is_paid: boolean;
+  notes: string | null;
+  tags: string[] | null;
 }
 
 interface ExpenseTableProps {

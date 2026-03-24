@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Upload } from 'lucide-react';
 import { SummaryCards } from '@/components/SummaryCards';
-import { ExpenseTable, Expense } from '@/components/ExpenseTable';
+import { TransactionFeed } from '@/components/TransactionFeed';
 import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
 import { DashboardHeader } from '@/components/DashboardHeader';
@@ -14,8 +14,9 @@ import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { getCategoryInfo } from '@/lib/constants';
 import { Navigate } from 'react-router-dom';
+import type { Expense } from '@/components/ExpenseTable';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [filters, setFilters] = useState({ category: 'all' });
+  const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
 
   const fetchExpenses = useCallback(async () => {
     if (!user) return;
@@ -59,6 +61,12 @@ export default function Dashboard() {
     fetchExpenses();
   }, [fetchExpenses]);
 
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name')
+      .then(({ data }) => setWallets(data || []));
+  }, [user]);
+
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPage(1);
@@ -67,7 +75,6 @@ export default function Dashboard() {
   const summary = useMemo(() => {
     const nonTransfers = expenses.filter(e => e.type !== 'transfer');
     const income = nonTransfers.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
-    // Exclude credit card purchases from cash flow — they only count when the invoice is paid
     const cashExpenses = nonTransfers.filter(e => e.type !== 'income' && !e.credit_card_id);
     const expenseTotal = cashExpenses.reduce((s, e) => s + e.value, 0);
     const balance = income - expenseTotal;
@@ -128,7 +135,7 @@ export default function Dashboard() {
               largestCategory={summary.largestCategory}
             />
 
-            <ExpenseTable
+            <TransactionFeed
               expenses={expenses}
               loading={loading}
               onDeleted={fetchExpenses}
@@ -137,6 +144,7 @@ export default function Dashboard() {
               page={page}
               totalPages={Math.ceil(totalCount / PAGE_SIZE)}
               onPageChange={setPage}
+              wallets={wallets}
             />
           </main>
         </div>
