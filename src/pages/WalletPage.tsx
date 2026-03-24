@@ -263,6 +263,38 @@ export default function WalletPage() {
     else { toast({ title: 'Cartão removido' }); fetchCards(); }
   };
 
+  // ─── Pay Invoice handler ───
+  const handlePayInvoice = async () => {
+    if (!user || !selectedCard || !payWalletId || invoiceTotal <= 0) return;
+    setPayingSaving(true);
+    const [y, m] = invoiceMonth.split('-').map(Number);
+    const payDate = new Date(y, m - 1, selectedCard.due_day);
+    const { error } = await supabase.from('expenses').insert({
+      user_id: user.id,
+      description: `Pagamento fatura ${selectedCard.name} - ${formatMonthLabel(invoiceMonth)}`,
+      value: invoiceTotal,
+      type: 'expense',
+      final_category: 'Cartão de Crédito',
+      date: payDate.toISOString().split('T')[0],
+      wallet_id: payWalletId,
+      payment_method: 'debit',
+      is_paid: true,
+      notes: `Pagamento automático da fatura do cartão ${selectedCard.name}`,
+    });
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      // Mark all invoice transactions as paid
+      await supabase.from('expenses').update({ is_paid: true }).eq('user_id', user.id).eq('credit_card_id', selectedCardId!).eq('invoice_month', invoiceMonth);
+      toast({ title: 'Fatura paga!', description: `${formatCurrency(invoiceTotal)} debitado da conta.` });
+      setPayInvoiceOpen(false);
+      setPayWalletId('');
+      fetchInvoiceTransactions();
+      fetchWallets();
+    }
+    setPayingSaving(false);
+  };
+
   // ─── Computed data ───
   const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValue(w), 0), [wallets]);
 
