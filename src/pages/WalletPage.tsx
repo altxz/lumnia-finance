@@ -157,6 +157,8 @@ export default function WalletPage() {
     setInvoiceLoading(false);
   }, [user, selectedCardId, invoiceMonth]);
 
+  useEffect(() => { fetchWallets(); }, [fetchWallets]);
+  useEffect(() => { fetchCards(); }, [fetchCards]);
   useEffect(() => { fetchInvoiceTransactions(); }, [fetchInvoiceTransactions]);
 
   const selectedCard = useMemo(() => cards.find(c => c.id === selectedCardId), [cards, selectedCardId]);
