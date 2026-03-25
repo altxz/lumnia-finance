@@ -14,6 +14,7 @@ import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { getCategoryInfo } from '@/lib/constants';
 import { Navigate } from 'react-router-dom';
+import { CashFlowChart } from '@/components/CashFlowChart';
 import type { Expense } from '@/components/ExpenseTable';
 
 const PAGE_SIZE = 20;
@@ -134,6 +135,8 @@ export default function Dashboard() {
               totalExpense={summary.totalExpense}
               largestCategory={summary.largestCategory}
             />
+
+            <CashFlowChart />
 
             <TransactionFeed
               expenses={expenses}
