@@ -33,6 +33,17 @@ export default function Dashboard() {
   const [filters, setFilters] = useState({ category: 'all' });
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
 
+  // Compute previous month date range
+  const { selectedMonth, selectedYear } = useSelectedDate();
+  const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+  const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+  const prevStartDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-01`;
+  const prevNextM = prevMonth === 11 ? 0 : prevMonth + 1;
+  const prevNextY = prevMonth === 11 ? prevYear + 1 : prevYear;
+  const prevEndDate = `${prevNextY}-${String(prevNextM + 1).padStart(2, '0')}-01`;
+
+  const [prevExpenses, setPrevExpenses] = useState<Expense[]>([]);
+
   const fetchExpenses = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -60,9 +71,20 @@ export default function Dashboard() {
     setLoading(false);
   }, [user, page, filters, startDate, endDate]);
 
-  useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+  // Fetch previous month expenses for trend comparison
+  const fetchPrevExpenses = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('date', prevStartDate)
+      .lt('date', prevEndDate);
+    setPrevExpenses(data || []);
+  }, [user, prevStartDate, prevEndDate]);
+
+  useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
+  useEffect(() => { fetchPrevExpenses(); }, [fetchPrevExpenses]);
 
   useEffect(() => {
     if (!user) return;
