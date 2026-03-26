@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, CATEGORIES, getCategoryInfo } from '@/lib/constants';
-import { ArrowUpCircle, ArrowDownCircle, Wallet, PiggyBank } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Wallet, PiggyBank, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface BudgetRow {
@@ -167,9 +167,17 @@ export default function BudgetPage() {
                   const budget = budgets[cat.value];
                   const allocated = budget?.allocated_amount || 0;
                   const spent = spentByCategory[cat.value] || 0;
-                  const spentPct = allocated > 0 ? Math.min(100, (spent / allocated) * 100) : (spent > 0 ? 100 : 0);
-                  const isOver = spent > allocated && allocated > 0;
+                  const spentPct = allocated > 0 ? (spent / allocated) * 100 : (spent > 0 ? 100 : 0);
+                  const clampedPct = Math.min(100, spentPct);
+                  const isOver = spentPct >= 100 && allocated > 0;
+                  const isWarning = spentPct >= 80 && spentPct < 100 && allocated > 0;
                   const catInfo = getCategoryInfo(cat.value);
+
+                  const barColor = isOver
+                    ? '[&>div]:bg-destructive'
+                    : isWarning
+                      ? '[&>div]:bg-orange-500'
+                      : '';
 
                   return (
                     <Card key={cat.value} className="rounded-2xl">
@@ -191,7 +199,6 @@ export default function BudgetPage() {
                               value={allocated || ''}
                               onChange={e => {
                                 const val = parseFloat(e.target.value) || 0;
-                                // Optimistic local update
                                 setBudgets(prev => ({
                                   ...prev,
                                   [cat.value]: { ...(prev[cat.value] || { id: '', category: cat.value, allocated_amount: 0 }), allocated_amount: val },
@@ -209,7 +216,8 @@ export default function BudgetPage() {
                           {/* Progress */}
                           <div className="flex-1 space-y-1">
                             <div className="flex justify-between text-xs">
-                              <span className={isOver ? 'text-destructive font-semibold' : 'text-muted-foreground'}>
+                              <span className={`flex items-center gap-1 ${isOver ? 'text-destructive font-semibold' : isWarning ? 'text-orange-600 font-semibold' : 'text-muted-foreground'}`}>
+                                {isOver && <AlertTriangle className="h-3.5 w-3.5" />}
                                 {formatCurrency(spent)} gasto
                               </span>
                               <span className="text-muted-foreground">
@@ -218,13 +226,19 @@ export default function BudgetPage() {
                             </div>
                             <div className="relative">
                               <Progress
-                                value={spentPct}
-                                className={`h-2.5 ${isOver ? '[&>div]:bg-destructive' : ''}`}
+                                value={clampedPct}
+                                className={`h-2.5 ${barColor}`}
                               />
                             </div>
                             {isOver && (
-                              <p className="text-[11px] text-destructive font-medium">
+                              <p className="text-[11px] text-destructive font-medium flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
                                 Ultrapassou em {formatCurrency(spent - allocated)}
+                              </p>
+                            )}
+                            {isWarning && (
+                              <p className="text-[11px] text-orange-600 font-medium">
+                                Atenção: próximo do limite ({spentPct.toFixed(0)}%)
                               </p>
                             )}
                           </div>
