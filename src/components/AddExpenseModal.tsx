@@ -254,6 +254,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
           tags: tags.length > 0 ? tags : null,
           installment_group_id: groupId,
           installment_info: `${i + 1}/${numInstallments}`,
+          project_id: projectId || null,
         };
       });
 
