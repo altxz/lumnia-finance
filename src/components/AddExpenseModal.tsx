@@ -289,6 +289,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         tags: tags.length > 0 ? tags : null,
         installment_group_id: null,
         installment_info: null,
+        project_id: projectId || null,
       });
       if (error) {
         toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
