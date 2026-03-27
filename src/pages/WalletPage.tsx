@@ -206,7 +206,7 @@ export default function WalletPage() {
 
 
   // ─── Wallet handlers ───
-  const resetWalletForm = () => setWalletForm({ name: '', asset_type: 'checking_account', current_balance: '', crypto_symbol: '', crypto_amount: '', crypto_price: '' });
+  const resetWalletForm = () => setWalletForm({ name: '', asset_type: 'checking_account', currency: 'BRL', current_balance: '', crypto_symbol: '', crypto_amount: '', crypto_price: '' });
 
   const handleAddWallet = async () => {
     if (!walletForm.name.trim()) {
