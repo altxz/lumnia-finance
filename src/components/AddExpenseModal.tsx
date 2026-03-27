@@ -323,6 +323,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     setNotes('');
     setTags([]);
     setTagInput('');
+    setProjectId('');
   };
 
   const aiCategoryInfo = categoryAi ? getCategoryInfo(categoryAi) : null;
