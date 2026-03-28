@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
   const [hasOverdueCards, setHasOverdueCards] = useState(false);
+  const [startingMonthBalance, setStartingMonthBalance] = useState(0);
 
   // Compute previous month date range
   const { selectedMonth, selectedYear } = useSelectedDate();
@@ -92,12 +93,34 @@ export default function Dashboard() {
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
   useEffect(() => { fetchPrevExpenses(); }, [fetchPrevExpenses]);
 
-  // Fetch wallets
+  // Fetch wallets + starting month balance
   useEffect(() => {
     if (!user) return;
-    supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name')
-      .then(({ data }) => setWallets(data || []));
-  }, [user]);
+    (async () => {
+      const { data: walletsData } = await supabase
+        .from('wallets').select('id, name, initial_balance').eq('user_id', user.id).order('name');
+      const wList = walletsData || [];
+      setWallets(wList.map(w => ({ id: w.id, name: w.name })));
+
+      const walletsTotal = wList.reduce((s, w: any) => s + (w.initial_balance || 0), 0);
+
+      // Sum all paid non-transfer transactions before this month
+      const { data: priorTxns } = await supabase
+        .from('expenses')
+        .select('value, type, credit_card_id')
+        .eq('user_id', user.id)
+        .eq('is_paid', true)
+        .lt('date', startDate);
+
+      let priorBalance = walletsTotal;
+      (priorTxns || []).forEach((t: any) => {
+        if (t.type === 'transfer') return;
+        if (t.type === 'income') priorBalance += t.value;
+        else if (!t.credit_card_id) priorBalance -= t.value;
+      });
+      setStartingMonthBalance(priorBalance);
+    })();
+  }, [user, startDate]);
 
   // Fetch budget alerts — check which categories are ≥80% spent
   useEffect(() => {
