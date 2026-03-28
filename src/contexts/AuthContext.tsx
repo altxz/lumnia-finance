@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { seedDefaultCategories } from '@/lib/seedCategories';
 
 interface AuthContextType {
   user: User | null;
@@ -23,12 +24,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        seedDefaultCategories(session.user.id).catch(console.error);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        seedDefaultCategories(session.user.id).catch(console.error);
+      }
     });
 
     return () => subscription.unsubscribe();

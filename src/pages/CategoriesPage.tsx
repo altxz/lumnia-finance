@@ -16,7 +16,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PlusCircle, Pencil, Eye, BarChart3, Trash2, Tag, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { CATEGORIES } from '@/lib/constants';
 import { icons } from 'lucide-react';
 
 interface Category {
