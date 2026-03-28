@@ -271,6 +271,11 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 <span className="font-medium text-foreground">{fileName}</span>
                 <span>— {transactions.length} transações encontradas</span>
+                {rulesAppliedCount > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-accent-foreground bg-accent/20 px-2 py-0.5 rounded-full">
+                    <Zap className="h-3 w-3" />{rulesAppliedCount} categorizadas por regras
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <Label className="text-sm whitespace-nowrap">Conta de destino:</Label>
