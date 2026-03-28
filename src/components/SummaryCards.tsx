@@ -51,7 +51,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
   const navigate = useNavigate();
 
   return (
-    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div className={`grid gap-3 grid-cols-2 ${healthScore ? 'md:grid-cols-3 lg:grid-cols-5' : 'md:grid-cols-4'}`}>
       <SummaryCard className="bg-primary text-primary-foreground">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
