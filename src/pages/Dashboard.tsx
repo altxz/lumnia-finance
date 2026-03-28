@@ -28,6 +28,7 @@ import { SubcategoryTreemap } from '@/components/analytics/SubcategoryTreemap';
 import { SavingsRateGauge } from '@/components/analytics/SavingsRateGauge';
 import { WeekComparisonChart } from '@/components/analytics/WeekComparisonChart';
 import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
+import { WaterfallChart } from '@/components/analytics/WaterfallChart';
 import type { Expense } from '@/components/ExpenseTable';
 
 function DashboardSkeleton() {
@@ -234,6 +235,7 @@ export default function Dashboard() {
                   <IncomeVsExpenseChart />
                   <TopCategoriesPie expenses={expenses} categories={dbCategories} />
                   <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} />
+                  <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} />
                   <EndOfMonthForecast />
                   <DailySpendingChart expenses={expenses} />
                   <CreditUsageChart />
