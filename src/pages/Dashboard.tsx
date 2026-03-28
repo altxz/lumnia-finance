@@ -249,7 +249,7 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
               <SummaryCards
-              balance={summary.balance}
+              balance={totalRealBalance}
               totalIncome={summary.totalIncome}
               totalExpense={summary.totalExpense}
               largestCategory={summary.largestCategory}
