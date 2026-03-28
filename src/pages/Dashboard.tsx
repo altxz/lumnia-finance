@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
   const [hasOverdueCards, setHasOverdueCards] = useState(false);
   const [startingMonthBalance, setStartingMonthBalance] = useState(0);
+  const [totalRealBalance, setTotalRealBalance] = useState(0);
 
   // Compute previous month date range
   const { selectedMonth, selectedYear } = useSelectedDate();
@@ -105,21 +106,31 @@ export default function Dashboard() {
 
       const walletsTotal = wList.reduce((s, w: any) => s + (w.initial_balance || 0), 0);
 
-      // Sum all paid non-transfer transactions before this month
-      const { data: priorTxns } = await supabase
+      // Fetch ALL paid non-transfer transactions
+      const { data: allTxns } = await supabase
         .from('expenses')
-        .select('value, type, credit_card_id')
+        .select('value, type, credit_card_id, date')
         .eq('user_id', user.id)
-        .eq('is_paid', true)
-        .lt('date', startDate);
+        .eq('is_paid', true);
 
+      // Calculate starting month balance (transactions before this month)
       let priorBalance = walletsTotal;
-      (priorTxns || []).forEach((t: any) => {
+      (allTxns || []).forEach((t: any) => {
         if (t.type === 'transfer') return;
+        if (t.date >= startDate) return; // skip current month for prior balance
         if (t.type === 'income') priorBalance += t.value;
         else if (!t.credit_card_id) priorBalance -= t.value;
       });
       setStartingMonthBalance(priorBalance);
+
+      // Calculate total real balance (all time)
+      let realBalance = walletsTotal;
+      (allTxns || []).forEach((t: any) => {
+        if (t.type === 'transfer') return;
+        if (t.type === 'income') realBalance += t.value;
+        else if (!t.credit_card_id) realBalance -= t.value;
+      });
+      setTotalRealBalance(realBalance);
     })();
   }, [user, startDate]);
 
