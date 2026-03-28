@@ -50,7 +50,23 @@ function formatGroupDate(dateStr: string): string {
 
 export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages, onPageChange, wallets = [], startingMonthBalance = 0 }: TransactionFeedProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
 
+  const handleDelete = async () => {
+    if (!deletingExpense) return;
+    setDeleting(true);
+    const { error } = await supabase.from('expenses').delete().eq('id', deletingExpense.id);
+    setDeleting(false);
+    setDeletingExpense(null);
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Transação excluída' });
+      onDeleted();
+    }
+  };
   const grouped = useMemo(() => {
     const groups: Record<string, Expense[]> = {};
     expenses.forEach(exp => {
