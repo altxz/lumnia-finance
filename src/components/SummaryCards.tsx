@@ -114,7 +114,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
       </SummaryCard>
 
       {healthScore && (
-        <div className="col-span-2 sm:col-span-1">
+        <div className="col-span-2 md:col-span-1">
           {healthScore}
         </div>
       )}
