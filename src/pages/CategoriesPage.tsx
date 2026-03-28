@@ -329,6 +329,19 @@ export default function CategoriesPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
+              <Label>Categoria Pai (opcional)</Label>
+              <select
+                value={form.parent_id}
+                onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
+                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Nenhuma (Categoria Principal)</option>
+                {categories.filter(c => !c.parent_id && c.id !== editingCategory?.id).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
               <Label>Nome da categoria</Label>
               <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Alimentação" className="rounded-xl h-11" />
             </div>
