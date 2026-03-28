@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CATEGORIES, formatCurrency } from '@/lib/constants';
+import { formatCurrency } from '@/lib/constants';
 import { EditExpenseModal } from '@/components/EditExpenseModal';
 import type { Expense } from '@/components/ExpenseTable';
 
@@ -46,7 +45,7 @@ function formatGroupDate(dateStr: string): string {
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', weekday: 'long' });
 }
 
-export function TransactionFeed({ expenses, loading, onDeleted, filters, onFilterChange, page, totalPages, onPageChange, wallets = [], startingMonthBalance = 0 }: TransactionFeedProps) {
+export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages, onPageChange, wallets = [], startingMonthBalance = 0 }: TransactionFeedProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const grouped = useMemo(() => {
@@ -56,7 +55,6 @@ export function TransactionFeed({ expenses, loading, onDeleted, filters, onFilte
       if (!groups[key]) groups[key] = [];
       groups[key].push(exp);
     });
-    // Sort ascending by date to compute running balance correctly
     const sorted = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
 
     let runningBalance = startingMonthBalance;
@@ -72,7 +70,6 @@ export function TransactionFeed({ expenses, loading, onDeleted, filters, onFilte
       result.push({ dateKey, items, endOfDayBalance: runningBalance });
     }
 
-    // Reverse so newest day is on top
     return result.reverse();
   }, [expenses, startingMonthBalance]);
 
@@ -84,38 +81,27 @@ export function TransactionFeed({ expenses, loading, onDeleted, filters, onFilte
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 sm:gap-3">
-        <Select value={filters.category} onValueChange={v => onFilterChange('category', v)}>
-          <SelectTrigger className="w-[130px] sm:w-[160px] rounded-xl text-sm">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            {CATEGORIES.map(cat => (
-              <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {loading ? (
         <p className="text-center py-12 text-muted-foreground">Carregando...</p>
       ) : expenses.length === 0 ? (
         <p className="text-center py-12 text-muted-foreground">Nenhuma transação encontrada.</p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {grouped.map(({ dateKey, items, endOfDayBalance }) => (
             <div key={dateKey}>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {/* Day header — Mobills style */}
+              <div className="flex items-center justify-between px-3 py-2.5 bg-muted/60 rounded-t-xl border border-b-0 border-border">
+                <h3 className="text-sm font-bold text-foreground capitalize">
                   {formatGroupDate(dateKey)}
                 </h3>
-                <div className={`flex items-center gap-1 text-xs font-semibold ${endOfDayBalance >= 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
-                  <Wallet className="h-3 w-3" />
+                <div className={`flex items-center gap-1.5 text-sm font-bold ${endOfDayBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                  <Wallet className="h-3.5 w-3.5" />
                   <span>{endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
                 </div>
               </div>
-              <div className="rounded-2xl border bg-card overflow-hidden divide-y divide-border">
+
+              {/* Transactions list */}
+              <div className="rounded-b-xl border border-t-0 bg-card overflow-hidden divide-y divide-border">
                 {items.map(exp => {
                   const catData = CATEGORY_ICONS[exp.final_category] || CATEGORY_ICONS.outros;
                   const Icon = catData.icon;
@@ -133,7 +119,7 @@ export function TransactionFeed({ expenses, loading, onDeleted, filters, onFilte
                       {/* Category icon */}
                       <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${catData.bg}`}>
                         {isTransfer ? (
-                          <ArrowLeftRight className={`h-4.5 w-4.5 ${catData.text}`} />
+                          <ArrowLeftRight className="h-4.5 w-4.5" />
                         ) : (
                           <Icon className={`h-4.5 w-4.5 ${catData.text}`} />
                         )}
