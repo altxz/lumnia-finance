@@ -180,7 +180,7 @@ export default function Dashboard() {
       balance,
       totalIncome: income,
       totalExpense: expenseTotal,
-      largestCategory: largest ? { name: getCategoryInfo(largest[0]).label, total: largest[1] } : null,
+      largestCategory: largest ? { name: getCategoryInfo(largest[0]).label, total: largest[1], categoryKey: largest[0] } : null,
     };
   }, [expenses]);
 
