@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SummaryCards } from '@/components/SummaryCards';
-import { TransactionFeed } from '@/components/TransactionFeed';
 import { AddExpenseModal } from '@/components/AddExpenseModal';
 
 import { DashboardHeader } from '@/components/DashboardHeader';
