@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Camera, User, Calendar, BarChart3 } from 'lucide-react';
+import { Camera, User, Calendar, BarChart3, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/constants';
@@ -148,6 +149,28 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
           </div>
         </CardContent>
       </Card>
+
+      <ImportDataSection />
     </div>
+  );
+}
+
+function ImportDataSection() {
+  const [importOpen, setImportOpen] = useState(false);
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <CardTitle className="text-lg">Importação de Dados</CardTitle>
+        <CardDescription>Importe transações a partir de ficheiros CSV exportados do seu banco ou app financeiro.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2 rounded-xl h-11 font-semibold">
+          <Upload className="h-4 w-4" />
+          Importar CSV
+        </Button>
+      </CardContent>
+      <ImportTransactionsModal open={importOpen} onOpenChange={setImportOpen} onImported={() => {}} />
+    </Card>
   );
 }
