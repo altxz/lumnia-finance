@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -102,7 +103,7 @@ const TYPE_STYLES = {
 } as const;
 
 export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpenseModalProps) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
   const [type, setType] = useState<'income' | 'expense' | 'transfer'>('expense');
@@ -320,7 +321,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   };
 
   const resetForm = () => {
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(format(new Date(), 'yyyy-MM-dd'));
     setDescription('');
     setValue('');
     setType('expense');

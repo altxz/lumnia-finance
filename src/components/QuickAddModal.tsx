@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -59,7 +60,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
       value: numValue,
       type,
       final_category: type === 'income' ? 'salary' : category,
-      date: new Date().toISOString().slice(0, 10),
+      date: format(new Date(), 'yyyy-MM-dd'),
       is_paid: true,
       wallet_id: defaultWalletId,
     });
