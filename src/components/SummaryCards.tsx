@@ -7,7 +7,7 @@ interface SummaryCardsProps {
   balance: number;
   totalIncome: number;
   totalExpense: number;
-  largestCategory: { name: string; total: number } | null;
+  largestCategory: { name: string; total: number; categoryKey: string } | null;
   prevBalance?: number;
   prevIncome?: number;
   prevExpense?: number;
