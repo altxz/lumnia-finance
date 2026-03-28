@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PlusCircle, Pencil, Eye, BarChart3, Trash2, Tag, Loader2 } from 'lucide-react';
+import { PlusCircle, Pencil, BarChart3, Trash2, Tag, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { icons } from 'lucide-react';
 
