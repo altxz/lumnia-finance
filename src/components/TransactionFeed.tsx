@@ -127,11 +127,11 @@ export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages
 
                       {/* Description + wallet */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{exp.description}</p>
+                        <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
                         {walletName && (
                           <div className="flex items-center gap-1 mt-0.5">
                             <Wallet className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground truncate">{walletName}</span>
+                            <span className="text-xs text-muted-foreground truncate" title={walletName}>{walletName}</span>
                           </div>
                         )}
                       </div>

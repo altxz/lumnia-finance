@@ -76,9 +76,9 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
           className="w-full justify-between rounded-xl h-11 font-normal"
         >
           {selectedCategory ? (
-            <span className="flex items-center gap-2 truncate">
+            <span className="flex items-center gap-2 truncate" title={selectedCategory.name}>
               <DynamicIcon name={selectedCategory.icon} className="h-4 w-4 shrink-0" style={{ color: selectedCategory.color }} />
-              {selectedCategory.name}
+              <span className="truncate">{selectedCategory.name}</span>
             </span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -110,7 +110,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                   }}
                 >
                   <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
-                  <span className="font-semibold flex-1 text-left truncate">{group.name}</span>
+                  <span className="font-semibold flex-1 text-left truncate" title={group.name}>{group.name}</span>
                   {!hasSubs && value === group.name.toLowerCase() && (
                     <Check className="h-4 w-4 text-primary shrink-0" />
                   )}
@@ -135,7 +135,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                         onClick={() => handleSelect(sub.name)}
                       >
                         <DynamicIcon name={sub.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: sub.color }} />
-                        <span className="flex-1 text-left truncate">{sub.name}</span>
+                        <span className="flex-1 text-left truncate" title={sub.name}>{sub.name}</span>
                         {value === sub.name.toLowerCase() && (
                           <Check className="h-4 w-4 text-primary shrink-0" />
                         )}
