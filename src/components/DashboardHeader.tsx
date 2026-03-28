@@ -1,15 +1,18 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, Sun, Moon, Monitor } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
   const { toggleSidebar } = useSidebar();
+  const { theme, setTheme } = useTheme();
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -47,6 +50,29 @@ export function DashboardHeader() {
             Olá, <span className="font-semibold text-foreground">{displayName}</span>
           </span>
         </div>
+
+        {/* Theme Toggle */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-xl">
+              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Alternar tema</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-xl">
+            <DropdownMenuItem onClick={() => setTheme('light')} className="gap-2 cursor-pointer">
+              <Sun className="h-4 w-4" /> Claro
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('dark')} className="gap-2 cursor-pointer">
+              <Moon className="h-4 w-4" /> Escuro
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('system')} className="gap-2 cursor-pointer">
+              <Monitor className="h-4 w-4" /> Sistema
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <NotificationBell />
         <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 rounded-xl">
           <LogOut className="h-4 w-4" />

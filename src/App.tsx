@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,33 +22,35 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <DateProvider>
-          <UserSettingsProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/categorias" element={<CategoriesPage />} />
-                <Route path="/historico" element={<HistoryPage />} />
-                <Route path="/configuracoes" element={<SettingsPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/wallet" element={<WalletPage />} />
-                <Route path="/orcamento" element={<BudgetPage />} />
-                <Route path="/projetos" element={<ProjectsPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <AuthenticatedExtras />
-            </BrowserRouter>
-          </UserSettingsProvider>
-        </DateProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <DateProvider>
+            <UserSettingsProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/categorias" element={<CategoriesPage />} />
+                  <Route path="/historico" element={<HistoryPage />} />
+                  <Route path="/configuracoes" element={<SettingsPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/wallet" element={<WalletPage />} />
+                  <Route path="/orcamento" element={<BudgetPage />} />
+                  <Route path="/projetos" element={<ProjectsPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <AuthenticatedExtras />
+              </BrowserRouter>
+            </UserSettingsProvider>
+          </DateProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
