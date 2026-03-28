@@ -287,6 +287,20 @@ export default function Dashboard() {
 
             <CashFlowChart />
 
+            {/* Analytics Grid */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              <IncomeVsExpenseChart />
+              <TopCategoriesPie expenses={expenses} categories={dbCategories} />
+              <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} />
+              <EndOfMonthForecast />
+              <DailySpendingChart expenses={expenses} />
+              <CreditUsageChart />
+              <FixedVsVariableChart expenses={expenses} />
+              <SubcategoryTreemap expenses={expenses} categories={dbCategories} />
+              <WeekComparisonChart expenses={expenses} />
+              <IncomeSourcesPie expenses={expenses} categories={dbCategories} />
+            </div>
+
             <Tabs defaultValue="lancamentos" className="space-y-4">
               <TabsList className="rounded-xl">
                 <TabsTrigger value="lancamentos" className="rounded-lg text-sm">Lançamentos</TabsTrigger>
