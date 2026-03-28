@@ -102,6 +102,8 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 
