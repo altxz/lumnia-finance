@@ -198,12 +198,46 @@ export type Database = {
         }
         Relationships: []
       }
+      debts: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          person_name: string
+          remaining_amount: number
+          total_amount: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          person_name: string
+          remaining_amount: number
+          total_amount: number
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          person_name?: string
+          remaining_amount?: number
+          total_amount?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           category_ai: string | null
           created_at: string
           credit_card_id: string | null
           date: string
+          debt_id: string | null
           description: string
           destination_wallet_id: string | null
           final_category: string
@@ -229,6 +263,7 @@ export type Database = {
           created_at?: string
           credit_card_id?: string | null
           date?: string
+          debt_id?: string | null
           description: string
           destination_wallet_id?: string | null
           final_category: string
@@ -254,6 +289,7 @@ export type Database = {
           created_at?: string
           credit_card_id?: string | null
           date?: string
+          debt_id?: string | null
           description?: string
           destination_wallet_id?: string | null
           final_category?: string
@@ -280,6 +316,13 @@ export type Database = {
             columns: ["credit_card_id"]
             isOneToOne: false
             referencedRelation: "credit_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "debts"
             referencedColumns: ["id"]
           },
           {
