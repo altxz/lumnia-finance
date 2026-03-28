@@ -147,6 +147,15 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   const selectedCard = useMemo(() => creditCards.find(c => c.id === creditCardId), [creditCards, creditCardId]);
 
+  const groupedCategories = useMemo(() => {
+    const parents = dbCategories.filter(c => !c.parent_id);
+    const children = dbCategories.filter(c => !!c.parent_id);
+    return parents.map(p => ({
+      ...p,
+      subs: children.filter(c => c.parent_id === p.id),
+    }));
+  }, [dbCategories]);
+
   useEffect(() => {
     if (paymentMethod === 'credit' && selectedCard && date) {
       setInvoiceMonth(calcInvoiceMonth(selectedCard, date));
