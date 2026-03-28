@@ -128,6 +128,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   const [tagInput, setTagInput] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+  const { settings: moduleSettings } = useUserSettings();
 
   const style = TYPE_STYLES[type];
 
