@@ -370,6 +370,9 @@ export type Database = {
           bio: string | null
           created_at: string
           currency: string
+          enable_budget_module: boolean
+          enable_crypto_module: boolean
+          enable_projects_module: boolean
           full_name: string | null
           id: string
           notify_app_achievements: boolean
@@ -393,6 +396,9 @@ export type Database = {
           bio?: string | null
           created_at?: string
           currency?: string
+          enable_budget_module?: boolean
+          enable_crypto_module?: boolean
+          enable_projects_module?: boolean
           full_name?: string | null
           id?: string
           notify_app_achievements?: boolean
@@ -416,6 +422,9 @@ export type Database = {
           bio?: string | null
           created_at?: string
           currency?: string
+          enable_budget_module?: boolean
+          enable_crypto_module?: boolean
+          enable_projects_module?: boolean
           full_name?: string | null
           id?: string
           notify_app_achievements?: boolean
