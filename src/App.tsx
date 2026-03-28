@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateProvider } from "@/contexts/DateContext";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/projetos" element={<ProjectsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <FloatingActionButton />
           </BrowserRouter>
         </DateProvider>
       </AuthProvider>
