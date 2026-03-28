@@ -51,73 +51,81 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
   const navigate = useNavigate();
 
   return (
-    <div className={`grid gap-3 grid-cols-2 ${healthScore ? 'md:grid-cols-3 lg:grid-cols-5' : 'md:grid-cols-4'}`}>
-      <SummaryCard className="bg-primary text-primary-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
-            <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Saldo Total</p>
-            <p className={`text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate ${balance < 0 ? 'text-red-300' : ''}`}>
-              {balance >= 0 ? '+' : ''}{formatCurrency(balance)}
-            </p>
-            {prevBalance !== undefined && <TrendBadge current={balance} previous={prevBalance} />}
-          </div>
-        </div>
-      </SummaryCard>
+    <div className={`grid gap-3 sm:gap-4 ${healthScore ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
 
-      <SummaryCard className="bg-green-600 text-white cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=income')}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Entradas</p>
-            <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">+{formatCurrency(totalIncome)}</p>
-            {prevIncome !== undefined && <TrendBadge current={totalIncome} previous={prevIncome} />}
-          </div>
-        </div>
-      </SummaryCard>
+      {/* Bloco Esquerdo: Os 4 cards de métricas */}
+      <div className={`grid gap-3 sm:gap-4 grid-cols-2 ${healthScore ? 'lg:col-span-2' : 'col-span-full lg:col-span-4 lg:grid-cols-4'}`}>
 
-      <SummaryCard className="bg-destructive text-destructive-foreground cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=expense')}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center shrink-0">
-            <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+        <SummaryCard className="bg-primary text-primary-foreground">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
+              <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Saldo Total</p>
+              <p className={`text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate ${balance < 0 ? 'text-red-300' : ''}`}>
+                {balance >= 0 ? '+' : ''}{formatCurrency(balance)}
+              </p>
+              {prevBalance !== undefined && <TrendBadge current={balance} previous={prevBalance} />}
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Saídas</p>
-            <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">-{formatCurrency(totalExpense)}</p>
-            {prevExpense !== undefined && <TrendBadge current={totalExpense} previous={prevExpense} invertColor />}
-          </div>
-        </div>
-      </SummaryCard>
+        </SummaryCard>
 
-      <SummaryCard
-        className={`bg-pink text-pink-foreground ${largestCategory ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
-        onClick={() => largestCategory && navigate(`/historico?category=${encodeURIComponent(largestCategory.categoryKey)}`)}
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center shrink-0">
-            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+        <SummaryCard className="bg-green-600 text-white cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=income')}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Entradas</p>
+              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">+{formatCurrency(totalIncome)}</p>
+              {prevIncome !== undefined && <TrendBadge current={totalIncome} previous={prevIncome} />}
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Maior Categoria</p>
-            <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">
-              {largestCategory ? largestCategory.name : '—'}
-            </p>
-            {largestCategory && (
-              <p className="text-[10px] sm:text-xs opacity-70 truncate">{formatCurrency(largestCategory.total)}</p>
-            )}
-          </div>
-        </div>
-      </SummaryCard>
+        </SummaryCard>
 
+        <SummaryCard className="bg-destructive text-destructive-foreground cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=expense')}>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center shrink-0">
+              <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Saídas</p>
+              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">-{formatCurrency(totalExpense)}</p>
+              {prevExpense !== undefined && <TrendBadge current={totalExpense} previous={prevExpense} invertColor />}
+            </div>
+          </div>
+        </SummaryCard>
+
+        <SummaryCard
+          className={`bg-pink text-pink-foreground ${largestCategory ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+          onClick={() => largestCategory && navigate(`/historico?category=${encodeURIComponent(largestCategory.categoryKey)}`)}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center shrink-0">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Maior Categoria</p>
+              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">
+                {largestCategory ? largestCategory.name : '—'}
+              </p>
+              {largestCategory && (
+                <p className="text-[10px] sm:text-xs opacity-70 truncate">{formatCurrency(largestCategory.total)}</p>
+              )}
+            </div>
+          </div>
+        </SummaryCard>
+
+      </div>
+
+      {/* Bloco Direito: Score Financeiro */}
       {healthScore && (
-        <div className="col-span-2 md:col-span-1">
+        <div className="lg:col-span-1 h-full w-full [&>div]:h-full">
           {healthScore}
         </div>
       )}
+
     </div>
   );
 }
