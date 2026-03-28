@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CategoryPicker } from '@/components/CategoryPicker';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -544,33 +545,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 {aiCategoryInfo && !aiLoading && (
                   <Badge variant={aiCategoryInfo.variant} className="mb-1">{aiCategoryInfo.label}</Badge>
                 )}
-                <Select value={finalCategory} onValueChange={setFinalCategory}>
-                  <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
-                  <SelectContent className="max-h-64">
-                    {groupedCategories.length > 0 ? (
-                      groupedCategories.map(group => (
-                        <SelectGroup key={group.id}>
-                          <SelectLabel className="font-bold text-xs text-muted-foreground uppercase tracking-wider px-2 pt-2">
-                            {group.name}
-                          </SelectLabel>
-                          {group.subs.length > 0 ? (
-                            group.subs.map(sub => (
-                              <SelectItem key={sub.id} value={sub.name.toLowerCase()}>
-                                <span className="pl-2">{sub.name}</span>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value={group.name.toLowerCase()}>
-                              {group.name}
-                            </SelectItem>
-                          )}
-                        </SelectGroup>
-                      ))
-                    ) : (
-                      CATEGORIES.map(cat => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)
-                    )}
-                  </SelectContent>
-                </Select>
+                <CategoryPicker
+                  categories={dbCategories}
+                  value={finalCategory}
+                  onValueChange={setFinalCategory}
+                  placeholder="Selecione a categoria"
+                />
               </div>
 
               {/* Paid / Received toggle */}
