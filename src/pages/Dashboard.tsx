@@ -188,10 +188,9 @@ export default function Dashboard() {
                   <span className="hidden sm:inline">Importar CSV</span>
                   <span className="sm:hidden">CSV</span>
                 </Button>
-                <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-10 sm:h-11 px-4 sm:px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-sm">
+                <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-10 sm:h-11 px-4 sm:px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-sm hidden md:flex">
                   <PlusCircle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Nova Transação</span>
-                  <span className="sm:hidden">Nova</span>
+                  Nova Transação
                 </Button>
               </div>
             </div>

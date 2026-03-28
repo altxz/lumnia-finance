@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { QuickAddModal } from './QuickAddModal';
+import { AddExpenseModal } from './AddExpenseModal';
 
 interface FloatingActionButtonProps {
   onCreated?: () => void;
@@ -18,7 +18,7 @@ export function FloatingActionButton({ onCreated }: FloatingActionButtonProps) {
       >
         <Plus className="h-7 w-7" strokeWidth={2.5} />
       </button>
-      <QuickAddModal open={open} onOpenChange={setOpen} onCreated={onCreated} />
+      <AddExpenseModal open={open} onOpenChange={setOpen} onExpenseAdded={() => onCreated?.()} />
     </>
   );
 }
