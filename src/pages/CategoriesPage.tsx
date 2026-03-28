@@ -26,6 +26,7 @@ interface Category {
   keywords: string[];
   active: boolean;
   sort_order: number;
+  parent_id?: string | null;
   expense_count?: number;
   ai_accuracy?: number;
 }
@@ -56,7 +57,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: '', icon: 'tag', color: '#5447BC', keywords: '' });
+  const [form, setForm] = useState({ name: '', icon: 'tag', color: '#5447BC', keywords: '', parent_id: '' });
   const [saving, setSaving] = useState(false);
 
   const fetchCategories = useCallback(async () => {
