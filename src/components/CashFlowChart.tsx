@@ -21,50 +21,61 @@ export function CashFlowChart() {
   const { selectedMonth, selectedYear, startDate, endDate } = useSelectedDate();
   const [allExpenses, setAllExpenses] = useState<any[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
+  const [creditCards, setCreditCards] = useState<any[]>([]);
+  const [unpaidCreditExpenses, setUnpaidCreditExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
 
   useEffect(() => {
     if (!user) return;
     setLoading(true);
 
     const fetchAll = async () => {
-      // Fetch all expenses for the selected month (no pagination)
-      const { data: monthData } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('date', startDate)
-        .lt('date', endDate)
-        .order('date');
+      const [monthRes, recurringRes, cardsRes, unpaidCreditRes] = await Promise.all([
+        // All transactions for this month
+        supabase.from('expenses').select('*')
+          .eq('user_id', user.id)
+          .gte('date', startDate).lt('date', endDate)
+          .order('date'),
+        // All recurring transactions
+        supabase.from('expenses').select('*')
+          .eq('user_id', user.id)
+          .eq('is_recurring', true),
+        // Credit cards (for due_day)
+        supabase.from('credit_cards').select('id, name, due_day')
+          .eq('user_id', user.id),
+        // Unpaid credit card expenses for this invoice month
+        supabase.from('expenses').select('value, credit_card_id, invoice_month')
+          .eq('user_id', user.id)
+          .eq('is_paid', false)
+          .not('credit_card_id', 'is', null)
+          .eq('invoice_month', monthKey),
+      ]);
 
-      // Fetch recurring transactions for projection
-      const { data: recurring } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_recurring', true);
-
-      setAllExpenses(monthData || []);
-      setRecurringExpenses(recurring || []);
+      setAllExpenses(monthRes.data || []);
+      setRecurringExpenses(recurringRes.data || []);
+      setCreditCards(cardsRes.data || []);
+      setUnpaidCreditExpenses(unpaidCreditRes.data || []);
       setLoading(false);
     };
 
     fetchAll();
-  }, [user, startDate, endDate]);
+  }, [user, startDate, endDate, monthKey]);
 
   const today = new Date();
   const isCurrentMonth = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear;
   const isFutureMonth = new Date(selectedYear, selectedMonth) > new Date(today.getFullYear(), today.getMonth());
   const todayDay = isCurrentMonth ? today.getDate() : 0;
-
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const lastRealDay = isFutureMonth ? 0 : (isCurrentMonth ? todayDay : daysInMonth);
 
   const chartData = useMemo(() => {
     const days: DayData[] = [];
     let cumulativeIncome = 0;
     let cumulativeExpense = 0;
 
-    // Build a map of actual transactions by day
+    // Map actual transactions by day
     const incomeByDay: Record<number, number> = {};
     const expenseByDay: Record<number, number> = {};
 
@@ -74,25 +85,24 @@ export function CashFlowChart() {
       if (e.type === 'income') {
         incomeByDay[d] = (incomeByDay[d] || 0) + e.value;
       } else if (!e.credit_card_id) {
+        // Non-credit debit expenses
         expenseByDay[d] = (expenseByDay[d] || 0) + e.value;
       }
     });
 
-    // Build projected recurring amounts for future/remaining days
+    // === PROJECTIONS ===
     const projIncomeByDay: Record<number, number> = {};
     const projExpenseByDay: Record<number, number> = {};
 
     if (isFutureMonth || isCurrentMonth) {
+      // 1) Project recurring transactions
       recurringExpenses.forEach(r => {
         if (r.type === 'transfer') return;
-        // Use the original transaction day as the recurring day
         const recurDay = new Date(r.date + 'T12:00:00').getDate();
         const clampedDay = Math.min(recurDay, daysInMonth);
 
-        // Only project if: future month entirely, or current month but day hasn't passed
-        const shouldProject = isFutureMonth || (isCurrentMonth && clampedDay > todayDay);
-        // Don't project if there's already a real transaction on that day from the same recurring pattern
-        if (!shouldProject) return;
+        // Only project for future days
+        if (!isFutureMonth && !(isCurrentMonth && clampedDay > todayDay)) return;
 
         if (r.type === 'income') {
           projIncomeByDay[clampedDay] = (projIncomeByDay[clampedDay] || 0) + r.value;
@@ -100,10 +110,31 @@ export function CashFlowChart() {
           projExpenseByDay[clampedDay] = (projExpenseByDay[clampedDay] || 0) + r.value;
         }
       });
+
+      // 2) Project credit card bill payments on their due day
+      // Group unpaid credit expenses by card
+      const billByCard: Record<string, number> = {};
+      unpaidCreditExpenses.forEach(e => {
+        if (e.credit_card_id) {
+          billByCard[e.credit_card_id] = (billByCard[e.credit_card_id] || 0) + e.value;
+        }
+      });
+
+      // Place each card's bill total on its due_day
+      creditCards.forEach(card => {
+        const billAmount = billByCard[card.id];
+        if (!billAmount || billAmount <= 0) return;
+        const dueDay = Math.min(card.due_day || 10, daysInMonth);
+
+        // Only project if the due day is in the future
+        const isFutureDay = isFutureMonth || (isCurrentMonth && dueDay > todayDay);
+        if (isFutureDay) {
+          projExpenseByDay[dueDay] = (projExpenseByDay[dueDay] || 0) + billAmount;
+        }
+      });
     }
 
-    const lastRealDay = isFutureMonth ? 0 : (isCurrentMonth ? todayDay : daysInMonth);
-
+    // Build chart data
     for (let d = 1; d <= daysInMonth; d++) {
       const isProjected = d > lastRealDay;
       const dayIncome = (incomeByDay[d] || 0) + (isProjected ? (projIncomeByDay[d] || 0) : 0);
@@ -123,7 +154,7 @@ export function CashFlowChart() {
     }
 
     return days;
-  }, [allExpenses, recurringExpenses, daysInMonth, isCurrentMonth, isFutureMonth, todayDay]);
+  }, [allExpenses, recurringExpenses, unpaidCreditExpenses, creditCards, daysInMonth, isCurrentMonth, isFutureMonth, todayDay, lastRealDay]);
 
   const lastPoint = chartData[chartData.length - 1];
   const endBalance = lastPoint?.saldo || 0;
