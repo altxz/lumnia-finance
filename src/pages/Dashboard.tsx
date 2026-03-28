@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Upload, AlertTriangle } from 'lucide-react';
+import { PlusCircle, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SummaryCards } from '@/components/SummaryCards';
 import { TransactionFeed } from '@/components/TransactionFeed';
 import { AddExpenseModal } from '@/components/AddExpenseModal';
-import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
+
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { InstallPwaPrompt } from '@/components/InstallPwaPrompt';
 import { AnomalyInsights } from '@/components/analytics/AnomalyInsights';
@@ -31,7 +31,7 @@ export default function Dashboard() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [importModalOpen, setImportModalOpen] = useState(false);
+  
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [filters, setFilters] = useState({ category: 'all' });
@@ -229,11 +229,6 @@ export default function Dashboard() {
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">Gerencie receitas e despesas com IA</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setImportModalOpen(true)} className="gap-2 rounded-xl h-10 sm:h-11 px-3 sm:px-5 font-semibold text-sm">
-                  <Upload className="h-4 w-4" />
-                  <span className="hidden sm:inline">Importar CSV</span>
-                  <span className="sm:hidden">CSV</span>
-                </Button>
                 <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-10 sm:h-11 px-4 sm:px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-sm hidden md:flex">
                   <PlusCircle className="h-4 w-4" />
                   Nova Transação
@@ -293,7 +288,7 @@ export default function Dashboard() {
         </div>
       </div>
       <AddExpenseModal open={modalOpen} onOpenChange={setModalOpen} onExpenseAdded={fetchExpenses} />
-      <ImportTransactionsModal open={importModalOpen} onOpenChange={setImportModalOpen} onImported={fetchExpenses} />
+      
     </SidebarProvider>
   );
 }
