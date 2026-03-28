@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, Menu } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export function DashboardHeader() {
   const { user, signOut } = useAuth();
@@ -16,10 +17,11 @@ export function DashboardHeader() {
         </Button>
         <h2 className="text-lg font-bold hidden sm:block">Painel de Despesas</h2>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <span className="text-sm text-muted-foreground hidden sm:inline">
           Olá, <span className="font-semibold text-foreground">{displayName}</span>
         </span>
+        <NotificationBell />
         <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 rounded-xl">
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Sair</span>
