@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SummaryCards } from '@/components/SummaryCards';
 import { AddExpenseModal } from '@/components/AddExpenseModal';
-
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { InstallPwaPrompt } from '@/components/InstallPwaPrompt';
 import { AnomalyInsights } from '@/components/analytics/AnomalyInsights';
@@ -14,12 +12,11 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
-import { getCategoryInfo, CATEGORIES } from '@/lib/constants';
+import { getCategoryInfo } from '@/lib/constants';
 import { Navigate } from 'react-router-dom';
 import { CashFlowChart } from '@/components/CashFlowChart';
 import { HealthScore } from '@/components/HealthScore';
 import { CalendarView } from '@/components/CalendarView';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IncomeVsExpenseChart } from '@/components/analytics/IncomeVsExpenseChart';
 import { TopCategoriesPie } from '@/components/analytics/TopCategoriesPie';
 import { CreditUsageChart } from '@/components/analytics/CreditUsageChart';
@@ -32,22 +29,14 @@ import { WeekComparisonChart } from '@/components/analytics/WeekComparisonChart'
 import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
 import type { Expense } from '@/components/ExpenseTable';
 
-const PAGE_SIZE = 20;
-
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { startDate, endDate } = useSelectedDate();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  
-  const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [filters, setFilters] = useState({ category: 'all' });
-  const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
   const [hasOverdueCards, setHasOverdueCards] = useState(false);
-  const [startingMonthBalance, setStartingMonthBalance] = useState(0);
   const [totalRealBalance, setTotalRealBalance] = useState(0);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
 
