@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
@@ -238,14 +238,8 @@ export function CashFlowChart() {
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="gradSaldo" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
             <XAxis
               dataKey="label"
@@ -255,6 +249,7 @@ export function CashFlowChart() {
               interval={tickInterval}
             />
             <YAxis
+              yAxisId="bars"
               tickFormatter={(v) => {
                 if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
                 return `R$${v.toFixed(0)}`;
@@ -263,6 +258,19 @@ export function CashFlowChart() {
               axisLine={false}
               tickLine={false}
               width={55}
+              orientation="left"
+            />
+            <YAxis
+              yAxisId="line"
+              tickFormatter={(v) => {
+                if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
+                return `R$${v.toFixed(0)}`;
+              }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+              width={55}
+              orientation="right"
               domain={['auto', 'auto']}
             />
             <Tooltip
@@ -271,12 +279,13 @@ export function CashFlowChart() {
                 const point = payload[0]?.payload as DayData;
                 return (
                   <div className="rounded-lg border bg-background p-2.5 text-xs shadow-lg">
-                    <p className="font-semibold mb-1">
+                    <p className="font-semibold mb-1.5">
                       {label} {point?.projected && <span className="text-muted-foreground">(projeção)</span>}
                     </p>
-                    {point?.receitas > 0 && <p className="text-emerald-500">Receitas: +{formatCurrency(point.receitas)}</p>}
-                    {point?.despesas > 0 && <p className="text-destructive">Despesas: -{formatCurrency(point.despesas)}</p>}
-                    <p className={`font-bold mt-1 ${(point?.saldo || 0) >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                    <p className="text-emerald-500">Entradas: +{formatCurrency(point?.receitas || 0)}</p>
+                    <p className="text-destructive">Saídas: -{formatCurrency(point?.despesas || 0)}</p>
+                    <hr className="my-1.5 border-border" />
+                    <p className={`font-bold ${(point?.saldo || 0) >= 0 ? 'text-primary' : 'text-destructive'}`}>
                       Saldo: {formatCurrency(point?.saldo || 0)}
                     </p>
                   </div>
@@ -284,22 +293,25 @@ export function CashFlowChart() {
               }}
             />
             <ReferenceLine
+              yAxisId="bars"
               x={todayStr}
               stroke="hsl(var(--muted-foreground))"
               strokeDasharray="4 4"
               strokeOpacity={0.6}
               label={{ value: 'Hoje', position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             />
-            <Area
+            <Bar yAxisId="bars" dataKey="receitas" fill="hsl(142, 71%, 45%)" radius={[3, 3, 0, 0]} barSize={8} opacity={0.85} />
+            <Bar yAxisId="bars" dataKey="despesas" fill="hsl(var(--destructive))" radius={[3, 3, 0, 0]} barSize={8} opacity={0.85} />
+            <Line
+              yAxisId="line"
               type="monotone"
               dataKey="saldo"
               stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              fill="url(#gradSaldo)"
+              strokeWidth={2.5}
               dot={false}
-              activeDot={{ r: 4, strokeWidth: 0 }}
+              activeDot={{ r: 4, strokeWidth: 0, fill: 'hsl(var(--primary))' }}
             />
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
