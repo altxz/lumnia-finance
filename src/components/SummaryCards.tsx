@@ -52,7 +52,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
               <Wallet className="h-4 w-4 sm:h-6 sm:w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] sm:text-sm font-medium opacity-80">Saldo do Mês</p>
+              <p className="text-[10px] sm:text-sm font-medium opacity-80">Saldo Total</p>
               <p className={`text-base sm:text-2xl font-bold tracking-tight ${balance < 0 ? 'text-red-300' : ''}`}>
                 {balance >= 0 ? '+' : ''}{formatCurrency(balance)}
               </p>
