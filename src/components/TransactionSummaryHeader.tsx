@@ -55,39 +55,46 @@ export function TransactionSummaryHeader({ expenses, startingMonthBalance }: Tra
       </p>
 
       {/* Three columns */}
-      <div className="grid grid-cols-3 gap-1 sm:gap-4 w-full mt-4 sm:mt-6 pt-4 border-t border-primary-foreground/20">
-        <div className="flex flex-col items-center gap-1 min-w-0">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-            <ArrowUpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-300" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-primary-foreground/20">
+        {/* Receitas */}
+        <div className="flex items-center justify-center sm:justify-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <ArrowUpCircle className="h-5 w-5 text-emerald-300" />
           </div>
-          <p className="text-[9px] sm:text-xs opacity-70 truncate">Receitas</p>
-          <p className="text-[10px] sm:text-sm font-bold truncate max-w-full">
-            {visible ? formatCurrency(totalIncome) : mask}
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center gap-1 min-w-0">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
-            <ArrowDownCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-300" />
+          <div className="flex flex-col text-left">
+            <span className="text-xs sm:text-sm opacity-70">Receitas</span>
+            <span className="text-sm sm:text-base font-bold">
+              {visible ? formatCurrency(totalIncome) : mask}
+            </span>
           </div>
-          <p className="text-[9px] sm:text-xs opacity-70 truncate">Despesas</p>
-          <p className="text-[10px] sm:text-sm font-bold truncate max-w-full">
-            {visible ? formatCurrency(totalExpense) : mask}
-          </p>
         </div>
-
-        <div className="flex flex-col items-center gap-1 min-w-0">
-          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 ${
+        {/* Despesas */}
+        <div className="flex items-center justify-center sm:justify-start gap-3 border-t sm:border-t-0 sm:border-l border-primary-foreground/20 pt-4 sm:pt-0 sm:pl-4">
+          <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+            <ArrowDownCircle className="h-5 w-5 text-red-300" />
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-xs sm:text-sm opacity-70">Despesas</span>
+            <span className="text-sm sm:text-base font-bold">
+              {visible ? formatCurrency(totalExpense) : mask}
+            </span>
+          </div>
+        </div>
+        {/* Balanço */}
+        <div className="flex items-center justify-center sm:justify-start gap-3 border-t sm:border-t-0 sm:border-l border-primary-foreground/20 pt-4 sm:pt-0 sm:pl-4">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
             balance >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20'
           }`}>
-            <Scale className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`} />
+            <Scale className={`h-5 w-5 ${balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`} />
           </div>
-          <p className="text-[9px] sm:text-xs opacity-70 truncate">Balanço</p>
-          <p className={`text-[10px] sm:text-sm font-bold truncate max-w-full ${
-            balance >= 0 ? 'text-emerald-300' : 'text-red-300'
-          }`}>
-            {visible ? (balance >= 0 ? '+' : '') + formatCurrency(balance) : mask}
-          </p>
+          <div className="flex flex-col text-left">
+            <span className="text-xs sm:text-sm opacity-70">Balanço</span>
+            <span className={`text-sm sm:text-base font-bold ${
+              balance >= 0 ? 'text-emerald-300' : 'text-red-300'
+            }`}>
+              {visible ? (balance >= 0 ? '+' : '') + formatCurrency(balance) : mask}
+            </span>
+          </div>
         </div>
       </div>
     </div>
