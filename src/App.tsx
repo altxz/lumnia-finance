@@ -6,8 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateProvider } from "@/contexts/DateContext";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
-import { FloatingActionButton } from "@/components/FloatingActionButton";
-import { GeniusChatbot } from "@/components/GeniusChatbot";
+import { AuthenticatedExtras } from "@/components/AuthenticatedExtras";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -42,8 +41,7 @@ const App = () => (
                 <Route path="/projetos" element={<ProjectsPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              <FloatingActionButton />
-              <GeniusChatbot />
+              <AuthenticatedExtras />
             </BrowserRouter>
           </UserSettingsProvider>
         </DateProvider>
