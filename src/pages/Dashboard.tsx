@@ -21,6 +21,16 @@ import { CashFlowChart } from '@/components/CashFlowChart';
 import { HealthScore } from '@/components/HealthScore';
 import { CalendarView } from '@/components/CalendarView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IncomeVsExpenseChart } from '@/components/analytics/IncomeVsExpenseChart';
+import { TopCategoriesPie } from '@/components/analytics/TopCategoriesPie';
+import { CreditUsageChart } from '@/components/analytics/CreditUsageChart';
+import { EndOfMonthForecast } from '@/components/analytics/EndOfMonthForecast';
+import { DailySpendingChart } from '@/components/analytics/DailySpendingChart';
+import { FixedVsVariableChart } from '@/components/analytics/FixedVsVariableChart';
+import { SubcategoryTreemap } from '@/components/analytics/SubcategoryTreemap';
+import { SavingsRateGauge } from '@/components/analytics/SavingsRateGauge';
+import { WeekComparisonChart } from '@/components/analytics/WeekComparisonChart';
+import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
 import type { Expense } from '@/components/ExpenseTable';
 
 const PAGE_SIZE = 20;
@@ -40,6 +50,7 @@ export default function Dashboard() {
   const [hasOverdueCards, setHasOverdueCards] = useState(false);
   const [startingMonthBalance, setStartingMonthBalance] = useState(0);
   const [totalRealBalance, setTotalRealBalance] = useState(0);
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
 
   // Compute previous month date range
   const { selectedMonth, selectedYear } = useSelectedDate();
@@ -94,6 +105,14 @@ export default function Dashboard() {
 
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
   useEffect(() => { fetchPrevExpenses(); }, [fetchPrevExpenses]);
+
+  // Fetch categories for chart components
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('categories').select('id, name, parent_id, icon, color')
+      .eq('user_id', user.id).order('sort_order')
+      .then(({ data }) => setDbCategories(data || []));
+  }, [user]);
 
   // Fetch wallets + starting month balance
   useEffect(() => {
@@ -267,6 +286,20 @@ export default function Dashboard() {
             </div>
 
             <CashFlowChart />
+
+            {/* Analytics Grid */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              <IncomeVsExpenseChart />
+              <TopCategoriesPie expenses={expenses} categories={dbCategories} />
+              <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} />
+              <EndOfMonthForecast />
+              <DailySpendingChart expenses={expenses} />
+              <CreditUsageChart />
+              <FixedVsVariableChart expenses={expenses} />
+              <SubcategoryTreemap expenses={expenses} categories={dbCategories} />
+              <WeekComparisonChart expenses={expenses} />
+              <IncomeSourcesPie expenses={expenses} categories={dbCategories} />
+            </div>
 
             <Tabs defaultValue="lancamentos" className="space-y-4">
               <TabsList className="rounded-xl">
