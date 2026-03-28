@@ -15,8 +15,9 @@ import { NotificationsSection } from '@/components/settings/NotificationsSection
 import { SecuritySection } from '@/components/settings/SecuritySection';
 import { PlansSection } from '@/components/settings/PlansSection';
 import { CategoriesSection } from '@/components/settings/CategoriesSection';
+import { ModulesSection } from '@/components/settings/ModulesSection';
 import { getCategoryInfo } from '@/lib/constants';
-import { Loader2, Save, User, Sparkles, Zap, Bell, Shield, Crown, Tag } from 'lucide-react';
+import { Loader2, Save, User, Sparkles, Zap, Bell, Shield, Crown, Tag, ToggleRight } from 'lucide-react';
 
 const DEFAULT_SETTINGS = {
   full_name: '',
@@ -163,6 +164,7 @@ export default function SettingsPage() {
                     <TabsTrigger value="notifications" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Notificações</span><span className="sm:hidden">Notif.</span></TabsTrigger>
                     <TabsTrigger value="security" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden xs:inline">Segurança</span><span className="xs:hidden">Seg.</span></TabsTrigger>
                     <TabsTrigger value="categories" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Categorias</span><span className="sm:hidden">Cat.</span></TabsTrigger>
+                    <TabsTrigger value="modules" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><ToggleRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Módulos</span><span className="sm:hidden">Mód.</span></TabsTrigger>
                     <TabsTrigger value="plans" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Planos</TabsTrigger>
                   </TabsList>
                 </div>
@@ -184,6 +186,9 @@ export default function SettingsPage() {
                 </TabsContent>
                 <TabsContent value="categories">
                   <CategoriesSection />
+                </TabsContent>
+                <TabsContent value="modules">
+                  <ModulesSection />
                 </TabsContent>
                 <TabsContent value="plans">
                   <PlansSection plan={settings.plan} expenseCount={stats.totalExpenses} />

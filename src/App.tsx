@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateProvider } from "@/contexts/DateContext";
+import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
@@ -26,21 +27,23 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <DateProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/categorias" element={<CategoriesPage />} />
-              <Route path="/historico" element={<HistoryPage />} />
-              <Route path="/configuracoes" element={<SettingsPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/wallet" element={<WalletPage />} />
-              <Route path="/orcamento" element={<BudgetPage />} />
-              <Route path="/projetos" element={<ProjectsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <FloatingActionButton />
-          </BrowserRouter>
+          <UserSettingsProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/categorias" element={<CategoriesPage />} />
+                <Route path="/historico" element={<HistoryPage />} />
+                <Route path="/configuracoes" element={<SettingsPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/wallet" element={<WalletPage />} />
+                <Route path="/orcamento" element={<BudgetPage />} />
+                <Route path="/projetos" element={<ProjectsPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <FloatingActionButton />
+            </BrowserRouter>
+          </UserSettingsProvider>
         </DateProvider>
       </AuthProvider>
     </TooltipProvider>

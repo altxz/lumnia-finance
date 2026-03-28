@@ -1,5 +1,6 @@
 import { LayoutDashboard, Settings, BarChart3, Wallet, PiggyBank, ArrowLeftRight, DollarSign, FolderKanban } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { useUserSettings } from '@/contexts/UserSettingsContext';
 import {
   Sidebar,
   SidebarContent,
@@ -13,18 +14,19 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-const items = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Transações', url: '/historico', icon: ArrowLeftRight },
-  { title: 'Orçamento', url: '/orcamento', icon: PiggyBank },
-  { title: 'Projetos', url: '/projetos', icon: FolderKanban },
-  { title: 'Minha Carteira', url: '/wallet', icon: Wallet },
-  { title: 'Configurações', url: '/configuracoes', icon: Settings },
-];
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+  const { settings } = useUserSettings();
+
+  const items = [
+    { title: 'Dashboard', url: '/', icon: LayoutDashboard, visible: true },
+    { title: 'Transações', url: '/historico', icon: ArrowLeftRight, visible: true },
+    { title: 'Orçamento', url: '/orcamento', icon: PiggyBank, visible: settings.enable_budget_module },
+    { title: 'Projetos', url: '/projetos', icon: FolderKanban, visible: settings.enable_projects_module },
+    { title: 'Minha Carteira', url: '/wallet', icon: Wallet, visible: true },
+    { title: 'Configurações', url: '/configuracoes', icon: Settings, visible: true },
+  ];
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -43,7 +45,7 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-sidebar-muted">Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {items.filter(i => i.visible).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end={item.url === '/'} activeClassName="bg-sidebar-accent text-sidebar-accent-foreground">
