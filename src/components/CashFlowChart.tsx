@@ -1,15 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
+import { addDays, format, startOfDay, eachDayOfInterval, isBefore, isAfter, parseISO } from 'date-fns';
+import { pt } from 'date-fns/locale';
+
+type TimeFilter = 'month' | '7days' | '30days';
 
 interface DayData {
-  day: number;
   label: string;
+  dateStr: string;
   receitas: number;
   despesas: number;
   saldo: number;
@@ -18,146 +22,170 @@ interface DayData {
 
 export function CashFlowChart() {
   const { user } = useAuth();
-  const { selectedMonth, selectedYear, startDate, endDate } = useSelectedDate();
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
+  const [wallets, setWallets] = useState<any[]>([]);
   const [allExpenses, setAllExpenses] = useState<any[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
   const [creditCards, setCreditCards] = useState<any[]>([]);
   const [unpaidCreditExpenses, setUnpaidCreditExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+  const today = startOfDay(new Date());
+
+  // Compute date range based on filter
+  const { rangeStart, rangeEnd } = useMemo(() => {
+    const now = new Date();
+    if (timeFilter === '7days') {
+      return { rangeStart: addDays(now, -7), rangeEnd: addDays(now, 7) };
+    }
+    if (timeFilter === '30days') {
+      return { rangeStart: now, rangeEnd: addDays(now, 30) };
+    }
+    // 'month' — current calendar month
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    return { rangeStart: new Date(y, m, 1), rangeEnd: new Date(y, m + 1, 0) };
+  }, [timeFilter]);
+
+  const rangeStartStr = format(rangeStart, 'yyyy-MM-dd');
+  const rangeEndStr = format(rangeEnd, 'yyyy-MM-dd');
 
   useEffect(() => {
     if (!user) return;
     setLoading(true);
 
     const fetchAll = async () => {
-      const [monthRes, recurringRes, cardsRes, unpaidCreditRes] = await Promise.all([
-        // All transactions for this month
-        supabase.from('expenses').select('*')
-          .eq('user_id', user.id)
-          .gte('date', startDate).lt('date', endDate)
-          .order('date'),
-        // All recurring transactions
-        supabase.from('expenses').select('*')
-          .eq('user_id', user.id)
-          .eq('is_recurring', true),
-        // Credit cards (for due_day)
-        supabase.from('credit_cards').select('id, name, due_day')
-          .eq('user_id', user.id),
-        // Unpaid credit card expenses for this invoice month
+      const [walletsRes, expensesRes, recurringRes, cardsRes, unpaidRes] = await Promise.all([
+        supabase.from('wallets').select('initial_balance').eq('user_id', user.id),
+        // All user expenses (we need history before range for running balance)
+        supabase.from('expenses').select('*').eq('user_id', user.id).order('date'),
+        supabase.from('expenses').select('*').eq('user_id', user.id).eq('is_recurring', true),
+        supabase.from('credit_cards').select('id, name, due_day').eq('user_id', user.id),
         supabase.from('expenses').select('value, credit_card_id, invoice_month')
-          .eq('user_id', user.id)
-          .eq('is_paid', false)
-          .not('credit_card_id', 'is', null)
-          .eq('invoice_month', monthKey),
+          .eq('user_id', user.id).eq('is_paid', false).not('credit_card_id', 'is', null),
       ]);
 
-      setAllExpenses(monthRes.data || []);
+      setWallets(walletsRes.data || []);
+      setAllExpenses(expensesRes.data || []);
       setRecurringExpenses(recurringRes.data || []);
       setCreditCards(cardsRes.data || []);
-      setUnpaidCreditExpenses(unpaidCreditRes.data || []);
+      setUnpaidCreditExpenses(unpaidRes.data || []);
       setLoading(false);
     };
 
     fetchAll();
-  }, [user, startDate, endDate, monthKey]);
-
-  const today = new Date();
-  const isCurrentMonth = today.getMonth() === selectedMonth && today.getFullYear() === selectedYear;
-  const isFutureMonth = new Date(selectedYear, selectedMonth) > new Date(today.getFullYear(), today.getMonth());
-  const todayDay = isCurrentMonth ? today.getDate() : 0;
-  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-  const lastRealDay = isFutureMonth ? 0 : (isCurrentMonth ? todayDay : daysInMonth);
+  }, [user]);
 
   const chartData = useMemo(() => {
-    const days: DayData[] = [];
-    let cumulativeIncome = 0;
-    let cumulativeExpense = 0;
+    // 1) Base balance from wallets
+    const walletsBase = wallets.reduce((s, w) => s + Number(w.initial_balance || 0), 0);
 
-    // Map actual transactions by day
-    const incomeByDay: Record<number, number> = {};
-    const expenseByDay: Record<number, number> = {};
+    // 2) Compute running balance up to rangeStart from all real transactions
+    let preRangeBalance = walletsBase;
+    const txByDate: Record<string, { income: number; expense: number }> = {};
 
     allExpenses.forEach(e => {
       if (e.type === 'transfer') return;
-      const d = new Date(e.date + 'T12:00:00').getDate();
-      if (e.type === 'income') {
-        incomeByDay[d] = (incomeByDay[d] || 0) + e.value;
-      } else if (!e.credit_card_id) {
-        // Non-credit debit expenses
-        expenseByDay[d] = (expenseByDay[d] || 0) + e.value;
+      const dStr = e.date;
+      if (dStr < rangeStartStr) {
+        // Before range: accumulate into pre-range balance
+        if (e.type === 'income' && e.is_paid) preRangeBalance += Number(e.value);
+        else if (e.type === 'expense' && e.is_paid && !e.credit_card_id) preRangeBalance -= Number(e.value);
+      } else if (dStr <= rangeEndStr) {
+        if (!txByDate[dStr]) txByDate[dStr] = { income: 0, expense: 0 };
+        if (e.type === 'income') txByDate[dStr].income += Number(e.value);
+        else if (!e.credit_card_id) txByDate[dStr].expense += Number(e.value);
       }
     });
 
-    // === PROJECTIONS ===
-    const projIncomeByDay: Record<number, number> = {};
-    const projExpenseByDay: Record<number, number> = {};
+    // 3) Build projected data for future days
+    const projByDate: Record<string, { income: number; expense: number }> = {};
+    const todayStr = format(today, 'yyyy-MM-dd');
 
-    if (isFutureMonth || isCurrentMonth) {
-      // 1) Project recurring transactions
-      recurringExpenses.forEach(r => {
-        if (r.type === 'transfer') return;
-        const recurDay = new Date(r.date + 'T12:00:00').getDate();
-        const clampedDay = Math.min(recurDay, daysInMonth);
-
-        // Only project for future days
-        if (!isFutureMonth && !(isCurrentMonth && clampedDay > todayDay)) return;
-
-        if (r.type === 'income') {
-          projIncomeByDay[clampedDay] = (projIncomeByDay[clampedDay] || 0) + r.value;
-        } else if (!r.credit_card_id) {
-          projExpenseByDay[clampedDay] = (projExpenseByDay[clampedDay] || 0) + r.value;
-        }
+    // Recurring projections
+    recurringExpenses.forEach(r => {
+      if (r.type === 'transfer') return;
+      const origDay = parseISO(r.date).getDate();
+      // Project into each month in range
+      const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+      const monthsSeen = new Set<string>();
+      days.forEach(d => {
+        const mk = format(d, 'yyyy-MM');
+        if (monthsSeen.has(mk)) return;
+        monthsSeen.add(mk);
+        const daysInM = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        const clampedDay = Math.min(origDay, daysInM);
+        const projDate = new Date(d.getFullYear(), d.getMonth(), clampedDay);
+        const projStr = format(projDate, 'yyyy-MM-dd');
+        if (projStr <= todayStr || projStr < rangeStartStr || projStr > rangeEndStr) return;
+        if (!projByDate[projStr]) projByDate[projStr] = { income: 0, expense: 0 };
+        if (r.type === 'income') projByDate[projStr].income += Number(r.value);
+        else if (!r.credit_card_id) projByDate[projStr].expense += Number(r.value);
       });
+    });
 
-      // 2) Project credit card bill payments on their due day
-      // Group unpaid credit expenses by card
-      const billByCard: Record<string, number> = {};
-      unpaidCreditExpenses.forEach(e => {
-        if (e.credit_card_id) {
-          billByCard[e.credit_card_id] = (billByCard[e.credit_card_id] || 0) + e.value;
-        }
+    // Credit card bill projections
+    const billByCard: Record<string, number> = {};
+    unpaidCreditExpenses.forEach(e => {
+      if (e.credit_card_id) {
+        billByCard[e.credit_card_id] = (billByCard[e.credit_card_id] || 0) + Number(e.value);
+      }
+    });
+    creditCards.forEach(card => {
+      const bill = billByCard[card.id];
+      if (!bill || bill <= 0) return;
+      const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+      const monthsSeen = new Set<string>();
+      days.forEach(d => {
+        const mk = format(d, 'yyyy-MM');
+        if (monthsSeen.has(mk)) return;
+        monthsSeen.add(mk);
+        const daysInM = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        const dueDay = Math.min(card.due_day || 10, daysInM);
+        const dueDate = new Date(d.getFullYear(), d.getMonth(), dueDay);
+        const dueStr = format(dueDate, 'yyyy-MM-dd');
+        if (dueStr <= todayStr || dueStr < rangeStartStr || dueStr > rangeEndStr) return;
+        if (!projByDate[dueStr]) projByDate[dueStr] = { income: 0, expense: 0 };
+        projByDate[dueStr].expense += bill;
       });
+    });
 
-      // Place each card's bill total on its due_day
-      creditCards.forEach(card => {
-        const billAmount = billByCard[card.id];
-        if (!billAmount || billAmount <= 0) return;
-        const dueDay = Math.min(card.due_day || 10, daysInMonth);
+    // 4) Build day-by-day chart
+    const daysList = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+    let runningBalance = preRangeBalance;
+    const result: DayData[] = [];
 
-        // Only project if the due day is in the future
-        const isFutureDay = isFutureMonth || (isCurrentMonth && dueDay > todayDay);
-        if (isFutureDay) {
-          projExpenseByDay[dueDay] = (projExpenseByDay[dueDay] || 0) + billAmount;
-        }
+    daysList.forEach(d => {
+      const dStr = format(d, 'yyyy-MM-dd');
+      const isFuture = isAfter(d, today);
+      const real = txByDate[dStr] || { income: 0, expense: 0 };
+      const proj = isFuture ? (projByDate[dStr] || { income: 0, expense: 0 }) : { income: 0, expense: 0 };
+
+      const dayIncome = real.income + proj.income;
+      const dayExpense = real.expense + proj.expense;
+      runningBalance += dayIncome - dayExpense;
+
+      result.push({
+        label: format(d, 'dd/MM'),
+        dateStr: dStr,
+        receitas: dayIncome,
+        despesas: dayExpense,
+        saldo: runningBalance,
+        projected: isFuture,
       });
-    }
+    });
 
-    // Build chart data
-    for (let d = 1; d <= daysInMonth; d++) {
-      const isProjected = d > lastRealDay;
-      const dayIncome = (incomeByDay[d] || 0) + (isProjected ? (projIncomeByDay[d] || 0) : 0);
-      const dayExpense = (expenseByDay[d] || 0) + (isProjected ? (projExpenseByDay[d] || 0) : 0);
-
-      cumulativeIncome += dayIncome;
-      cumulativeExpense += dayExpense;
-
-      days.push({
-        day: d,
-        label: String(d),
-        receitas: cumulativeIncome,
-        despesas: cumulativeExpense,
-        saldo: cumulativeIncome - cumulativeExpense,
-        projected: isProjected,
-      });
-    }
-
-    return days;
-  }, [allExpenses, recurringExpenses, unpaidCreditExpenses, creditCards, daysInMonth, isCurrentMonth, isFutureMonth, todayDay, lastRealDay]);
+    return result;
+  }, [wallets, allExpenses, recurringExpenses, unpaidCreditExpenses, creditCards, rangeStartStr, rangeEndStr, today]);
 
   const lastPoint = chartData[chartData.length - 1];
+  const firstPoint = chartData[0];
   const endBalance = lastPoint?.saldo || 0;
+  const startBalance = firstPoint?.saldo || 0;
+  const balanceChange = endBalance - startBalance;
+  const todayStr = format(today, 'dd/MM');
+
+  const tickInterval = Math.max(1, Math.floor(chartData.length / 8));
 
   if (loading) {
     return (
@@ -172,20 +200,29 @@ export function CashFlowChart() {
   return (
     <Card className="rounded-2xl border-0 shadow-md">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold">Fluxo de Caixa Diário</CardTitle>
-          <div className="flex items-center gap-1.5">
-            {endBalance >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-destructive" />
-            )}
-            <span className={`text-sm font-bold ${endBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
-              {formatCurrency(endBalance)}
-            </span>
-            {(isFutureMonth || isCurrentMonth) && (
-              <span className="text-[10px] text-muted-foreground ml-1">(com projeção)</span>
-            )}
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base font-semibold">Fluxo de Caixa</CardTitle>
+          <div className="flex items-center gap-3">
+            <Select value={timeFilter} onValueChange={v => setTimeFilter(v as TimeFilter)}>
+              <SelectTrigger className="h-8 w-[160px] rounded-xl text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">Este Mês</SelectItem>
+                <SelectItem value="7days">7 dias (±7)</SelectItem>
+                <SelectItem value="30days">Próximos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1.5">
+              {balanceChange >= 0 ? (
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-destructive" />
+              )}
+              <span className={`text-sm font-bold ${balanceChange >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                {balanceChange >= 0 ? '+' : ''}{formatCurrency(balanceChange)}
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex gap-4 text-xs text-muted-foreground">
@@ -195,24 +232,18 @@ export function CashFlowChart() {
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-destructive" /> Despesas
           </span>
-          {(isFutureMonth || isCurrentMonth) && (
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40" /> Projeção
-            </span>
-          )}
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-primary" /> Saldo
+          </span>
         </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.02} />
-              </linearGradient>
-              <linearGradient id="gradExpense" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.02} />
+              <linearGradient id="gradSaldo" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
@@ -221,14 +252,18 @@ export function CashFlowChart() {
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
-              interval={Math.floor(daysInMonth / 8)}
+              interval={tickInterval}
             />
             <YAxis
-              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => {
+                if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
+                return `R$${v.toFixed(0)}`;
+              }}
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
-              width={50}
+              width={55}
+              domain={['auto', 'auto']}
             />
             <Tooltip
               content={({ active, payload, label }) => {
@@ -237,10 +272,10 @@ export function CashFlowChart() {
                 return (
                   <div className="rounded-lg border bg-background p-2.5 text-xs shadow-lg">
                     <p className="font-semibold mb-1">
-                      Dia {label} {point?.projected && <span className="text-muted-foreground">(projeção)</span>}
+                      {label} {point?.projected && <span className="text-muted-foreground">(projeção)</span>}
                     </p>
-                    <p className="text-emerald-500">Receitas: {formatCurrency(point?.receitas || 0)}</p>
-                    <p className="text-destructive">Despesas: {formatCurrency(point?.despesas || 0)}</p>
+                    {point?.receitas > 0 && <p className="text-emerald-500">Receitas: +{formatCurrency(point.receitas)}</p>}
+                    {point?.despesas > 0 && <p className="text-destructive">Despesas: -{formatCurrency(point.despesas)}</p>}
                     <p className={`font-bold mt-1 ${(point?.saldo || 0) >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
                       Saldo: {formatCurrency(point?.saldo || 0)}
                     </p>
@@ -248,30 +283,19 @@ export function CashFlowChart() {
                 );
               }}
             />
-            {isCurrentMonth && todayDay > 0 && (
-              <ReferenceLine
-                x={String(todayDay)}
-                stroke="hsl(var(--muted-foreground))"
-                strokeDasharray="4 4"
-                strokeOpacity={0.6}
-                label={{ value: 'Hoje', position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              />
-            )}
-            <Area
-              type="monotone"
-              dataKey="receitas"
-              stroke="hsl(142, 71%, 45%)"
-              strokeWidth={2}
-              fill="url(#gradIncome)"
-              dot={false}
-              activeDot={{ r: 4, strokeWidth: 0 }}
+            <ReferenceLine
+              x={todayStr}
+              stroke="hsl(var(--muted-foreground))"
+              strokeDasharray="4 4"
+              strokeOpacity={0.6}
+              label={{ value: 'Hoje', position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
             />
             <Area
               type="monotone"
-              dataKey="despesas"
-              stroke="hsl(0, 84%, 60%)"
+              dataKey="saldo"
+              stroke="hsl(var(--primary))"
               strokeWidth={2}
-              fill="url(#gradExpense)"
+              fill="url(#gradSaldo)"
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0 }}
             />
