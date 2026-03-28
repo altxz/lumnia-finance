@@ -36,7 +36,7 @@ export function TransactionSummaryHeader({ expenses, startingMonthBalance }: Tra
   const mask = '••••••';
 
   return (
-    <div className="rounded-2xl bg-primary text-primary-foreground p-4 sm:p-6 shadow-lg">
+    <div className="w-full overflow-hidden mx-auto rounded-2xl bg-primary text-primary-foreground p-4 sm:p-6 shadow-lg">
       {/* Top: label + eye toggle */}
       <div className="flex items-center justify-center gap-2 mb-1">
         <span className="text-xs sm:text-sm font-medium opacity-80">{label}</span>
@@ -50,47 +50,44 @@ export function TransactionSummaryHeader({ expenses, startingMonthBalance }: Tra
       </div>
 
       {/* Main balance */}
-      <p className="text-center text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
+      <p className="text-center text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight truncate">
         {visible ? formatCurrency(currentBalance) : mask}
       </p>
 
       {/* Three columns */}
-      <div className="grid grid-cols-3 gap-2 mt-4 sm:mt-6 pt-4 border-t border-primary-foreground/20">
-        {/* Receitas */}
-        <div className="flex flex-col items-center gap-1">
-          <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <ArrowUpCircle className="h-4 w-4 text-emerald-300" />
+      <div className="grid grid-cols-3 gap-1 sm:gap-4 w-full mt-4 sm:mt-6 pt-4 border-t border-primary-foreground/20">
+        <div className="flex flex-col items-center gap-1 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <ArrowUpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-300" />
           </div>
-          <span className="text-[10px] sm:text-xs opacity-70">Receitas</span>
-          <span className="text-xs sm:text-sm font-bold">
+          <p className="text-[9px] sm:text-xs opacity-70 truncate">Receitas</p>
+          <p className="text-[10px] sm:text-sm font-bold truncate max-w-full">
             {visible ? formatCurrency(totalIncome) : mask}
-          </span>
+          </p>
         </div>
 
-        {/* Despesas */}
-        <div className="flex flex-col items-center gap-1">
-          <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
-            <ArrowDownCircle className="h-4 w-4 text-red-300" />
+        <div className="flex flex-col items-center gap-1 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+            <ArrowDownCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-300" />
           </div>
-          <span className="text-[10px] sm:text-xs opacity-70">Despesas</span>
-          <span className="text-xs sm:text-sm font-bold">
+          <p className="text-[9px] sm:text-xs opacity-70 truncate">Despesas</p>
+          <p className="text-[10px] sm:text-sm font-bold truncate max-w-full">
             {visible ? formatCurrency(totalExpense) : mask}
-          </span>
+          </p>
         </div>
 
-        {/* Balanço */}
-        <div className="flex flex-col items-center gap-1">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+        <div className="flex flex-col items-center gap-1 min-w-0">
+          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 ${
             balance >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20'
           }`}>
-            <Scale className={`h-4 w-4 ${balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`} />
+            <Scale className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${balance >= 0 ? 'text-emerald-300' : 'text-red-300'}`} />
           </div>
-          <span className="text-[10px] sm:text-xs opacity-70">Balanço</span>
-          <span className={`text-xs sm:text-sm font-bold ${
+          <p className="text-[9px] sm:text-xs opacity-70 truncate">Balanço</p>
+          <p className={`text-[10px] sm:text-sm font-bold truncate max-w-full ${
             balance >= 0 ? 'text-emerald-300' : 'text-red-300'
           }`}>
             {visible ? (balance >= 0 ? '+' : '') + formatCurrency(balance) : mask}
-          </span>
+          </p>
         </div>
       </div>
     </div>

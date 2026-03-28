@@ -49,7 +49,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
     if (!user) return;
     const numValue = parseFloat(value.replace(',', '.'));
     if (!numValue || numValue <= 0) {
-      toast({ title: 'Valor inválido', description: 'Insere um valor positivo.', variant: 'destructive' });
+      toast({ title: 'Valor inválido', description: 'Insira um valor positivo.', variant: 'destructive' });
       return;
     }
 
@@ -69,7 +69,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Lançamento criado!', description: `${type === 'income' ? 'Receita' : 'Despesa'} de R$ ${numValue.toFixed(2)} registada.` });
+      toast({ title: 'Lançamento criado!', description: `${type === 'income' ? 'Receita' : 'Despesa'} de R$ ${numValue.toFixed(2)} registrada.` });
       reset();
       onOpenChange(false);
       onCreated?.();
@@ -80,7 +80,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="sm:max-w-sm rounded-2xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-sm overflow-hidden sm:w-full p-0 gap-0 rounded-2xl">
         {/* Type toggle */}
         <div className="grid grid-cols-2">
           <button
@@ -156,7 +156,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}
           >
-            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Guardar'}
+            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Salvar'}
           </Button>
         </div>
       </DialogContent>
