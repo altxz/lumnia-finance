@@ -43,6 +43,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <FloatingActionButton />
+              <GeniusChatbot />
             </BrowserRouter>
           </UserSettingsProvider>
         </DateProvider>
