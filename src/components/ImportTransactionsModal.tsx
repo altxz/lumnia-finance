@@ -93,6 +93,7 @@ function parseCSV(text: string): ParsedTransaction[] {
       value: Math.abs(numericValue),
       type: isIncome ? 'income' : 'expense',
       selected: true,
+      category: isIncome ? 'salary' : 'outros',
     });
   }
 
