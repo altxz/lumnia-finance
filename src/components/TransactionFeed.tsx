@@ -130,10 +130,9 @@ export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages
                   const walletName = exp.wallet_id ? walletMap[exp.wallet_id] : null;
 
                   return (
-                    <button
+                    <div
                       key={exp.id}
-                      onClick={() => setEditingExpense(exp)}
-                      className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors group"
                     >
                       {/* Category icon */}
                       <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${catData.bg}`}>
@@ -170,7 +169,28 @@ export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages
                           {isIncome ? '+' : isTransfer ? '' : '-'}{formatCurrency(exp.value)}
                         </span>
                       </div>
-                    </button>
+
+                      {/* Quick actions */}
+                      <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg"
+                          onClick={() => setEditingExpense(exp)}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setDeletingExpense(exp)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
                   );
                 })}
               </div>
