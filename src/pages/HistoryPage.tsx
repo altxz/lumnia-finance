@@ -7,17 +7,15 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Search, Download, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Loader2, BarChart3, Target, Repeat, ArrowUpCircle, ArrowDownCircle, CalendarClock, Wallet } from 'lucide-react';
+import { Search, Download, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Repeat, ArrowUpCircle, ArrowDownCircle, CalendarClock, Wallet } from 'lucide-react';
 import { CATEGORIES, getCategoryInfo, formatCurrency, formatDate } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { Expense } from '@/components/ExpenseTable';
@@ -191,73 +189,6 @@ export default function HistoryPage() {
 
               {/* ════════ TAB: Lançamentos ════════ */}
               <TabsContent value="entries" className="space-y-4 sm:space-y-6">
-                {/* Stats Cards */}
-                <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-                  <Card className="rounded-2xl border-0 shadow-md bg-ai text-ai-foreground">
-                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-ai-foreground/20 flex items-center justify-center"><Target className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">Precisão IA</p><p className="text-lg sm:text-xl font-bold">{analytics.accuracy}%</p></div>
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl border-0 shadow-md bg-accent text-accent-foreground">
-                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-accent-foreground/10 flex items-center justify-center"><CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">IA Corretas</p><p className="text-lg sm:text-xl font-bold">{analytics.correct}</p></div>
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl border-0 shadow-md bg-pink text-pink-foreground">
-                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center"><AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">Corrigidas</p><p className="text-lg sm:text-xl font-bold">{analytics.corrected}</p></div>
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground col-span-2 md:col-span-1">
-                    <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-                      <div><p className="text-[10px] sm:text-xs font-medium opacity-80">Total</p><p className="text-lg sm:text-xl font-bold">{analytics.total}</p></div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Charts */}
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Card className="rounded-2xl">
-                    <CardHeader className="pb-2"><CardTitle className="text-sm sm:text-base font-semibold">Precisão por Categoria</CardTitle></CardHeader>
-                    <CardContent>
-                      {analytics.accuracyByCategory.length > 0 ? (
-                        <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px] w-full">
-                          <BarChart data={analytics.accuracyByCategory} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                            <XAxis type="number" domain={[0, 100]} tickFormatter={v => `${v}%`} />
-                            <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="accuracy" fill="hsl(var(--ai))" radius={[0, 6, 6, 0]} />
-                          </BarChart>
-                        </ChartContainer>
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center py-8">Sem dados suficientes</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl">
-                    <CardHeader className="pb-2"><CardTitle className="text-sm sm:text-base font-semibold">Top Categorias com Correções</CardTitle></CardHeader>
-                    <CardContent>
-                      {analytics.topCorrections.length > 0 ? (
-                        <ChartContainer config={chartConfig} className="h-[200px] sm:h-[250px] w-full">
-                          <BarChart data={analytics.topCorrections}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                            <YAxis />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="count" fill="hsl(var(--pink))" radius={[6, 6, 0, 0]} />
-                          </BarChart>
-                        </ChartContainer>
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center py-8">Nenhuma correção registrada</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
 
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
