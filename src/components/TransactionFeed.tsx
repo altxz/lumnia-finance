@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
+import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { formatCurrency } from '@/lib/constants';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 import { EditExpenseModal } from '@/components/EditExpenseModal';
 import type { Expense } from '@/components/ExpenseTable';
 
@@ -47,7 +50,23 @@ function formatGroupDate(dateStr: string): string {
 
 export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages, onPageChange, wallets = [], startingMonthBalance = 0 }: TransactionFeedProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
 
+  const handleDelete = async () => {
+    if (!deletingExpense) return;
+    setDeleting(true);
+    const { error } = await supabase.from('expenses').delete().eq('id', deletingExpense.id);
+    setDeleting(false);
+    setDeletingExpense(null);
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Transação excluída' });
+      onDeleted();
+    }
+  };
   const grouped = useMemo(() => {
     const groups: Record<string, Expense[]> = {};
     expenses.forEach(exp => {
@@ -111,10 +130,9 @@ export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages
                   const walletName = exp.wallet_id ? walletMap[exp.wallet_id] : null;
 
                   return (
-                    <button
+                    <div
                       key={exp.id}
-                      onClick={() => setEditingExpense(exp)}
-                      className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors group"
                     >
                       {/* Category icon */}
                       <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${catData.bg}`}>
@@ -151,7 +169,27 @@ export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages
                           {isIncome ? '+' : isTransfer ? '' : '-'}{formatCurrency(exp.value)}
                         </span>
                       </div>
-                    </button>
+
+                      {/* Quick actions */}
+                      <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg"
+                          onClick={() => setEditingExpense(exp)}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setDeletingExpense(exp)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -184,6 +222,27 @@ export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages
           onExpenseUpdated={() => { setEditingExpense(null); onDeleted(); }}
         />
       )}
+
+      <AlertDialog open={!!deletingExpense} onOpenChange={(open) => { if (!open) setDeletingExpense(null); }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+            >
+              {deleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
