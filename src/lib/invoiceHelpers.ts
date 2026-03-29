@@ -183,7 +183,12 @@ export function matchExpensesToInvoice(
     e.wallet_id
   );
 
-  const status = isPaid ? 'paid' : period.status;
+  let status: 'open' | 'closed' | 'overdue' | 'paid' = isPaid ? 'paid' : period.status;
+
+  // Se não há valor a pagar, não faz sentido estar vencida — rebaixa para 'closed'
+  if (total <= 0 && status === 'overdue') {
+    status = 'closed';
+  }
 
   return { ...period, status, transactions: matched, total };
 }
