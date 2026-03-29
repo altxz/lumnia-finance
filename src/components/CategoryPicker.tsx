@@ -85,7 +85,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
         </Button>
       </PopoverTrigger>
       <PopoverContent className="min-w-[220px] w-[--radix-popover-trigger-width] p-0 rounded-xl" align="start">
-        <div className="max-h-72 overflow-y-auto py-1">
+        <div className="max-h-72 overflow-y-auto overscroll-contain touch-pan-y py-1" style={{ WebkitOverflowScrolling: 'touch' }}>
           <Accordion type="single" collapsible defaultValue={defaultAccordion}>
             {grouped.map(group => {
               const hasSubs = group.subs.length > 0;
