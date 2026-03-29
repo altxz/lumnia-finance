@@ -68,14 +68,14 @@ export function CalendarView() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="h-full flex flex-col">
       <div className="rounded-2xl border bg-card p-4 w-full overflow-hidden h-full flex flex-col">
         <Calendar
           mode="single"
           selected={selectedDay}
           onSelect={handleDayClick}
           month={calendarMonth}
-          className="p-0 pointer-events-auto w-full"
+          className="p-0 pointer-events-auto w-full flex-1"
           classNames={{
             months: "flex flex-col w-full",
             month: "space-y-2 w-full",
@@ -114,17 +114,17 @@ export function CalendarView() {
             IconRight: () => null,
           }}
         />
-      </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          Receita
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-destructive" />
-          Despesa
+        {/* Legend inside card */}
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-3 mt-auto border-t border-border">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            Receita
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-destructive" />
+            Despesa
+          </div>
         </div>
       </div>
 
