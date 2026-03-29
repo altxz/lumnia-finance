@@ -84,8 +84,21 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="min-w-[220px] w-[--radix-popover-trigger-width] p-0 rounded-xl" align="start">
-        <div className="max-h-72 overflow-y-auto overscroll-contain touch-pan-y py-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <PopoverContent 
+        className="min-w-[220px] w-[--radix-popover-trigger-width] p-0 rounded-xl pointer-events-auto" 
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          // Permite tocar fora sem quebrar o layout mobile
+        }}
+      >
+        <div 
+          className="max-h-[50vh] overflow-y-auto overscroll-none touch-pan-y py-1 pointer-events-auto" 
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain'
+          }}
+        >
           <Accordion type="single" collapsible defaultValue={defaultAccordion}>
             {grouped.map(group => {
               const hasSubs = group.subs.length > 0;
@@ -96,7 +109,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                     key={group.id}
                     type="button"
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary/60 transition-colors',
+                      'w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary/60 transition-colors pointer-events-auto',
                       value === group.name.toLowerCase() && 'bg-secondary'
                     )}
                     onClick={() => handleSelect(group.name)}
@@ -124,7 +137,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                         key={sub.id}
                         type="button"
                         className={cn(
-                          'w-full flex items-center gap-2 pl-10 pr-3 py-2 text-sm hover:bg-secondary/60 transition-colors',
+                          'w-full flex items-center gap-2 pl-10 pr-3 py-2 text-sm hover:bg-secondary/60 transition-colors pointer-events-auto',
                           value === sub.name.toLowerCase() && 'bg-secondary'
                         )}
                         onClick={() => handleSelect(sub.name)}
