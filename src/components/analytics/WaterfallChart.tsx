@@ -115,17 +115,17 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+          <BarChart data={data} margin={{ top: 10, right: 5, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} vertical={false} />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
               interval={0}
-              angle={-20}
+              angle={-25}
               textAnchor="end"
-              height={50}
+              height={55}
             />
             <YAxis
               tickFormatter={(v) => {

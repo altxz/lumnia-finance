@@ -200,11 +200,11 @@ export function CashFlowChart() {
   return (
     <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <CardTitle className="text-base font-semibold">Fluxo de Caixa</CardTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Select value={timeFilter} onValueChange={v => setTimeFilter(v as TimeFilter)}>
-              <SelectTrigger className="h-8 w-[160px] rounded-xl text-xs">
+              <SelectTrigger className="h-8 w-[130px] sm:w-[160px] rounded-xl text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -219,7 +219,7 @@ export function CashFlowChart() {
               ) : (
                 <TrendingDown className="h-4 w-4 text-destructive" />
               )}
-              <span className={`text-sm font-bold ${balanceChange >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+              <span className={`text-xs sm:text-sm font-bold ${balanceChange >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
                 {balanceChange >= 0 ? '+' : ''}{formatCurrency(balanceChange)}
               </span>
             </div>

@@ -226,40 +226,40 @@ export default function Dashboard() {
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>
 
                 {/* Painel de Gráficos - Grid em Duplas */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
                   {/* Destaque Topo: Fluxo de Caixa (Largura Total) */}
-                  <div className="lg:col-span-2 flex flex-col min-h-[350px]"><CashFlowChart /></div>
+                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CashFlowChart /></div>
 
-                  {/* Pares 1: Categorias e Subcategorias */}
-                  <div className="flex flex-col min-h-[350px]"><TopExpensesList expenses={expenses} /></div>
-                  <div className="flex flex-col min-h-[350px]"><SubcategoryTreemap expenses={expenses} categories={dbCategories} /></div>
+                  {/* Pares 1: Maiores Compras e Subcategorias */}
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><TopExpensesList expenses={expenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SubcategoryTreemap expenses={expenses} categories={dbCategories} /></div>
 
                   {/* Pares 2: Receita vs Despesas e Cascata */}
-                  <div className="flex flex-col min-h-[350px]"><IncomeVsExpenseChart /></div>
-                  <div className="flex flex-col min-h-[350px]"><WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeVsExpenseChart /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /></div>
 
                   {/* Pares 3: Origem e Rotina */}
-                  <div className="flex flex-col min-h-[350px]"><IncomeSourcesPie expenses={expenses} categories={dbCategories} /></div>
-                  <div className="flex flex-col min-h-[350px]"><DailySpendingChart expenses={expenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeSourcesPie expenses={expenses} categories={dbCategories} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><DailySpendingChart expenses={expenses} /></div>
 
                   {/* Pares 4: Controle de Hábitos */}
-                  <div className="flex flex-col min-h-[350px]"><WeekComparisonChart expenses={expenses} /></div>
-                  <div className="flex flex-col min-h-[350px]"><BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WeekComparisonChart expenses={expenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /></div>
 
                   {/* Pares 5: Previsão e Calendário */}
-                  <div className="flex flex-col min-h-[350px]"><EndOfMonthForecast /></div>
-                  <div className="flex flex-col min-h-[350px]"><CalendarView /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><EndOfMonthForecast /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CalendarView /></div>
 
                   {/* Pares 6: Fixo vs Variável e Mapa de Calor */}
-                  <div className="flex flex-col min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
-                  <div className="flex flex-col min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
 
                   {/* Pares 7: Cartão e Poupança */}
-                  <div className="flex flex-col min-h-[350px]"><CreditUsageChart /></div>
-                  <div className="flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditUsageChart /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
 
                   {/* Destaque Rodapé: Patrimônio Líquido (Largura Total) */}
-                  <div className="lg:col-span-2 flex flex-col min-h-[350px]"><NetWorthChart /></div>
+                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><NetWorthChart /></div>
                 </div>
               </>
             )}
