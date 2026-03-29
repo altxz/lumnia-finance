@@ -254,12 +254,12 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
                   <div className="flex flex-col min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
 
-                  {/* Pares 7: Evolução e Cartão */}
-                  <div className="flex flex-col min-h-[350px]"><NetWorthChart /></div>
+                  {/* Pares 7: Cartão e Poupança */}
                   <div className="flex flex-col min-h-[350px]"><CreditUsageChart /></div>
-
-                  {/* Pares 8: Poupança e Renda */}
                   <div className="flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
+
+                  {/* Destaque Rodapé: Patrimônio Líquido (Largura Total) */}
+                  <div className="lg:col-span-2 flex flex-col min-h-[350px]"><NetWorthChart /></div>
                 </div>
               </>
             )}
