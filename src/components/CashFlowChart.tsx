@@ -178,7 +178,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     });
 
     return result;
-  }, [wallets, allExpenses, recurringExpenses, unpaidCreditExpenses, creditCards, rangeStartStr, rangeEndStr, today]);
+  }, [propWallets, allExpenses, recurringExpenses, unpaidCreditExpenses, propCards, rangeStartStr, rangeEndStr, today]);
 
   const lastPoint = chartData[chartData.length - 1];
   const firstPoint = chartData[0];

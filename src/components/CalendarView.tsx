@@ -6,9 +6,6 @@ import { formatCurrency, getCategoryInfo } from '@/lib/constants';
 import { Clock, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Wallet } from 'lucide-react';
 import type { Expense } from '@/components/ExpenseTable';
 import { InfoPopover } from '@/components/ui/info-popover';
-import { Clock, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Wallet } from 'lucide-react';
-import type { Expense } from '@/components/ExpenseTable';
-import { InfoPopover } from '@/components/ui/info-popover';
 
 interface CalendarViewProps {
   expenses: Expense[];
