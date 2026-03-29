@@ -2,11 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Expense } from '@/components/ExpenseTable';
-import { getPaymentDate } from '@/lib/invoiceHelpers';
-import type { CreditCard } from '@/lib/invoiceHelpers';
-
 // Only fetch columns needed for analytics
-const ANALYTICS_COLS = 'id, value, date, type, final_category, credit_card_id, is_recurring, is_paid, frequency, installment_group_id, invoice_month';
+const ANALYTICS_COLS = 'id, value, date, type, final_category, credit_card_id, is_recurring, is_paid, frequency, installment_group_id';
 
 export interface AnalyticsFilters {
   period: string; // '3', '6', '12', 'all'
@@ -29,21 +26,10 @@ export interface CategoryStats {
 }
 
 /**
- * Get the effective cash-flow month key for an expense.
- * CC expenses use invoice_month (manual override) or getPaymentDate.
- * Non-CC expenses use their transaction date.
+ * Regime de Competência: agrupa pela data original da transação (e.date).
+ * Usado para gráficos analíticos e categorias — NÃO para fluxo de caixa.
  */
-function getCashFlowMonthKey(e: Expense, cards: CreditCard[]): string {
-  if (e.invoice_month) {
-    return e.invoice_month;
-  }
-  if (e.credit_card_id) {
-    const card = cards.find(c => c.id === e.credit_card_id);
-    if (card) {
-      const payDate = getPaymentDate(e.date, card);
-      return `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, '0')}`;
-    }
-  }
+function getAnalyticsMonthKey(e: Expense): string {
   const d = new Date(e.date + 'T12:00:00');
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
