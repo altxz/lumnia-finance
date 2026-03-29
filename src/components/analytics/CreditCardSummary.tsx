@@ -87,6 +87,26 @@ export function CreditCardSummary() {
         .eq('credit_card_id', payingInvoice.cardId)
         .eq('invoice_month', payingInvoice.monthLabel);
 
+      // Update wallet current_balance
+      const selectedWallet = wallets.find(w => w.id === payWalletId);
+      if (selectedWallet) {
+        const { data: walletTxns } = await supabase
+          .from('expenses')
+          .select('value, type, credit_card_id')
+          .eq('user_id', user.id)
+          .eq('wallet_id', payWalletId)
+          .eq('is_paid', true);
+
+        let newBalance = selectedWallet.initial_balance;
+        (walletTxns || []).forEach((t: any) => {
+          if (t.type === 'transfer') return;
+          if (t.type === 'income') newBalance += t.value;
+          else if (!t.credit_card_id) newBalance -= t.value;
+        });
+
+        await supabase.from('wallets').update({ current_balance: newBalance }).eq('id', payWalletId);
+      }
+
       toast({ title: 'Fatura paga!', description: `${formatCurrency(payingInvoice.total)} debitado da conta.` });
       setPayDialogOpen(false);
       fetchData();
