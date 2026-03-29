@@ -20,7 +20,7 @@ export function GeniusChatbot() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Olá! 👋 Sou a **Lumnia**, sua assistente financeira inteligente. Posso consultar seus gastos, registar despesas e muito mais. Como posso ajudá-lo?',
+      content: 'Olá! 👋 Sou a **Lumnia**, sua assistente financeira inteligente.\n\nPosso ajudá-lo a:\n- 📊 Consultar resumo e projeção do mês\n- 💳 Ver faturas de cartão de crédito\n- 📝 Registar despesas e receitas\n- 🏷️ Consultar gastos por categoria\n- 📋 Listar contas pendentes\n- 🎯 Verificar orçamentos\n\nExperimente: *"Como vou fechar o mês?"*',
       timestamp: new Date(),
     },
   ]);
