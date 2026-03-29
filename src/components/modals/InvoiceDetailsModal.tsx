@@ -201,13 +201,13 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
       </div>
 
       {/* Transactions */}
-      <ScrollArea className="flex-1 min-h-0 px-3 sm:px-4 max-h-[60vh]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-3 sm:px-4 pb-6">
         {chronological.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
             Nenhuma transação nesta fatura
           </div>
         ) : (
-          <div className="space-y-4 pb-24">
+          <div className="space-y-4">
             {/* By category summary */}
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Por categoria</h4>
@@ -260,7 +260,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
             </div>
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Footer actions */}
       <div className="p-4 border-t border-border">
