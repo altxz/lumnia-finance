@@ -9,6 +9,7 @@ import { Upload, FileSpreadsheet, Loader2, AlertCircle, CheckCircle2, Zap, Credi
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { CategoryPicker } from '@/components/CategoryPicker';
 import { CATEGORIES } from '@/lib/constants';
 
 interface ParsedTransaction {
@@ -161,6 +162,7 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
   const [importing, setImporting] = useState(false);
   const [step, setStep] = useState<'upload' | 'preview'>('upload');
   const [rules, setRules] = useState<AutomationRule[]>([]);
+  const [dbCategories, setDbCategories] = useState<{ id: string; name: string; parent_id: string | null; icon: string; color: string }[]>([]);
 
   const selectedCard = useMemo(() => {
     if (destType !== 'credit_card') return null;
@@ -173,10 +175,12 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
       supabase.from('wallets').select('id, name').eq('user_id', user.id),
       supabase.from('credit_cards').select('id, name, closing_day, closing_strategy, closing_days_before_due, due_day').eq('user_id', user.id),
       supabase.from('automation_rules').select('condition_operator, condition_value, target_category').eq('user_id', user.id).eq('active', true),
-    ]).then(([walletsRes, cardsRes, rulesRes]) => {
+      supabase.from('categories').select('id, name, parent_id, icon, color').eq('user_id', user.id).eq('active', true).order('sort_order'),
+    ]).then(([walletsRes, cardsRes, rulesRes, catsRes]) => {
       setWallets(walletsRes.data || []);
       setCreditCards(cardsRes.data || []);
       setRules(rulesRes.data || []);
+      setDbCategories(catsRes.data || []);
     });
   }, [open, user]);
 
@@ -459,15 +463,12 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Select value={t.category} onValueChange={(v) => updateCategory(i, v)}>
-                          <SelectTrigger className="h-8 w-[140px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {t.type === 'income' && <SelectItem value="salary">Salário</SelectItem>}
-                            {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+                        <CategoryPicker
+                          categories={dbCategories}
+                          value={t.category}
+                          onValueChange={(v) => updateCategory(i, v)}
+                          placeholder="Categoria"
+                        />
                       </TableCell>
                       {destType === 'credit_card' && (
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
