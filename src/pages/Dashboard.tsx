@@ -22,6 +22,7 @@ import { CalendarView } from '@/components/CalendarView';
 import { IncomeVsExpenseChart } from '@/components/analytics/IncomeVsExpenseChart';
 import { TopExpensesList } from '@/components/analytics/TopExpensesList';
 import { CreditUsageChart } from '@/components/analytics/CreditUsageChart';
+import { CreditCardSummary } from '@/components/analytics/CreditCardSummary';
 import { EndOfMonthForecast } from '@/components/analytics/EndOfMonthForecast';
 import { DailySpendingChart } from '@/components/analytics/DailySpendingChart';
 import { FixedVsVariableChart } from '@/components/analytics/FixedVsVariableChart';
@@ -254,8 +255,11 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
 
-                  {/* Pares 7: Cartão e Poupança */}
+                  {/* Pares 7: Cartão de Crédito */}
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditUsageChart /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditCardSummary /></div>
+
+                  {/* Pares 8: Poupança */}
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
 
                   {/* Destaque Rodapé: Patrimônio Líquido (Largura Total) */}
