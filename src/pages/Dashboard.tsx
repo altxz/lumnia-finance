@@ -245,8 +245,11 @@ export default function Dashboard() {
       for (const bp of Object.keys(prev)) {
         updated[bp] = (prev as any)[bp].map((item: any) => {
           if (item.i !== widgetId) return item;
-          const newW = item.w >= 2 ? 1 : 2;
-          return { ...item, w: newW };
+          // Quadrado (2) → Largo (4). Largo (4) → Quadrado (2)
+          const newW = item.w === 2 ? 4 : 2;
+          // Ao virar Largo, forçamos x para 0 para não vazar da tela
+          const newX = newW === 4 ? 0 : item.x;
+          return { ...item, w: newW, x: newX };
         });
       }
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch { /* */ }
