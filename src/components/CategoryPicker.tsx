@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChevronDown, Check } from 'lucide-react';
@@ -37,6 +37,17 @@ function DynamicIcon({ name, ...props }: { name: string } & Omit<LucideProps, 'r
 
 export function CategoryPicker({ categories, value, onValueChange, placeholder = 'Selecione a categoria' }: CategoryPickerProps) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const body = document.body;
+    if (open) {
+      body.classList.add('popover-open-force-scroll');
+    } else {
+      body.classList.remove('popover-open-force-scroll');
+    }
+
+    return () => body.classList.remove('popover-open-force-scroll');
+  }, [open]);
 
   const grouped = useMemo(() => {
     const parents = categories.filter(c => !c.parent_id);
@@ -85,26 +96,11 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border-border"
+        className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border-border pointer-events-auto"
         align="start"
         sideOffset={4}
-        style={{ pointerEvents: 'auto' }}
-        onPointerDownOutside={(e) => {
-          if ((e.target as HTMLElement).closest('button[role="combobox"]')) {
-            e.preventDefault();
-          }
-        }}
       >
-        <div
-          className="max-h-[300px] overflow-y-auto overflow-x-hidden py-1 px-1"
-          style={{
-            WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-y',
-            pointerEvents: 'auto',
-            position: 'relative',
-            zIndex: 50
-          }}
-        >
+        <div className="max-h-[300px] overflow-y-auto overflow-x-hidden px-1">
           <Accordion type="single" collapsible defaultValue={defaultAccordion}>
             {grouped.map(group => {
               const hasSubs = group.subs.length > 0;
