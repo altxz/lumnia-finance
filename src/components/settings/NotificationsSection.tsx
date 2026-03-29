@@ -20,7 +20,7 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
           {[
             { key: 'notify_email_weekly', label: 'Resumo Semanal', desc: 'Receba um resumo das suas despesas toda semana' },
             { key: 'notify_email_alerts', label: 'Alertas de Gastos', desc: 'Aviso quando ultrapassar limites de gastos' },
-            { key: 'notify_email_news', label: 'Novas Funcionalidades', desc: '{ key: 'notify_email_news', label: 'Novas Funcionalidades', desc: 'Fique por dentro das novidades da Lumnia' },' },
+            { key: 'notify_email_news', label: 'Novas Funcionalidades', desc: 'Fique por dentro das novidades da Lumnia' },
           ].map(item => (
             <div key={item.key} className="flex items-center justify-between py-2">
               <div className="space-y-0.5">
