@@ -55,8 +55,8 @@ export default function AuthPage() {
           </CardTitle>
           <CardDescription className="text-base">
             {isLogin
-              ? 'Acesse sua conta para gerenciar suas despesas'
-              : 'Crie sua conta e comece a categorizar despesas com IA'}
+              ? 'Acesse sua conta na Lumnia'
+              : 'Crie sua conta e comece a gerenciar suas finanças com IA'}
           </CardDescription>
         </CardHeader>
         <CardContent>

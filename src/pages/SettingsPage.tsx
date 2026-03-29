@@ -149,7 +149,7 @@ export default function SettingsPage() {
           <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto pb-24">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Configurações</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Personalize sua experiência no FinAI</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1"><p className="text-xs sm:text-sm text-muted-foreground mt-1">Personalize sua experiência na Lumnia</p></p>
             </div>
 
             {loading ? (
