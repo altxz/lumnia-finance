@@ -107,6 +107,12 @@ export default function CategoriesPage() {
     setModalOpen(true);
   };
 
+  const openAddSubModal = (parentId: string) => {
+    setEditingCategory(null);
+    setForm({ name: '', icon: 'tag', color: '#5447BC', keywords: '', parent_id: parentId });
+    setModalOpen(true);
+  };
+
   const openEditModal = (cat: Category) => {
     setEditingCategory(cat);
     setForm({ name: cat.name, icon: cat.icon, color: cat.color, keywords: (cat.keywords || []).join(', '), parent_id: cat.parent_id || '' });
@@ -237,6 +243,12 @@ export default function CategoriesPage() {
                           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: parent.color }} />
                           <span className="text-xs text-muted-foreground">{parent.expense_count || 0} despesas</span>
                           <div className="flex gap-1 ml-auto">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-primary" onClick={() => openAddSubModal(parent.id)}><PlusCircle className="h-3.5 w-3.5" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Adicionar subcategoria</TooltipContent>
+                            </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={() => openEditModal(parent)}><Pencil className="h-3.5 w-3.5" /></Button>
