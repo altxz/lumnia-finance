@@ -38,7 +38,6 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [previousExpenses, setPreviousExpenses] = useState<Expense[]>([]);
-  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchExpenses = useCallback(async () => {
@@ -49,32 +48,21 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     const fromDate = new Date();
     fromDate.setMonth(fromDate.getMonth() - months);
 
-    const ccFromDate = new Date(fromDate);
-    ccFromDate.setMonth(ccFromDate.getMonth() - 2);
-
-    const [{ data }, { data: cardsData }] = await Promise.all([
-      supabase
-        .from('expenses')
-        .select(ANALYTICS_COLS)
-        .eq('user_id', user.id)
-        .gte('date', ccFromDate.toISOString().split('T')[0])
-        .order('date', { ascending: true }),
-      supabase
-        .from('credit_cards')
-        .select('id, name, closing_day, due_day, closing_days_before_due, closing_strategy, limit_amount')
-        .eq('user_id', user.id),
-    ]);
+    const { data } = await supabase
+      .from('expenses')
+      .select(ANALYTICS_COLS)
+      .eq('user_id', user.id)
+      .gte('date', fromDate.toISOString().split('T')[0])
+      .order('date', { ascending: true });
 
     const allExpenses = (data || []) as Expense[];
-    const cards = (cardsData || []) as CreditCard[];
-    setCreditCards(cards);
 
     const periodStart = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, '0')}`;
     const now = new Date();
     const periodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     const currentPeriod = allExpenses.filter(e => {
-      const key = getCashFlowMonthKey(e, cards);
+      const key = getAnalyticsMonthKey(e);
       return key >= periodStart && key <= periodEnd;
     });
 
@@ -85,7 +73,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
       prevFrom.setMonth(prevFrom.getMonth() - months);
       const prevStart = `${prevFrom.getFullYear()}-${String(prevFrom.getMonth() + 1).padStart(2, '0')}`;
       const prev = allExpenses.filter(e => {
-        const key = getCashFlowMonthKey(e, cards);
+        const key = getAnalyticsMonthKey(e);
         return key >= prevStart && key < periodStart;
       });
       setPreviousExpenses(prev);
@@ -102,7 +90,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     const map: Record<string, MonthlyData> = {};
     expenses.forEach(e => {
       if (e.type === 'transfer') return;
-      const key = getCashFlowMonthKey(e, creditCards);
+      const key = getAnalyticsMonthKey(e);
       if (!map[key]) {
         const [y, m] = key.split('-').map(Number);
         const d = new Date(y, m - 1, 1);
@@ -119,7 +107,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
       }
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
-  }, [expenses, creditCards]);
+  }, [expenses]);
 
   const categoryStats = useMemo<CategoryStats[]>(() => {
     const current: Record<string, { total: number; count: number }> = {};
@@ -145,7 +133,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
         return { category, total, count, previousTotal, change };
       })
       .sort((a, b) => b.total - a.total);
-  }, [expenses, previousExpenses, creditCards]);
+  }, [expenses, previousExpenses]);
 
   const totalCurrentPeriod = useMemo(() =>
     expenses.filter(e => e.type !== 'income' && e.type !== 'transfer').reduce((s, e) => s + e.value, 0),
@@ -170,7 +158,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
     const scheduledInstallments = expenses.filter(e => {
       if (!e.credit_card_id || !e.installment_group_id) return false;
-      const key = getCashFlowMonthKey(e, creditCards);
+      const key = getAnalyticsMonthKey(e);
       return key === nextKey;
     }).reduce((s, e) => s + e.value, 0);
 
@@ -181,7 +169,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
     const predicted = recurringTotal + scheduledInstallments + variableAvg;
     return predicted > 0 ? Math.round(predicted) : avgMonthly;
-  }, [expenses, creditCards, monthlyData, avgMonthly]);
+  }, [expenses, monthlyData, avgMonthly]);
 
   const financialScore = useMemo(() => {
     if (expenses.length === 0) return 500;
