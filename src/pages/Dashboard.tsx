@@ -90,7 +90,7 @@ export default function Dashboard() {
         { data: budgetExpData },
         { data: cards },
       ] = await Promise.all([
-        supabase.from('expenses').select('*').eq('user_id', user.id)
+        supabase.from('expenses').select('id, value, type, credit_card_id, final_category').eq('user_id', user.id)
           .gte('date', prevStartDate).lt('date', prevEndDate),
         supabase.from('categories').select('id, name, parent_id, icon, color')
           .eq('user_id', user.id).order('sort_order'),

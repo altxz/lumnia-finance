@@ -46,7 +46,7 @@ export default function HistoryPage() {
     if (!user) return;
     setSubLoading(true);
     const { data } = await supabase
-      .from('expenses').select('*').eq('user_id', user.id)
+      .from('expenses').select('id, description, value, date, type, final_category, is_recurring, frequency, is_paid, wallet_id, credit_card_id').eq('user_id', user.id)
       .eq('is_recurring', true).order('value', { ascending: false });
     setSubItems((data || []) as Expense[]);
     setSubLoading(false);

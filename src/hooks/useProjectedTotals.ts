@@ -6,6 +6,8 @@ import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
 
+// Columns needed for month expenses (avoid select('*'))
+const EXPENSE_COLS = 'id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at';
 
 export interface ProjectedTotals {
   totalIncome: number;
@@ -48,16 +50,21 @@ export function useProjectedTotals(): ProjectedTotals {
       { data: ccExpData },
       { data: cardsData },
       { data: walletsData },
-      { data: allTxns },
+      { data: balanceResult },
     ] = await Promise.all([
-      supabase.from('expenses').select('*').eq('user_id', user.id)
+      // Month expenses with specific columns
+      supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id)
         .gte('date', startDate).lt('date', endDate).order('date', { ascending: false }),
-      supabase.from('expenses').select('*').eq('user_id', user.id)
+      // CC expenses for invoice matching (only needed cols)
+      supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id)
         .not('credit_card_id', 'is', null),
       supabase.from('credit_cards').select('*').eq('user_id', user.id),
       supabase.from('wallets').select('id, name, initial_balance').eq('user_id', user.id).order('name'),
-      supabase.from('expenses').select('value, type, credit_card_id, date')
-        .eq('user_id', user.id).eq('is_paid', true),
+      // Use server-side RPC instead of fetching all transactions
+      supabase.rpc('get_starting_balance', {
+        p_user_id: user.id,
+        p_before_date: startDate,
+      }),
     ]);
 
     setMonthExpenses((expData || []) as Expense[]);
@@ -65,16 +72,8 @@ export function useProjectedTotals(): ProjectedTotals {
     setCreditCards((cardsData || []) as CreditCardType[]);
     setWallets((walletsData || []).map((w: any) => ({ id: w.id, name: w.name })));
 
-    // Calculate starting balance (all history before this month)
-    const walletsTotal = (walletsData || []).reduce((s: number, w: any) => s + (w.initial_balance || 0), 0);
-    let prior = walletsTotal;
-    (allTxns || []).forEach((t: any) => {
-      if (t.type === 'transfer') return;
-      if (t.date >= startDate) return;
-      if (t.type === 'income') prior += t.value;
-      else if (!t.credit_card_id) prior -= t.value;
-    });
-    setStartingBalance(prior);
+    // Starting balance comes from the RPC now (server-side calculation)
+    setStartingBalance(balanceResult ?? 0);
     setLoading(false);
   }, [user, startDate, endDate]);
 
@@ -86,7 +85,6 @@ export function useProjectedTotals(): ProjectedTotals {
 
     const targetMonth = selectedMonth;
     const targetYear_ = selectedYear;
-    // Invoice period from previous month produces dueDate in selectedMonth
     const prevM = targetMonth === 0 ? 11 : targetMonth - 1;
     const prevY = targetMonth === 0 ? targetYear_ - 1 : targetYear_;
 

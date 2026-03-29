@@ -5,6 +5,9 @@ import { Expense } from '@/components/ExpenseTable';
 import { getPaymentDate } from '@/lib/invoiceHelpers';
 import type { CreditCard } from '@/lib/invoiceHelpers';
 
+// Only fetch columns needed for analytics
+const ANALYTICS_COLS = 'id, value, date, type, final_category, credit_card_id, is_recurring, is_paid, frequency, installment_group_id, invoice_month';
+
 export interface AnalyticsFilters {
   period: string; // '3', '6', '12', 'all'
   compare: boolean;
@@ -31,12 +34,9 @@ export interface CategoryStats {
  * Non-CC expenses use their transaction date.
  */
 function getCashFlowMonthKey(e: Expense, cards: CreditCard[]): string {
-  // Manual override: if invoice_month is set, use it directly
   if (e.invoice_month) {
     return e.invoice_month;
   }
-
-  // CC expenses: calculate payment date
   if (e.credit_card_id) {
     const card = cards.find(c => c.id === e.credit_card_id);
     if (card) {
@@ -44,8 +44,6 @@ function getCashFlowMonthKey(e: Expense, cards: CreditCard[]): string {
       return `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, '0')}`;
     }
   }
-
-  // Non-CC: use transaction date
   const d = new Date(e.date + 'T12:00:00');
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -65,20 +63,19 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     const fromDate = new Date();
     fromDate.setMonth(fromDate.getMonth() - months);
 
-    // We need to fetch CC expenses from further back since they may fall into our period
     const ccFromDate = new Date(fromDate);
     ccFromDate.setMonth(ccFromDate.getMonth() - 2);
 
     const [{ data }, { data: cardsData }] = await Promise.all([
       supabase
         .from('expenses')
-        .select('*')
+        .select(ANALYTICS_COLS)
         .eq('user_id', user.id)
         .gte('date', ccFromDate.toISOString().split('T')[0])
         .order('date', { ascending: true }),
       supabase
         .from('credit_cards')
-        .select('*')
+        .select('id, name, closing_day, due_day, closing_days_before_due, closing_strategy, limit_amount')
         .eq('user_id', user.id),
     ]);
 
@@ -86,7 +83,6 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     const cards = (cardsData || []) as CreditCard[];
     setCreditCards(cards);
 
-    // Filter expenses by their cash-flow month, not purchase date
     const periodStart = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, '0')}`;
     const now = new Date();
     const periodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -177,25 +173,21 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     return totalCurrentPeriod / monthlyData.length;
   }, [totalCurrentPeriod, monthlyData]);
 
-  // Smart prediction: recurring + installments + variable average
   const predictedNextMonth = useMemo(() => {
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     const nextKey = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
 
-    // 1. Recurring/fixed subscriptions (is_recurring=true)
     const recurringTotal = expenses
       .filter(e => e.is_recurring && e.type !== 'income' && e.type !== 'transfer')
       .reduce((s, e) => s + e.value, 0) / Math.max(monthlyData.length, 1);
 
-    // 2. CC installments already scheduled for next month
     const scheduledInstallments = expenses.filter(e => {
       if (!e.credit_card_id || !e.installment_group_id) return false;
       const key = getCashFlowMonthKey(e, creditCards);
       return key === nextKey;
     }).reduce((s, e) => s + e.value, 0);
 
-    // 3. Variable spending average (non-recurring, non-installment)
     const variableTotal = expenses
       .filter(e => !e.is_recurring && !e.installment_group_id && e.type !== 'income' && e.type !== 'transfer')
       .reduce((s, e) => s + e.value, 0);
