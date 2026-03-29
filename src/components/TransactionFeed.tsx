@@ -504,6 +504,8 @@ export function TransactionFeed({
           invoice={invoiceModal}
           allExpenses={allExpenses || expenses}
           cards={creditCards}
+          wallets={wallets}
+          onPaid={() => { setInvoiceModal(null); onDeleted(); }}
         />
       )}
     </div>
