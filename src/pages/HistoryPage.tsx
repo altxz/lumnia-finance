@@ -131,7 +131,7 @@ export default function HistoryPage() {
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
                   <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar..." className="pl-9 rounded-xl h-10 text-sm" />
+                    <Input value={search} onChange={e => { setSearch(e.target.value); }} placeholder="Buscar..." className="pl-9 rounded-xl h-10 text-sm" />
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     <Select value={filters.category} onValueChange={v => handleFilterChange('category', v)}>
@@ -155,16 +155,13 @@ export default function HistoryPage() {
 
                 {/* Transaction Feed grouped by day */}
                 <TransactionFeed
-                  expenses={paginatedExpenses}
+                  expenses={filteredExpenses}
                   allExpenses={filteredExpenses}
                   invoiceExpenses={projected.invoiceExpenses}
                   loading={projected.loading}
                   onDeleted={projected.refetch}
                   filters={{ category: filters.category }}
                   onFilterChange={() => {}}
-                  page={page}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
                   wallets={projected.wallets}
                   startingMonthBalance={projected.startingBalance}
                   creditCards={projected.creditCards}
