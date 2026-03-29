@@ -99,8 +99,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto p-0">
-        <div className={`p-4 pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
+      <DialogContent className="sm:max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 w-[calc(100vw-2rem)]">
+        <div className={`px-4 pt-4 pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
           <DialogHeader className="pb-3">
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
               {type === 'income' ? <ArrowUpCircle className="h-5 w-5 text-emerald-600" /> : type === 'transfer' ? <ArrowLeftRight className="h-5 w-5 text-primary" /> : <ArrowDownCircle className="h-5 w-5 text-destructive" />}
@@ -108,10 +108,10 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             </DialogTitle>
           </DialogHeader>
           <div className={`mt-2 mb-3 rounded-xl border-2 bg-background/80 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
-            <div className="flex items-center px-4 py-3">
-              <span className="text-lg font-bold text-muted-foreground mr-2">R$</span>
+            <div className="flex items-center px-3 sm:px-4 py-3">
+              <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2">R$</span>
               <input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)}
-                className="flex-1 bg-transparent text-3xl font-bold outline-none placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </div>
           </div>
         </div>
