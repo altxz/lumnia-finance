@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, CreditCard } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CategoryPicker } from '@/components/CategoryPicker';
 import { supabase } from '@/lib/supabase';
@@ -41,6 +42,20 @@ function generateInvoiceOptions(): string[] {
   return options;
 }
 
+/** Advance a YYYY-MM-DD date by N months */
+function advanceDateByMonths(dateStr: string, months: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setMonth(d.getMonth() + months);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Advance a YYYY-MM invoice_month by N months */
+function advanceInvoiceMonth(ym: string, months: number): string {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y, m - 1 + months, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 const TYPE_STYLES = {
   expense: { bg: 'bg-destructive/10', border: 'border-destructive/20', accent: 'bg-destructive text-destructive-foreground hover:bg-destructive/90', valueBorder: 'border-destructive/30 focus-within:border-destructive' },
   income: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', accent: 'bg-emerald-600 text-white hover:bg-emerald-700', valueBorder: 'border-emerald-500/30 focus-within:border-emerald-500' },
@@ -62,15 +77,26 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const [saving, setSaving] = useState(false);
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
   const [dbCategories, setDbCategories] = useState<{ id: string; name: string; parent_id: string | null; icon: string; color: string }[]>([]);
+
+  // Installment conversion state
+  const [wantInstallment, setWantInstallment] = useState(false);
+  const [numInstallments, setNumInstallments] = useState(2);
+  const [valueMode, setValueMode] = useState<'total' | 'per_installment'>('total');
+
   const { toast } = useToast();
   const { user } = useAuth();
 
   const style = TYPE_STYLES[type];
   const isCredit = !!expense.credit_card_id;
+  const isExistingInstallment = !!expense.installment_group_id;
+  const canConvertToInstallment = isCredit && !isExistingInstallment;
   const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
 
   useEffect(() => {
     if (!user || !open) return;
+    setWantInstallment(false);
+    setNumInstallments(2);
+    setValueMode('total');
     Promise.all([
       supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
       supabase.from('categories').select('id, name, parent_id, icon, color').eq('user_id', user.id).eq('active', true).order('sort_order'),
@@ -91,21 +117,88 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
       toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
       return;
     }
-    setSaving(true);
-    const { error } = await supabase.from('expenses').update({
-      date, description: description.trim(), value: parseFloat(value),
-      final_category: finalCategory, wallet_id: walletId || null,
-      is_paid: isPaid, notes: notes.trim() || null,
-      tags: tags.length > 0 ? tags : null,
-      invoice_month: isCredit ? (invoiceMonth || null) : null,
-    }).eq('id', expense.id);
-
-    if (error) {
-      toast({ title: 'Erro ao atualizar', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Transação atualizada!' });
-      onExpenseUpdated();
+    if (wantInstallment && numInstallments < 2) {
+      toast({ title: 'Erro', description: 'Mínimo de 2 parcelas.', variant: 'destructive' });
+      return;
     }
+
+    setSaving(true);
+
+    try {
+      const parsedValue = parseFloat(value);
+      const baseFields = {
+        date, description: description.trim(),
+        final_category: finalCategory, wallet_id: walletId || null,
+        is_paid: isPaid, notes: notes.trim() || null,
+        tags: tags.length > 0 ? tags : null,
+        invoice_month: isCredit ? (invoiceMonth || null) : null,
+      };
+
+      if (wantInstallment && canConvertToInstallment) {
+        // Convert single expense to installment plan
+        const installmentValue = valueMode === 'total'
+          ? Math.round((parsedValue / numInstallments) * 100) / 100
+          : parsedValue;
+
+        const groupId = crypto.randomUUID();
+        const baseInvoice = invoiceMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+        // Update existing expense as installment 1
+        const { error: updateError } = await supabase.from('expenses').update({
+          ...baseFields,
+          value: installmentValue,
+          installment_group_id: groupId,
+          installment_info: `1/${numInstallments}`,
+          invoice_month: baseInvoice,
+        }).eq('id', expense.id);
+
+        if (updateError) throw updateError;
+
+        // Generate remaining installments (2..N)
+        const newInstallments = [];
+        for (let i = 2; i <= numInstallments; i++) {
+          newInstallments.push({
+            user_id: user!.id,
+            date: advanceDateByMonths(date, i - 1),
+            description: description.trim(),
+            value: installmentValue,
+            type: expense.type,
+            final_category: finalCategory,
+            category_ai: expense.category_ai,
+            credit_card_id: expense.credit_card_id,
+            wallet_id: walletId || null,
+            is_paid: false,
+            is_recurring: false,
+            notes: notes.trim() || null,
+            tags: tags.length > 0 ? tags : null,
+            installments: numInstallments,
+            installment_group_id: groupId,
+            installment_info: `${i}/${numInstallments}`,
+            invoice_month: advanceInvoiceMonth(baseInvoice, i - 1),
+            payment_method: expense.payment_method,
+          });
+        }
+
+        const { error: insertError } = await supabase.from('expenses').insert(newInstallments);
+        if (insertError) throw insertError;
+
+        toast({ title: 'Parcelamento criado!', description: `Transação dividida em ${numInstallments}x de R$ ${installmentValue.toFixed(2)}` });
+      } else {
+        // Normal single update
+        const { error } = await supabase.from('expenses').update({
+          ...baseFields,
+          value: parsedValue,
+        }).eq('id', expense.id);
+
+        if (error) throw error;
+        toast({ title: 'Transação atualizada!' });
+      }
+
+      onExpenseUpdated();
+    } catch (err: any) {
+      toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
+    }
+
     setSaving(false);
   };
 
@@ -139,14 +232,16 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         </div>
 
         <div className="p-4 pt-2 space-y-4">
-          {expense.installment_info && (
+          {/* Existing installment alert */}
+          {isExistingInstallment && expense.installment_info && (
             <Alert className="rounded-xl border-primary/30 bg-primary/5">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-sm">
-                Esta é a parcela <span className="font-bold">{expense.installment_info}</span>. As alterações feitas aqui afetarão apenas esta parcela.
+                Esta despesa faz parte de um parcelamento (<span className="font-bold">{expense.installment_info}</span>). As alterações feitas aqui afetarão apenas esta parcela.
               </AlertDescription>
             </Alert>
           )}
+
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Data</Label>
             <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl h-11" />
@@ -179,6 +274,75 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                     </SelectContent>
                   </Select>
                   <p className="text-[11px] text-muted-foreground">Altere para mover esta despesa para outra fatura.</p>
+                </div>
+              )}
+
+              {/* Installment conversion section */}
+              {canConvertToInstallment && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between rounded-xl border p-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CreditCard className="h-4 w-4 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium">Transformar em parcelamento</span>
+                        <p className="text-xs text-muted-foreground">Dividir esta compra em parcelas</p>
+                      </div>
+                    </div>
+                    <Switch checked={wantInstallment} onCheckedChange={setWantInstallment} />
+                  </div>
+
+                  {wantInstallment && (
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número de Parcelas</Label>
+                        <Input
+                          type="number"
+                          min={2}
+                          max={72}
+                          value={numInstallments}
+                          onChange={e => setNumInstallments(Math.max(2, Math.min(72, parseInt(e.target.value) || 2)))}
+                          className="rounded-xl h-11"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">O valor informado é</Label>
+                        <RadioGroup value={valueMode} onValueChange={v => setValueMode(v as 'total' | 'per_installment')} className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="total" id="val-total" />
+                            <Label htmlFor="val-total" className="text-sm cursor-pointer">
+                              Valor Total da Compra
+                              <span className="text-xs text-muted-foreground ml-1">(divide pelas parcelas)</span>
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="per_installment" id="val-per" />
+                            <Label htmlFor="val-per" className="text-sm cursor-pointer">
+                              Valor da Parcela
+                              <span className="text-xs text-muted-foreground ml-1">(cada parcela terá este valor)</span>
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {value && parseFloat(value) > 0 && (
+                        <div className="rounded-lg bg-background/80 border p-2.5 text-center">
+                          <p className="text-xs text-muted-foreground">Valor de cada parcela</p>
+                          <p className="text-lg font-bold text-primary">
+                            {numInstallments}x de R$ {valueMode === 'total'
+                              ? (parseFloat(value) / numInstallments).toFixed(2)
+                              : parseFloat(value).toFixed(2)}
+                          </p>
+                          {valueMode === 'total' && (
+                            <p className="text-xs text-muted-foreground">Total: R$ {parseFloat(value).toFixed(2)}</p>
+                          )}
+                          {valueMode === 'per_installment' && (
+                            <p className="text-xs text-muted-foreground">Total: R$ {(parseFloat(value) * numInstallments).toFixed(2)}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -256,7 +420,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
             <Button onClick={handleSave} disabled={saving} className={`rounded-xl font-semibold transition-colors ${style.accent}`}>
-              {saving ? 'Salvando...' : 'Salvar'}
+              {saving ? 'Salvando...' : wantInstallment ? `Parcelar em ${numInstallments}x` : 'Salvar'}
             </Button>
           </div>
         </DialogFooter>
