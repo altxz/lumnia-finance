@@ -44,34 +44,35 @@ const STORAGE_KEY = 'dashboard-grid-layouts';
 const defaultLayout = [
   // LINHA 1: Fluxo de Caixa (Largo, tela toda)
   { i: 'cashflow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-  // LINHA 2: Receitas vs Despesas | Despesas por Categoria
+  // LINHA 2: Receitas vs Despesas | Despesas por Categoria (2 Quadrados lado a lado)
   { i: 'income_expense', x: 0, y: 2, w: 2, h: 2, minW: 2, minH: 2 },
   { i: 'categories', x: 2, y: 2, w: 2, h: 2, minW: 2, minH: 2 },
-  // LINHA 3: Cascata (Largo)
+  // LINHA 3: Cascata (Largo, tela toda)
   { i: 'trends', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-  // LINHA 4: Previsão | Evolução Patrimonial
+  // LINHA 4: Previsão | Evolução Patrimonial (2 Quadrados)
   { i: 'forecast', x: 0, y: 6, w: 2, h: 2, minW: 2, minH: 2 },
   { i: 'networth', x: 2, y: 6, w: 2, h: 2, minW: 2, minH: 2 },
-  // LINHA 5: Fixo vs Variável | Uso de Cartão
+  // LINHA 5: Fixo vs Variável | Uso de Cartão (2 Quadrados)
   { i: 'fixed_variable', x: 0, y: 8, w: 2, h: 2, minW: 2, minH: 2 },
   { i: 'credit', x: 2, y: 8, w: 2, h: 2, minW: 2, minH: 2 },
-  // LINHA 6: Fontes de Renda | Taxa de Poupança
+  // LINHA 6: Fontes de Renda | Taxa de Poupança (2 Quadrados)
   { i: 'income_sources', x: 0, y: 10, w: 2, h: 2, minW: 2, minH: 2 },
   { i: 'savings', x: 2, y: 10, w: 2, h: 2, minW: 2, minH: 2 },
-  // LINHA 7: Extras
-  { i: 'daily_spending', x: 0, y: 12, w: 2, h: 2, minW: 2, minH: 2 },
-  { i: 'burndown', x: 2, y: 12, w: 2, h: 2, minW: 2, minH: 2 },
-  { i: 'heatmap', x: 0, y: 14, w: 2, h: 2, minW: 2, minH: 2 },
-  { i: 'week_comparison', x: 2, y: 14, w: 2, h: 2, minW: 2, minH: 2 },
-  { i: 'subcategory_tree', x: 0, y: 16, w: 2, h: 2, minW: 2, minH: 2 },
-  { i: 'calendar', x: 2, y: 16, w: 2, h: 2, minW: 2, minH: 2 },
+  // LINHA 7+: Gráficos densos que OBRIGATORIAMENTE precisam ser Largos (TELA TODA)
+  { i: 'daily_spending', x: 0, y: 12, w: 4, h: 2, minW: 2, minH: 2 },
+  { i: 'burndown', x: 0, y: 14, w: 4, h: 2, minW: 2, minH: 2 },
+  { i: 'heatmap', x: 0, y: 16, w: 4, h: 2, minW: 2, minH: 2 },
+  { i: 'subcategory_tree', x: 0, y: 18, w: 4, h: 2, minW: 2, minH: 2 },
+  // LINHA FINAL: Comparação (Quadrado) e Calendário (Largo e Mais Alto)
+  { i: 'week_comparison', x: 0, y: 20, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'calendar', x: 0, y: 22, w: 4, h: 3, minW: 4, minH: 3 },
 ];
 
 const defaultLayouts = {
   lg: defaultLayout,
-  md: defaultLayout.map(l => ({ ...l, w: Math.min(l.w, 4), x: Math.min(l.x, 0) })),
-  sm: defaultLayout.map((l, idx) => ({ ...l, x: 0, y: idx * 2, w: 2 })),
-  xs: defaultLayout.map((l, idx) => ({ ...l, x: 0, y: idx * 2, w: 1 })),
+  md: defaultLayout.map(l => ({ ...l, w: Math.min(l.w, 4) })),
+  sm: defaultLayout.map((l, idx) => ({ ...l, x: 0, y: idx * 3, w: 2 })),
+  xs: defaultLayout.map((l, idx) => ({ ...l, x: 0, y: idx * 3, w: 1 })),
 };
 
 function loadSavedLayouts() {
@@ -246,11 +247,12 @@ export default function Dashboard() {
       for (const bp of Object.keys(prev)) {
         updated[bp] = (prev as any)[bp].map((item: any) => {
           if (item.i !== widgetId) return item;
-          // Quadrado (2) → Largo (4). Largo (4) → Quadrado (2)
           const newW = item.w === 2 ? 4 : 2;
-          // Ao virar Largo, forçamos x para 0 para não vazar da tela
           const newX = newW === 4 ? 0 : item.x;
-          return { ...item, w: newW, x: newX };
+          // Respeitar minH (ex: calendário precisa de h >= 3)
+          const minH = item.minH || 2;
+          const newH = Math.max(item.h, minH);
+          return { ...item, w: newW, x: newX, h: newH };
         });
       }
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch { /* */ }
@@ -376,8 +378,8 @@ export default function Dashboard() {
                       const widget = widgetMap[item.i as keyof typeof widgetMap];
                       if (!widget) return null;
                       return (
-                        <div key={item.i} className="w-full h-full flex flex-col relative">
-                          <div className="w-full flex-1 min-h-0">{widget.comp}</div>
+                        <div key={item.i} className="w-full h-full flex flex-col relative overflow-hidden">
+                          <div className="w-full flex-1 min-h-0 overflow-hidden">{widget.comp}</div>
                           {isEditingLayout && (
                             <div className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-2xl z-10 pointer-events-none">
                               <div className="absolute top-2 right-2 flex items-center gap-1 pointer-events-auto">
