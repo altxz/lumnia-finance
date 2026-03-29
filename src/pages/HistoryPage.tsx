@@ -193,6 +193,7 @@ export default function HistoryPage() {
                 {/* Transaction Feed grouped by day */}
                 <TransactionFeed
                   expenses={paginatedExpenses}
+                  allExpenses={filteredExpenses}
                   loading={loading}
                   onDeleted={fetchExpenses}
                   filters={{ category: filters.category }}
