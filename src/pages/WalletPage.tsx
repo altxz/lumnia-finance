@@ -932,16 +932,16 @@ export default function WalletPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Card Modal */}
-      <Dialog open={cardModalOpen} onOpenChange={setCardModalOpen}>
+      {/* Add/Edit Card Modal */}
+      <Dialog open={cardModalOpen} onOpenChange={(open) => { if (!open) resetCardForm(); setCardModalOpen(open); }}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Novo Cartão de Crédito</DialogTitle>
+            <DialogTitle className="text-xl font-bold">{editingCardId ? 'Editar Cartão' : 'Novo Cartão de Crédito'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Nome do cartão</Label>
-              <Input placeholder="Ex: Nubank, ActivoBank" value={cardForm.name} onChange={e => setCardForm(f => ({ ...f, name: e.target.value }))} className="rounded-xl h-11" />
+              <Input placeholder="Ex: Nubank, Inter" value={cardForm.name} onChange={e => setCardForm(f => ({ ...f, name: e.target.value }))} className="rounded-xl h-11" />
             </div>
             <div className="space-y-2">
               <Label>Limite (R$)</Label>
@@ -949,10 +949,17 @@ export default function WalletPage() {
             </div>
             <div className="space-y-2">
               <Label>Dia de vencimento</Label>
-              <Input type="number" min="1" max="31" value={cardForm.due_day} onChange={e => setCardForm(f => ({ ...f, due_day: e.target.value }))} className="rounded-xl h-11" />
+              <Select value={cardForm.due_day} onValueChange={v => setCardForm(f => ({ ...f, due_day: v }))}>
+                <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                    <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label>Estratégia de fecho da fatura</Label>
+              <Label>Tipo de fechamento</Label>
               <Select value={cardForm.closing_strategy} onValueChange={v => setCardForm(f => ({ ...f, closing_strategy: v }))}>
                 <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -963,25 +970,58 @@ export default function WalletPage() {
             </div>
             {cardForm.closing_strategy === 'fixed' ? (
               <div className="space-y-2">
-                <Label>Dia de fecho (1-31)</Label>
-                <Input type="number" min="1" max="31" value={cardForm.closing_day} onChange={e => setCardForm(f => ({ ...f, closing_day: e.target.value }))} className="rounded-xl h-11" />
+                <Label>Dia de fechamento (1-31)</Label>
+                <Select value={cardForm.closing_day} onValueChange={v => setCardForm(f => ({ ...f, closing_day: v }))}>
+                  <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                      <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             ) : (
               <div className="space-y-2">
-                <Label>Dias antes do vencimento</Label>
+                <Label>Quantos dias antes do vencimento?</Label>
                 <Input type="number" min="1" max="30" placeholder="7" value={cardForm.closing_days_before_due} onChange={e => setCardForm(f => ({ ...f, closing_days_before_due: e.target.value }))} className="rounded-xl h-11" />
-                <p className="text-xs text-muted-foreground">A fatura fechará {cardForm.closing_days_before_due || '7'} dias antes do dia {cardForm.due_day || '10'}</p>
               </div>
             )}
+            {/* Invoice date preview */}
+            <div className="rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {invoiceDatePreview}
+              </p>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCardModalOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleAddCard} disabled={cardSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {cardSaving ? 'Salvando...' : 'Adicionar'}
+            <Button variant="outline" onClick={() => { resetCardForm(); setCardModalOpen(false); }} className="rounded-xl">Cancelar</Button>
+            <Button onClick={handleSubmitCard} disabled={cardSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+              {cardSaving ? 'Salvando...' : editingCardId ? 'Salvar Alterações' : 'Adicionar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Recalculate Invoices Dialog */}
+      <AlertDialog open={recalcDialogOpen} onOpenChange={setRecalcDialogOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Recalcular faturas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As configurações de fechamento foram alteradas. Deseja recalcular o mês da fatura de todas as transações passadas deste cartão?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => { setRecalcDialogOpen(false); handleSaveEditCard(false); }}>
+              Apenas novas transações
+            </Button>
+            <Button className="rounded-xl bg-primary text-primary-foreground" disabled={cardSaving} onClick={() => handleSaveEditCard(true)}>
+              {cardSaving ? 'Recalculando...' : 'Recalcular tudo'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ═══ Pay Invoice Dialog ═══ */}
       <Dialog open={payInvoiceOpen} onOpenChange={setPayInvoiceOpen}>
