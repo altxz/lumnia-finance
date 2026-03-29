@@ -55,12 +55,12 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
   const firstDayWeekday = new Date(selectedYear, selectedMonth, 1).getDay();
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Mapa de Gastos</CardTitle>
         <p className="text-xs text-muted-foreground">Intensidade por dia</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 min-h-0 pb-4">
         {/* Weekday labels */}
         <div className="grid grid-cols-7 gap-1 mb-1">
           {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (

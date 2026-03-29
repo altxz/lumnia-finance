@@ -69,7 +69,7 @@ export function CalendarView() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border bg-card p-4 w-full overflow-hidden">
+      <div className="rounded-2xl border bg-card p-4 w-full overflow-hidden h-full flex flex-col">
         <Calendar
           mode="single"
           selected={selectedDay}

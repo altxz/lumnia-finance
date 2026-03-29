@@ -31,12 +31,12 @@ export function DailySpendingChart({ expenses }: Props) {
   }, [expenses, daysInMonth]);
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold">Média Diária de Gastos</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+      <CardContent className="flex-1 min-h-0 pb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
               <linearGradient id="gradDaily" x1="0" y1="0" x2="0" y2="1">

@@ -198,7 +198,7 @@ export function CashFlowChart() {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base font-semibold">Fluxo de Caixa</CardTitle>
@@ -237,8 +237,8 @@ export function CashFlowChart() {
           </span>
         </div>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
+      <CardContent className="flex-1 min-h-0 pb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
             <XAxis

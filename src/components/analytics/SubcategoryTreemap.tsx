@@ -42,20 +42,20 @@ export function SubcategoryTreemap({ expenses, categories }: Props) {
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Subcategorias</CardTitle></CardHeader>
-        <CardContent className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">Sem dados</CardContent>
+        <CardContent className="flex-1 min-h-0 pb-4 flex items-center justify-center text-sm text-muted-foreground">Sem dados</CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold">Subcategorias Detalhadas</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+      <CardContent className="flex-1 min-h-0 pb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <Treemap data={data} dataKey="size" nameKey="name" content={<CustomContent />}>
             <Tooltip formatter={(v: number) => formatCurrency(v)} />
           </Treemap>

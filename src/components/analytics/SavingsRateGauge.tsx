@@ -19,11 +19,11 @@ export function SavingsRateGauge({ totalIncome, totalExpense }: Props) {
   const color = rate >= 30 ? 'hsl(142, 71%, 45%)' : rate >= 10 ? 'hsl(45, 93%, 47%)' : 'hsl(var(--destructive))';
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-0">
         <CardTitle className="text-sm font-semibold">Taxa de Poupança</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col items-center pt-2 pb-4">
+      <CardContent className="flex-1 min-h-0 flex flex-col items-center justify-center pt-2 pb-4">
         <svg width={180} height={110} viewBox="0 0 180 110">
           {/* Background arc */}
           <path
