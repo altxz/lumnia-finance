@@ -201,7 +201,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
       </div>
 
       {/* Transactions */}
-      <ScrollArea className="flex-1 min-h-0 px-3 sm:px-4 pr-4 sm:pr-5 max-h-[60vh]">
+      <ScrollArea className="flex-1 min-h-0 px-3 sm:px-4 max-h-[60vh]">
         {chronological.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
             Nenhuma transação nesta fatura
@@ -223,32 +223,32 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
             </div>
 
             {/* Full list */}
-            <div className="space-y-1 w-full max-w-full overflow-hidden">
+            <div className="space-y-1 w-full">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Todas as transações</h4>
               {chronological.map(tx => (
-                <div key={tx.id} className="flex items-start sm:items-center justify-between py-3 border-b border-border last:border-0 w-full max-w-full overflow-hidden gap-2">
-                  <div className="min-w-0 flex-1 overflow-hidden">
+                <div key={tx.id} className="flex items-center justify-between py-3 border-b border-border last:border-0 w-full gap-3 pr-1 sm:pr-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{tx.description}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {new Date(tx.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                       {tx.installment_info && ` • ${tx.installment_info}`}
                     </p>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 shrink-0 pl-1">
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="text-sm font-bold text-destructive whitespace-nowrap">
                       -{formatCurrency(tx.value)}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setEditingExpense(tx)}
-                        className="p-1 sm:p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
+                        className="p-1 sm:p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                         title="Editar"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => onDeleteClick(tx)}
-                        className="p-1 sm:p-1.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        className="p-1 sm:p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                         title="Excluir"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
