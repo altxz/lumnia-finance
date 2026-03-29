@@ -30,6 +30,7 @@ export default function HistoryPage() {
   const { toast } = useToast();
 
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [invoiceExpenses, setInvoiceExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -49,10 +50,18 @@ export default function HistoryPage() {
   const fetchExpenses = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    // Fetch calendar-month expenses (debit, income, transfers)
     const { data } = await supabase.from('expenses').select('*').eq('user_id', user.id)
       .gte('date', startDate).lt('date', endDate)
       .order('date', { ascending: false });
     setAllExpenses((data || []) as Expense[]);
+
+    // Also fetch ALL credit card expenses (any date) so the invoice engine
+    // can match purchases from other months to invoices due in this month
+    const { data: ccData } = await supabase.from('expenses').select('*').eq('user_id', user.id)
+      .not('credit_card_id', 'is', null);
+    setInvoiceExpenses((ccData || []) as Expense[]);
+
     setLoading(false);
   }, [user, startDate, endDate]);
 
@@ -203,6 +212,7 @@ export default function HistoryPage() {
                 <TransactionFeed
                   expenses={paginatedExpenses}
                   allExpenses={filteredExpenses}
+                  invoiceExpenses={invoiceExpenses}
                   loading={loading}
                   onDeleted={fetchExpenses}
                   filters={{ category: filters.category }}

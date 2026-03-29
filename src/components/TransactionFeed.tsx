@@ -29,6 +29,8 @@ const STORAGE_KEY = 'txfeed_group_cards';
 interface TransactionFeedProps {
   expenses: Expense[];
   allExpenses?: Expense[];
+  /** All credit card expenses across all months for invoice matching */
+  invoiceExpenses?: Expense[];
   loading: boolean;
   onDeleted: () => void;
   filters: { category: string };
@@ -83,6 +85,7 @@ interface DayGroup {
 export function TransactionFeed({
   expenses,
   allExpenses,
+  invoiceExpenses,
   loading,
   onDeleted,
   page,
@@ -123,31 +126,18 @@ export function TransactionFeed({
   const targetYear = currentMonth ? parseInt(currentMonth.slice(0, 4)) : new Date().getFullYear();
   const targetMonth = currentMonth ? parseInt(currentMonth.slice(5, 7)) - 1 : new Date().getMonth();
 
-  // Build invoice periods for all credit cards
+  // Build invoice periods using ALL CC expenses (from any month)
   const invoicePeriods = useMemo(() => {
     if (creditCards.length === 0) return [];
-    const allTxns = allExpenses || expenses;
+    // Use invoiceExpenses (all CC txns) for matching, fall back to allExpenses
+    const ccPool = invoiceExpenses && invoiceExpenses.length > 0 ? invoiceExpenses : (allExpenses || expenses);
     return creditCards.map(card => {
       const period = getInvoicePeriod(card, targetYear, targetMonth);
-      return matchExpensesToInvoice(allTxns, period);
+      return matchExpensesToInvoice(ccPool, period);
     });
-  }, [creditCards, allExpenses, expenses, targetYear, targetMonth]);
+  }, [creditCards, invoiceExpenses, allExpenses, expenses, targetYear, targetMonth]);
 
-  // Map card ID -> due date key for this month
-  const cardDueDateMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    invoicePeriods.forEach(inv => {
-      m[inv.cardId] = toDateKey(inv.dueDate);
-    });
-    return m;
-  }, [invoicePeriods]);
 
-  // Set of expense IDs that belong to invoices (for grouped mode)
-  const groupedExpenseIds = useMemo(() => {
-    const ids = new Set<string>();
-    invoicePeriods.forEach(inv => inv.transactions.forEach(tx => ids.add(tx.id)));
-    return ids;
-  }, [invoicePeriods]);
 
   const walletMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -160,62 +150,60 @@ export function TransactionFeed({
   const monthEndDate = new Date(targetYear, targetMonth + 1, 0);
   const monthEnd = toDateKey(monthEndDate);
 
-  // Build feed items: move CC expenses to due date, filter strictly by selected month
+  // Build feed items: place CC expenses on invoice due date, inject from other months
   const grouped: DayGroup[] = useMemo(() => {
     const dayMap: Record<string, FeedItem[]> = {};
     const invoicesByDay: Record<string, InvoicePeriod[]> = {};
 
     const ensureDay = (key: string) => { if (!dayMap[key]) dayMap[key] = []; };
-
-    /** Check if a date key falls within the selected month */
     const isInSelectedMonth = (dateKey: string) => dateKey >= monthStart && dateKey <= monthEnd;
 
-    // Process each expense
+    // Track IDs already added to avoid duplicates
+    const addedIds = new Set<string>();
+
+    // 1. Add non-CC expenses from the calendar month (already filtered by HistoryPage)
     expenses.forEach(exp => {
-      const isCreditCard = !!exp.credit_card_id;
+      if (exp.credit_card_id) return; // CC expenses handled below
+      ensureDay(exp.date);
+      dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
+      addedIds.add(exp.id);
+    });
 
-      if (isCreditCard) {
-        const dueKey = cardDueDateMap[exp.credit_card_id!];
+    // 2. Add CC expenses from invoice periods whose due date is in the selected month
+    invoicePeriods.forEach(inv => {
+      const dueKey = toDateKey(inv.dueDate);
+      if (!isInSelectedMonth(dueKey)) return;
 
-        if (groupCards && groupedExpenseIds.has(exp.id)) {
-          // In grouped mode, CC expenses are hidden (shown via invoice summary)
-          return;
-        }
-
-        if (dueKey) {
-          // Only show if the due date falls within the selected month
-          if (!isInSelectedMonth(dueKey)) return;
+      if (groupCards) {
+        // Grouped mode: show summary item only
+        ensureDay(dueKey);
+        if (!invoicesByDay[dueKey]) invoicesByDay[dueKey] = [];
+        invoicesByDay[dueKey].push(inv);
+      } else {
+        // Ungrouped: show each CC expense individually on the due date
+        inv.transactions.forEach(tx => {
+          if (addedIds.has(tx.id)) return;
+          addedIds.add(tx.id);
           ensureDay(dueKey);
           dayMap[dueKey].push({
-            expense: exp,
-            originalDate: exp.date,
+            expense: tx,
+            originalDate: tx.date,
             isInvoiceItem: true,
           });
-        } else {
-          // No matching invoice period — show on original date if in month
-          if (!isInSelectedMonth(exp.date)) return;
-          ensureDay(exp.date);
-          dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
-        }
-      } else {
-        // Non-CC expenses stay on their original date (already filtered by parent)
-        ensureDay(exp.date);
-        dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
+        });
       }
     });
 
-    // Add invoice summaries on their due dates (grouped mode only) — only if due date is in selected month
-    if (groupCards) {
-      invoicePeriods.forEach(inv => {
-        const key = toDateKey(inv.dueDate);
-        if (!isInSelectedMonth(key)) return;
-        ensureDay(key);
-        if (!invoicesByDay[key]) invoicesByDay[key] = [];
-        invoicesByDay[key].push(inv);
-      });
-    }
+    // 3. Handle CC expenses from `expenses` that don't match any invoice period
+    expenses.forEach(exp => {
+      if (!exp.credit_card_id || addedIds.has(exp.id)) return;
+      // No matching invoice — show on original date
+      ensureDay(exp.date);
+      dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
+      addedIds.add(exp.id);
+    });
 
-    // Calculate running balance — only consider flows within the selected month
+    // Calculate running balance for the selected month
     const allTxns = allExpenses || expenses;
 
     const nonCcFlowByDay: Record<string, number> = {};
@@ -229,7 +217,7 @@ export function TransactionFeed({
       else nonCcFlowByDay[key] -= exp.value;
     });
 
-    // Invoice totals only hit balance if due date is in the selected month
+    // Invoice totals hit balance on due date (only if in selected month)
     const invoiceTotalByDay: Record<string, number> = {};
     invoicePeriods.forEach(inv => {
       const key = toDateKey(inv.dueDate);
@@ -261,7 +249,7 @@ export function TransactionFeed({
       invoices: invoicesByDay[dateKey] || [],
       endOfDayBalance: balanceMap[dateKey] ?? startingMonthBalance,
     }));
-  }, [expenses, allExpenses, startingMonthBalance, groupCards, invoicePeriods, cardDueDateMap, groupedExpenseIds, monthStart, monthEnd]);
+  }, [expenses, allExpenses, startingMonthBalance, groupCards, invoicePeriods, monthStart, monthEnd]);
 
   const statusConfig: Record<string, { label: string; className: string }> = {
     open: { label: 'Aberta', className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
@@ -502,7 +490,7 @@ export function TransactionFeed({
           open={!!invoiceModal}
           onOpenChange={(open) => { if (!open) setInvoiceModal(null); }}
           invoice={invoiceModal}
-          allExpenses={allExpenses || expenses}
+          allExpenses={invoiceExpenses && invoiceExpenses.length > 0 ? invoiceExpenses : (allExpenses || expenses)}
           cards={creditCards}
           wallets={wallets}
           onPaid={() => { setInvoiceModal(null); onDeleted(); }}
