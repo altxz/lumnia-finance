@@ -84,19 +84,16 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="min-w-[220px] w-[--radix-popover-trigger-width] p-0 rounded-xl pointer-events-auto" 
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0 rounded-xl"
         align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          // Permite tocar fora sem quebrar o layout mobile
-        }}
+        sideOffset={4}
       >
-        <div 
-          className="max-h-[50vh] overflow-y-auto overscroll-none touch-pan-y py-1 pointer-events-auto" 
-          style={{ 
+        <div
+          className="max-h-[300px] overflow-y-auto overflow-x-hidden py-1 px-1 select-none"
+          style={{
             WebkitOverflowScrolling: 'touch',
-            overscrollBehavior: 'contain'
+            touchAction: 'pan-y'
           }}
         >
           <Accordion type="single" collapsible defaultValue={defaultAccordion}>
@@ -109,7 +106,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                     key={group.id}
                     type="button"
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary/60 transition-colors pointer-events-auto',
+                      'w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
                       value === group.name.toLowerCase() && 'bg-secondary'
                     )}
                     onClick={() => handleSelect(group.name)}
@@ -125,7 +122,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
 
               return (
                 <AccordionItem key={group.id} value={group.id} className="border-b-0">
-                  <AccordionTrigger className="px-3 py-2.5 text-sm hover:bg-secondary/60 hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
+                  <AccordionTrigger className="px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
                     <span className="flex items-center gap-2">
                       <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
                       <span className="font-semibold whitespace-nowrap">{group.name}</span>
@@ -137,7 +134,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                         key={sub.id}
                         type="button"
                         className={cn(
-                          'w-full flex items-center gap-2 pl-10 pr-3 py-2 text-sm hover:bg-secondary/60 transition-colors pointer-events-auto',
+                          'w-full flex items-center gap-2 pl-10 pr-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
                           value === sub.name.toLowerCase() && 'bg-secondary'
                         )}
                         onClick={() => handleSelect(sub.name)}
