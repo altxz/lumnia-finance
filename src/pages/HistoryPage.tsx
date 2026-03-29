@@ -31,7 +31,6 @@ export default function HistoryPage() {
 
   const projected = useProjectedTotals();
 
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(() => ({
     category: searchParams.get('category') || 'all',
@@ -56,7 +55,6 @@ export default function HistoryPage() {
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPage(1);
   };
 
   // Apply filters
@@ -67,9 +65,6 @@ export default function HistoryPage() {
     if (search.trim()) result = result.filter(e => e.description.toLowerCase().includes(search.toLowerCase()));
     return result;
   }, [projected.monthExpenses, filters, search]);
-
-  const totalPages = Math.ceil(filteredExpenses.length / PAGE_SIZE);
-  const paginatedExpenses = filteredExpenses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const exportCSV = () => {
     const headers = 'Data,Descrição,Valor,Tipo,Categoria\n';
