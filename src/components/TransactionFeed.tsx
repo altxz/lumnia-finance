@@ -490,7 +490,7 @@ export function TransactionFeed({
           open={!!invoiceModal}
           onOpenChange={(open) => { if (!open) setInvoiceModal(null); }}
           invoice={invoiceModal}
-          allExpenses={allExpenses || expenses}
+          allExpenses={invoiceExpenses && invoiceExpenses.length > 0 ? invoiceExpenses : (allExpenses || expenses)}
           cards={creditCards}
           wallets={wallets}
           onPaid={() => { setInvoiceModal(null); onDeleted(); }}
