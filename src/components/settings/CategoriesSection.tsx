@@ -87,6 +87,12 @@ export function CategoriesSection() {
     setModalOpen(true);
   };
 
+  const openAddSub = (parentId: string) => {
+    setEditingCategory(null);
+    setForm({ name: '', icon: 'tag', color: '#5447BC', keywords: '', type: 'sub', parent_id: parentId });
+    setModalOpen(true);
+  };
+
   const openEdit = (cat: Category) => {
     setEditingCategory(cat);
     setForm({
@@ -194,6 +200,9 @@ export function CategoriesSection() {
                         </div>
                       </AccordionTrigger>
                       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-primary" onClick={(e) => { e.stopPropagation(); openAddSub(parent.id); }} title="Adicionar subcategoria">
+                          <PlusCircle className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={(e) => { e.stopPropagation(); openEdit(parent); }}>
                           <Pencil className="h-3 w-3" />
                         </Button>
