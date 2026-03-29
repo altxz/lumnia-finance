@@ -222,7 +222,7 @@ export default function Dashboard() {
                       totalExpense={projected.totalExpense}
                       totalBudget={budgetTotals.totalBudget}
                       totalSpentInBudget={budgetTotals.totalSpent}
-                      hasOverdueCards={hasOverdueCards}
+                      hasOverdueCards={hasOverdueCardsComputed}
                     />
                   }
                 />
@@ -231,13 +231,13 @@ export default function Dashboard() {
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditCardSummary /></div>
-                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CashFlowChart /></div>
+                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditCardSummary cards={projected.creditCards} allExpenses={projected.invoiceExpenses} wallets={projected.wallets} refetch={projected.refetch} /></div>
+                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CashFlowChart creditCards={projected.creditCards} wallets={projected.wallets} /></div>
 
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><TopExpensesList expenses={projected.monthExpenses} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SubcategoryTreemap expenses={projected.monthExpenses} categories={dbCategories} /></div>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeVsExpenseChart /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeVsExpenseChart totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></div>
 
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></div>
@@ -246,13 +246,13 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WeekComparisonChart expenses={projected.monthExpenses} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><BurndownChart expenses={projected.monthExpenses} totalBudget={budgetTotals.totalBudget} /></div>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><EndOfMonthForecast /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CalendarView /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><EndOfMonthForecast creditCards={projected.creditCards} wallets={projected.wallets} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></div>
 
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><FixedVsVariableChart expenses={projected.monthExpenses} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SpendingHeatmap expenses={projected.monthExpenses} /></div>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditUsageChart /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditUsageChart cards={cardsForUsage} unpaidExpenses={unpaidCCExpenses} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></div>
 
                   <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><NetWorthChart /></div>
