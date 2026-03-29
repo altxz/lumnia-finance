@@ -1,9 +1,11 @@
-import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Drawer, DrawerContent, DrawerTrigger, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useIsMobile } from '@/hooks/use-mobile';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import type { LucideProps } from 'lucide-react';
 
@@ -37,17 +39,7 @@ function DynamicIcon({ name, ...props }: { name: string } & Omit<LucideProps, 'r
 
 export function CategoryPicker({ categories, value, onValueChange, placeholder = 'Selecione a categoria' }: CategoryPickerProps) {
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const body = document.body;
-    if (open) {
-      body.classList.add('popover-open-force-scroll');
-    } else {
-      body.classList.remove('popover-open-force-scroll');
-    }
-
-    return () => body.classList.remove('popover-open-force-scroll');
-  }, [open]);
+  const isMobile = useIsMobile();
 
   const grouped = useMemo(() => {
     const parents = categories.filter(c => !c.parent_id);
@@ -75,93 +67,115 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
     return parent ? parent.id : undefined;
   }, [value, grouped]);
 
-  return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between rounded-xl h-11 font-normal"
-        >
-          {selectedCategory ? (
-            <span className="flex items-center gap-2 truncate" title={selectedCategory.name}>
-              <DynamicIcon name={selectedCategory.icon} className="h-4 w-4 shrink-0" style={{ color: selectedCategory.color }} />
-              <span className="truncate">{selectedCategory.name}</span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
-          )}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border-border pointer-events-auto"
-        align="start"
-        sideOffset={4}
-      >
-        <div className="max-h-[300px] overflow-y-auto overflow-x-hidden px-1">
-          <Accordion type="single" collapsible defaultValue={defaultAccordion}>
-            {grouped.map(group => {
-              const hasSubs = group.subs.length > 0;
+  const triggerButton = (
+    <Button
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      className="w-full justify-between rounded-xl h-11 font-normal"
+    >
+      {selectedCategory ? (
+        <span className="flex items-center gap-2 truncate" title={selectedCategory.name}>
+          <DynamicIcon name={selectedCategory.icon} className="h-4 w-4 shrink-0" style={{ color: selectedCategory.color }} />
+          <span className="truncate">{selectedCategory.name}</span>
+        </span>
+      ) : (
+        <span className="text-muted-foreground">{placeholder}</span>
+      )}
+      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  );
 
-              if (!hasSubs) {
-                return (
+  const categoryList = (
+    <div className={cn(isMobile ? 'max-h-[70vh]' : 'max-h-[300px]', 'overflow-y-auto overflow-x-hidden px-1')}>
+      <Accordion type="single" collapsible defaultValue={defaultAccordion}>
+        {grouped.map(group => {
+          const hasSubs = group.subs.length > 0;
+
+          if (!hasSubs) {
+            return (
+              <button
+                key={group.id}
+                type="button"
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
+                  value === group.name.toLowerCase() && 'bg-secondary'
+                )}
+                onClick={() => handleSelect(group.name)}
+              >
+                <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
+                <span className="font-medium flex-1 text-left truncate whitespace-nowrap">{group.name}</span>
+                {value === group.name.toLowerCase() && (
+                  <Check className="h-4 w-4 text-primary shrink-0" />
+                )}
+              </button>
+            );
+          }
+
+          return (
+            <AccordionItem key={group.id} value={group.id} className="border-b-0">
+              <AccordionTrigger className="px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
+                <span className="flex items-center gap-2">
+                  <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
+                  <span className="font-semibold whitespace-nowrap">{group.name}</span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="pb-1 pt-0">
+                {group.subs.map(sub => (
                   <button
-                    key={group.id}
+                    key={sub.id}
                     type="button"
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors touch-manipulation',
-                      value === group.name.toLowerCase() && 'bg-secondary'
+                      'w-full flex items-center gap-2 pl-10 pr-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
+                      value === sub.name.toLowerCase() && 'bg-secondary'
                     )}
-                    style={{ pointerEvents: 'auto' }}
-                    onClick={() => handleSelect(group.name)}
+                    onClick={() => handleSelect(sub.name)}
                   >
-                    <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
-                    <span className="font-medium flex-1 text-left truncate whitespace-nowrap">{group.name}</span>
-                    {value === group.name.toLowerCase() && (
+                    <DynamicIcon name={sub.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: sub.color }} />
+                    <span className="flex-1 text-left truncate whitespace-nowrap">{sub.name}</span>
+                    {value === sub.name.toLowerCase() && (
                       <Check className="h-4 w-4 text-primary shrink-0" />
                     )}
                   </button>
-                );
-              }
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+      {grouped.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">Nenhuma categoria encontrada</p>
+      )}
+    </div>
+  );
 
-              return (
-                <AccordionItem key={group.id} value={group.id} className="border-b-0">
-                  <AccordionTrigger className="px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 hover:no-underline touch-manipulation [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
-                    <span className="flex items-center gap-2">
-                      <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
-                      <span className="font-semibold whitespace-nowrap">{group.name}</span>
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-1 pt-0">
-                    {group.subs.map(sub => (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        className={cn(
-                          'w-full flex items-center gap-2 pl-10 pr-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors touch-manipulation',
-                          value === sub.name.toLowerCase() && 'bg-secondary'
-                        )}
-                        style={{ pointerEvents: 'auto' }}
-                        onClick={() => handleSelect(sub.name)}
-                      >
-                        <DynamicIcon name={sub.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: sub.color }} />
-                        <span className="flex-1 text-left truncate whitespace-nowrap">{sub.name}</span>
-                        {value === sub.name.toLowerCase() && (
-                          <Check className="h-4 w-4 text-primary shrink-0" />
-                        )}
-                      </button>
-                    ))}
-                  </AccordionContent>
-                </AccordionItem>
-              );
-            })}
-          </Accordion>
-          {grouped.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma categoria encontrada</p>
-          )}
-        </div>
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>
+          {triggerButton}
+        </DrawerTrigger>
+        <DrawerContent className="max-h-[80vh]">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle>{placeholder}</DrawerTitle>
+          </DrawerHeader>
+          {categoryList}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        {triggerButton}
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border-border"
+        align="start"
+        sideOffset={4}
+      >
+        {categoryList}
       </PopoverContent>
     </Popover>
   );
