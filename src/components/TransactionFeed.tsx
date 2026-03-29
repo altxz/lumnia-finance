@@ -257,7 +257,59 @@ export function TransactionFeed({
     return statusConfig[inv.status] || statusConfig.open;
   };
 
+  // Infinite scroll state
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Reset visible count when expenses change
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [expenses]);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount(prev => prev + ITEMS_PER_PAGE);
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [grouped]);
+
   const hasContent = grouped.some(g => g.items.length > 0 || g.invoices.length > 0);
+
+  // Slice grouped items for infinite scroll
+  const visibleGroups = useMemo(() => {
+    let count = 0;
+    const result: typeof grouped = [];
+    for (const group of grouped) {
+      if (count >= visibleCount) break;
+      const remaining = visibleCount - count;
+      const totalItems = group.items.length + group.invoices.length;
+      if (totalItems <= remaining) {
+        result.push(group);
+        count += totalItems;
+      } else {
+        // Partially show items
+        result.push({
+          ...group,
+          items: group.items.slice(0, Math.max(0, remaining - group.invoices.length)),
+          invoices: group.invoices.slice(0, remaining),
+        });
+        count = visibleCount;
+      }
+    }
+    return result;
+  }, [grouped, visibleCount]);
+
+  const allItemsCount = grouped.reduce((s, g) => s + g.items.length + g.invoices.length, 0);
+  const hasMore = visibleCount < allItemsCount;
 
   return (
     <div className="space-y-4">
@@ -283,8 +335,12 @@ export function TransactionFeed({
         </div>
       )}
 
-      {loading ? (
-        <p className="text-center py-12 text-muted-foreground">Carregando...</p>
+      ) : loading ? (
+        <div className="space-y-3">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-16 rounded-xl bg-muted/60 animate-pulse" />
+          ))}
+        </div>
       ) : !hasContent ? (
         <p className="text-center py-12 text-muted-foreground">Nenhuma transação encontrada.</p>
       ) : (
