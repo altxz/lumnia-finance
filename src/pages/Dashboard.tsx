@@ -35,6 +35,7 @@ import { WeekComparisonChart } from '@/components/analytics/WeekComparisonChart'
 import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
 import { WaterfallChart } from '@/components/analytics/WaterfallChart';
 import { SpendingHeatmap } from '@/components/analytics/SpendingHeatmap';
+import { BurndownChart } from '@/components/analytics/BurndownChart';
 import { NetWorthChart } from '@/components/analytics/NetWorthChart';
 import type { Expense } from '@/components/ExpenseTable';
 
