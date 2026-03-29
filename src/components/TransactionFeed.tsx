@@ -326,7 +326,7 @@ export function TransactionFeed({
                   {/* Invoice summaries (grouped mode) */}
                   {invoices.map(inv => {
                     const displayStatus = getInvoiceDisplayStatus(inv);
-                    const paid = isInvoicePaid(inv);
+                    const isPaid = inv.status === 'paid';
                     return (
                       <div
                         key={`inv-${inv.cardId}`}
