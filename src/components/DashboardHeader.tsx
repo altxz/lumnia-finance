@@ -15,6 +15,7 @@ export function DashboardHeader() {
   const { toggleSidebar } = useSidebar();
   const { theme, setTheme } = useTheme();
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
