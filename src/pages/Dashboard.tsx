@@ -20,7 +20,7 @@ import { CashFlowChart } from '@/components/CashFlowChart';
 import { HealthScore } from '@/components/HealthScore';
 import { CalendarView } from '@/components/CalendarView';
 import { IncomeVsExpenseChart } from '@/components/analytics/IncomeVsExpenseChart';
-import { TopCategoriesPie } from '@/components/analytics/TopCategoriesPie';
+import { TopExpensesList } from '@/components/analytics/TopExpensesList';
 import { CreditUsageChart } from '@/components/analytics/CreditUsageChart';
 import { EndOfMonthForecast } from '@/components/analytics/EndOfMonthForecast';
 import { DailySpendingChart } from '@/components/analytics/DailySpendingChart';
@@ -231,7 +231,7 @@ export default function Dashboard() {
                   <div className="lg:col-span-2 flex flex-col min-h-[350px]"><CashFlowChart /></div>
 
                   {/* Pares 1: Categorias e Subcategorias */}
-                  <div className="flex flex-col min-h-[350px]"><TopCategoriesPie expenses={expenses} categories={dbCategories} /></div>
+                  <div className="flex flex-col min-h-[350px]"><TopExpensesList expenses={expenses} /></div>
                   <div className="flex flex-col min-h-[350px]"><SubcategoryTreemap expenses={expenses} categories={dbCategories} /></div>
 
                   {/* Pares 2: Receita vs Despesas e Cascata */}
