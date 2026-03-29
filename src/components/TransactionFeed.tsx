@@ -541,6 +541,7 @@ export function TransactionFeed({
           cards={creditCards}
           wallets={wallets}
           onPaid={() => { setInvoiceModal(null); onDeleted(); }}
+          refetch={onDeleted}
         />
       )}
     </div>

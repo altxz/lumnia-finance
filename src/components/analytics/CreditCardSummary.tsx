@@ -359,6 +359,7 @@ export function CreditCardSummary() {
           wallets={wallets}
           onOpenChange={(open) => { if (!open) setSelectedInvoice(null); }}
           onPaid={fetchData}
+          refetch={fetchData}
         />
       )}
 
