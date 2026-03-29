@@ -5,12 +5,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CreditCard, Calendar, Lock, Clock, AlertTriangle, Receipt, FileText } from 'lucide-react';
+import { CreditCard, Calendar, Lock, Clock, AlertTriangle, Receipt, FileText, CheckCircle2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
 import { getInvoicePeriod, matchExpensesToInvoice, formatInvoiceDate } from '@/lib/invoiceHelpers';
 import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface InvoiceDetailsModalProps {
   open: boolean;
@@ -18,12 +21,15 @@ interface InvoiceDetailsModalProps {
   invoice: InvoicePeriod;
   allExpenses: Expense[];
   cards: CreditCardType[];
+  wallets?: { id: string; name: string }[];
+  onPaid?: () => void;
 }
 
 const STATUS_CONFIG = {
   open: { label: 'Fatura Aberta', icon: Clock, bg: 'bg-emerald-500/15', text: 'text-emerald-600' },
   closed: { label: 'Fatura Fechada', icon: Lock, bg: 'bg-muted', text: 'text-muted-foreground' },
   overdue: { label: 'Fatura Vencida', icon: AlertTriangle, bg: 'bg-destructive/15', text: 'text-destructive' },
+  paid: { label: 'Fatura Paga', icon: CheckCircle2, bg: 'bg-primary/15', text: 'text-primary' },
 } as const;
 
 function generateMonthOptions(): { value: string; label: string }[] {
@@ -39,9 +45,13 @@ function generateMonthOptions(): { value: string; label: string }[] {
   return options;
 }
 
-export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, cards }: InvoiceDetailsModalProps) {
+export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, cards, wallets = [], onPaid }: InvoiceDetailsModalProps) {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState(`${new Date().getFullYear()}-${new Date().getMonth()}`);
+  const [paying, setPaying] = useState(false);
+  const [selectedWalletId, setSelectedWalletId] = useState<string>(wallets[0]?.id || '');
 
   const currentCard = cards.find(c => c.id === invoice.cardId);
 
@@ -55,6 +65,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const statusInfo = STATUS_CONFIG[activeInvoice.status];
   const StatusIcon = statusInfo.icon;
   const monthOptions = useMemo(() => generateMonthOptions(), []);
+  const isPaid = activeInvoice.status === 'paid';
 
   // Group by category
   const byCategory = useMemo(() => {
@@ -70,10 +81,42 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
     return Object.entries(groups).sort((a, b) => b[1].total - a[1].total);
   }, [activeInvoice.transactions]);
 
-  // Sort chronologically
   const chronological = useMemo(() => {
     return [...activeInvoice.transactions].sort((a, b) => a.date.localeCompare(b.date));
   }, [activeInvoice.transactions]);
+
+  const handlePayInvoice = async () => {
+    if (!user || !selectedWalletId || activeInvoice.total <= 0) return;
+    setPaying(true);
+
+    try {
+      // Create the payment transaction (debit from wallet)
+      const dueDate = activeInvoice.dueDate;
+      const dateStr = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`;
+
+      const { error: insertError } = await supabase.from('expenses').insert({
+        user_id: user.id,
+        description: `Pagamento fatura ${activeInvoice.cardName}`,
+        value: activeInvoice.total,
+        final_category: 'cartao',
+        type: 'expense',
+        date: dateStr,
+        wallet_id: selectedWalletId,
+        is_paid: true,
+        invoice_month: activeInvoice.monthLabel,
+      });
+
+      if (insertError) throw insertError;
+
+      toast({ title: 'Fatura paga!', description: `Pagamento de ${formatCurrency(activeInvoice.total)} registrado.` });
+      onPaid?.();
+      onOpenChange(false);
+    } catch (err: any) {
+      toast({ title: 'Erro ao pagar fatura', description: err.message, variant: 'destructive' });
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const content = (
     <div className="flex flex-col h-full">
@@ -162,16 +205,41 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
         )}
       </ScrollArea>
 
-      {/* Footer actions (visual only) */}
-      <div className="p-4 border-t border-border flex gap-2">
-        <Button className="flex-1 rounded-xl gap-2" variant="outline">
-          <FileText className="h-4 w-4" />
-          Gerar Boleto
-        </Button>
-        <Button className="flex-1 rounded-xl gap-2 bg-primary text-primary-foreground">
-          <Receipt className="h-4 w-4" />
-          Pagar Fatura
-        </Button>
+      {/* Footer actions */}
+      <div className="p-4 border-t border-border">
+        {isPaid ? (
+          <div className="flex items-center justify-center gap-2 py-2 text-primary">
+            <CheckCircle2 className="h-5 w-5" />
+            <span className="font-semibold">Fatura paga</span>
+          </div>
+        ) : activeInvoice.total > 0 ? (
+          <div className="space-y-3">
+            {wallets.length > 0 && (
+              <Select value={selectedWalletId} onValueChange={setSelectedWalletId}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(w => (
+                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button
+              className="w-full rounded-xl gap-2 bg-primary text-primary-foreground"
+              disabled={paying || !selectedWalletId}
+              onClick={handlePayInvoice}
+            >
+              <Receipt className="h-4 w-4" />
+              {paying ? 'Pagando...' : `Pagar Fatura (${formatCurrency(activeInvoice.total)})`}
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center py-2 text-muted-foreground text-sm">
+            Nenhum valor a pagar
+          </div>
+        )}
       </div>
     </div>
   );
