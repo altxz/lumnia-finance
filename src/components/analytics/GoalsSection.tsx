@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Target, Calculator, Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Target, Calculator } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface Props {
   avgMonthly: number;
@@ -32,14 +32,7 @@ export function GoalsSection({ avgMonthly, totalCurrentPeriod }: Props) {
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" /> Metas
             </CardTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Acompanhe o progresso das suas metas financeiras e veja quanto falta para atingi-las.</p>
-              </TooltipContent>
-            </Tooltip>
+            <InfoPopover><p>Acompanhe o progresso das suas metas financeiras e veja quanto falta para atingi-las.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -71,14 +64,7 @@ export function GoalsSection({ avgMonthly, totalCurrentPeriod }: Props) {
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Calculator className="h-4 w-4 text-ai" /> Simulador de Economia
             </CardTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Simule quanto tempo levará para atingir seu objetivo financeiro com base na economia mensal.</p>
-              </TooltipContent>
-            </Tooltip>
+            <InfoPopover><p>Simule quanto tempo levará para atingir seu objetivo financeiro com base na economia mensal.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

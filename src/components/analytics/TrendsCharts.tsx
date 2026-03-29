@@ -3,8 +3,7 @@ import { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveCont
 import { formatCurrency } from '@/lib/constants';
 import { MonthlyData } from '@/hooks/useAnalyticsData';
 import { CATEGORIES } from '@/lib/constants';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 const AREA_COLORS = ['hsl(245, 45%, 51%)', 'hsl(80, 80%, 50%)', 'hsl(280, 94%, 68%)', 'hsl(230, 96%, 64%)', 'hsl(0, 84%, 60%)', 'hsl(40, 90%, 55%)', 'hsl(170, 70%, 45%)'];
 
@@ -34,14 +33,7 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Evolução Mensal + Projeção</CardTitle>
-            <InfoTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Acompanhe a evolução dos seus gastos mês a mês com projeção do próximo período.</p>
-              </TooltipContent>
-            </InfoTooltip>
+            <InfoPopover><p>Acompanhe a evolução dos seus gastos mês a mês com projeção do próximo período.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent>
@@ -65,14 +57,7 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Evolução por Categoria</CardTitle>
-            <InfoTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Veja como cada categoria de gasto evoluiu ao longo dos meses.</p>
-              </TooltipContent>
-            </InfoTooltip>
+            <InfoPopover><p>Veja como cada categoria de gasto evoluiu ao longo dos meses.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent>

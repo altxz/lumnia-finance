@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface Props {
   totalIncome: number;
@@ -25,14 +24,7 @@ export function SavingsRateGauge({ totalIncome, totalExpense }: Props) {
       <CardHeader className="pb-0">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Taxa de Poupança</CardTitle>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>A porcentagem da sua renda que você não gastou e conseguiu guardar no mês.</p>
-            </TooltipContent>
-          </Tooltip>
+          <InfoPopover><p>A porcentagem da sua renda que você não gastou e conseguiu guardar no mês.</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 flex flex-col items-center justify-center pt-2 pb-4">

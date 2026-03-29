@@ -2,10 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadialBarChart, RadialBar, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 export function CreditUsageChart() {
   const { user } = useAuth();
@@ -54,14 +53,7 @@ export function CreditUsageChart() {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Uso de Cartão de Crédito</CardTitle>
-          <InfoTooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>Mostra qual porcentagem das suas despesas totais está concentrada no cartão de crédito.</p>
-            </TooltipContent>
-          </InfoTooltip>
+          <InfoPopover><p>Mostra qual porcentagem das suas despesas totais está concentrada no cartão de crédito.</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">

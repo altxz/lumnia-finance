@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/constants';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(142, 71%, 45%)', 'hsl(var(--accent))', 'hsl(280, 60%, 55%)'];
 
@@ -31,14 +30,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Maiores Compras</CardTitle>
-          <InfoTooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>As 5 transações individuais mais caras do período selecionado.</p>
-            </TooltipContent>
-          </InfoTooltip>
+          <InfoPopover><p>As 5 transações individuais mais caras do período selecionado.</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">

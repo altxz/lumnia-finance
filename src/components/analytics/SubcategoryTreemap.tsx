@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface Props {
   expenses: any[];
@@ -56,14 +55,7 @@ export function SubcategoryTreemap({ expenses, categories }: Props) {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Subcategorias Detalhadas</CardTitle>
-          <InfoTooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>Mostra exatamente onde o dinheiro foi gasto, com blocos maiores representando os maiores gastos.</p>
-            </TooltipContent>
-          </InfoTooltip>
+          <InfoPopover><p>Mostra exatamente onde o dinheiro foi gasto, com blocos maiores representando os maiores gastos.</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">

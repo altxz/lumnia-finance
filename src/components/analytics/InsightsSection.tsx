@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Brain, AlertTriangle, Lightbulb, Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Brain, AlertTriangle, Lightbulb } from 'lucide-react';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
 import { CategoryStats } from '@/hooks/useAnalyticsData';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface Props {
   avgMonthly: number;
@@ -46,14 +46,7 @@ export function InsightsSection({ avgMonthly, categoryStats, weekdayAnalysis, pr
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Brain className="h-4 w-4 text-ai" /> Padrões Descobertos
             </CardTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Padrões de comportamento financeiro identificados automaticamente com base nos seus dados.</p>
-              </TooltipContent>
-            </Tooltip>
+            <InfoPopover><p>Padrões de comportamento financeiro identificados automaticamente com base nos seus dados.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -72,14 +65,7 @@ export function InsightsSection({ avgMonthly, categoryStats, weekdayAnalysis, pr
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive" /> Alertas Inteligentes
             </CardTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Avisos automáticos quando seus gastos fogem do padrão habitual.</p>
-              </TooltipContent>
-            </Tooltip>
+            <InfoPopover><p>Avisos automáticos quando seus gastos fogem do padrão habitual.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -98,14 +84,7 @@ export function InsightsSection({ avgMonthly, categoryStats, weekdayAnalysis, pr
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-accent" /> Recomendações
             </CardTitle>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Sugestões personalizadas para melhorar suas finanças com base nos seus hábitos.</p>
-              </TooltipContent>
-            </Tooltip>
+            <InfoPopover><p>Sugestões personalizadas para melhorar suas finanças com base nos seus hábitos.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">

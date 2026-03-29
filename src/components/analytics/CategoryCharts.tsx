@@ -3,8 +3,8 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { getCategoryInfo, formatCurrency } from '@/lib/constants';
 import { CategoryStats } from '@/hooks/useAnalyticsData';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 const COLORS = ['hsl(245, 45%, 51%)', 'hsl(80, 80%, 50%)', 'hsl(280, 94%, 68%)', 'hsl(230, 96%, 64%)', 'hsl(0, 84%, 60%)', 'hsl(40, 90%, 55%)', 'hsl(170, 70%, 45%)'];
 
@@ -31,14 +31,7 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Distribuição por Categoria</CardTitle>
-            <InfoTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Gráfico de pizza mostrando a proporção de cada categoria no total de gastos.</p>
-              </TooltipContent>
-            </InfoTooltip>
+            <InfoPopover><p>Gráfico de pizza mostrando a proporção de cada categoria no total de gastos.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent>
@@ -62,14 +55,7 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Top Categorias</CardTitle>
-            <InfoTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Ranking das categorias com maior volume de gastos em barras horizontais.</p>
-              </TooltipContent>
-            </InfoTooltip>
+            <InfoPopover><p>Ranking das categorias com maior volume de gastos em barras horizontais.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent>
@@ -93,14 +79,7 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Alertas por Categoria</CardTitle>
-            <InfoTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Variações significativas nos gastos por categoria comparadas ao período anterior.</p>
-              </TooltipContent>
-            </InfoTooltip>
+            <InfoPopover><p>Variações significativas nos gastos por categoria comparadas ao período anterior.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent>

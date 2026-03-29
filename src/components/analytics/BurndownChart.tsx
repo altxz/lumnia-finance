@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/constants';
 import type { Expense } from '@/components/ExpenseTable';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface BurndownChartProps {
   expenses: Expense[];
@@ -68,14 +67,7 @@ export function BurndownChart({ expenses, totalBudget }: BurndownChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-base font-semibold">Burndown de Orçamento</CardTitle>
-          <InfoTooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>Mostra a velocidade com que você está consumindo seu orçamento geral do mês comparado à linha ideal.</p>
-            </TooltipContent>
-          </InfoTooltip>
+          <InfoPopover><p>Mostra a velocidade com que você está consumindo seu orçamento geral do mês comparado à linha ideal.</p></InfoPopover>
         </div>
         <p className="text-xs text-muted-foreground">
           {isAbove ? '✅ Ritmo de gastos dentro da meta' : '⚠️ Gastos acima do ritmo ideal'}

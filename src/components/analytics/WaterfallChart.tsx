@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine } from 'recharts';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
 import type { Expense } from '@/components/ExpenseTable';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface WaterfallChartProps {
   expenses: Expense[];
@@ -114,14 +113,7 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-base font-semibold">Cascata do Mês</CardTitle>
-          <InfoTooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>Explica visualmente como o seu saldo inicial se transformou no saldo atual, barra a barra.</p>
-            </TooltipContent>
-          </InfoTooltip>
+          <InfoPopover><p>Explica visualmente como o seu saldo inicial se transformou no saldo atual, barra a barra.</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">

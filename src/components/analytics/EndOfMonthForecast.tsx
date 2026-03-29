@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceDot } from 'recharts';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 export function EndOfMonthForecast() {
   const { user } = useAuth();
@@ -95,14 +94,7 @@ export function EndOfMonthForecast() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-sm font-semibold">Previsão Fim de Mês</CardTitle>
-            <InfoTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Estimativa matemática de como seu saldo vai terminar o mês se você mantiver o ritmo atual.</p>
-              </TooltipContent>
-            </InfoTooltip>
+            <InfoPopover><p>Estimativa matemática de como seu saldo vai terminar o mês se você mantiver o ritmo atual.</p></InfoPopover>
           </div>
           <span className={`text-sm font-bold ${endBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatCurrency(endBalance)}</span>
         </div>

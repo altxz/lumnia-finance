@@ -2,13 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
-import { TrendingUp, TrendingDown, Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { addDays, format, startOfDay, eachDayOfInterval, isBefore, isAfter, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 type TimeFilter = 'month' | '7days' | '30days';
 
@@ -204,14 +204,7 @@ export function CashFlowChart() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Fluxo de Caixa</CardTitle>
-            <InfoTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[250px] text-xs">
-                <p>Mostra o saldo real da sua conta ao longo do tempo, somando entradas e subtraindo saídas dia a dia.</p>
-              </TooltipContent>
-            </InfoTooltip>
+            <InfoPopover><p>Mostra o saldo real da sua conta ao longo do tempo, somando entradas e subtraindo saídas dia a dia.</p></InfoPopover>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Select value={timeFilter} onValueChange={v => setTimeFilter(v as TimeFilter)}>

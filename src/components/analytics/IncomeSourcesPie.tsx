@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
-import { Info } from 'lucide-react';
-import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface Props {
   expenses: any[];
@@ -42,14 +41,7 @@ export function IncomeSourcesPie({ expenses, categories }: Props) {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Fontes de Renda</CardTitle>
-          <InfoTooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>Distribuição de onde vem o seu dinheiro (ex: Salário, Rendimentos, Freelance).</p>
-            </TooltipContent>
-          </InfoTooltip>
+          <InfoPopover><p>Distribuição de onde vem o seu dinheiro (ex: Salário, Rendimentos, Freelance).</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Activity } from 'lucide-react';
+import { InfoPopover } from '@/components/ui/info-popover';
 
 interface HealthScoreProps {
   totalIncome: number;
@@ -45,14 +45,7 @@ export function HealthScore({ totalIncome, totalExpense, totalBudget, totalSpent
             <Activity className="h-4 w-4 text-muted-foreground" />
             Saúde Financeira
           </CardTitle>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground hover:text-primary cursor-help transition-colors" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[250px] text-xs">
-              <p>Pontuação geral da sua saúde financeira baseada em receitas, despesas, orçamento e cartões.</p>
-            </TooltipContent>
-          </Tooltip>
+          <InfoPopover><p>Pontuação geral da sua saúde financeira baseada em receitas, despesas, orçamento e cartões.</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-3 pt-0">
