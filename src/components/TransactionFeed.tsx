@@ -137,21 +137,7 @@ export function TransactionFeed({
     });
   }, [creditCards, invoiceExpenses, allExpenses, expenses, targetYear, targetMonth]);
 
-  // Map card ID -> due date key for this month
-  const cardDueDateMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    invoicePeriods.forEach(inv => {
-      m[inv.cardId] = toDateKey(inv.dueDate);
-    });
-    return m;
-  }, [invoicePeriods]);
 
-  // Set of expense IDs that belong to invoices (for grouped mode)
-  const groupedExpenseIds = useMemo(() => {
-    const ids = new Set<string>();
-    invoicePeriods.forEach(inv => inv.transactions.forEach(tx => ids.add(tx.id)));
-    return ids;
-  }, [invoicePeriods]);
 
   const walletMap = useMemo(() => {
     const m: Record<string, string> = {};
