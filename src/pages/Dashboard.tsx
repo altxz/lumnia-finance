@@ -378,8 +378,8 @@ export default function Dashboard() {
                       const widget = widgetMap[item.i as keyof typeof widgetMap];
                       if (!widget) return null;
                       return (
-                        <div key={item.i} className="w-full h-full flex flex-col relative">
-                          <div className="w-full flex-1 min-h-0">{widget.comp}</div>
+                        <div key={item.i} className="w-full h-full flex flex-col relative overflow-hidden">
+                          <div className="w-full flex-1 min-h-0 overflow-hidden">{widget.comp}</div>
                           {isEditingLayout && (
                             <div className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-2xl z-10 pointer-events-none">
                               <div className="absolute top-2 right-2 flex items-center gap-1 pointer-events-auto">
