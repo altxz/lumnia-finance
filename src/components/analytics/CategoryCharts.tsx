@@ -1,10 +1,14 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { getCategoryInfo, formatCurrency } from '@/lib/constants';
 import { CategoryStats } from '@/hooks/useAnalyticsData';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSelectedDate } from '@/contexts/DateContext';
 
 const COLORS = ['hsl(245, 45%, 51%)', 'hsl(80, 80%, 50%)', 'hsl(280, 94%, 68%)', 'hsl(230, 96%, 64%)', 'hsl(0, 84%, 60%)', 'hsl(40, 90%, 55%)', 'hsl(170, 70%, 45%)'];
 
@@ -14,16 +18,41 @@ interface Props {
 }
 
 export function CategoryCharts({ categoryStats, compare }: Props) {
+  const { user } = useAuth();
+  const { startDate } = useSelectedDate();
+  const [budgetMap, setBudgetMap] = useState<Record<string, number>>({});
+
+  // Fetch budgets for the current month to overlay on chart
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('budgets')
+        .select('category, allocated_amount')
+        .eq('user_id', user.id)
+        .eq('month_year', startDate);
+      const map: Record<string, number> = {};
+      (data || []).forEach((b: any) => {
+        if (b.category && b.allocated_amount > 0) map[b.category] = b.allocated_amount;
+      });
+      setBudgetMap(map);
+    })();
+  }, [user, startDate]);
+
   const pieData = categoryStats.slice(0, 7).map(s => ({
     name: getCategoryInfo(s.category).label,
     value: Math.round(s.total),
   }));
 
-  const barData = categoryStats.slice(0, 10).map(s => ({
-    name: getCategoryInfo(s.category).label,
-    atual: Math.round(s.total),
-    ...(compare ? { anterior: Math.round(s.previousTotal) } : {}),
-  }));
+  const barData = categoryStats.slice(0, 10).map(s => {
+    const label = getCategoryInfo(s.category).label;
+    return {
+      name: label,
+      atual: Math.round(s.total),
+      orcamento: budgetMap[s.category] || budgetMap[label] || 0,
+      ...(compare ? { anterior: Math.round(s.previousTotal) } : {}),
+    };
+  });
 
   return (
     <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
@@ -54,19 +83,20 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
       <Card className="rounded-2xl border-0 shadow-md">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold">Top Categorias</CardTitle>
-            <InfoPopover><p>Ranking das categorias com maior volume de gastos em barras horizontais.</p></InfoPopover>
+            <CardTitle className="text-base font-semibold">Gasto vs Orçamento</CardTitle>
+            <InfoPopover><p>Comparação entre o gasto real e a meta de orçamento por categoria. A barra cinza representa o orçamento definido.</p></InfoPopover>
           </div>
         </CardHeader>
         <CardContent>
           {barData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
-               <BarChart data={barData} layout="vertical" margin={{ left: 10 }}>
-                 <XAxis type="number" tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`} tick={{ fontSize: 9 }} />
-                 <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} />
+              <BarChart data={barData} layout="vertical" margin={{ left: 10 }}>
+                <XAxis type="number" tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`} tick={{ fontSize: 9 }} />
+                <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Bar dataKey="atual" fill="hsl(245, 45%, 51%)" radius={[0, 6, 6, 0]} barSize={16} />
-                {compare && <Bar dataKey="anterior" fill="hsl(245, 45%, 51%, 0.3)" radius={[0, 6, 6, 0]} barSize={16} />}
+                <Bar dataKey="orcamento" fill="hsl(var(--muted))" radius={[0, 6, 6, 0]} barSize={16} name="Orçamento" />
+                <Bar dataKey="atual" fill="hsl(245, 45%, 51%)" radius={[0, 6, 6, 0]} barSize={16} name="Gasto" />
+                {compare && <Bar dataKey="anterior" fill="hsl(245, 45%, 51%, 0.3)" radius={[0, 6, 6, 0]} barSize={16} name="Anterior" />}
               </BarChart>
             </ResponsiveContainer>
           ) : (

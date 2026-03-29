@@ -92,6 +92,7 @@ export type Database = {
         Row: {
           allocated_amount: number
           category: string
+          category_id: string | null
           created_at: string
           id: string
           month_year: string
@@ -100,6 +101,7 @@ export type Database = {
         Insert: {
           allocated_amount?: number
           category: string
+          category_id?: string | null
           created_at?: string
           id?: string
           month_year: string
@@ -108,6 +110,7 @@ export type Database = {
         Update: {
           allocated_amount?: number
           category?: string
+          category_id?: string | null
           created_at?: string
           id?: string
           month_year?: string
