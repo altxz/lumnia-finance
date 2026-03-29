@@ -348,52 +348,55 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[92vw] max-w-lg overflow-hidden sm:w-full p-0 rounded-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-lg max-h-[calc(100vh-1rem)] overflow-x-hidden overflow-y-auto p-0 rounded-2xl sm:w-full sm:max-h-[90vh]">
         {/* Type selector header */}
-        <div className={`p-4 pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-lg font-bold">Nova Transação</DialogTitle>
+        <div className={`p-3 pb-0 sm:p-4 sm:pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
+          <DialogHeader className="pb-2 sm:pb-3">
+            <DialogTitle className="text-base sm:text-lg font-bold">Nova Transação</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-background/60 backdrop-blur-sm">
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-background/60 backdrop-blur-sm">
             <button
               type="button"
               onClick={() => setType('expense')}
-              className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+              className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'expense'
                   ? 'bg-destructive text-destructive-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <ArrowDownCircle className="h-4 w-4" /> Despesa
+              <ArrowDownCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">Despesa</span>
             </button>
             <button
               type="button"
               onClick={() => setType('income')}
-              className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+              className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'income'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <ArrowUpCircle className="h-4 w-4" /> Receita
+              <ArrowUpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">Receita</span>
             </button>
             <button
               type="button"
               onClick={() => setType('transfer')}
-              className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+              className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'transfer'
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <ArrowLeftRight className="h-4 w-4" /> Transf.
+              <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">Transf.</span>
             </button>
           </div>
 
           {/* Value field - prominent */}
-          <div className={`mt-4 mb-3 rounded-xl border-2 bg-background/80 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
-            <div className="flex items-center px-4 py-3">
-              <span className="text-lg font-bold text-muted-foreground mr-2">R$</span>
+          <div className={`mt-3 sm:mt-4 mb-3 rounded-xl border-2 bg-background/80 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
+            <div className="flex items-center px-3 sm:px-4 py-3 min-w-0">
+              <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2 shrink-0">R$</span>
               <input
                 type="number"
                 step="0.01"
@@ -401,14 +404,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 placeholder="0,00"
                 value={value}
                 onChange={e => setValue(e.target.value)}
-                className="flex-1 bg-transparent text-3xl font-bold outline-none placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="min-w-0 flex-1 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
           </div>
         </div>
 
         {/* Form body */}
-        <div className="p-4 pt-2 space-y-4">
+        <div className="p-3 pt-2 sm:p-4 sm:pt-2 space-y-3 sm:space-y-4 overflow-x-hidden">
           {/* Date row */}
           <div className="space-y-1.5">
             <Label htmlFor="expense-date" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Data</Label>
@@ -417,7 +420,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
           {isTransfer ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0">
                 <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Conta de Origem <span className="text-destructive">*</span></Label>
                 <Select value={walletId} onValueChange={setWalletId}>
                   <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Origem" /></SelectTrigger>
@@ -426,7 +429,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0">
                 <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Conta de Destino <span className="text-destructive">*</span></Label>
                 <Select value={destinationWalletId} onValueChange={setDestinationWalletId}>
                   <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Destino" /></SelectTrigger>
@@ -458,7 +461,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                     <button
                       type="button"
                       onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInvoiceMonth(''); }}
-                      className={`rounded-lg py-2.5 text-sm font-semibold transition-all ${
+                      className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                         paymentMethod === 'debit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
@@ -467,7 +470,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                     <button
                       type="button"
                       onClick={() => { setPaymentMethod('credit'); setWalletId(''); }}
-                      className={`rounded-lg py-2.5 text-sm font-semibold transition-all ${
+                      className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                         paymentMethod === 'credit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
@@ -493,8 +496,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               {/* Credit card fields */}
               {type === 'expense' && paymentMethod === 'credit' && (
                 <>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2 space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2 space-y-1.5 min-w-0">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cartão <span className="text-destructive">*</span></Label>
                       <Select value={creditCardId} onValueChange={setCreditCardId}>
                         <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -503,7 +506,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 min-w-0">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parcelas</Label>
                       <Input type="number" min="1" max="48" value={installments} onChange={e => setInstallments(e.target.value)} className="rounded-xl h-11" />
                     </div>
