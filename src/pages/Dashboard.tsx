@@ -87,8 +87,6 @@ export default function Dashboard() {
         { data: prevExpData },
         { data: catData },
         { data: budgetData },
-        { data: budgetExpData },
-        { data: cards },
       ] = await Promise.all([
         supabase.from('expenses').select('id, value, type, credit_card_id, final_category').eq('user_id', user.id)
           .gte('date', prevStartDate).lt('date', prevEndDate),
@@ -96,9 +94,6 @@ export default function Dashboard() {
           .eq('user_id', user.id).order('sort_order'),
         supabase.from('budgets').select('category, allocated_amount')
           .eq('user_id', user.id).eq('month_year', startDate),
-        supabase.from('expenses').select('final_category, value, type')
-          .eq('user_id', user.id).gte('date', startDate).lt('date', endDate),
-        supabase.from('credit_cards').select('due_day').eq('user_id', user.id),
       ]);
 
       if (counter !== fetchCounterRef.current) return;
@@ -106,31 +101,63 @@ export default function Dashboard() {
       setPrevExpenses(prevExpData || []);
       setDbCategories(catData || []);
 
-      const spent: Record<string, number> = {};
-      (budgetExpData || []).forEach((e: any) => {
-        if (e.type !== 'income') spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
-      });
-      const warnings: string[] = [];
-      (budgetData || []).forEach((b: any) => {
-        if (b.allocated_amount > 0) {
-          const pct = (spent[b.category] || 0) / b.allocated_amount * 100;
-          if (pct >= 80) warnings.push(getCategoryInfo(b.category).label);
-        }
-      });
-      setBudgetAlerts(warnings);
-      setBudgetTotals({
+      // Budget spending computed from projected.monthExpenses in a useMemo below
+      setBudgetTotals(prev => ({
+        ...prev,
         totalBudget: (budgetData || []).reduce((s: number, b: any) => s + (b.allocated_amount || 0), 0),
-        totalSpent: Object.values(spent).reduce((s: number, v: number) => s + v, 0),
-      });
+      }));
 
-      const today = new Date();
-      setHasOverdueCards(cards ? cards.some((c: any) => c.due_day < today.getDate()) : false);
+      // Store budget data for useMemo computation
+      setBudgetDataRaw(budgetData || []);
     } finally {
       if (counter === fetchCounterRef.current) setDataLoading(false);
     }
   }, [user, startDate, endDate, prevStartDate, prevEndDate]);
 
   useEffect(() => { fetchExtraData(); }, [fetchExtraData]);
+
+  const [budgetDataRaw, setBudgetDataRaw] = useState<any[]>([]);
+
+  // Compute budget alerts and spending from projected.monthExpenses (avoid duplicate query)
+  useEffect(() => {
+    if (projected.loading || budgetDataRaw.length === 0) return;
+    const spent: Record<string, number> = {};
+    projected.monthExpenses.forEach((e: any) => {
+      if (e.type !== 'income') spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
+    });
+    const warnings: string[] = [];
+    budgetDataRaw.forEach((b: any) => {
+      if (b.allocated_amount > 0) {
+        const pct = (spent[b.category] || 0) / b.allocated_amount * 100;
+        if (pct >= 80) warnings.push(getCategoryInfo(b.category).label);
+      }
+    });
+    setBudgetAlerts(warnings);
+    setBudgetTotals({
+      totalBudget: budgetDataRaw.reduce((s: number, b: any) => s + (b.allocated_amount || 0), 0),
+      totalSpent: Object.values(spent).reduce((s: number, v: number) => s + v, 0),
+    });
+  }, [projected.monthExpenses, projected.loading, budgetDataRaw]);
+
+  // Compute hasOverdueCards from projected.creditCards (avoid duplicate query)
+  const hasOverdueCardsComputed = useMemo(() => {
+    const today = new Date();
+    return projected.creditCards.some((c: any) => c.due_day < today.getDate());
+  }, [projected.creditCards]);
+
+  // Derive unpaid CC expenses for CreditUsageChart
+  const unpaidCCExpenses = useMemo(() =>
+    projected.invoiceExpenses
+      .filter(e => !e.is_paid)
+      .map(e => ({ value: e.value, credit_card_id: e.credit_card_id! })),
+    [projected.invoiceExpenses]
+  );
+
+  // Cards with limit info for CreditUsageChart
+  const cardsForUsage = useMemo(() =>
+    projected.creditCards.map(c => ({ id: c.id, name: c.name, limit_amount: c.limit_amount })),
+    [projected.creditCards]
+  );
 
   const prevSummary = useMemo(() => {
     const nonTransfers = prevExpenses.filter((e: any) => e.type !== 'transfer');
