@@ -228,7 +228,10 @@ export default function Dashboard() {
 
                 {/* Painel de Gráficos - Grid em Duplas */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-                  {/* Destaque Topo: Fluxo de Caixa (Largura Total) */}
+                  {/* Destaque: Resumo de Cartões (Largura Total) */}
+                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditCardSummary /></div>
+
+                  {/* Destaque: Fluxo de Caixa (Largura Total) */}
                   <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CashFlowChart /></div>
 
                   {/* Pares 1: Maiores Compras e Subcategorias */}
@@ -255,11 +258,8 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
 
-                  {/* Pares 7: Cartão de Crédito */}
+                  {/* Pares 7: Uso de Crédito e Poupança */}
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditUsageChart /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditCardSummary /></div>
-
-                  {/* Pares 8: Poupança */}
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
 
                   {/* Destaque Rodapé: Patrimônio Líquido (Largura Total) */}
