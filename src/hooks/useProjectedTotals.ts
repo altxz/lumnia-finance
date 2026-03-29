@@ -28,7 +28,7 @@ export interface ProjectedTotals {
   /** All CC expenses for invoice matching */
   invoiceExpenses: Expense[];
   creditCards: CreditCardType[];
-  wallets: { id: string; name: string }[];
+  wallets: { id: string; name: string; initial_balance: number }[];
 }
 
 export function useProjectedTotals(): ProjectedTotals {
