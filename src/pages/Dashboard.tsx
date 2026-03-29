@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Lock, Unlock, RotateCcw, GripVertical } from 'lucide-react';
+import { Responsive } from 'react-grid-layout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { SummaryCards } from '@/components/SummaryCards';
 import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { DashboardHeader } from '@/components/DashboardHeader';
@@ -31,27 +33,56 @@ import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
 import { WaterfallChart } from '@/components/analytics/WaterfallChart';
 import { SpendingHeatmap } from '@/components/analytics/SpendingHeatmap';
 import { BurndownChart } from '@/components/analytics/BurndownChart';
-import { DashboardGrid, GridWidget } from '@/components/DashboardGrid';
 import type { Expense } from '@/components/ExpenseTable';
+
+const STORAGE_KEY = 'dashboard-grid-layouts';
+
+const defaultLayout = [
+  { i: 'income-vs-expense', x: 0, y: 0, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'top-categories',    x: 1, y: 0, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'savings-rate',      x: 2, y: 0, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'waterfall',         x: 0, y: 2, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'forecast',          x: 1, y: 2, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'daily-spending',    x: 2, y: 2, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'credit-usage',      x: 0, y: 4, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'fixed-vs-variable', x: 1, y: 4, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'subcategory-tree',  x: 2, y: 4, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'week-comparison',   x: 0, y: 6, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'income-sources',    x: 1, y: 6, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'spending-heatmap',  x: 2, y: 6, w: 1, h: 2, minW: 1, minH: 2 },
+  { i: 'burndown',          x: 0, y: 8, w: 2, h: 2, minW: 1, minH: 2 },
+  { i: 'calendar',          x: 2, y: 8, w: 1, h: 2, minW: 1, minH: 2 },
+];
+
+const defaultLayouts = {
+  lg: defaultLayout,
+  md: defaultLayout.map(l => ({ ...l, w: l.i === 'burndown' ? 2 : 1, x: l.i === 'burndown' ? 0 : l.x > 1 ? l.x - 1 : l.x })),
+  sm: defaultLayout.map((l, idx) => ({ ...l, x: 0, y: idx * 2, w: 2 })),
+  xs: defaultLayout.map((l, idx) => ({ ...l, x: 0, y: idx * 2, w: 1 })),
+};
+
+function loadSavedLayouts() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return defaultLayouts;
+}
 
 function DashboardSkeleton() {
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Summary Cards */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map(i => (
           <Skeleton key={i} className="h-[88px] rounded-2xl" />
         ))}
       </div>
-      {/* CashFlow Chart */}
       <Skeleton className="h-[340px] rounded-2xl" />
-      {/* Analytics Grid */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map(i => (
           <Skeleton key={i} className="h-[300px] rounded-2xl" />
         ))}
       </div>
-      {/* Calendar */}
       <Skeleton className="h-[320px] rounded-2xl" />
     </div>
   );
@@ -68,6 +99,20 @@ export default function Dashboard() {
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const fetchCounterRef = useRef(0);
+  const [isEditingLayout, setIsEditingLayout] = useState(false);
+  const [layouts, setLayouts] = useState(loadSavedLayouts);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const [gridWidth, setGridWidth] = useState(900);
+
+  // Measure grid container width
+  useEffect(() => {
+    if (!gridContainerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) setGridWidth(entry.contentRect.width);
+    });
+    obs.observe(gridContainerRef.current);
+    return () => obs.disconnect();
+  }, []);
 
   // Previous month date range
   const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
@@ -112,14 +157,12 @@ export default function Dashboard() {
         supabase.from('credit_cards').select('due_day').eq('user_id', user.id),
       ]);
 
-      // Stale check
       if (counter !== fetchCounterRef.current) return;
 
       setExpenses(expData || []);
       setPrevExpenses(prevExpData || []);
       setDbCategories(catData || []);
 
-      // Real balance
       const walletsTotal = (walletsData || []).reduce((s: number, w: any) => s + (w.initial_balance || 0), 0);
       let realBalance = walletsTotal;
       (allTxns || []).forEach((t: any) => {
@@ -129,7 +172,6 @@ export default function Dashboard() {
       });
       setTotalRealBalance(realBalance);
 
-      // Budget alerts
       const spent: Record<string, number> = {};
       (budgetExpData || []).forEach((e: any) => {
         if (e.type !== 'income') spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
@@ -147,13 +189,10 @@ export default function Dashboard() {
         totalSpent: Object.values(spent).reduce((s: number, v: number) => s + v, 0),
       });
 
-      // Overdue cards
       const today = new Date();
       setHasOverdueCards(cards ? cards.some((c: any) => c.due_day < today.getDate()) : false);
     } finally {
-      if (counter === fetchCounterRef.current) {
-        setDataLoading(false);
-      }
+      if (counter === fetchCounterRef.current) setDataLoading(false);
     }
   }, [user, startDate, endDate, prevStartDate, prevEndDate]);
 
@@ -183,23 +222,33 @@ export default function Dashboard() {
     return { totalIncome: income, totalExpense: expenseTotal, balance: income - expenseTotal };
   }, [prevExpenses]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const dashboardWidgets: GridWidget[] = useMemo(() => [
-    { id: 'income-vs-expense', title: 'Receitas vs Despesas', component: <IncomeVsExpenseChart />, defaultLayout: { lg: { x: 0, y: 0, w: 4, h: 4 }, md: { x: 0, y: 0, w: 4, h: 4 }, sm: { x: 0, y: 0, w: 4, h: 4 } } },
-    { id: 'top-categories', title: 'Top Categorias', component: <TopCategoriesPie expenses={expenses} categories={dbCategories} />, defaultLayout: { lg: { x: 4, y: 0, w: 4, h: 4 }, md: { x: 4, y: 0, w: 4, h: 4 }, sm: { x: 0, y: 4, w: 4, h: 4 } } },
-    { id: 'savings-rate', title: 'Taxa de Poupança', component: <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} />, defaultLayout: { lg: { x: 8, y: 0, w: 4, h: 4 }, md: { x: 0, y: 4, w: 4, h: 4 }, sm: { x: 0, y: 8, w: 4, h: 4 } } },
-    { id: 'waterfall', title: 'Cascata', component: <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} />, defaultLayout: { lg: { x: 0, y: 4, w: 4, h: 4 }, md: { x: 4, y: 4, w: 4, h: 4 }, sm: { x: 0, y: 12, w: 4, h: 4 } } },
-    { id: 'forecast', title: 'Previsão', component: <EndOfMonthForecast />, defaultLayout: { lg: { x: 4, y: 4, w: 4, h: 4 }, md: { x: 0, y: 8, w: 4, h: 4 }, sm: { x: 0, y: 16, w: 4, h: 4 } } },
-    { id: 'daily-spending', title: 'Gastos Diários', component: <DailySpendingChart expenses={expenses} />, defaultLayout: { lg: { x: 8, y: 4, w: 4, h: 4 }, md: { x: 4, y: 8, w: 4, h: 4 }, sm: { x: 0, y: 20, w: 4, h: 4 } } },
-    { id: 'credit-usage', title: 'Uso do Cartão', component: <CreditUsageChart />, defaultLayout: { lg: { x: 0, y: 8, w: 4, h: 4 }, md: { x: 0, y: 12, w: 4, h: 4 }, sm: { x: 0, y: 24, w: 4, h: 4 } } },
-    { id: 'fixed-vs-variable', title: 'Fixo vs Variável', component: <FixedVsVariableChart expenses={expenses} />, defaultLayout: { lg: { x: 4, y: 8, w: 4, h: 4 }, md: { x: 4, y: 12, w: 4, h: 4 }, sm: { x: 0, y: 28, w: 4, h: 4 } } },
-    { id: 'subcategory-treemap', title: 'Subcategorias', component: <SubcategoryTreemap expenses={expenses} categories={dbCategories} />, defaultLayout: { lg: { x: 8, y: 8, w: 4, h: 4 }, md: { x: 0, y: 16, w: 4, h: 4 }, sm: { x: 0, y: 32, w: 4, h: 4 } } },
-    { id: 'week-comparison', title: 'Comparação Semanal', component: <WeekComparisonChart expenses={expenses} />, defaultLayout: { lg: { x: 0, y: 12, w: 4, h: 4 }, md: { x: 4, y: 16, w: 4, h: 4 }, sm: { x: 0, y: 36, w: 4, h: 4 } } },
-    { id: 'income-sources', title: 'Fontes de Receita', component: <IncomeSourcesPie expenses={expenses} categories={dbCategories} />, defaultLayout: { lg: { x: 4, y: 12, w: 4, h: 4 }, md: { x: 0, y: 20, w: 4, h: 4 }, sm: { x: 0, y: 40, w: 4, h: 4 } } },
-    { id: 'spending-heatmap', title: 'Mapa de Calor', component: <SpendingHeatmap expenses={expenses} />, defaultLayout: { lg: { x: 8, y: 12, w: 4, h: 4 }, md: { x: 4, y: 20, w: 4, h: 4 }, sm: { x: 0, y: 44, w: 4, h: 4 } } },
-    { id: 'burndown', title: 'Burndown', component: <BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} />, defaultLayout: { lg: { x: 0, y: 16, w: 6, h: 4 }, md: { x: 0, y: 24, w: 8, h: 4 }, sm: { x: 0, y: 48, w: 4, h: 4 } } },
-    { id: 'calendar', title: 'Calendário', component: <CalendarView />, defaultLayout: { lg: { x: 6, y: 16, w: 6, h: 4 }, md: { x: 0, y: 28, w: 8, h: 4 }, sm: { x: 0, y: 52, w: 4, h: 4 } } },
-  ], [expenses, dbCategories, summary, totalRealBalance, budgetTotals]);
+  const handleLayoutChange = useCallback((_current: any, allLayouts: any) => {
+    setLayouts(allLayouts);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allLayouts)); } catch { /* */ }
+  }, []);
+
+  const handleResetLayout = useCallback(() => {
+    setLayouts(defaultLayouts);
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  // Map of widget id → { title, component }
+  const widgetMap = useMemo(() => ({
+    'income-vs-expense': { title: 'Receitas vs Despesas', comp: <IncomeVsExpenseChart /> },
+    'top-categories':    { title: 'Top Categorias',       comp: <TopCategoriesPie expenses={expenses} categories={dbCategories} /> },
+    'savings-rate':      { title: 'Taxa de Poupança',     comp: <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /> },
+    'waterfall':         { title: 'Cascata',              comp: <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /> },
+    'forecast':          { title: 'Previsão',             comp: <EndOfMonthForecast /> },
+    'daily-spending':    { title: 'Gastos Diários',       comp: <DailySpendingChart expenses={expenses} /> },
+    'credit-usage':      { title: 'Uso do Cartão',        comp: <CreditUsageChart /> },
+    'fixed-vs-variable': { title: 'Fixo vs Variável',     comp: <FixedVsVariableChart expenses={expenses} /> },
+    'subcategory-tree':  { title: 'Subcategorias',        comp: <SubcategoryTreemap expenses={expenses} categories={dbCategories} /> },
+    'week-comparison':   { title: 'Comparação Semanal',   comp: <WeekComparisonChart expenses={expenses} /> },
+    'income-sources':    { title: 'Fontes de Receita',    comp: <IncomeSourcesPie expenses={expenses} categories={dbCategories} /> },
+    'spending-heatmap':  { title: 'Mapa de Calor',        comp: <SpendingHeatmap expenses={expenses} /> },
+    'burndown':          { title: 'Burndown',             comp: <BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /> },
+    'calendar':          { title: 'Calendário',           comp: <CalendarView /> },
+  }), [expenses, dbCategories, summary, totalRealBalance, budgetTotals]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
   if (!user) return <Navigate to="/auth" replace />;
@@ -251,8 +300,64 @@ export default function Dashboard() {
 
                 <CashFlowChart />
 
-                {/* Interactive Grid */}
-                <DashboardGrid widgets={dashboardWidgets} />
+                {/* Layout Controls */}
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditingLayout(v => !v)}
+                    className="gap-1.5 text-xs"
+                  >
+                    {isEditingLayout ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                    {isEditingLayout ? 'Editando' : 'Bloqueado'}
+                  </Button>
+                  {isEditingLayout && (
+                    <Button variant="ghost" size="sm" onClick={handleResetLayout} className="gap-1.5 text-xs">
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Restaurar
+                    </Button>
+                  )}
+                </div>
+
+                {/* Responsive Grid Layout */}
+                <div ref={gridContainerRef}>
+                  <Responsive
+                    className="layout"
+                    layouts={layouts}
+                    breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+                    cols={{ lg: 3, md: 2, sm: 2, xs: 1, xxs: 1 }}
+                    rowHeight={150}
+                    width={gridWidth}
+                    isDraggable={isEditingLayout}
+                    isResizable={isEditingLayout}
+                    draggableHandle=".drag-handle"
+                    onLayoutChange={handleLayoutChange}
+                    compactType="vertical"
+                    margin={[12, 12] as [number, number]}
+                    containerPadding={[0, 0] as [number, number]}
+                    useCSSTransforms
+                  >
+                    {defaultLayout.map(item => {
+                      const widget = widgetMap[item.i as keyof typeof widgetMap];
+                      if (!widget) return null;
+                      return (
+                        <div key={item.i}>
+                          <div className="h-full w-full rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden flex flex-col">
+                            {isEditingLayout && (
+                              <div className="drag-handle flex items-center justify-center gap-1 py-1.5 bg-muted/50 border-b border-border/50 text-muted-foreground hover:bg-muted transition-colors">
+                                <GripVertical className="h-3.5 w-3.5" />
+                                <span className="text-[10px] font-medium select-none">{widget.title}</span>
+                              </div>
+                            )}
+                            <div className="flex-1 overflow-auto">
+                              {widget.comp}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Responsive>
+                </div>
               </>
             )}
           </main>
