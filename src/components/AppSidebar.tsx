@@ -1,4 +1,5 @@
 import { LayoutDashboard, Settings, BarChart3, Wallet, PiggyBank, ArrowLeftRight, DollarSign, FolderKanban } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { NavLink } from '@/components/NavLink';
 import { useUserSettings } from '@/contexts/UserSettingsContext';
 import {
@@ -31,14 +32,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-sidebar-primary flex items-center justify-center shrink-0">
-            <DollarSign className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
-          {!collapsed && (
-            <span className="font-bold text-sidebar-foreground text-xl tracking-tight">Lumnia</span>
-          )}
-        </div>
+        <Logo size={36} showText={!collapsed} />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
