@@ -24,14 +24,13 @@ export interface InvoicePeriod {
   dueDate: Date;
   /** Invoice month label YYYY-MM */
   monthLabel: string;
-  status: 'open' | 'closed' | 'overdue';
+  status: 'open' | 'closed' | 'overdue' | 'paid';
   transactions: Expense[];
   total: number;
 }
 
 /**
  * Get the effective closing day for a card in a given month.
- * If the card uses 'relative' strategy, closing = due_day - closing_days_before_due.
  */
 function getClosingDay(card: CreditCard): number {
   if (card.closing_strategy === 'relative') {
@@ -42,35 +41,23 @@ function getClosingDay(card: CreditCard): number {
   return card.closing_day;
 }
 
-/**
- * Build closing date for a given month/year using the card's closing day.
- */
 function buildClosingDate(year: number, month: number, closingDay: number): Date {
   const lastDay = new Date(year, month + 1, 0).getDate();
   const day = Math.min(closingDay, lastDay);
   return new Date(year, month, day);
 }
 
-/**
- * Build the invoice period for a specific card and target month.
- * @param card Credit card config
- * @param targetYear Year of the invoice
- * @param targetMonth Month of the invoice (0-indexed)
- */
 export function getInvoicePeriod(card: CreditCard, targetYear: number, targetMonth: number): Omit<InvoicePeriod, 'transactions' | 'total'> {
   const closingDay = getClosingDay(card);
 
-  // Period end = closing date of the target month
   const periodEnd = buildClosingDate(targetYear, targetMonth, closingDay);
 
-  // Period start = day after closing date of previous month
   const prevMonth = targetMonth === 0 ? 11 : targetMonth - 1;
   const prevYear = targetMonth === 0 ? targetYear - 1 : targetYear;
   const prevClosing = buildClosingDate(prevYear, prevMonth, closingDay);
   const periodStart = new Date(prevClosing);
   periodStart.setDate(periodStart.getDate() + 1);
 
-  // Due date: due_day of the month AFTER the target month
   const dueMonth = targetMonth === 11 ? 0 : targetMonth + 1;
   const dueYear = targetMonth === 11 ? targetYear + 1 : targetYear;
   const dueLastDay = new Date(dueYear, dueMonth + 1, 0).getDate();
@@ -79,7 +66,7 @@ export function getInvoicePeriod(card: CreditCard, targetYear: number, targetMon
   const today = new Date();
   today.setHours(23, 59, 59, 999);
 
-  let status: 'open' | 'closed' | 'overdue' = 'open';
+  let status: 'open' | 'closed' | 'overdue' | 'paid' = 'open';
   if (today > dueDate) {
     status = 'overdue';
   } else if (today > periodEnd) {
@@ -103,7 +90,9 @@ export function getInvoicePeriod(card: CreditCard, targetYear: number, targetMon
 }
 
 /**
- * Match expenses to an invoice period.
+ * Match expenses to an invoice period and detect if it was paid.
+ * A paid invoice has a payment record: an expense with
+ * description starting with "Pagamento fatura" linked to this card's invoice_month.
  */
 export function matchExpensesToInvoice(
   expenses: Expense[],
@@ -121,7 +110,18 @@ export function matchExpensesToInvoice(
 
   const total = matched.reduce((s, e) => s + e.value, 0);
 
-  return { ...period, transactions: matched, total };
+  // Check if there's a payment record for this invoice
+  const isPaid = expenses.some(e =>
+    e.type === 'expense' &&
+    !e.credit_card_id &&
+    e.invoice_month === period.monthLabel &&
+    e.description.startsWith('Pagamento fatura') &&
+    e.wallet_id
+  );
+
+  const status = isPaid ? 'paid' : period.status;
+
+  return { ...period, status, transactions: matched, total };
 }
 
 /**
