@@ -31,6 +31,7 @@ import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
 import { WaterfallChart } from '@/components/analytics/WaterfallChart';
 import { SpendingHeatmap } from '@/components/analytics/SpendingHeatmap';
 import { BurndownChart } from '@/components/analytics/BurndownChart';
+import { DashboardGrid, GridWidget } from '@/components/DashboardGrid';
 import type { Expense } from '@/components/ExpenseTable';
 
 function DashboardSkeleton() {
@@ -182,6 +183,23 @@ export default function Dashboard() {
     return { totalIncome: income, totalExpense: expenseTotal, balance: income - expenseTotal };
   }, [prevExpenses]);
 
+  const dashboardWidgets: GridWidget[] = useMemo(() => [
+    { id: 'income-vs-expense', title: 'Receitas vs Despesas', component: <IncomeVsExpenseChart />, defaultLayout: { lg: { x: 0, y: 0, w: 4, h: 4 }, md: { x: 0, y: 0, w: 4, h: 4 }, sm: { x: 0, y: 0, w: 4, h: 4 } } },
+    { id: 'top-categories', title: 'Top Categorias', component: <TopCategoriesPie expenses={expenses} categories={dbCategories} />, defaultLayout: { lg: { x: 4, y: 0, w: 4, h: 4 }, md: { x: 4, y: 0, w: 4, h: 4 }, sm: { x: 0, y: 4, w: 4, h: 4 } } },
+    { id: 'savings-rate', title: 'Taxa de Poupança', component: <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} />, defaultLayout: { lg: { x: 8, y: 0, w: 4, h: 4 }, md: { x: 0, y: 4, w: 4, h: 4 }, sm: { x: 0, y: 8, w: 4, h: 4 } } },
+    { id: 'waterfall', title: 'Cascata', component: <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} />, defaultLayout: { lg: { x: 0, y: 4, w: 4, h: 4 }, md: { x: 4, y: 4, w: 4, h: 4 }, sm: { x: 0, y: 12, w: 4, h: 4 } } },
+    { id: 'forecast', title: 'Previsão', component: <EndOfMonthForecast />, defaultLayout: { lg: { x: 4, y: 4, w: 4, h: 4 }, md: { x: 0, y: 8, w: 4, h: 4 }, sm: { x: 0, y: 16, w: 4, h: 4 } } },
+    { id: 'daily-spending', title: 'Gastos Diários', component: <DailySpendingChart expenses={expenses} />, defaultLayout: { lg: { x: 8, y: 4, w: 4, h: 4 }, md: { x: 4, y: 8, w: 4, h: 4 }, sm: { x: 0, y: 20, w: 4, h: 4 } } },
+    { id: 'credit-usage', title: 'Uso do Cartão', component: <CreditUsageChart />, defaultLayout: { lg: { x: 0, y: 8, w: 4, h: 4 }, md: { x: 0, y: 12, w: 4, h: 4 }, sm: { x: 0, y: 24, w: 4, h: 4 } } },
+    { id: 'fixed-vs-variable', title: 'Fixo vs Variável', component: <FixedVsVariableChart expenses={expenses} />, defaultLayout: { lg: { x: 4, y: 8, w: 4, h: 4 }, md: { x: 4, y: 12, w: 4, h: 4 }, sm: { x: 0, y: 28, w: 4, h: 4 } } },
+    { id: 'subcategory-treemap', title: 'Subcategorias', component: <SubcategoryTreemap expenses={expenses} categories={dbCategories} />, defaultLayout: { lg: { x: 8, y: 8, w: 4, h: 4 }, md: { x: 0, y: 16, w: 4, h: 4 }, sm: { x: 0, y: 32, w: 4, h: 4 } } },
+    { id: 'week-comparison', title: 'Comparação Semanal', component: <WeekComparisonChart expenses={expenses} />, defaultLayout: { lg: { x: 0, y: 12, w: 4, h: 4 }, md: { x: 4, y: 16, w: 4, h: 4 }, sm: { x: 0, y: 36, w: 4, h: 4 } } },
+    { id: 'income-sources', title: 'Fontes de Receita', component: <IncomeSourcesPie expenses={expenses} categories={dbCategories} />, defaultLayout: { lg: { x: 4, y: 12, w: 4, h: 4 }, md: { x: 0, y: 20, w: 4, h: 4 }, sm: { x: 0, y: 40, w: 4, h: 4 } } },
+    { id: 'spending-heatmap', title: 'Mapa de Calor', component: <SpendingHeatmap expenses={expenses} />, defaultLayout: { lg: { x: 8, y: 12, w: 4, h: 4 }, md: { x: 4, y: 20, w: 4, h: 4 }, sm: { x: 0, y: 44, w: 4, h: 4 } } },
+    { id: 'burndown', title: 'Burndown', component: <BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} />, defaultLayout: { lg: { x: 0, y: 16, w: 6, h: 4 }, md: { x: 0, y: 24, w: 8, h: 4 }, sm: { x: 0, y: 48, w: 4, h: 4 } } },
+    { id: 'calendar', title: 'Calendário', component: <CalendarView />, defaultLayout: { lg: { x: 6, y: 16, w: 6, h: 4 }, md: { x: 0, y: 28, w: 8, h: 4 }, sm: { x: 0, y: 52, w: 4, h: 4 } } },
+  ], [expenses, dbCategories, summary, totalRealBalance, budgetTotals]);
+
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
   if (!user) return <Navigate to="/auth" replace />;
 
@@ -232,24 +250,8 @@ export default function Dashboard() {
 
                 <CashFlowChart />
 
-                {/* Analytics Grid */}
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                  <IncomeVsExpenseChart />
-                  <TopCategoriesPie expenses={expenses} categories={dbCategories} />
-                  <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} />
-                  <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} />
-                  <EndOfMonthForecast />
-                  <DailySpendingChart expenses={expenses} />
-                  <CreditUsageChart />
-                  <FixedVsVariableChart expenses={expenses} />
-                  <SubcategoryTreemap expenses={expenses} categories={dbCategories} />
-                  <WeekComparisonChart expenses={expenses} />
-                  <IncomeSourcesPie expenses={expenses} categories={dbCategories} />
-                  <SpendingHeatmap expenses={expenses} />
-                  <BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} />
-                </div>
-
-                <CalendarView />
+                {/* Interactive Grid */}
+                <DashboardGrid widgets={dashboardWidgets} />
               </>
             )}
           </main>
