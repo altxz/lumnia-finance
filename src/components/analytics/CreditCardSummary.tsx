@@ -50,33 +50,23 @@ function getBestPurchaseDay(closingDay: number): number {
 
 interface WalletOption { id: string; name: string; initial_balance: number }
 
-export function CreditCardSummary() {
+interface CreditCardSummaryProps {
+  cards: CreditCardType[];
+  allExpenses: Expense[];
+  wallets: WalletOption[];
+  refetch: () => void;
+}
+
+export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: CreditCardSummaryProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { selectedMonth, selectedYear } = useSelectedDate();
-  const [cards, setCards] = useState<CreditCardType[]>([]);
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [selectedCardIdx, setSelectedCardIdx] = useState(0);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoicePeriod | null>(null);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [payingInvoice, setPayingInvoice] = useState<InvoicePeriod | null>(null);
-  const [wallets, setWallets] = useState<WalletOption[]>([]);
   const [payWalletId, setPayWalletId] = useState('');
   const [paying, setPaying] = useState(false);
-
-  const fetchData = async () => {
-    if (!user) return;
-    const [{ data: c }, { data: e }, { data: w }] = await Promise.all([
-      supabase.from('credit_cards').select('*').eq('user_id', user.id),
-      supabase.from('expenses').select('*').eq('user_id', user.id).not('credit_card_id', 'is', null).order('date', { ascending: false }),
-      supabase.from('wallets').select('id, name, initial_balance').eq('user_id', user.id),
-    ]);
-    setCards((c || []) as CreditCardType[]);
-    setAllExpenses((e || []) as Expense[]);
-    setWallets((w || []) as WalletOption[]);
-  };
-
-  useEffect(() => { fetchData(); }, [user]);
 
   const invoices = useMemo(() => {
     return cards.map(card => {
@@ -139,7 +129,7 @@ export function CreditCardSummary() {
 
       toast({ title: 'Fatura paga!', description: `${formatCurrency(payingInvoice.total)} debitado da conta.` });
       setPayDialogOpen(false);
-      fetchData();
+      refetch();
     } else {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }

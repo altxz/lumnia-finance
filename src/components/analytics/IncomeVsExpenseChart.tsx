@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
-import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { InfoPopover } from '@/components/ui/info-popover';
 
-export function IncomeVsExpenseChart() {
-  const { totalIncome, totalExpense } = useProjectedTotals();
+interface Props {
+  totalIncome: number;
+  totalExpense: number;
+}
 
+export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
   const data = [{ name: 'Mês Atual', receitas: totalIncome, despesas: totalExpense }];
 
   return (

@@ -33,8 +33,10 @@ export function AnomalyInsights() {
       // Previous month same range
       const prevM = selectedMonth === 0 ? 11 : selectedMonth - 1;
       const prevY = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+      const lastDayOfPrevMonth = new Date(prevY, prevM + 1, 0).getDate();
+      const clampedDay = Math.min(dayOfMonth, lastDayOfPrevMonth);
       const prevStart = `${prevY}-${String(prevM + 1).padStart(2, '0')}-01`;
-      const prevEnd = `${prevY}-${String(prevM + 1).padStart(2, '0')}-${String(dayOfMonth).padStart(2, '0')}`;
+      const prevEnd = `${prevY}-${String(prevM + 1).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
 
       const [{ data: curData }, { data: prevData }] = await Promise.all([
         supabase.from('expenses').select('final_category, value, type').eq('user_id', user.id).neq('type', 'income').neq('type', 'transfer').gte('date', curStart).lte('date', curEnd),
