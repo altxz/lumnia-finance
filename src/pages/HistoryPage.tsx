@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
+import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ export default function HistoryPage() {
 
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
   const [startingMonthBalance, setStartingMonthBalance] = useState(0);
+  const [creditCards, setCreditCards] = useState<CreditCardType[]>([]);
 
   // Subscriptions state
   const [subItems, setSubItems] = useState<Expense[]>([]);
@@ -76,6 +78,12 @@ export default function HistoryPage() {
     setStartingMonthBalance(priorBalance);
   }, [user, startDate]);
 
+  const fetchCreditCards = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from('credit_cards').select('*').eq('user_id', user.id);
+    setCreditCards((data || []) as CreditCardType[]);
+  }, [user]);
+
   const fetchSubscriptions = useCallback(async () => {
     if (!user) return;
     setSubLoading(true);
@@ -89,6 +97,7 @@ export default function HistoryPage() {
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
   useEffect(() => { fetchWalletsAndBalance(); }, [fetchWalletsAndBalance]);
   useEffect(() => { fetchSubscriptions(); }, [fetchSubscriptions]);
+  useEffect(() => { fetchCreditCards(); }, [fetchCreditCards]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -203,6 +212,8 @@ export default function HistoryPage() {
                   onPageChange={setPage}
                   wallets={wallets}
                   startingMonthBalance={startingMonthBalance}
+                  creditCards={creditCards}
+                  currentMonth={startDate}
                 />
               </TabsContent>
 
