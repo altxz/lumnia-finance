@@ -265,7 +265,7 @@ export function CreditCardSummary() {
                     Usado: <span className="font-semibold text-foreground">{formatCurrency(inv.total)}</span>
                   </span>
                   <span className="text-[11px] text-muted-foreground">
-                    Disponível: <span className="font-semibold text-emerald-500">{formatCurrency(available)}</span>
+                    Disponível: <span className="font-semibold text-accent-foreground">{formatCurrency(available)}</span>
                   </span>
                 </div>
               </div>
