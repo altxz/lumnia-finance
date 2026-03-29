@@ -34,7 +34,7 @@ import { WaterfallChart } from '@/components/analytics/WaterfallChart';
 import { SpendingHeatmap } from '@/components/analytics/SpendingHeatmap';
 import { BurndownChart } from '@/components/analytics/BurndownChart';
 import { NetWorthChart } from '@/components/analytics/NetWorthChart';
-import type { Expense } from '@/components/ExpenseTable';
+import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 
 function DashboardSkeleton() {
   return (
@@ -58,11 +58,10 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const projected = useProjectedTotals();
   const [modalOpen, setModalOpen] = useState(false);
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
   const [hasOverdueCards, setHasOverdueCards] = useState(false);
-  const [totalRealBalance, setTotalRealBalance] = useState(0);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const fetchCounterRef = useRef(0);
@@ -75,34 +74,26 @@ export default function Dashboard() {
   const prevNextY = prevMonth === 11 ? prevYear + 1 : prevYear;
   const prevEndDate = `${prevNextY}-${String(prevNextM + 1).padStart(2, '0')}-01`;
 
-  const [prevExpenses, setPrevExpenses] = useState<Expense[]>([]);
+  const [prevExpenses, setPrevExpenses] = useState<any[]>([]);
   const [budgetAlerts, setBudgetAlerts] = useState<string[]>([]);
 
-  const fetchAllData = useCallback(async () => {
+  const fetchExtraData = useCallback(async () => {
     if (!user) return;
     const counter = ++fetchCounterRef.current;
     setDataLoading(true);
 
     try {
       const [
-        { data: expData },
         { data: prevExpData },
         { data: catData },
-        { data: walletsData },
-        { data: allTxns },
         { data: budgetData },
         { data: budgetExpData },
         { data: cards },
       ] = await Promise.all([
         supabase.from('expenses').select('*').eq('user_id', user.id)
-          .gte('date', startDate).lt('date', endDate).order('date', { ascending: false }),
-        supabase.from('expenses').select('*').eq('user_id', user.id)
           .gte('date', prevStartDate).lt('date', prevEndDate),
         supabase.from('categories').select('id, name, parent_id, icon, color')
           .eq('user_id', user.id).order('sort_order'),
-        supabase.from('wallets').select('initial_balance').eq('user_id', user.id),
-        supabase.from('expenses').select('value, type, credit_card_id')
-          .eq('user_id', user.id).eq('is_paid', true),
         supabase.from('budgets').select('category, allocated_amount')
           .eq('user_id', user.id).eq('month_year', startDate),
         supabase.from('expenses').select('final_category, value, type')
@@ -112,18 +103,8 @@ export default function Dashboard() {
 
       if (counter !== fetchCounterRef.current) return;
 
-      setExpenses(expData || []);
       setPrevExpenses(prevExpData || []);
       setDbCategories(catData || []);
-
-      const walletsTotal = (walletsData || []).reduce((s: number, w: any) => s + (w.initial_balance || 0), 0);
-      let realBalance = walletsTotal;
-      (allTxns || []).forEach((t: any) => {
-        if (t.type === 'transfer') return;
-        if (t.type === 'income') realBalance += t.value;
-        else if (!t.credit_card_id) realBalance -= t.value;
-      });
-      setTotalRealBalance(realBalance);
 
       const spent: Record<string, number> = {};
       (budgetExpData || []).forEach((e: any) => {
@@ -149,34 +130,20 @@ export default function Dashboard() {
     }
   }, [user, startDate, endDate, prevStartDate, prevEndDate]);
 
-  useEffect(() => { fetchAllData(); }, [fetchAllData]);
-
-  const summary = useMemo(() => {
-    const nonTransfers = expenses.filter(e => e.type !== 'transfer');
-    const income = nonTransfers.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
-    const cashExpenses = nonTransfers.filter(e => e.type !== 'income' && !e.credit_card_id);
-    const expenseTotal = cashExpenses.reduce((s, e) => s + e.value, 0);
-    const byCategory: Record<string, number> = {};
-    cashExpenses.forEach(e => { byCategory[e.final_category] = (byCategory[e.final_category] || 0) + e.value; });
-    const largest = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
-    return {
-      balance: income - expenseTotal,
-      totalIncome: income,
-      totalExpense: expenseTotal,
-      largestCategory: largest ? { name: getCategoryInfo(largest[0]).label, total: largest[1], categoryKey: largest[0] } : null,
-    };
-  }, [expenses]);
+  useEffect(() => { fetchExtraData(); }, [fetchExtraData]);
 
   const prevSummary = useMemo(() => {
-    const nonTransfers = prevExpenses.filter(e => e.type !== 'transfer');
-    const income = nonTransfers.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
-    const cashExpenses = nonTransfers.filter(e => e.type !== 'income' && !e.credit_card_id);
-    const expenseTotal = cashExpenses.reduce((s, e) => s + e.value, 0);
+    const nonTransfers = prevExpenses.filter((e: any) => e.type !== 'transfer');
+    const income = nonTransfers.filter((e: any) => e.type === 'income').reduce((s: number, e: any) => s + e.value, 0);
+    const cashExpenses = nonTransfers.filter((e: any) => e.type !== 'income' && !e.credit_card_id);
+    const expenseTotal = cashExpenses.reduce((s: number, e: any) => s + e.value, 0);
     return { totalIncome: income, totalExpense: expenseTotal, balance: income - expenseTotal };
   }, [prevExpenses]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
   if (!user) return <Navigate to="/auth" replace />;
+
+  const isLoading = dataLoading || projected.loading;
 
   return (
     <SidebarProvider>
@@ -188,7 +155,7 @@ export default function Dashboard() {
             <InstallPwaPrompt />
             <MonthSelector />
 
-            {dataLoading ? (
+            {isLoading ? (
               <DashboardSkeleton />
             ) : (
               <>
@@ -204,18 +171,28 @@ export default function Dashboard() {
                   </Alert>
                 )}
 
+                {projected.projectedBalance < 0 && (
+                  <Alert variant="destructive" className="rounded-xl border-destructive/50 bg-destructive/10">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="font-medium text-sm">
+                      Alerta: Seu saldo previsto está negativo ({new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(projected.projectedBalance)}).
+                      Revise suas despesas e faturas do mês.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <SummaryCards
-                  balance={totalRealBalance}
-                  totalIncome={summary.totalIncome}
-                  totalExpense={summary.totalExpense}
-                  largestCategory={summary.largestCategory}
+                  balance={projected.projectedBalance}
+                  totalIncome={projected.totalIncome}
+                  totalExpense={projected.totalExpense}
+                  largestCategory={projected.largestCategory}
                   prevBalance={prevSummary.balance}
                   prevIncome={prevSummary.totalIncome}
                   prevExpense={prevSummary.totalExpense}
                   healthScore={
                     <HealthScore
-                      totalIncome={summary.totalIncome}
-                      totalExpense={summary.totalExpense}
+                      totalIncome={projected.totalIncome}
+                      totalExpense={projected.totalExpense}
                       totalBudget={budgetTotals.totalBudget}
                       totalSpentInBudget={budgetTotals.totalSpent}
                       hasOverdueCards={hasOverdueCards}
@@ -223,46 +200,34 @@ export default function Dashboard() {
                   }
                 />
 
-                {/* Painel de Gráficos - Grid Estático */}
+                {/* Painel de Gráficos */}
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>
 
-                {/* Painel de Gráficos - Grid em Duplas */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-                  {/* Destaque: Resumo de Cartões (Largura Total) */}
                   <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditCardSummary /></div>
-
-                  {/* Destaque: Fluxo de Caixa (Largura Total) */}
                   <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><CashFlowChart /></div>
 
-                  {/* Pares 1: Maiores Compras e Subcategorias */}
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><TopExpensesList expenses={expenses} /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SubcategoryTreemap expenses={expenses} categories={dbCategories} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><TopExpensesList expenses={projected.monthExpenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SubcategoryTreemap expenses={projected.monthExpenses} categories={dbCategories} /></div>
 
-                  {/* Pares 2: Receita vs Despesas e Cascata */}
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeVsExpenseChart /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></div>
 
-                  {/* Pares 3: Origem e Rotina */}
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeSourcesPie expenses={expenses} categories={dbCategories} /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><DailySpendingChart expenses={expenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><DailySpendingChart expenses={projected.monthExpenses} /></div>
 
-                  {/* Pares 4: Controle de Hábitos */}
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WeekComparisonChart expenses={expenses} /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WeekComparisonChart expenses={projected.monthExpenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><BurndownChart expenses={projected.monthExpenses} totalBudget={budgetTotals.totalBudget} /></div>
 
-                  {/* Pares 5: Previsão e Calendário */}
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><EndOfMonthForecast /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CalendarView /></div>
 
-                  {/* Pares 6: Fixo vs Variável e Mapa de Calor */}
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><FixedVsVariableChart expenses={projected.monthExpenses} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SpendingHeatmap expenses={projected.monthExpenses} /></div>
 
-                  {/* Pares 7: Uso de Crédito e Poupança */}
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><CreditUsageChart /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></div>
 
-                  {/* Destaque Rodapé: Patrimônio Líquido (Largura Total) */}
                   <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><NetWorthChart /></div>
                 </div>
               </>
@@ -270,7 +235,7 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
-      <AddExpenseModal open={modalOpen} onOpenChange={setModalOpen} onExpenseAdded={fetchAllData} />
+      <AddExpenseModal open={modalOpen} onOpenChange={setModalOpen} onExpenseAdded={projected.refetch} />
     </SidebarProvider>
   );
 }

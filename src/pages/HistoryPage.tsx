@@ -8,7 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
-import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -19,6 +18,7 @@ import { CATEGORIES, formatCurrency } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { TransactionFeed } from '@/components/TransactionFeed';
 import { TransactionSummaryHeader } from '@/components/TransactionSummaryHeader';
+import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import type { Expense } from '@/components/ExpenseTable';
 
 const PAGE_SIZE = 30;
@@ -29,9 +29,8 @@ export default function HistoryPage() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const [invoiceExpenses, setInvoiceExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const projected = useProjectedTotals();
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(() => ({
@@ -39,59 +38,9 @@ export default function HistoryPage() {
     type: searchParams.get('type') || 'all',
   }));
 
-  const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
-  const [startingMonthBalance, setStartingMonthBalance] = useState(0);
-  const [creditCards, setCreditCards] = useState<CreditCardType[]>([]);
-
   // Subscriptions state
   const [subItems, setSubItems] = useState<Expense[]>([]);
   const [subLoading, setSubLoading] = useState(true);
-
-  const fetchExpenses = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    // Fetch calendar-month expenses (debit, income, transfers)
-    const { data } = await supabase.from('expenses').select('*').eq('user_id', user.id)
-      .gte('date', startDate).lt('date', endDate)
-      .order('date', { ascending: false });
-    setAllExpenses((data || []) as Expense[]);
-
-    // Also fetch ALL credit card expenses (any date) so the invoice engine
-    // can match purchases from other months to invoices due in this month
-    const { data: ccData } = await supabase.from('expenses').select('*').eq('user_id', user.id)
-      .not('credit_card_id', 'is', null);
-    setInvoiceExpenses((ccData || []) as Expense[]);
-
-    setLoading(false);
-  }, [user, startDate, endDate]);
-
-  const fetchWalletsAndBalance = useCallback(async () => {
-    if (!user) return;
-    const { data: walletsData } = await supabase
-      .from('wallets').select('id, name, initial_balance').eq('user_id', user.id).order('name');
-    const wList = walletsData || [];
-    setWallets(wList.map(w => ({ id: w.id, name: w.name })));
-
-    const walletsTotal = wList.reduce((s, w: any) => s + (w.initial_balance || 0), 0);
-    const { data: allTxns } = await supabase
-      .from('expenses').select('value, type, credit_card_id, date')
-      .eq('user_id', user.id).eq('is_paid', true);
-
-    let priorBalance = walletsTotal;
-    (allTxns || []).forEach((t: any) => {
-      if (t.type === 'transfer') return;
-      if (t.date >= startDate) return;
-      if (t.type === 'income') priorBalance += t.value;
-      else if (!t.credit_card_id) priorBalance -= t.value;
-    });
-    setStartingMonthBalance(priorBalance);
-  }, [user, startDate]);
-
-  const fetchCreditCards = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase.from('credit_cards').select('*').eq('user_id', user.id);
-    setCreditCards((data || []) as CreditCardType[]);
-  }, [user]);
 
   const fetchSubscriptions = useCallback(async () => {
     if (!user) return;
@@ -103,10 +52,7 @@ export default function HistoryPage() {
     setSubLoading(false);
   }, [user]);
 
-  useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
-  useEffect(() => { fetchWalletsAndBalance(); }, [fetchWalletsAndBalance]);
   useEffect(() => { fetchSubscriptions(); }, [fetchSubscriptions]);
-  useEffect(() => { fetchCreditCards(); }, [fetchCreditCards]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -115,19 +61,19 @@ export default function HistoryPage() {
 
   // Apply filters
   const filteredExpenses = useMemo(() => {
-    let result = allExpenses;
+    let result = projected.monthExpenses;
     if (filters.type !== 'all') result = result.filter(e => e.type === filters.type);
     if (filters.category !== 'all') result = result.filter(e => e.final_category === filters.category);
     if (search.trim()) result = result.filter(e => e.description.toLowerCase().includes(search.toLowerCase()));
     return result;
-  }, [allExpenses, filters, search]);
+  }, [projected.monthExpenses, filters, search]);
 
   const totalPages = Math.ceil(filteredExpenses.length / PAGE_SIZE);
   const paginatedExpenses = filteredExpenses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const exportCSV = () => {
     const headers = 'Data,Descrição,Valor,Tipo,Categoria\n';
-    const rows = allExpenses.map(e =>
+    const rows = projected.monthExpenses.map(e =>
       `${e.date},"${e.description}",${e.value},${e.type},${e.final_category}`
     ).join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
@@ -162,7 +108,11 @@ export default function HistoryPage() {
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
             <MonthSelector />
-            <TransactionSummaryHeader expenses={allExpenses} startingMonthBalance={startingMonthBalance} />
+            <TransactionSummaryHeader
+              totalIncome={projected.totalIncome}
+              totalExpense={projected.totalExpense}
+              projectedBalance={projected.projectedBalance}
+            />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transações</h1>
@@ -212,17 +162,17 @@ export default function HistoryPage() {
                 <TransactionFeed
                   expenses={paginatedExpenses}
                   allExpenses={filteredExpenses}
-                  invoiceExpenses={invoiceExpenses}
-                  loading={loading}
-                  onDeleted={fetchExpenses}
+                  invoiceExpenses={projected.invoiceExpenses}
+                  loading={projected.loading}
+                  onDeleted={projected.refetch}
                   filters={{ category: filters.category }}
                   onFilterChange={() => {}}
                   page={page}
                   totalPages={totalPages}
                   onPageChange={setPage}
-                  wallets={wallets}
-                  startingMonthBalance={startingMonthBalance}
-                  creditCards={creditCards}
+                  wallets={projected.wallets}
+                  startingMonthBalance={projected.startingBalance}
+                  creditCards={projected.creditCards}
                   currentMonth={startDate}
                 />
               </TabsContent>
@@ -318,8 +268,8 @@ export default function HistoryPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">Como você iniciou este mês</p>
                   </div>
                 </div>
-                <span className={`text-lg sm:text-xl font-bold ${startingMonthBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
-                  {startingMonthBalance >= 0 ? '+' : ''}{formatCurrency(startingMonthBalance)}
+                <span className={`text-lg sm:text-xl font-bold ${projected.startingBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                  {formatCurrency(projected.startingBalance)}
                 </span>
               </div>
             </Card>
