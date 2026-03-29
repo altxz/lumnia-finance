@@ -1,12 +1,13 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, Sun, Moon, Monitor } from 'lucide-react';
+import { LogOut, Menu, Sun, Moon, Monitor, Plus } from 'lucide-react';
+import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { useSidebar } from '@/components/ui/sidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 export function DashboardHeader() {
@@ -14,6 +15,7 @@ export function DashboardHeader() {
   const { toggleSidebar } = useSidebar();
   const { theme, setTheme } = useTheme();
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,12 +75,24 @@ export function DashboardHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Desktop add button */}
+        <Button
+          onClick={() => setAddModalOpen(true)}
+          size="sm"
+          className="hidden md:inline-flex gap-2 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+        >
+          <Plus className="h-4 w-4" />
+          Nova Transação
+        </Button>
+
         <NotificationBell />
         <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 rounded-xl">
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Sair</span>
         </Button>
       </div>
+
+      <AddExpenseModal open={addModalOpen} onOpenChange={setAddModalOpen} onExpenseAdded={() => {}} />
     </header>
   );
 }
