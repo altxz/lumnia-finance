@@ -248,18 +248,18 @@ export default function Dashboard() {
 
                   {/* Pares 5: Previsão e Calendário */}
                   <div className="flex flex-col min-h-[350px]"><EndOfMonthForecast /></div>
-                  <div className="flex flex-col min-h-[400px]"><CalendarView /></div>
+                  <div className="flex flex-col min-h-[350px]"><CalendarView /></div>
 
-                  {/* Pares 6: Evolução e Perfil */}
-                  <div className="flex flex-col min-h-[350px]"><NetWorthChart /></div>
+                  {/* Pares 6: Fixo vs Variável e Mapa de Calor */}
                   <div className="flex flex-col min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
-
-                  {/* Pares 7: Cartão e Poupança */}
-                  <div className="flex flex-col min-h-[350px]"><CreditUsageChart /></div>
-                  <div className="flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
-
-                  {/* Pares 8: Mapa de Calor */}
                   <div className="flex flex-col min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
+
+                  {/* Pares 7: Evolução e Cartão */}
+                  <div className="flex flex-col min-h-[350px]"><NetWorthChart /></div>
+                  <div className="flex flex-col min-h-[350px]"><CreditUsageChart /></div>
+
+                  {/* Pares 8: Poupança e Renda */}
+                  <div className="flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
                 </div>
               </>
             )}
