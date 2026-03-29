@@ -85,15 +85,24 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0 rounded-xl"
+        className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border-border"
         align="start"
         sideOffset={4}
+        style={{ pointerEvents: 'auto' }}
+        onPointerDownOutside={(e) => {
+          if ((e.target as HTMLElement).closest('button[role="combobox"]')) {
+            e.preventDefault();
+          }
+        }}
       >
         <div
-          className="max-h-[300px] overflow-y-auto overflow-x-hidden py-1 px-1 select-none"
+          className="max-h-[300px] overflow-y-auto overflow-x-hidden py-1 px-1"
           style={{
             WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-y'
+            touchAction: 'pan-y',
+            pointerEvents: 'auto',
+            position: 'relative',
+            zIndex: 50
           }}
         >
           <Accordion type="single" collapsible defaultValue={defaultAccordion}>
@@ -106,9 +115,10 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                     key={group.id}
                     type="button"
                     className={cn(
-                      'w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
+                      'w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors touch-manipulation',
                       value === group.name.toLowerCase() && 'bg-secondary'
                     )}
+                    style={{ pointerEvents: 'auto' }}
                     onClick={() => handleSelect(group.name)}
                   >
                     <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
@@ -122,7 +132,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
 
               return (
                 <AccordionItem key={group.id} value={group.id} className="border-b-0">
-                  <AccordionTrigger className="px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
+                  <AccordionTrigger className="px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 hover:no-underline touch-manipulation [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
                     <span className="flex items-center gap-2">
                       <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
                       <span className="font-semibold whitespace-nowrap">{group.name}</span>
@@ -134,9 +144,10 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                         key={sub.id}
                         type="button"
                         className={cn(
-                          'w-full flex items-center gap-2 pl-10 pr-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
+                          'w-full flex items-center gap-2 pl-10 pr-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors touch-manipulation',
                           value === sub.name.toLowerCase() && 'bg-secondary'
                         )}
+                        style={{ pointerEvents: 'auto' }}
                         onClick={() => handleSelect(sub.name)}
                       >
                         <DynamicIcon name={sub.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: sub.color }} />
