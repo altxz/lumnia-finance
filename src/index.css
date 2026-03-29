@@ -134,4 +134,9 @@
 
 .react-grid-item {
   transition: all 200ms ease;
+  overflow: hidden !important;
+}
+
+.react-resizable-handle {
+  display: none !important;
 }

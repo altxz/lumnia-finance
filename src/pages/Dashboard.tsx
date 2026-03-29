@@ -346,23 +346,16 @@ export default function Dashboard() {
                       const widget = widgetMap[item.i as keyof typeof widgetMap];
                       if (!widget) return null;
                       return (
-                        <div key={item.i}>
-                          <div className={`h-full w-full rounded-2xl bg-card shadow-sm overflow-hidden flex flex-col transition-all duration-200 ${
-                            isEditingLayout
-                              ? 'border-2 border-dashed border-primary/30 opacity-90 hover:opacity-100 hover:border-primary/50'
-                              : 'border border-border/50'
-                          }`}>
-                            {/* Drag handle header — only in edit mode */}
-                            {isEditingLayout && (
-                              <div className="drag-handle flex items-center justify-center gap-1.5 py-1.5 bg-primary/5 border-b border-dashed border-primary/20 text-primary/70 hover:bg-primary/10 transition-colors">
-                                <GripVertical className="h-3.5 w-3.5" />
-                                <span className="text-[10px] font-semibold uppercase tracking-wider select-none">{widget.title}</span>
-                                <GripVertical className="h-3.5 w-3.5" />
-                              </div>
-                            )}
-                            <div className="flex-1 overflow-auto">
-                              {widget.comp}
+                        <div key={item.i} className="w-full h-full">
+                          {isEditingLayout && (
+                            <div className="drag-handle flex items-center justify-center gap-1.5 py-1 bg-primary/5 border border-dashed border-primary/30 rounded-t-xl text-primary/70 hover:bg-primary/10 transition-colors">
+                              <GripVertical className="h-3.5 w-3.5" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider select-none">{widget.title}</span>
+                              <GripVertical className="h-3.5 w-3.5" />
                             </div>
+                          )}
+                          <div className={`w-full ${isEditingLayout ? 'h-[calc(100%-28px)]' : 'h-full'}`}>
+                            {widget.comp}
                           </div>
                         </div>
                       );
