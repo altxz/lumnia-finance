@@ -106,7 +106,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
               <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Maior Categoria</p>
+              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Maior Subcategoria</p>
               <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">
                 {largestCategory ? largestCategory.name : '—'}
               </p>
