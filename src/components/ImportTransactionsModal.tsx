@@ -54,6 +54,14 @@ function parseCSV(text: string): Omit<ParsedTransaction, 'originType' | 'destId'
   const isNubank = headerLine.includes('date') && headerLine.includes('title') && headerLine.includes('amount');
   const delimiter = headerLine.includes(';') ? ';' : ',';
 
+  const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+  let dateIdx = headers.findIndex(h => h.includes('date') || h.includes('data'));
+  let descIdx = headers.findIndex(h => h.includes('title') || h.includes('desc') || h.includes('histórico') || h.includes('lançamento') || h.includes('detalhe'));
+  let valIdx = headers.findIndex(h => h.includes('amount') || h.includes('valor') || h.includes('value'));
+  if (dateIdx === -1) dateIdx = 0;
+  if (descIdx === -1) descIdx = 1;
+  if (valIdx === -1) valIdx = 2;
+
   const transactions: Omit<ParsedTransaction, 'originType' | 'destId'>[] = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -63,9 +71,9 @@ function parseCSV(text: string): Omit<ParsedTransaction, 'originType' | 'destId'
 
     if (!row || row.length < 3) continue;
 
-    const rawDate = row[0].trim();
-    const rawDesc = row[1].trim();
-    const rawValue = row[2].trim();
+    const rawDate = row[dateIdx]?.trim() || '';
+    const rawDesc = row[descIdx]?.trim() || '';
+    const rawValue = row[valIdx]?.trim() || '';
 
     let numericValue: number;
     if (rawValue.includes(',') && rawValue.lastIndexOf(',') > rawValue.lastIndexOf('.')) {
@@ -181,7 +189,7 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
   useEffect(() => { if (!open) reset(); }, [open]);
 
   const processFile = (file: File) => {
-    if (!file.name.endsWith('.csv')) {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
       toast({ title: 'Formato inválido', description: 'Por favor, selecione um arquivo .csv', variant: 'destructive' });
       return;
     }
@@ -219,6 +227,7 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processFile(file);
+    e.target.value = '';
   };
 
   const toggleAll = (checked: boolean) => setTransactions(prev => prev.map(t => ({ ...t, selected: checked })));
