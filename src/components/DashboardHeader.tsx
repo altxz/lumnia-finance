@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, Sun, Moon, Monitor } from 'lucide-react';
+import { LogOut, Menu, Sun, Moon, Monitor, Plus } from 'lucide-react';
+import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { useSidebar } from '@/components/ui/sidebar';
 import { NotificationBell } from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

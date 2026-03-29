@@ -1,8 +1,9 @@
 import { useState, useMemo, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import type { LucideProps } from 'lucide-react';
 
@@ -36,7 +37,6 @@ function DynamicIcon({ name, ...props }: { name: string } & Omit<LucideProps, 'r
 
 export function CategoryPicker({ categories, value, onValueChange, placeholder = 'Selecione a categoria' }: CategoryPickerProps) {
   const [open, setOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const grouped = useMemo(() => {
     const parents = categories.filter(c => !c.parent_id);
@@ -52,19 +52,17 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
     return categories.find(c => c.name.toLowerCase() === value);
   }, [categories, value]);
 
-  const toggleGroup = (id: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const handleSelect = (categoryName: string) => {
     onValueChange(categoryName.toLowerCase());
     setOpen(false);
   };
+
+  // Find which parent contains the selected value to auto-expand
+  const defaultAccordion = useMemo(() => {
+    if (!value) return undefined;
+    const parent = grouped.find(g => g.subs.some(s => s.name.toLowerCase() === value));
+    return parent ? parent.id : undefined;
+  }, [value, grouped]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -87,65 +85,62 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" align="start">
-        <div className="max-h-64 overflow-y-auto py-1">
-          {grouped.map(group => {
-            const isExpanded = expandedGroups.has(group.id);
-            const hasSubs = group.subs.length > 0;
+        <div className="max-h-72 overflow-y-auto py-1">
+          <Accordion type="single" collapsible defaultValue={defaultAccordion}>
+            {grouped.map(group => {
+              const hasSubs = group.subs.length > 0;
 
-            return (
-              <div key={group.id}>
-                {/* Parent category row */}
-                <button
-                  type="button"
-                  className={cn(
-                    'w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/60 transition-colors',
-                    !hasSubs && value === group.name.toLowerCase() && 'bg-secondary'
-                  )}
-                  onClick={() => {
-                    if (hasSubs) {
-                      toggleGroup(group.id);
-                    } else {
-                      handleSelect(group.name);
-                    }
-                  }}
-                >
-                  <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
-                  <span className="font-semibold flex-1 text-left truncate" title={group.name}>{group.name}</span>
-                  {!hasSubs && value === group.name.toLowerCase() && (
-                    <Check className="h-4 w-4 text-primary shrink-0" />
-                  )}
-                  {hasSubs && (
-                    isExpanded
-                      ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                      : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  )}
-                </button>
+              if (!hasSubs) {
+                return (
+                  <button
+                    key={group.id}
+                    type="button"
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-secondary/60 transition-colors',
+                      value === group.name.toLowerCase() && 'bg-secondary'
+                    )}
+                    onClick={() => handleSelect(group.name)}
+                  >
+                    <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
+                    <span className="font-medium flex-1 text-left truncate">{group.name}</span>
+                    {value === group.name.toLowerCase() && (
+                      <Check className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </button>
+                );
+              }
 
-                {/* Subcategories */}
-                {hasSubs && isExpanded && (
-                  <div className="pb-1">
+              return (
+                <AccordionItem key={group.id} value={group.id} className="border-b-0">
+                  <AccordionTrigger className="px-3 py-2.5 text-sm hover:bg-secondary/60 hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
+                    <span className="flex items-center gap-2">
+                      <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
+                      <span className="font-semibold">{group.name}</span>
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-1 pt-0">
                     {group.subs.map(sub => (
                       <button
                         key={sub.id}
                         type="button"
                         className={cn(
-                          'w-full flex items-center gap-2 pl-9 pr-3 py-1.5 text-sm hover:bg-secondary/60 transition-colors',
+                          'w-full flex items-center gap-2 pl-10 pr-3 py-2 text-sm hover:bg-secondary/60 transition-colors',
                           value === sub.name.toLowerCase() && 'bg-secondary'
                         )}
                         onClick={() => handleSelect(sub.name)}
                       >
                         <DynamicIcon name={sub.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: sub.color }} />
-                        <span className="flex-1 text-left truncate" title={sub.name}>{sub.name}</span>
+                        <span className="flex-1 text-left truncate">{sub.name}</span>
                         {value === sub.name.toLowerCase() && (
                           <Check className="h-4 w-4 text-primary shrink-0" />
                         )}
                       </button>
                     ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
           {grouped.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">Nenhuma categoria encontrada</p>
           )}
