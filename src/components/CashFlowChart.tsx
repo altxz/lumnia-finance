@@ -241,38 +241,38 @@ export function CashFlowChart() {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-              interval={tickInterval}
-            />
-            <YAxis
-              yAxisId="bars"
-              tickFormatter={(v) => {
-                if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
-                return `R$${v.toFixed(0)}`;
-              }}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-              width={55}
-              orientation="left"
-            />
-            <YAxis
-              yAxisId="line"
-              tickFormatter={(v) => {
-                if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
-                return `R$${v.toFixed(0)}`;
-              }}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-              width={55}
-              orientation="right"
-              domain={['auto', 'auto']}
-            />
+             <XAxis
+               dataKey="label"
+               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+               axisLine={false}
+               tickLine={false}
+               interval={tickInterval}
+             />
+             <YAxis
+               yAxisId="bars"
+               tickFormatter={(v) => {
+                 if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
+                 return `R$${v.toFixed(0)}`;
+               }}
+               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+               axisLine={false}
+               tickLine={false}
+               width={40}
+               orientation="left"
+             />
+             <YAxis
+               yAxisId="line"
+               tickFormatter={(v) => {
+                 if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
+                 return `R$${v.toFixed(0)}`;
+               }}
+               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+               axisLine={false}
+               tickLine={false}
+               width={40}
+               orientation="right"
+               domain={['auto', 'auto']}
+             />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;

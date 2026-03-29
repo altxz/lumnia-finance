@@ -348,7 +348,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-lg overflow-hidden sm:w-full p-0 rounded-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[92vw] max-w-lg overflow-hidden sm:w-full p-0 rounded-2xl max-h-[85vh] overflow-y-auto">
         {/* Type selector header */}
         <div className={`p-4 pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
           <DialogHeader className="pb-3">
