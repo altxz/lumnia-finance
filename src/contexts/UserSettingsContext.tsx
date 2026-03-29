@@ -6,6 +6,7 @@ interface UserSettings {
   enable_budget_module: boolean;
   enable_projects_module: boolean;
   enable_crypto_module: boolean;
+  onboarding_completed: boolean;
 }
 
 interface UserSettingsContextType {
@@ -19,6 +20,7 @@ const defaults: UserSettings = {
   enable_budget_module: true,
   enable_projects_module: true,
   enable_crypto_module: true,
+  onboarding_completed: false,
 };
 
 const UserSettingsContext = createContext<UserSettingsContextType>({
@@ -37,7 +39,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     if (!user) { setLoading(false); return; }
     const { data } = await supabase
       .from('user_settings')
-      .select('enable_budget_module, enable_projects_module, enable_crypto_module')
+      .select('enable_budget_module, enable_projects_module, enable_crypto_module, onboarding_completed')
       .eq('user_id', user.id)
       .maybeSingle();
     if (data) {
@@ -45,6 +47,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
         enable_budget_module: data.enable_budget_module ?? true,
         enable_projects_module: data.enable_projects_module ?? true,
         enable_crypto_module: data.enable_crypto_module ?? true,
+        onboarding_completed: data.onboarding_completed ?? false,
       });
     }
     setLoading(false);

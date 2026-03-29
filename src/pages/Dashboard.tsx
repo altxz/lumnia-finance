@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { OnboardingWizard } from '@/components/OnboardingWizard';
+import { useUserSettings } from '@/contexts/UserSettingsContext';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SummaryCards } from '@/components/SummaryCards';
@@ -58,8 +60,10 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
+  const { settings: userSettings, refetch: refetchSettings } = useUserSettings();
   const projected = useProjectedTotals();
   const [modalOpen, setModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
   
   const [dbCategories, setDbCategories] = useState<any[]>([]);
@@ -115,6 +119,13 @@ export default function Dashboard() {
   }, [user, startDate, endDate, prevStartDate, prevEndDate]);
 
   useEffect(() => { fetchExtraData(); }, [fetchExtraData]);
+
+  // Show onboarding for new users
+  useEffect(() => {
+    if (user && !userSettings.onboarding_completed) {
+      setShowOnboarding(true);
+    }
+  }, [user, userSettings.onboarding_completed]);
 
   const [budgetDataRaw, setBudgetDataRaw] = useState<any[]>([]);
 
@@ -180,6 +191,10 @@ export default function Dashboard() {
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
             <InstallPwaPrompt />
+            <OnboardingWizard
+              open={showOnboarding}
+              onComplete={() => { setShowOnboarding(false); refetchSettings(); fetchExtraData(); }}
+            />
             <MonthSelector />
 
             {isLoading ? (

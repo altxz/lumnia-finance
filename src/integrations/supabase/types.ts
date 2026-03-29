@@ -454,6 +454,7 @@ export type Database = {
           notify_email_alerts: boolean
           notify_email_news: boolean
           notify_email_weekly: boolean
+          onboarding_completed: boolean
           plan: string
           timezone: string
           updated_at: string
@@ -480,6 +481,7 @@ export type Database = {
           notify_email_alerts?: boolean
           notify_email_news?: boolean
           notify_email_weekly?: boolean
+          onboarding_completed?: boolean
           plan?: string
           timezone?: string
           updated_at?: string
@@ -506,6 +508,7 @@ export type Database = {
           notify_email_alerts?: boolean
           notify_email_news?: boolean
           notify_email_weekly?: boolean
+          onboarding_completed?: boolean
           plan?: string
           timezone?: string
           updated_at?: string
