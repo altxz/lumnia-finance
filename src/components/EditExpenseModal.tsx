@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2 } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CategoryPicker } from '@/components/CategoryPicker';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -138,6 +139,14 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         </div>
 
         <div className="p-4 pt-2 space-y-4">
+          {expense.installment_info && (
+            <Alert className="rounded-xl border-primary/30 bg-primary/5">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm">
+                Esta é a parcela <span className="font-bold">{expense.installment_info}</span>. As alterações feitas aqui afetarão apenas esta parcela.
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Data</Label>
             <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="rounded-xl h-11" />

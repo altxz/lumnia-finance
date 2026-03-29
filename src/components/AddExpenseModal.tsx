@@ -113,6 +113,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   const [frequency, setFrequency] = useState<string>('monthly');
   const [creditCardId, setCreditCardId] = useState<string>('');
   const [installments, setInstallments] = useState('1');
+  const [installmentValueType, setInstallmentValueType] = useState<'total' | 'per_installment'>('total');
   const [walletId, setWalletId] = useState<string>('');
   const [invoiceMonth, setInvoiceMonth] = useState<string>('');
   const [wallets, setWallets] = useState<WalletOption[]>([]);
@@ -242,8 +243,10 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     if (isCredit && numInstallments > 1 && invoiceMonth) {
       // Generate one record per installment with shared group id
       const groupId = crypto.randomUUID();
-      const totalValue = parseFloat(value);
-      const perInstallment = Math.round((totalValue / numInstallments) * 100) / 100;
+      const inputValue = parseFloat(value);
+      const perInstallment = installmentValueType === 'total'
+        ? Math.round((inputValue / numInstallments) * 100) / 100
+        : inputValue;
       const [baseY, baseM] = invoiceMonth.split('-').map(Number);
 
       const rows = Array.from({ length: numInstallments }, (_, i) => {
@@ -330,6 +333,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     setFrequency('monthly');
     setCreditCardId('');
     setInstallments('1');
+    setInstallmentValueType('total');
     setWalletId('');
     setDestinationWalletId('');
     setCategoryAi('');
@@ -508,9 +512,40 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                     </div>
                     <div className="space-y-1.5 min-w-0">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Parcelas</Label>
-                      <Input type="number" min="1" max="48" value={installments} onChange={e => setInstallments(e.target.value)} className="rounded-xl h-11" />
+                      <Input type="number" min="1" max="72" value={installments} onChange={e => setInstallments(e.target.value)} className="rounded-xl h-11" />
                     </div>
                   </div>
+                  {parseInt(installments) > 1 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tipo de Valor</Label>
+                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                        <button
+                          type="button"
+                          onClick={() => setInstallmentValueType('total')}
+                          className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                            installmentValueType === 'total' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Valor Total
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInstallmentValueType('per_installment')}
+                          className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                            installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Valor da Parcela
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {installmentValueType === 'total'
+                          ? `O valor será dividido em ${installments}x de R$ ${value ? (parseFloat(value) / parseInt(installments)).toFixed(2) : '0,00'}`
+                          : `Total: R$ ${value ? (parseFloat(value) * parseInt(installments)).toFixed(2) : '0,00'} em ${installments}x de R$ ${value || '0,00'}`
+                        }
+                      </p>
+                    </div>
+                  )}
                   {creditCardId && (
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fatura</Label>
