@@ -126,13 +126,14 @@ export function TransactionFeed({
   const targetYear = currentMonth ? parseInt(currentMonth.slice(0, 4)) : new Date().getFullYear();
   const targetMonth = currentMonth ? parseInt(currentMonth.slice(5, 7)) - 1 : new Date().getMonth();
 
-  // Build invoice periods for all credit cards
+  // Build invoice periods using ALL CC expenses (from any month)
   const invoicePeriods = useMemo(() => {
     if (creditCards.length === 0) return [];
-    const allTxns = allExpenses || expenses;
+    // Use invoiceExpenses (all CC txns) for matching, fall back to allExpenses
+    const ccPool = invoiceExpenses && invoiceExpenses.length > 0 ? invoiceExpenses : (allExpenses || expenses);
     return creditCards.map(card => {
       const period = getInvoicePeriod(card, targetYear, targetMonth);
-      return matchExpensesToInvoice(allTxns, period);
+      return matchExpensesToInvoice(ccPool, period);
     });
   }, [creditCards, allExpenses, expenses, targetYear, targetMonth]);
 
