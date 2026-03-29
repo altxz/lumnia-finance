@@ -1,16 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Scale } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { formatCurrency } from '@/lib/constants';
-import type { Expense } from '@/components/ExpenseTable';
 
 interface TransactionSummaryHeaderProps {
-  expenses: Expense[];
-  startingMonthBalance: number;
+  totalIncome: number;
+  totalExpense: number;
+  projectedBalance: number;
 }
 
-export function TransactionSummaryHeader({ expenses, startingMonthBalance }: TransactionSummaryHeaderProps) {
+export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedBalance }: TransactionSummaryHeaderProps) {
   const [visible, setVisible] = useState(true);
   const { selectedMonth, selectedYear } = useSelectedDate();
 
@@ -19,21 +19,7 @@ export function TransactionSummaryHeader({ expenses, startingMonthBalance }: Tra
   const isFutureMonth = selectedYear > now.getFullYear() || (selectedYear === now.getFullYear() && selectedMonth > now.getMonth());
 
   const label = isFutureMonth ? 'Saldo previsto' : isCurrentMonth ? 'Saldo atual' : 'Saldo final';
-
-  const { totalIncome, totalExpense } = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    expenses.forEach(e => {
-      if (e.type === 'transfer') return;
-      if (e.type === 'income') income += e.value;
-      else if (!e.credit_card_id) expense += e.value;
-    });
-    return { totalIncome: income, totalExpense: expense };
-  }, [expenses]);
-
   const balance = totalIncome - totalExpense;
-  const currentBalance = startingMonthBalance + totalIncome - totalExpense;
-
   const mask = '••••••';
 
   return (
@@ -50,8 +36,8 @@ export function TransactionSummaryHeader({ expenses, startingMonthBalance }: Tra
             {visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
           </button>
         </div>
-        <p className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          {visible ? formatCurrency(currentBalance) : mask}
+        <p className={`text-2xl sm:text-3xl font-bold tracking-tight ${projectedBalance < 0 ? 'text-destructive' : 'text-foreground'}`}>
+          {visible ? formatCurrency(projectedBalance) : mask}
         </p>
       </Card>
 
