@@ -54,9 +54,9 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
         <CardContent>
           {barData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={barData} layout="vertical" margin={{ left: 60 }}>
-                <XAxis type="number" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} />
+               <BarChart data={barData} layout="vertical" margin={{ left: 10 }}>
+                 <XAxis type="number" tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`} tick={{ fontSize: 9 }} />
+                 <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
                 <Bar dataKey="atual" fill="hsl(245, 45%, 51%)" radius={[0, 6, 6, 0]} barSize={16} />
                 {compare && <Bar dataKey="anterior" fill="hsl(245, 45%, 51%, 0.3)" radius={[0, 6, 6, 0]} barSize={16} />}

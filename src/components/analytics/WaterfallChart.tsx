@@ -132,10 +132,10 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
                 if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
                 return `R$${v.toFixed(0)}`;
               }}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-              width={55}
+               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+               axisLine={false}
+               tickLine={false}
+               width={40}
             />
             <Tooltip
               cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
