@@ -1,6 +1,5 @@
 import { useState, useCallback, ReactNode, useMemo, useRef, useEffect } from 'react';
-// @ts-expect-error - react-grid-layout types don't match ESM exports
-import { ResponsiveGridLayout, Layout } from 'react-grid-layout';
+import { ResponsiveGridLayout } from 'react-grid-layout';
 import { GripVertical, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
