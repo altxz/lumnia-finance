@@ -233,24 +233,8 @@ export default function Dashboard() {
 
                 <CashFlowChart />
 
-                {/* Analytics Grid */}
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                  <IncomeVsExpenseChart />
-                  <TopCategoriesPie expenses={expenses} categories={dbCategories} />
-                  <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} />
-                  <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} />
-                  <EndOfMonthForecast />
-                  <DailySpendingChart expenses={expenses} />
-                  <CreditUsageChart />
-                  <FixedVsVariableChart expenses={expenses} />
-                  <SubcategoryTreemap expenses={expenses} categories={dbCategories} />
-                  <WeekComparisonChart expenses={expenses} />
-                  <IncomeSourcesPie expenses={expenses} categories={dbCategories} />
-                  <SpendingHeatmap expenses={expenses} />
-                  <BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} />
-                </div>
-
-                <CalendarView />
+                {/* Interactive Grid */}
+                <DashboardGrid widgets={dashboardWidgets} />
               </>
             )}
           </main>
