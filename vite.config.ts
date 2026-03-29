@@ -29,8 +29,8 @@ export default defineConfig(({ mode }) => ({
         name: "Lumnia",
         short_name: "Lumnia",
         description: "Gerencie receitas e despesas com IA",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
+        theme_color: "#5447BC",
+        background_color: "#5447BC",
         display: "standalone",
         start_url: "/",
         icons: [
