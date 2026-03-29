@@ -104,6 +104,13 @@ export function matchExpensesToInvoice(
   const matched = expenses.filter(e => {
     if (e.credit_card_id !== period.cardId) return false;
     if (e.type === 'income' || e.type === 'transfer') return false;
+
+    // If expense has invoice_month set (e.g. installments), match by that
+    if (e.invoice_month) {
+      return e.invoice_month === period.monthLabel;
+    }
+
+    // Otherwise match by purchase date within the closing period
     const d = new Date(e.date + 'T12:00:00');
     return d >= start && d <= end;
   });
