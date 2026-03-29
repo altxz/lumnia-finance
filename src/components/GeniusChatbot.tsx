@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, X, Send, Loader2, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   id: string;
@@ -12,42 +13,14 @@ interface Message {
   timestamp: Date;
 }
 
-function simulateAiResponse(text: string): string {
-  const lower = text.toLowerCase();
-  const numberMatch = lower.match(/(\d+[.,]?\d*)/);
-  const amount = numberMatch ? numberMatch[1].replace(',', '.') : null;
-
-  if ((lower.includes('gasto') || lower.includes('despesa') || lower.includes('gastei') || lower.includes('paguei') || lower.includes('comprei')) && amount) {
-    return `✅ Entendido! Despesa de **R$ ${parseFloat(amount).toFixed(2)}** registada. Deseja adicionar mais detalhes como categoria ou conta?`;
-  }
-  if ((lower.includes('recebi') || lower.includes('receita') || lower.includes('salário') || lower.includes('renda')) && amount) {
-    return `✅ Receita de **R$ ${parseFloat(amount).toFixed(2)}** anotada! Quer vincular a alguma conta específica?`;
-  }
-  if (lower.includes('saldo') || lower.includes('quanto tenho') || lower.includes('patrimônio')) {
-    return `Para ver o seu saldo atual, acesse o **Dashboard** ou a página **Minha Carteira**. Posso ajudá-lo com mais alguma coisa?`;
-  }
-  if (lower.includes('orçamento') || lower.includes('budget') || lower.includes('meta')) {
-    return `Você pode configurar metas de orçamento na página de **Orçamento**. Quer que eu explique como funciona o planeamento base-zero?`;
-  }
-  if (lower.includes('categoria')) {
-    return `Você pode gerenciar suas categorias em **Configurações → Categorias**. Temos categorias com subcategorias e palavras-chave para a IA categorizar automaticamente!`;
-  }
-  if (lower.includes('ajuda') || lower.includes('help') || lower.includes('o que') || lower.includes('como')) {
-    return `Sou a inteligência da **Lumnia**, sua assistente financeira! 🧠\n\nPosso ajudá-lo a:\n- 📝 Registar despesas e receitas\n- 📊 Consultar saldos e orçamentos\n- 🏷️ Gerenciar categorias\n- 💡 Dar dicas financeiras\n\nExperimente: *"Gastei 50 reais no supermercado"*`;
-  }
-  if (lower.includes('olá') || lower.includes('oi') || lower.includes('hey') || lower.includes('bom dia') || lower.includes('boa tarde')) {
-    return `Olá! 👋 Sou a inteligência da **Lumnia**. Como posso ajudá-lo hoje?`;
-  }
-  return `Entendi sua mensagem! 🤔 No momento estou aprendendo a processar pedidos mais complexos. Tente algo como:\n- *"Gastei 30 no almoço"*\n- *"Qual meu saldo?"*\n- *"Ajuda"*`;
-}
-
 export function GeniusChatbot() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Olá! 👋 Sou a inteligência da **Lumnia**, sua assistente financeira. Como posso ajudá-lo?',
+      content: 'Olá! 👋 Sou a **Lumnia**, sua assistente financeira inteligente. Posso consultar seus gastos, registar despesas e muito mais. Como posso ajudá-lo?',
       timestamp: new Date(),
     },
   ]);
@@ -70,7 +43,7 @@ export function GeniusChatbot() {
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || isTyping) return;
+    if (!text || isTyping || !user) return;
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -82,18 +55,40 @@ export function GeniusChatbot() {
     setInput('');
     setIsTyping(true);
 
-    // Simulate AI thinking delay
-    await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
+    try {
+      // Build history from recent messages (skip welcome)
+      const history = messages
+        .filter(m => m.id !== 'welcome')
+        .slice(-10)
+        .map(m => ({ role: m.role, content: m.content }));
 
-    const reply = simulateAiResponse(text);
-    const aiMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: reply,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, aiMsg]);
-    setIsTyping(false);
+      const { data, error } = await supabase.functions.invoke('chat-genius', {
+        body: { message: text, user_id: user.id, history },
+      });
+
+      if (error) throw error;
+
+      const reply = data?.reply || 'Desculpe, não consegui processar o seu pedido.';
+
+      const aiMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: reply,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, aiMsg]);
+    } catch (err: any) {
+      console.error('Chat error:', err);
+      const errorMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: '⚠️ Ocorreu um erro ao processar sua mensagem. Tente novamente.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -103,7 +98,6 @@ export function GeniusChatbot() {
     }
   };
 
-  // Simple markdown-like rendering (bold and italic)
   const renderContent = (content: string) => {
     const parts = content.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\n)/g);
     return parts.map((part, i) => {
@@ -120,7 +114,6 @@ export function GeniusChatbot() {
 
   return (
     <>
-      {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-20 left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[70vh] rounded-2xl border bg-card shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
