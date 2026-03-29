@@ -158,7 +158,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const content = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-w-0">
       {/* Header card */}
       <div className="bg-primary rounded-2xl p-4 sm:p-5 mx-3 sm:mx-4 mt-2 mb-4 text-primary-foreground overflow-hidden">
         <div className="flex items-center justify-between mb-3 gap-2">
@@ -201,32 +201,32 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
       </div>
 
       {/* Transactions */}
-      <ScrollArea className="flex-1 px-3 sm:px-4 max-h-[60vh]">
+      <ScrollArea className="flex-1 min-h-0 px-3 sm:px-4 pr-4 sm:pr-5 max-h-[60vh]">
         {chronological.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
             Nenhuma transação nesta fatura
           </div>
         ) : (
-          <div className="space-y-4 pb-10">
+          <div className="space-y-4 pb-24">
             {/* By category summary */}
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Por categoria</h4>
               {byCategory.map(([cat, data]) => (
-                <div key={cat} className="flex items-center justify-between py-1.5 gap-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div key={cat} className="flex items-center justify-between py-1.5 gap-2 w-full max-w-full overflow-hidden">
+                  <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                     <Badge variant="secondary" className="text-xs shrink-0">{data.label}</Badge>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{data.items.length} transações</span>
+                    <span className="text-xs text-muted-foreground truncate">{data.items.length} transações</span>
                   </div>
-                  <span className="text-sm font-bold shrink-0">{formatCurrency(data.total)}</span>
+                  <span className="text-sm font-bold shrink-0 whitespace-nowrap">{formatCurrency(data.total)}</span>
                 </div>
               ))}
             </div>
 
             {/* Full list */}
-            <div className="space-y-1">
+            <div className="space-y-1 w-full max-w-full overflow-hidden">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Todas as transações</h4>
               {chronological.map(tx => (
-                <div key={tx.id} className="flex items-center justify-between py-3 border-b border-border last:border-0 w-full max-w-full overflow-hidden gap-2">
+                <div key={tx.id} className="flex items-start sm:items-center justify-between py-3 border-b border-border last:border-0 w-full max-w-full overflow-hidden gap-2">
                   <div className="min-w-0 flex-1 overflow-hidden">
                     <p className="text-sm font-medium truncate">{tx.description}</p>
                     <p className="text-xs text-muted-foreground truncate">
@@ -234,7 +234,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
                       {tx.installment_info && ` • ${tx.installment_info}`}
                     </p>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 shrink-0 pl-2">
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 shrink-0 pl-1">
                     <span className="text-sm font-bold text-destructive whitespace-nowrap">
                       -{formatCurrency(tx.value)}
                     </span>
