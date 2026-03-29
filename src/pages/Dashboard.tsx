@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { AlertTriangle, Lock, Unlock, RotateCcw, GripVertical } from 'lucide-react';
+import { AlertTriangle, RotateCcw, GripVertical, LayoutDashboard, Check } from 'lucide-react';
 import { ResponsiveGridLayout as RGLBase } from 'react-grid-layout';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -304,22 +304,25 @@ export default function Dashboard() {
                 <CashFlowChart />
 
                 {/* Layout Controls */}
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditingLayout(v => !v)}
-                    className="gap-1.5 text-xs"
-                  >
-                    {isEditingLayout ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                    {isEditingLayout ? 'Editando' : 'Bloqueado'}
-                  </Button>
-                  {isEditingLayout && (
-                    <Button variant="ghost" size="sm" onClick={handleResetLayout} className="gap-1.5 text-xs">
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Restaurar
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>
+                  <div className="flex items-center gap-2">
+                    {isEditingLayout && (
+                      <Button variant="ghost" size="sm" onClick={handleResetLayout} className="gap-1.5 text-xs text-muted-foreground">
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Restaurar
+                      </Button>
+                    )}
+                    <Button
+                      variant={isEditingLayout ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setIsEditingLayout(v => !v)}
+                      className={`gap-1.5 text-xs transition-all ${isEditingLayout ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
+                    >
+                      {isEditingLayout ? <Check className="h-3.5 w-3.5" /> : <LayoutDashboard className="h-3.5 w-3.5" />}
+                      {isEditingLayout ? 'Guardar Layout' : 'Editar Painel'}
                     </Button>
-                  )}
+                  </div>
                 </div>
 
                 <div ref={gridContainerRef}>
@@ -344,11 +347,17 @@ export default function Dashboard() {
                       if (!widget) return null;
                       return (
                         <div key={item.i}>
-                          <div className="h-full w-full rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden flex flex-col">
+                          <div className={`h-full w-full rounded-2xl bg-card shadow-sm overflow-hidden flex flex-col transition-all duration-200 ${
+                            isEditingLayout
+                              ? 'border-2 border-dashed border-primary/30 opacity-90 hover:opacity-100 hover:border-primary/50'
+                              : 'border border-border/50'
+                          }`}>
+                            {/* Drag handle header — only in edit mode */}
                             {isEditingLayout && (
-                              <div className="drag-handle flex items-center justify-center gap-1 py-1.5 bg-muted/50 border-b border-border/50 text-muted-foreground hover:bg-muted transition-colors">
+                              <div className="drag-handle flex items-center justify-center gap-1.5 py-1.5 bg-primary/5 border-b border-dashed border-primary/20 text-primary/70 hover:bg-primary/10 transition-colors">
                                 <GripVertical className="h-3.5 w-3.5" />
-                                <span className="text-[10px] font-medium select-none">{widget.title}</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-wider select-none">{widget.title}</span>
+                                <GripVertical className="h-3.5 w-3.5" />
                               </div>
                             )}
                             <div className="flex-1 overflow-auto">
