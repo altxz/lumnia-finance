@@ -258,8 +258,8 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
                   <div className="flex flex-col min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
 
-                  {/* Destaque Rodapé: Calendário (Largura Total) */}
-                  <div className="lg:col-span-2 flex flex-col min-h-[400px]"><CalendarView /></div>
+                  {/* Pares 8: Calendário */}
+                  <div className="flex flex-col min-h-[400px]"><CalendarView /></div>
                 </div>
               </>
             )}
