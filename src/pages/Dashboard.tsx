@@ -256,7 +256,7 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></div>
 
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><DailySpendingChart expenses={[...projected.monthExpenses, ...projected.invoiceExpenses]} creditCards={projected.creditCards} /></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><DailySpendingChart expenses={projected.monthExpenses} /></div>
 
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><WeekComparisonChart expenses={projected.monthExpenses} /></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><BurndownChart expenses={projected.monthExpenses} totalBudget={budgetTotals.totalBudget} /></div>
