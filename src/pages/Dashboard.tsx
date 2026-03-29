@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AlertTriangle, Lock, Unlock, RotateCcw, GripVertical } from 'lucide-react';
-import { ResponsiveGridLayout } from 'react-grid-layout';
+import { ResponsiveGridLayout as RGLBase } from 'react-grid-layout';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ResponsiveGrid = RGLBase as any;
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { SummaryCards } from '@/components/SummaryCards';
