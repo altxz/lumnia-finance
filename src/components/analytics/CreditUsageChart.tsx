@@ -40,20 +40,20 @@ export function CreditUsageChart() {
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Uso de Cartão de Crédito</CardTitle></CardHeader>
-        <CardContent className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">Nenhum cartão</CardContent>
+        <CardContent className="flex-1 min-h-0 pb-4 flex items-center justify-center text-sm text-muted-foreground">Nenhum cartão</CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold">Uso de Cartão de Crédito</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+      <CardContent className="flex-1 min-h-0 pb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={data} startAngle={180} endAngle={0}>
             <RadialBar dataKey="pct" background cornerRadius={6} label={{ position: 'insideStart', fill: '#fff', fontSize: 10, formatter: (v: number) => `${v}%` }} />
             <Tooltip formatter={(v: number, name: string, entry: any) => [`${v}% (${formatCurrency(entry.payload.used)} / ${formatCurrency(entry.payload.limit)})`, entry.payload.name]} />

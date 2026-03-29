@@ -88,15 +88,15 @@ export function EndOfMonthForecast() {
   const endBalance = chartData[chartData.length - 1]?.saldo || 0;
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold">Previsão Fim de Mês</CardTitle>
           <span className={`text-sm font-bold ${endBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatCurrency(endBalance)}</span>
         </div>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
+      <CardContent className="flex-1 min-h-0 pb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
             <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />

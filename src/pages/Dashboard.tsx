@@ -227,34 +227,34 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                   {/* Bloco 1: Visão Geral */}
-                  <div className="xl:col-span-2 min-h-[350px]"><CashFlowChart /></div>
-                  <div className="xl:col-span-1 min-h-[350px]"><TopCategoriesPie expenses={expenses} categories={dbCategories} /></div>
+                  <div className="xl:col-span-2 flex flex-col min-h-[350px]"><CashFlowChart /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><TopCategoriesPie expenses={expenses} categories={dbCategories} /></div>
 
                   {/* Bloco 2: Entradas, Saídas e Tendências */}
-                  <div className="xl:col-span-1 min-h-[350px]"><IncomeVsExpenseChart /></div>
-                  <div className="xl:col-span-2 min-h-[350px]"><WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><IncomeVsExpenseChart /></div>
+                  <div className="xl:col-span-2 flex flex-col min-h-[350px]"><WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /></div>
 
                   {/* Bloco 3: Detalhamento de Categorias e Renda */}
-                  <div className="xl:col-span-2 min-h-[350px]"><SubcategoryTreemap expenses={expenses} categories={dbCategories} /></div>
-                  <div className="xl:col-span-1 min-h-[350px]"><IncomeSourcesPie expenses={expenses} categories={dbCategories} /></div>
+                  <div className="xl:col-span-2 flex flex-col min-h-[350px]"><SubcategoryTreemap expenses={expenses} categories={dbCategories} /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><IncomeSourcesPie expenses={expenses} categories={dbCategories} /></div>
 
                   {/* Bloco 4: Hábitos Diários e Semanais */}
-                  <div className="xl:col-span-2 min-h-[350px]"><DailySpendingChart expenses={expenses} /></div>
-                  <div className="xl:col-span-1 min-h-[350px]"><WeekComparisonChart expenses={expenses} /></div>
+                  <div className="xl:col-span-2 flex flex-col min-h-[350px]"><DailySpendingChart expenses={expenses} /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><WeekComparisonChart expenses={expenses} /></div>
 
                   {/* Bloco 5: Saúde Financeira e Previsões (3 colunas iguais) */}
-                  <div className="xl:col-span-1 min-h-[350px]"><BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /></div>
-                  <div className="xl:col-span-1 min-h-[350px]"><NetWorthChart /></div>
-                  <div className="xl:col-span-1 min-h-[350px]"><EndOfMonthForecast /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><NetWorthChart /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><EndOfMonthForecast /></div>
 
                   {/* Bloco 6: Indicadores de Perfil (3 colunas iguais) */}
-                  <div className="xl:col-span-1 min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
-                  <div className="xl:col-span-1 min-h-[350px]"><CreditUsageChart /></div>
-                  <div className="xl:col-span-1 min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><CreditUsageChart /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
 
                   {/* Bloco 7: Ferramentas Visuais Densas */}
-                  <div className="xl:col-span-2 min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
-                  <div className="xl:col-span-1 min-h-[400px]"><CalendarView /></div>
+                  <div className="xl:col-span-2 flex flex-col min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
+                  <div className="xl:col-span-1 flex flex-col min-h-[400px]"><CalendarView /></div>
                 </div>
               </>
             )}

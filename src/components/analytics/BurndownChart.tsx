@@ -44,11 +44,11 @@ export function BurndownChart({ expenses, totalBudget }: BurndownChartProps) {
 
   if (totalBudget <= 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold">Burndown de Orçamento</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 min-h-0 pb-4">
           <p className="text-sm text-muted-foreground py-8 text-center">
             Configure um orçamento para visualizar o burndown.
           </p>
@@ -62,15 +62,15 @@ export function BurndownChart({ expenses, totalBudget }: BurndownChartProps) {
   const isAbove = lastReal ? (lastReal.real ?? 0) >= lastIdeal : true;
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Burndown de Orçamento</CardTitle>
         <p className="text-xs text-muted-foreground">
           {isAbove ? '✅ Ritmo de gastos dentro da meta' : '⚠️ Gastos acima do ritmo ideal'}
         </p>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={260}>
+      <CardContent className="flex-1 min-h-0 pb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
             <XAxis

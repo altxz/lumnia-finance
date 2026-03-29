@@ -48,15 +48,15 @@ export function NetWorthChart() {
   if (loading || data.length === 0) return null;
 
   return (
-    <Card className="rounded-2xl border-border/50">
+    <Card className="rounded-2xl border-border/50 h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
           Evolução do Património Líquido
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
-        <ResponsiveContainer width="100%" height={320}>
+      <CardContent className="flex-1 min-h-0 pt-0 pb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="assetGrad" x1="0" y1="0" x2="0" y2="1">
