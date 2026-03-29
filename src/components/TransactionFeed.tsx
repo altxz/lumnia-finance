@@ -335,7 +335,7 @@ export function TransactionFeed({
         </div>
       )}
 
-      ) : loading ? (
+      {loading ? (
         <div className="space-y-3">
           {[1,2,3,4,5].map(i => (
             <div key={i} className="h-16 rounded-xl bg-muted/60 animate-pulse" />
