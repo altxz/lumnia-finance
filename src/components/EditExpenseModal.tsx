@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,23 @@ interface EditExpenseModalProps {
   onExpenseUpdated: () => void;
 }
 
+function formatInvoiceLabel(ym: string): string {
+  const [y, m] = ym.split('-');
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return `${months[parseInt(m) - 1]} ${y}`;
+}
+
+function generateInvoiceOptions(): string[] {
+  const options: string[] = [];
+  const now = new Date();
+  for (let i = -6; i <= 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const m = d.getMonth() + 1;
+    options.push(`${d.getFullYear()}-${String(m).padStart(2, '0')}`);
+  }
+  return options;
+}
+
 const TYPE_STYLES = {
   expense: { bg: 'bg-destructive/10', border: 'border-destructive/20', accent: 'bg-destructive text-destructive-foreground hover:bg-destructive/90', valueBorder: 'border-destructive/30 focus-within:border-destructive' },
   income: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', accent: 'bg-emerald-600 text-white hover:bg-emerald-700', valueBorder: 'border-emerald-500/30 focus-within:border-emerald-500' },
@@ -40,6 +57,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const [notes, setNotes] = useState(expense.notes || '');
   const [tags, setTags] = useState<string[]>(expense.tags || []);
   const [tagInput, setTagInput] = useState('');
+  const [invoiceMonth, setInvoiceMonth] = useState(expense.invoice_month || '');
   const [saving, setSaving] = useState(false);
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
   const [dbCategories, setDbCategories] = useState<{ id: string; name: string; parent_id: string | null; icon: string; color: string }[]>([]);
@@ -47,6 +65,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const { user } = useAuth();
 
   const style = TYPE_STYLES[type];
+  const isCredit = !!expense.credit_card_id;
+  const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
 
   useEffect(() => {
     if (!user || !open) return;
@@ -76,6 +96,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
       final_category: finalCategory, wallet_id: walletId || null,
       is_paid: isPaid, notes: notes.trim() || null,
       tags: tags.length > 0 ? tags : null,
+      invoice_month: isCredit ? (invoiceMonth || null) : null,
     }).eq('id', expense.id);
 
     if (error) {
@@ -136,6 +157,19 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                     <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>{wallets.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                   </Select>
+                </div>
+              )}
+
+              {isCredit && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fatura de Referência</Label>
+                  <Select value={invoiceMonth} onValueChange={setInvoiceMonth}>
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Mês da fatura" /></SelectTrigger>
+                    <SelectContent>
+                      {invoiceOptions.map(ym => <SelectItem key={ym} value={ym}>{formatInvoiceLabel(ym)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">Altere para mover esta despesa para outra fatura.</p>
                 </div>
               )}
 

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt } from 'lucide-react';
+import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -387,6 +387,9 @@ export function TransactionFeed({
                                 <Receipt className="h-2.5 w-2.5 mr-0.5" />
                                 Fatura
                               </Badge>
+                            )}
+                            {exp.invoice_month && exp.credit_card_id && (
+                              <Pin className="h-3 w-3 text-muted-foreground shrink-0" />
                             )}
                           </div>
                           <div className="flex items-center gap-1 mt-0.5 flex-wrap">
