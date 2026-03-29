@@ -85,6 +85,7 @@ interface DayGroup {
 export function TransactionFeed({
   expenses,
   allExpenses,
+  invoiceExpenses,
   loading,
   onDeleted,
   page,
