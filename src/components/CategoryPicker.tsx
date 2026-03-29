@@ -65,7 +65,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
   }, [value, grouped]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
