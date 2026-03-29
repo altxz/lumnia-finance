@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2 } from 'lucide-react';
-import { CATEGORIES } from '@/lib/constants';
+import { CategoryPicker } from '@/components/CategoryPicker';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +42,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
+  const [dbCategories, setDbCategories] = useState<{ id: string; name: string; parent_id: string | null; icon: string; color: string }[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -49,8 +50,13 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
   useEffect(() => {
     if (!user || !open) return;
-    supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name')
-      .then(({ data }) => setWallets(data || []));
+    Promise.all([
+      supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
+      supabase.from('categories').select('id, name, parent_id, icon, color').eq('user_id', user.id).eq('active', true).order('sort_order'),
+    ]).then(([walletsRes, catsRes]) => {
+      setWallets(walletsRes.data || []);
+      setDbCategories(catsRes.data || []);
+    });
   }, [user, open]);
 
   const handleAddTag = () => {
@@ -135,10 +141,11 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categoria</Label>
-                <Select value={finalCategory} onValueChange={setFinalCategory}>
-                  <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent>{CATEGORIES.map(cat => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}</SelectContent>
-                </Select>
+                <CategoryPicker
+                  categories={dbCategories}
+                  value={finalCategory}
+                  onValueChange={setFinalCategory}
+                />
               </div>
 
               <div className="flex items-center justify-between rounded-xl border p-3">
