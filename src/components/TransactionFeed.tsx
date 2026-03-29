@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList } from 'lucide-react';
+import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -48,25 +48,35 @@ function formatGroupDate(dateStr: string): string {
   today.setHours(12, 0, 0, 0);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-
   const d = new Date(date);
   d.setHours(12, 0, 0, 0);
-
   if (d.getTime() === today.getTime()) return 'Hoje';
   if (d.getTime() === yesterday.getTime()) return 'Ontem';
-
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', weekday: 'long' });
 }
 
-/** Format a date as YYYY-MM-DD */
 function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function formatPurchaseDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+
+/** An expense item displayed in the feed, possibly relocated to a different day */
+interface FeedItem {
+  expense: Expense;
+  /** Original purchase date if this was moved from its original day */
+  originalDate?: string;
+  /** Whether this item belongs to a credit card invoice */
+  isInvoiceItem: boolean;
+}
+
 interface DayGroup {
   dateKey: string;
-  items: Expense[];
-  invoices: InvoicePeriod[];
+  items: FeedItem[];
+  invoices: InvoicePeriod[]; // only used when groupCards is active
   endOfDayBalance: number;
 }
 
@@ -113,29 +123,31 @@ export function TransactionFeed({
   const targetYear = currentMonth ? parseInt(currentMonth.slice(0, 4)) : new Date().getFullYear();
   const targetMonth = currentMonth ? parseInt(currentMonth.slice(5, 7)) - 1 : new Date().getMonth();
 
-  // Build invoice periods
+  // Build invoice periods for all credit cards
   const invoicePeriods = useMemo(() => {
-    if (!groupCards || creditCards.length === 0) return [];
+    if (creditCards.length === 0) return [];
     const allTxns = allExpenses || expenses;
     return creditCards.map(card => {
       const period = getInvoicePeriod(card, targetYear, targetMonth);
       return matchExpensesToInvoice(allTxns, period);
     });
-  }, [groupCards, creditCards, allExpenses, expenses, targetYear, targetMonth]);
+  }, [creditCards, allExpenses, expenses, targetYear, targetMonth]);
 
-  // Set of expense IDs grouped into invoices
+  // Map card ID -> due date key for this month
+  const cardDueDateMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    invoicePeriods.forEach(inv => {
+      m[inv.cardId] = toDateKey(inv.dueDate);
+    });
+    return m;
+  }, [invoicePeriods]);
+
+  // Set of expense IDs that belong to invoices (for grouped mode)
   const groupedExpenseIds = useMemo(() => {
-    if (!groupCards) return new Set<string>();
     const ids = new Set<string>();
     invoicePeriods.forEach(inv => inv.transactions.forEach(tx => ids.add(tx.id)));
     return ids;
-  }, [groupCards, invoicePeriods]);
-
-  // Filter out grouped expenses
-  const displayExpenses = useMemo(() => {
-    if (!groupCards) return expenses;
-    return expenses.filter(e => !groupedExpenseIds.has(e.id));
-  }, [expenses, groupCards, groupedExpenseIds]);
+  }, [invoicePeriods]);
 
   const walletMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -143,73 +155,96 @@ export function TransactionFeed({
     return m;
   }, [wallets]);
 
-  // Build day groups with invoices placed on their due date
+  // Build feed items: move CC expenses to due date
   const grouped: DayGroup[] = useMemo(() => {
-    // Group expenses by day
-    const dayMap: Record<string, Expense[]> = {};
-    displayExpenses.forEach(exp => {
-      if (!dayMap[exp.date]) dayMap[exp.date] = [];
-      dayMap[exp.date].push(exp);
+    const dayMap: Record<string, FeedItem[]> = {};
+    const invoicesByDay: Record<string, InvoicePeriod[]> = {};
+
+    // Helper to ensure a day bucket exists
+    const ensureDay = (key: string) => { if (!dayMap[key]) dayMap[key] = []; };
+
+    // Process each expense
+    expenses.forEach(exp => {
+      const isCreditCard = !!exp.credit_card_id;
+
+      if (isCreditCard) {
+        const dueKey = cardDueDateMap[exp.credit_card_id!];
+
+        if (groupCards && groupedExpenseIds.has(exp.id)) {
+          // In grouped mode, CC expenses are hidden (shown via invoice summary)
+          return;
+        }
+
+        if (dueKey) {
+          // Move to due date (both grouped and ungrouped)
+          ensureDay(dueKey);
+          dayMap[dueKey].push({
+            expense: exp,
+            originalDate: exp.date,
+            isInvoiceItem: true,
+          });
+        } else {
+          // No matching invoice period, show on original date
+          ensureDay(exp.date);
+          dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
+        }
+      } else {
+        // Non-CC expenses stay on their original date
+        ensureDay(exp.date);
+        dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
+      }
     });
 
-    // Map invoices to their due date keys
-    const invoicesByDay: Record<string, InvoicePeriod[]> = {};
+    // Add invoice summaries on their due dates (grouped mode only)
     if (groupCards) {
       invoicePeriods.forEach(inv => {
         const key = toDateKey(inv.dueDate);
+        ensureDay(key);
         if (!invoicesByDay[key]) invoicesByDay[key] = [];
         invoicesByDay[key].push(inv);
-        // Ensure day exists even if no expenses
-        if (!dayMap[key]) dayMap[key] = [];
       });
     }
 
-    // Sort days descending
-    const sortedDays = Object.keys(dayMap).sort((a, b) => b.localeCompare(a));
-
-    // Calculate running balance day by day (ascending) using ALL expenses
+    // Calculate running balance using ALL expenses (ascending order)
     const allTxns = allExpenses || expenses;
-    const allDayMap: Record<string, Expense[]> = {};
+
+    // Build a complete map of non-CC daily flows
+    const nonCcFlowByDay: Record<string, number> = {};
     allTxns.forEach(exp => {
-      if (!allDayMap[exp.date]) allDayMap[exp.date] = [];
-      allDayMap[exp.date].push(exp);
+      if (exp.type === 'transfer' || !exp.is_paid) return;
+      if (exp.credit_card_id) return; // CC expenses don't affect balance on purchase day
+      const key = exp.date;
+      if (!nonCcFlowByDay[key]) nonCcFlowByDay[key] = 0;
+      if (exp.type === 'income') nonCcFlowByDay[key] += exp.value;
+      else nonCcFlowByDay[key] -= exp.value;
     });
 
-    // Collect all day keys (from expenses + invoice due dates)
-    const allDayKeys = new Set<string>(Object.keys(allDayMap));
-    if (groupCards) {
-      invoicePeriods.forEach(inv => allDayKeys.add(toDateKey(inv.dueDate)));
-    }
-    const allDaysSorted = Array.from(allDayKeys).sort();
-
-    // Invoice totals by due date for balance calculation
+    // Invoice totals hit the balance on due date
     const invoiceTotalByDay: Record<string, number> = {};
-    if (groupCards) {
-      invoicePeriods.forEach(inv => {
-        const key = toDateKey(inv.dueDate);
-        invoiceTotalByDay[key] = (invoiceTotalByDay[key] || 0) + inv.total;
-      });
-    }
+    invoicePeriods.forEach(inv => {
+      const key = toDateKey(inv.dueDate);
+      invoiceTotalByDay[key] = (invoiceTotalByDay[key] || 0) + inv.total;
+    });
+
+    // Collect all days that matter for balance calculation
+    const allDayKeys = new Set<string>([
+      ...Object.keys(nonCcFlowByDay),
+      ...Object.keys(invoiceTotalByDay),
+      ...Object.keys(dayMap),
+    ]);
+    const allDaysSorted = Array.from(allDayKeys).sort();
 
     let runningBalance = startingMonthBalance;
     const balanceMap: Record<string, number> = {};
-
     for (const day of allDaysSorted) {
-      const dayExpenses = allDayMap[day] || [];
-      for (const exp of dayExpenses) {
-        if (exp.type === 'transfer') continue;
-        if (!exp.is_paid) continue;
-        // When grouping, skip credit card expenses from balance (they impact via invoice)
-        if (groupCards && exp.credit_card_id && groupedExpenseIds.has(exp.id)) continue;
-        if (exp.type === 'income') runningBalance += exp.value;
-        else if (!exp.credit_card_id) runningBalance -= exp.value;
-      }
-      // Subtract invoice total on due date
-      if (groupCards && invoiceTotalByDay[day]) {
-        runningBalance -= invoiceTotalByDay[day];
-      }
+      runningBalance += (nonCcFlowByDay[day] || 0);
+      runningBalance -= (invoiceTotalByDay[day] || 0);
       balanceMap[day] = runningBalance;
     }
+
+    // Build sorted day groups (descending)
+    const allDisplayDays = new Set<string>([...Object.keys(dayMap), ...Object.keys(invoicesByDay)]);
+    const sortedDays = Array.from(allDisplayDays).sort((a, b) => b.localeCompare(a));
 
     return sortedDays.map(dateKey => ({
       dateKey,
@@ -217,7 +252,7 @@ export function TransactionFeed({
       invoices: invoicesByDay[dateKey] || [],
       endOfDayBalance: balanceMap[dateKey] ?? startingMonthBalance,
     }));
-  }, [displayExpenses, allExpenses, expenses, startingMonthBalance, groupCards, invoicePeriods, groupedExpenseIds]);
+  }, [expenses, allExpenses, startingMonthBalance, groupCards, invoicePeriods, cardDueDateMap, groupedExpenseIds]);
 
   const isInvoicePaid = (inv: InvoicePeriod) => {
     if (inv.transactions.length === 0) return false;
@@ -278,13 +313,13 @@ export function TransactionFeed({
                   </h3>
                   <div className={`flex items-center gap-1.5 text-xs font-bold ${endOfDayBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
                     <Wallet className="h-3.5 w-3.5" />
-                    <span>Saldo em conta: {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
+                    <span>Saldo: {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
                   </div>
                 </div>
 
                 {/* Day content */}
                 <div className="rounded-b-xl border border-t-0 bg-card overflow-hidden divide-y divide-border">
-                  {/* Invoice items placed chronologically in this day */}
+                  {/* Invoice summaries (grouped mode) */}
                   {invoices.map(inv => {
                     const displayStatus = getInvoiceDisplayStatus(inv);
                     const paid = isInvoicePaid(inv);
@@ -294,12 +329,9 @@ export function TransactionFeed({
                         className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
                         onClick={() => setInvoiceModal(inv)}
                       >
-                        {/* Card icon with accent color */}
                         <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-accent/30">
                           <CreditCard className="h-4.5 w-4.5 text-accent-foreground" />
                         </div>
-
-                        {/* Name + status + due date */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold truncate">Fatura {inv.cardName}</p>
@@ -311,8 +343,6 @@ export function TransactionFeed({
                             {inv.transactions.length} transação{inv.transactions.length !== 1 ? 'ões' : ''} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                           </p>
                         </div>
-
-                        {/* Value + pay button */}
                         <div className="shrink-0 flex items-center gap-2">
                           <span className="text-sm font-bold text-destructive">
                             {inv.total > 0 ? `-${formatCurrency(inv.total)}` : formatCurrency(0)}
@@ -332,8 +362,8 @@ export function TransactionFeed({
                     );
                   })}
 
-                  {/* Regular transactions */}
-                  {items.map(exp => {
+                  {/* Individual transaction items */}
+                  {items.map(({ expense: exp, originalDate, isInvoiceItem }) => {
                     const catData = CATEGORY_ICONS[exp.final_category] || CATEGORY_ICONS.outros;
                     const Icon = catData.icon;
                     const isIncome = exp.type === 'income';
@@ -346,28 +376,51 @@ export function TransactionFeed({
                         key={exp.id}
                         className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors group"
                       >
-                        <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${catData.bg}`}>
+                        {/* Category icon */}
+                        <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isInvoiceItem ? 'bg-accent/30' : catData.bg}`}>
                           {isTransfer ? (
                             <ArrowLeftRight className="h-4.5 w-4.5" />
+                          ) : isInvoiceItem ? (
+                            <CreditCard className={`h-4.5 w-4.5 text-accent-foreground`} />
                           ) : (
                             <Icon className={`h-4.5 w-4.5 ${catData.text}`} />
                           )}
                         </div>
 
+                        {/* Description + meta */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
-                          {(walletName || exp.credit_card_id) && (
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Wallet className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground truncate">
-                                {walletName || ''}
-                                {walletName && exp.credit_card_id ? ' | ' : !walletName && exp.credit_card_id ? '' : ''}
-                                {exp.credit_card_id ? 'Cartão de crédito' : walletName ? ' | Débito em conta' : ''}
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
+                            {isInvoiceItem && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 bg-accent/15 text-accent-foreground border-accent/30 shrink-0">
+                                <Receipt className="h-2.5 w-2.5 mr-0.5" />
+                                Fatura
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            {isInvoiceItem && originalDate && (
+                              <span className="text-[11px] text-muted-foreground">
+                                Compra em {formatPurchaseDate(originalDate)}
                               </span>
-                            </div>
-                          )}
+                            )}
+                            {isInvoiceItem && originalDate && (walletName || exp.credit_card_id) && (
+                              <span className="text-[11px] text-muted-foreground">•</span>
+                            )}
+                            {(walletName || exp.credit_card_id) && (
+                              <>
+                                <Wallet className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {walletName || ''}
+                                  {walletName && exp.credit_card_id ? ' | ' : ''}
+                                  {exp.credit_card_id ? 'Cartão de crédito' : !walletName ? '' : ' | Débito em conta'}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
 
+                        {/* Value */}
                         <div className="shrink-0 flex items-center gap-1.5">
                           {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
                           <span className={`text-sm font-bold ${
@@ -383,21 +436,12 @@ export function TransactionFeed({
                           </span>
                         </div>
 
+                        {/* Quick actions */}
                         <div className="shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-lg"
-                            onClick={() => setEditingExpense(exp)}
-                          >
+                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setEditingExpense(exp)}>
                             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => setDeletingExpense(exp)}
-                          >
+                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeletingExpense(exp)}>
                             <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </div>
@@ -413,9 +457,7 @@ export function TransactionFeed({
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Página {page} de {totalPages}
-          </p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Página {page} de {totalPages}</p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="rounded-xl">
               <ChevronLeft className="h-4 w-4" />
@@ -440,17 +482,11 @@ export function TransactionFeed({
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
-            >
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
               {deleting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
