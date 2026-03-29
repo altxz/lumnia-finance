@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
+import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
