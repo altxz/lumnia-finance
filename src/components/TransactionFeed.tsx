@@ -39,7 +39,7 @@ interface TransactionFeedProps {
   wallets?: { id: string; name: string }[];
   startingMonthBalance?: number;
   creditCards?: CreditCardType[];
-  currentMonth?: string; // YYYY-MM-DD start of month
+  currentMonth?: string;
 }
 
 function formatGroupDate(dateStr: string): string {
@@ -56,6 +56,18 @@ function formatGroupDate(dateStr: string): string {
   if (d.getTime() === yesterday.getTime()) return 'Ontem';
 
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', weekday: 'long' });
+}
+
+/** Format a date as YYYY-MM-DD */
+function toDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+interface DayGroup {
+  dateKey: string;
+  items: Expense[];
+  invoices: InvoicePeriod[];
+  endOfDayBalance: number;
 }
 
 export function TransactionFeed({
@@ -98,11 +110,10 @@ export function TransactionFeed({
     }
   };
 
-  // Parse current month
   const targetYear = currentMonth ? parseInt(currentMonth.slice(0, 4)) : new Date().getFullYear();
   const targetMonth = currentMonth ? parseInt(currentMonth.slice(5, 7)) - 1 : new Date().getMonth();
 
-  // Build invoice periods for all credit cards
+  // Build invoice periods
   const invoicePeriods = useMemo(() => {
     if (!groupCards || creditCards.length === 0) return [];
     const allTxns = allExpenses || expenses;
@@ -112,7 +123,7 @@ export function TransactionFeed({
     });
   }, [groupCards, creditCards, allExpenses, expenses, targetYear, targetMonth]);
 
-  // Set of expense IDs that belong to grouped invoices
+  // Set of expense IDs grouped into invoices
   const groupedExpenseIds = useMemo(() => {
     if (!groupCards) return new Set<string>();
     const ids = new Set<string>();
@@ -120,53 +131,11 @@ export function TransactionFeed({
     return ids;
   }, [groupCards, invoicePeriods]);
 
-  // Calculate cumulative end-of-day balances
-  const dayBalanceMap = useMemo(() => {
-    const txns = allExpenses || expenses;
-    const groups: Record<string, Expense[]> = {};
-    txns.forEach(exp => {
-      if (!groups[exp.date]) groups[exp.date] = [];
-      groups[exp.date].push(exp);
-    });
-    const sortedDays = Object.keys(groups).sort();
-
-    let runningBalance = startingMonthBalance;
-    const map: Record<string, number> = {};
-
-    for (const day of sortedDays) {
-      for (const exp of groups[day]) {
-        if (exp.type === 'transfer') continue;
-        if (!exp.is_paid) continue;
-        if (exp.type === 'income') runningBalance += exp.value;
-        else if (!exp.credit_card_id) runningBalance -= exp.value;
-      }
-      map[day] = runningBalance;
-    }
-
-    return map;
-  }, [allExpenses, expenses, startingMonthBalance]);
-
-  // Filter out grouped expenses from display list
+  // Filter out grouped expenses
   const displayExpenses = useMemo(() => {
     if (!groupCards) return expenses;
     return expenses.filter(e => !groupedExpenseIds.has(e.id));
   }, [expenses, groupCards, groupedExpenseIds]);
-
-  // Group by day
-  const grouped = useMemo(() => {
-    const groups: Record<string, Expense[]> = {};
-    displayExpenses.forEach(exp => {
-      if (!groups[exp.date]) groups[exp.date] = [];
-      groups[exp.date].push(exp);
-    });
-    return Object.entries(groups)
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([dateKey, items]) => ({
-        dateKey,
-        items,
-        endOfDayBalance: dayBalanceMap[dateKey] ?? startingMonthBalance,
-      }));
-  }, [displayExpenses, dayBalanceMap, startingMonthBalance]);
 
   const walletMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -174,22 +143,99 @@ export function TransactionFeed({
     return m;
   }, [wallets]);
 
+  // Build day groups with invoices placed on their due date
+  const grouped: DayGroup[] = useMemo(() => {
+    // Group expenses by day
+    const dayMap: Record<string, Expense[]> = {};
+    displayExpenses.forEach(exp => {
+      if (!dayMap[exp.date]) dayMap[exp.date] = [];
+      dayMap[exp.date].push(exp);
+    });
+
+    // Map invoices to their due date keys
+    const invoicesByDay: Record<string, InvoicePeriod[]> = {};
+    if (groupCards) {
+      invoicePeriods.forEach(inv => {
+        const key = toDateKey(inv.dueDate);
+        if (!invoicesByDay[key]) invoicesByDay[key] = [];
+        invoicesByDay[key].push(inv);
+        // Ensure day exists even if no expenses
+        if (!dayMap[key]) dayMap[key] = [];
+      });
+    }
+
+    // Sort days descending
+    const sortedDays = Object.keys(dayMap).sort((a, b) => b.localeCompare(a));
+
+    // Calculate running balance day by day (ascending) using ALL expenses
+    const allTxns = allExpenses || expenses;
+    const allDayMap: Record<string, Expense[]> = {};
+    allTxns.forEach(exp => {
+      if (!allDayMap[exp.date]) allDayMap[exp.date] = [];
+      allDayMap[exp.date].push(exp);
+    });
+
+    // Collect all day keys (from expenses + invoice due dates)
+    const allDayKeys = new Set<string>(Object.keys(allDayMap));
+    if (groupCards) {
+      invoicePeriods.forEach(inv => allDayKeys.add(toDateKey(inv.dueDate)));
+    }
+    const allDaysSorted = Array.from(allDayKeys).sort();
+
+    // Invoice totals by due date for balance calculation
+    const invoiceTotalByDay: Record<string, number> = {};
+    if (groupCards) {
+      invoicePeriods.forEach(inv => {
+        const key = toDateKey(inv.dueDate);
+        invoiceTotalByDay[key] = (invoiceTotalByDay[key] || 0) + inv.total;
+      });
+    }
+
+    let runningBalance = startingMonthBalance;
+    const balanceMap: Record<string, number> = {};
+
+    for (const day of allDaysSorted) {
+      const dayExpenses = allDayMap[day] || [];
+      for (const exp of dayExpenses) {
+        if (exp.type === 'transfer') continue;
+        if (!exp.is_paid) continue;
+        // When grouping, skip credit card expenses from balance (they impact via invoice)
+        if (groupCards && exp.credit_card_id && groupedExpenseIds.has(exp.id)) continue;
+        if (exp.type === 'income') runningBalance += exp.value;
+        else if (!exp.credit_card_id) runningBalance -= exp.value;
+      }
+      // Subtract invoice total on due date
+      if (groupCards && invoiceTotalByDay[day]) {
+        runningBalance -= invoiceTotalByDay[day];
+      }
+      balanceMap[day] = runningBalance;
+    }
+
+    return sortedDays.map(dateKey => ({
+      dateKey,
+      items: dayMap[dateKey] || [],
+      invoices: invoicesByDay[dateKey] || [],
+      endOfDayBalance: balanceMap[dateKey] ?? startingMonthBalance,
+    }));
+  }, [displayExpenses, allExpenses, expenses, startingMonthBalance, groupCards, invoicePeriods, groupedExpenseIds]);
+
+  const isInvoicePaid = (inv: InvoicePeriod) => {
+    if (inv.transactions.length === 0) return false;
+    return inv.transactions.every(tx => tx.is_paid);
+  };
+
   const statusConfig = {
     open: { label: 'Aberta', className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
     closed: { label: 'Fechada', className: 'bg-muted text-muted-foreground border-border' },
     overdue: { label: 'Vencida', className: 'bg-destructive/15 text-destructive border-destructive/30' },
   };
 
-  // Check if all expenses for a card in the month are paid
-  const isInvoicePaid = (inv: InvoicePeriod) => {
-    if (inv.transactions.length === 0) return false;
-    return inv.transactions.every(tx => tx.is_paid);
-  };
-
   const getInvoiceDisplayStatus = (inv: InvoicePeriod) => {
     if (isInvoicePaid(inv)) return { label: 'Paga', className: 'bg-primary/15 text-primary border-primary/30' };
     return statusConfig[inv.status];
   };
+
+  const hasContent = grouped.some(g => g.items.length > 0 || g.invoices.length > 0);
 
   return (
     <div className="space-y-4">
@@ -215,162 +261,153 @@ export function TransactionFeed({
         </div>
       )}
 
-      {/* Consolidated invoice items */}
-      {groupCards && invoicePeriods.length > 0 && (
-        <div className="space-y-2">
-          {invoicePeriods.map(inv => {
-            const displayStatus = getInvoiceDisplayStatus(inv);
-            const paid = isInvoicePaid(inv);
+      {loading ? (
+        <p className="text-center py-12 text-muted-foreground">Carregando...</p>
+      ) : !hasContent ? (
+        <p className="text-center py-12 text-muted-foreground">Nenhuma transação encontrada.</p>
+      ) : (
+        <div className="space-y-5">
+          {grouped.map(({ dateKey, items, invoices, endOfDayBalance }) => {
+            if (items.length === 0 && invoices.length === 0) return null;
             return (
-              <div
-                key={inv.cardId}
-                className="flex items-center gap-3 px-3 sm:px-4 py-3 bg-card border border-border rounded-xl hover:bg-muted/50 transition-colors"
-              >
-                {/* Card icon */}
-                <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-primary/15">
-                  <CreditCard className="h-4.5 w-4.5 text-primary" />
-                </div>
-
-                {/* Name + status */}
-                <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => setInvoiceModal(inv)}
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold truncate">Fatura {inv.cardName}</p>
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${displayStatus.className}`}>
-                      {displayStatus.label}
-                    </Badge>
+              <div key={dateKey}>
+                {/* Day header */}
+                <div className="flex items-center justify-between px-3 py-2.5 bg-muted/60 rounded-t-xl border border-b-0 border-border">
+                  <h3 className="text-sm font-bold text-foreground capitalize">
+                    {formatGroupDate(dateKey)}
+                  </h3>
+                  <div className={`flex items-center gap-1.5 text-xs font-bold ${endOfDayBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                    <Wallet className="h-3.5 w-3.5" />
+                    <span>Saldo em conta: {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {inv.transactions.length} transação{inv.transactions.length !== 1 ? 'ões' : ''} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                  </p>
                 </div>
 
-                {/* Value + pay button */}
-                <div className="shrink-0 flex items-center gap-2">
-                  <span
-                    className="text-sm font-bold text-destructive cursor-pointer"
-                    onClick={() => setInvoiceModal(inv)}
-                  >
-                    {inv.total > 0 ? `-${formatCurrency(inv.total)}` : formatCurrency(0)}
-                  </span>
-                  {!paid && inv.total > 0 && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 px-2 rounded-lg"
-                      onClick={() => setInvoiceModal(inv)}
-                    >
-                      Pagar
-                    </Button>
-                  )}
+                {/* Day content */}
+                <div className="rounded-b-xl border border-t-0 bg-card overflow-hidden divide-y divide-border">
+                  {/* Invoice items placed chronologically in this day */}
+                  {invoices.map(inv => {
+                    const displayStatus = getInvoiceDisplayStatus(inv);
+                    const paid = isInvoicePaid(inv);
+                    return (
+                      <div
+                        key={`inv-${inv.cardId}`}
+                        className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => setInvoiceModal(inv)}
+                      >
+                        {/* Card icon with accent color */}
+                        <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-accent/30">
+                          <CreditCard className="h-4.5 w-4.5 text-accent-foreground" />
+                        </div>
+
+                        {/* Name + status + due date */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold truncate">Fatura {inv.cardName}</p>
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${displayStatus.className}`}>
+                              {displayStatus.label}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {inv.transactions.length} transação{inv.transactions.length !== 1 ? 'ões' : ''} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                          </p>
+                        </div>
+
+                        {/* Value + pay button */}
+                        <div className="shrink-0 flex items-center gap-2">
+                          <span className="text-sm font-bold text-destructive">
+                            {inv.total > 0 ? `-${formatCurrency(inv.total)}` : formatCurrency(0)}
+                          </span>
+                          {!paid && inv.total > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-7 px-2 rounded-lg"
+                              onClick={(e) => { e.stopPropagation(); setInvoiceModal(inv); }}
+                            >
+                              Pagar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Regular transactions */}
+                  {items.map(exp => {
+                    const catData = CATEGORY_ICONS[exp.final_category] || CATEGORY_ICONS.outros;
+                    const Icon = catData.icon;
+                    const isIncome = exp.type === 'income';
+                    const isTransfer = exp.type === 'transfer';
+                    const isPending = !exp.is_paid;
+                    const walletName = exp.wallet_id ? walletMap[exp.wallet_id] : null;
+
+                    return (
+                      <div
+                        key={exp.id}
+                        className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${catData.bg}`}>
+                          {isTransfer ? (
+                            <ArrowLeftRight className="h-4.5 w-4.5" />
+                          ) : (
+                            <Icon className={`h-4.5 w-4.5 ${catData.text}`} />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
+                          {(walletName || exp.credit_card_id) && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Wallet className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground truncate">
+                                {walletName || ''}
+                                {walletName && exp.credit_card_id ? ' | ' : !walletName && exp.credit_card_id ? '' : ''}
+                                {exp.credit_card_id ? 'Cartão de crédito' : walletName ? ' | Débito em conta' : ''}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-1.5">
+                          {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
+                          <span className={`text-sm font-bold ${
+                            isPending
+                              ? 'text-muted-foreground'
+                              : isIncome
+                                ? 'text-emerald-600'
+                                : isTransfer
+                                  ? 'text-foreground'
+                                  : 'text-destructive'
+                          }`}>
+                            {isIncome ? '+' : isTransfer ? '' : '-'}{formatCurrency(exp.value)}
+                          </span>
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-lg"
+                            onClick={() => setEditingExpense(exp)}
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setDeletingExpense(exp)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
-        </div>
-      )}
-
-      {loading ? (
-        <p className="text-center py-12 text-muted-foreground">Carregando...</p>
-      ) : displayExpenses.length === 0 && (!groupCards || invoicePeriods.length === 0) ? (
-        <p className="text-center py-12 text-muted-foreground">Nenhuma transação encontrada.</p>
-      ) : (
-        <div className="space-y-5">
-          {grouped.map(({ dateKey, items, endOfDayBalance }) => (
-            <div key={dateKey}>
-              {/* Day header */}
-              <div className="flex items-center justify-between px-3 py-2.5 bg-muted/60 rounded-t-xl border border-b-0 border-border">
-                <h3 className="text-sm font-bold text-foreground capitalize">
-                  {formatGroupDate(dateKey)}
-                </h3>
-                <div className={`flex items-center gap-1.5 text-xs font-bold ${endOfDayBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                  <Wallet className="h-3.5 w-3.5" />
-                  <span>Saldo em conta: {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
-                </div>
-              </div>
-
-              {/* Transactions list */}
-              <div className="rounded-b-xl border border-t-0 bg-card overflow-hidden divide-y divide-border">
-                {items.map(exp => {
-                  const catData = CATEGORY_ICONS[exp.final_category] || CATEGORY_ICONS.outros;
-                  const Icon = catData.icon;
-                  const isIncome = exp.type === 'income';
-                  const isTransfer = exp.type === 'transfer';
-                  const isPending = !exp.is_paid;
-                  const walletName = exp.wallet_id ? walletMap[exp.wallet_id] : null;
-
-                  return (
-                    <div
-                      key={exp.id}
-                      className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors group"
-                    >
-                      {/* Category icon */}
-                      <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${catData.bg}`}>
-                        {isTransfer ? (
-                          <ArrowLeftRight className="h-4.5 w-4.5" />
-                        ) : (
-                          <Icon className={`h-4.5 w-4.5 ${catData.text}`} />
-                        )}
-                      </div>
-
-                      {/* Description + wallet */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
-                        {(walletName || exp.credit_card_id) && (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Wallet className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground truncate">
-                              {walletName || ''}
-                              {walletName && exp.credit_card_id ? ' | ' : !walletName && exp.credit_card_id ? '' : ''}
-                              {exp.credit_card_id ? 'Cartão de crédito' : walletName ? ' | Débito em conta' : ''}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Value */}
-                      <div className="shrink-0 flex items-center gap-1.5">
-                        {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
-                        <span className={`text-sm font-bold ${
-                          isPending
-                            ? 'text-muted-foreground'
-                            : isIncome
-                              ? 'text-emerald-600'
-                              : isTransfer
-                                ? 'text-foreground'
-                                : 'text-destructive'
-                        }`}>
-                          {isIncome ? '+' : isTransfer ? '' : '-'}{formatCurrency(exp.value)}
-                        </span>
-                      </div>
-
-                      {/* Quick actions */}
-                      <div className="shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded-lg"
-                          onClick={() => setEditingExpense(exp)}
-                        >
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => setDeletingExpense(exp)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
         </div>
       )}
 
