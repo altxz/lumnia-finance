@@ -5,7 +5,7 @@ import { useSelectedDate } from '@/contexts/DateContext';
 import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
-import { getCategoryInfo } from '@/lib/constants';
+
 
 export interface ProjectedTotals {
   totalIncome: number;
