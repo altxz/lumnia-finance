@@ -79,21 +79,17 @@ export function useProjectedTotals(): ProjectedTotals {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Build invoice periods for the selected month
+  // Build invoice periods for the selected month (due month)
   const invoiceTotals = useMemo(() => {
     if (creditCards.length === 0) return { total: 0, byCategory: {} as Record<string, number> };
-
-    const targetMonth = selectedMonth;
-    const targetYear_ = selectedYear;
-    const prevM = targetMonth === 0 ? 11 : targetMonth - 1;
-    const prevY = targetMonth === 0 ? targetYear_ - 1 : targetYear_;
 
     const ccPool = invoiceExpenses.length > 0 ? invoiceExpenses : monthExpenses;
     let total = 0;
     const byCategory: Record<string, number> = {};
 
     creditCards.forEach(card => {
-      const period = getInvoicePeriod(card, prevY, prevM);
+      // getInvoicePeriod now expects the DUE month directly
+      const period = getInvoicePeriod(card, selectedYear, selectedMonth);
       const invoice = matchExpensesToInvoice(ccPool, period);
       total += invoice.total;
       invoice.transactions.forEach(tx => {

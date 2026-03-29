@@ -122,21 +122,16 @@ export function TransactionFeed({
   const targetYear = currentMonth ? parseInt(currentMonth.slice(0, 4)) : new Date().getFullYear();
   const targetMonth = currentMonth ? parseInt(currentMonth.slice(5, 7)) - 1 : new Date().getMonth();
 
-  // To show invoices whose DUE DATE falls in the selected month,
-  // we need the closing period from the PREVIOUS month
-  // (getInvoicePeriod produces dueDate in targetMonth+1, so we call with targetMonth-1)
-  const invoicePrevMonth = targetMonth === 0 ? 11 : targetMonth - 1;
-  const invoicePrevYear = targetMonth === 0 ? targetYear - 1 : targetYear;
-
+  // getInvoicePeriod now expects the DUE month directly
   // Build invoice periods using ALL CC expenses (from any month)
   const invoicePeriods = useMemo(() => {
     if (creditCards.length === 0) return [];
     const ccPool = invoiceExpenses && invoiceExpenses.length > 0 ? invoiceExpenses : (allExpenses || expenses);
     return creditCards.map(card => {
-      const period = getInvoicePeriod(card, invoicePrevYear, invoicePrevMonth);
+      const period = getInvoicePeriod(card, targetYear, targetMonth);
       return matchExpensesToInvoice(ccPool, period);
     });
-  }, [creditCards, invoiceExpenses, allExpenses, expenses, invoicePrevYear, invoicePrevMonth]);
+  }, [creditCards, invoiceExpenses, allExpenses, expenses, targetYear, targetMonth]);
 
 
 
