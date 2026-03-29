@@ -1,5 +1,6 @@
 import { useState, useCallback, ReactNode, useMemo } from 'react';
-import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout';
+import { Responsive, Layout } from 'react-grid-layout';
+import WidthProvider from 'react-grid-layout/lib/components/WidthProvider';
 import { GripVertical, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
