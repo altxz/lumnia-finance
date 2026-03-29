@@ -33,11 +33,32 @@ const PRESET_COLORS = [
 ];
 
 const ICON_OPTIONS = [
-  'utensils', 'car', 'gamepad-2', 'heart-pulse', 'house', 'graduation-cap',
-  'tag', 'shopping-cart', 'plane', 'shirt', 'wifi', 'baby', 'dog', 'music',
-  'dumbbell', 'scissors', 'wrench', 'gift', 'coffee', 'book',
-  'wallet', 'banknote', 'landmark', 'key-round', 'building-2', 'zap',
-  'droplets', 'fuel', 'bus', 'pill', 'brain', 'tv', 'wine', 'laptop',
+  // Alimentação & bebidas
+  'utensils', 'coffee', 'wine', 'beef', 'apple', 'cookie', 'ice-cream-cone', 'pizza',
+  // Transporte
+  'car', 'bus', 'fuel', 'plane', 'train-front', 'bike', 'ship',
+  // Casa & moradia
+  'house', 'building-2', 'key-round', 'sofa', 'lamp', 'shower-head',
+  // Saúde & bem-estar
+  'heart-pulse', 'pill', 'dumbbell', 'brain', 'stethoscope', 'syringe',
+  // Educação & trabalho
+  'graduation-cap', 'book', 'laptop', 'briefcase', 'notebook-pen',
+  // Lazer & entretenimento
+  'gamepad-2', 'music', 'tv', 'film', 'ticket', 'palette', 'drama',
+  // Compras & pessoal
+  'shopping-cart', 'shopping-bag', 'shirt', 'scissors', 'sparkles', 'gem',
+  // Família & pets
+  'baby', 'dog', 'cat', 'users',
+  // Finanças & dinheiro
+  'wallet', 'banknote', 'coins', 'credit-card', 'piggy-bank', 'landmark', 'receipt', 'hand-coins',
+  // Despesas financeiras & taxas
+  'percent', 'trending-up', 'trending-down', 'arrow-up-down', 'calculator', 'file-text', 'scale',
+  // Receita & rendimentos
+  'circle-dollar-sign', 'badge-dollar-sign', 'chart-line', 'chart-bar', 'chart-pie',
+  // Serviços & utilidades
+  'wifi', 'zap', 'droplets', 'phone', 'smartphone', 'monitor', 'cloud',
+  // Outros
+  'gift', 'wrench', 'shield', 'flag', 'star', 'tag', 'bookmark', 'globe',
 ];
 
 function LucideIcon({ name, className }: { name: string; className?: string }) {
