@@ -41,14 +41,14 @@ export function DashboardHeader() {
         <h2 className="text-lg font-bold hidden sm:block">Painel de Despesas</h2>
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
-        <div className="hidden sm:flex items-center gap-3">
-          <Avatar className="h-9 w-9 border-2 border-primary/20">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border-2 border-primary/20">
             <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs sm:text-sm">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm text-muted-foreground">
+          <span className="hidden sm:inline text-sm text-muted-foreground">
             Olá, <span className="font-semibold text-foreground">{displayName}</span>
           </span>
         </div>
