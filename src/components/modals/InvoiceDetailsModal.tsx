@@ -158,7 +158,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const content = (
-    <div className="flex flex-col h-full min-w-0">
+    <div className="flex flex-col flex-1 overflow-hidden min-h-0 w-full">
       {/* Header card */}
       <div className="bg-primary rounded-2xl p-4 sm:p-5 mx-3 sm:mx-4 mt-2 mb-4 text-primary-foreground overflow-hidden">
         <div className="flex items-center justify-between mb-3 gap-2">
@@ -201,7 +201,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
       </div>
 
       {/* Transactions */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-3 sm:px-4 pb-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-4 pb-6 max-h-[50vh] sm:max-h-[60vh] min-h-[200px]">
         {chronological.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
             Nenhuma transação nesta fatura
