@@ -155,7 +155,7 @@ export function CalendarView({ expenses, wallets }: CalendarViewProps) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{exp.description}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{catInfo.label}</span>
+                        <span>{getCategoryLabel(exp.final_category)}</span>
                         {walletName && (
                           <>
                             <span>·</span>
