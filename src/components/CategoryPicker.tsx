@@ -84,7 +84,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" align="start">
+      <PopoverContent className="min-w-[220px] w-[--radix-popover-trigger-width] p-0 rounded-xl" align="start">
         <div className="max-h-72 overflow-y-auto py-1">
           <Accordion type="single" collapsible defaultValue={defaultAccordion}>
             {grouped.map(group => {
@@ -102,7 +102,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                     onClick={() => handleSelect(group.name)}
                   >
                     <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
-                    <span className="font-medium flex-1 text-left truncate">{group.name}</span>
+                    <span className="font-medium flex-1 text-left truncate whitespace-nowrap">{group.name}</span>
                     {value === group.name.toLowerCase() && (
                       <Check className="h-4 w-4 text-primary shrink-0" />
                     )}
@@ -115,7 +115,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                   <AccordionTrigger className="px-3 py-2.5 text-sm hover:bg-secondary/60 hover:no-underline [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-muted-foreground">
                     <span className="flex items-center gap-2">
                       <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
-                      <span className="font-semibold">{group.name}</span>
+                      <span className="font-semibold whitespace-nowrap">{group.name}</span>
                     </span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-1 pt-0">
@@ -130,7 +130,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                         onClick={() => handleSelect(sub.name)}
                       >
                         <DynamicIcon name={sub.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: sub.color }} />
-                        <span className="flex-1 text-left truncate">{sub.name}</span>
+                        <span className="flex-1 text-left truncate whitespace-nowrap">{sub.name}</span>
                         {value === sub.name.toLowerCase() && (
                           <Check className="h-4 w-4 text-primary shrink-0" />
                         )}

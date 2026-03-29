@@ -421,7 +421,7 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
                             {t.type === 'income' ? 'Receita' : 'Despesa'}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[140px]">
                           <CategoryPicker
                             categories={dbCategories}
                             value={t.category}
