@@ -36,34 +36,35 @@ import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
 import { WaterfallChart } from '@/components/analytics/WaterfallChart';
 import { SpendingHeatmap } from '@/components/analytics/SpendingHeatmap';
 import { BurndownChart } from '@/components/analytics/BurndownChart';
+import { NetWorthChart } from '@/components/analytics/NetWorthChart';
 import type { Expense } from '@/components/ExpenseTable';
 
 const STORAGE_KEY = 'dashboard-grid-layouts';
 
 const defaultLayout = [
-  // Row 0: Receitas vs Despesas (largo)
-  { i: 'income-vs-expense', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
-  // Row 2: dois quadrados
-  { i: 'top-categories',    x: 0, y: 2, w: 2, h: 2, minW: 1, minH: 2 },
-  { i: 'savings-rate',      x: 2, y: 2, w: 2, h: 2, minW: 1, minH: 2 },
-  // Row 4: Cascata (largo)
-  { i: 'waterfall',         x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
-  // Row 6: dois quadrados
-  { i: 'forecast',          x: 0, y: 6, w: 2, h: 2, minW: 1, minH: 2 },
-  { i: 'daily-spending',    x: 2, y: 6, w: 2, h: 2, minW: 1, minH: 2 },
-  // Row 8: Burndown (largo)
-  { i: 'burndown',          x: 0, y: 8, w: 4, h: 2, minW: 2, minH: 2 },
-  // Row 10: dois quadrados
-  { i: 'credit-usage',      x: 0, y: 10, w: 2, h: 2, minW: 1, minH: 2 },
-  { i: 'fixed-vs-variable', x: 2, y: 10, w: 2, h: 2, minW: 1, minH: 2 },
-  // Row 12: dois quadrados
-  { i: 'subcategory-tree',  x: 0, y: 12, w: 2, h: 2, minW: 1, minH: 2 },
-  { i: 'week-comparison',   x: 2, y: 12, w: 2, h: 2, minW: 1, minH: 2 },
-  // Row 14: dois quadrados
-  { i: 'income-sources',    x: 0, y: 14, w: 2, h: 2, minW: 1, minH: 2 },
-  { i: 'spending-heatmap',  x: 2, y: 14, w: 2, h: 2, minW: 1, minH: 2 },
-  // Row 16: Calendário (largo)
-  { i: 'calendar',          x: 0, y: 16, w: 4, h: 2, minW: 2, minH: 2 },
+  // LINHA 1: Fluxo de Caixa (Largo, tela toda)
+  { i: 'cashflow', x: 0, y: 0, w: 4, h: 2, minW: 2, minH: 2 },
+  // LINHA 2: Receitas vs Despesas | Despesas por Categoria
+  { i: 'income_expense', x: 0, y: 2, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'categories', x: 2, y: 2, w: 2, h: 2, minW: 2, minH: 2 },
+  // LINHA 3: Cascata (Largo)
+  { i: 'trends', x: 0, y: 4, w: 4, h: 2, minW: 2, minH: 2 },
+  // LINHA 4: Previsão | Evolução Patrimonial
+  { i: 'forecast', x: 0, y: 6, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'networth', x: 2, y: 6, w: 2, h: 2, minW: 2, minH: 2 },
+  // LINHA 5: Fixo vs Variável | Uso de Cartão
+  { i: 'fixed_variable', x: 0, y: 8, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'credit', x: 2, y: 8, w: 2, h: 2, minW: 2, minH: 2 },
+  // LINHA 6: Fontes de Renda | Taxa de Poupança
+  { i: 'income_sources', x: 0, y: 10, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'savings', x: 2, y: 10, w: 2, h: 2, minW: 2, minH: 2 },
+  // LINHA 7: Extras
+  { i: 'daily_spending', x: 0, y: 12, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'burndown', x: 2, y: 12, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'heatmap', x: 0, y: 14, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'week_comparison', x: 2, y: 14, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'subcategory_tree', x: 0, y: 16, w: 2, h: 2, minW: 2, minH: 2 },
+  { i: 'calendar', x: 2, y: 16, w: 2, h: 2, minW: 2, minH: 2 },
 ];
 
 const defaultLayouts = {
@@ -264,20 +265,22 @@ export default function Dashboard() {
 
   // Map of widget id → { title, component }
   const widgetMap = useMemo(() => ({
-    'income-vs-expense': { title: 'Receitas vs Despesas', comp: <IncomeVsExpenseChart /> },
-    'top-categories':    { title: 'Top Categorias',       comp: <TopCategoriesPie expenses={expenses} categories={dbCategories} /> },
-    'savings-rate':      { title: 'Taxa de Poupança',     comp: <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /> },
-    'waterfall':         { title: 'Cascata',              comp: <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /> },
-    'forecast':          { title: 'Previsão',             comp: <EndOfMonthForecast /> },
-    'daily-spending':    { title: 'Gastos Diários',       comp: <DailySpendingChart expenses={expenses} /> },
-    'credit-usage':      { title: 'Uso do Cartão',        comp: <CreditUsageChart /> },
-    'fixed-vs-variable': { title: 'Fixo vs Variável',     comp: <FixedVsVariableChart expenses={expenses} /> },
-    'subcategory-tree':  { title: 'Subcategorias',        comp: <SubcategoryTreemap expenses={expenses} categories={dbCategories} /> },
-    'week-comparison':   { title: 'Comparação Semanal',   comp: <WeekComparisonChart expenses={expenses} /> },
-    'income-sources':    { title: 'Fontes de Receita',    comp: <IncomeSourcesPie expenses={expenses} categories={dbCategories} /> },
-    'spending-heatmap':  { title: 'Mapa de Calor',        comp: <SpendingHeatmap expenses={expenses} /> },
-    'burndown':          { title: 'Burndown',             comp: <BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /> },
-    'calendar':          { title: 'Calendário',           comp: <CalendarView /> },
+    'cashflow':          { title: 'Fluxo de Caixa',       comp: <CashFlowChart /> },
+    'income_expense':    { title: 'Receitas vs Despesas',  comp: <IncomeVsExpenseChart /> },
+    'categories':        { title: 'Categorias',            comp: <TopCategoriesPie expenses={expenses} categories={dbCategories} /> },
+    'trends':            { title: 'Cascata',               comp: <WaterfallChart expenses={expenses} startingBalance={totalRealBalance - summary.totalIncome + summary.totalExpense} /> },
+    'forecast':          { title: 'Previsão',              comp: <EndOfMonthForecast /> },
+    'networth':          { title: 'Evolução Patrimonial',  comp: <NetWorthChart /> },
+    'fixed_variable':    { title: 'Fixo vs Variável',      comp: <FixedVsVariableChart expenses={expenses} /> },
+    'credit':            { title: 'Uso do Cartão',         comp: <CreditUsageChart /> },
+    'income_sources':    { title: 'Fontes de Receita',     comp: <IncomeSourcesPie expenses={expenses} categories={dbCategories} /> },
+    'savings':           { title: 'Taxa de Poupança',      comp: <SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /> },
+    'daily_spending':    { title: 'Gastos Diários',        comp: <DailySpendingChart expenses={expenses} /> },
+    'burndown':          { title: 'Burndown',              comp: <BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /> },
+    'heatmap':           { title: 'Mapa de Calor',         comp: <SpendingHeatmap expenses={expenses} /> },
+    'week_comparison':   { title: 'Comparação Semanal',    comp: <WeekComparisonChart expenses={expenses} /> },
+    'subcategory_tree':  { title: 'Subcategorias',         comp: <SubcategoryTreemap expenses={expenses} categories={dbCategories} /> },
+    'calendar':          { title: 'Calendário',            comp: <CalendarView /> },
   }), [expenses, dbCategories, summary, totalRealBalance, budgetTotals]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
@@ -328,7 +331,7 @@ export default function Dashboard() {
                   }
                 />
 
-                <CashFlowChart />
+
 
                 {/* Layout Controls */}
                 <div className="flex items-center justify-between">
