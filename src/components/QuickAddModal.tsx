@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CATEGORIES } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, CreditCard } from 'lucide-react';
 
 interface QuickAddModalProps {
   open: boolean;
@@ -24,25 +25,51 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
   const [category, setCategory] = useState('alimentacao');
   const [saving, setSaving] = useState(false);
   const [defaultWalletId, setDefaultWalletId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'debit' | 'credit'>('debit');
+  const [creditCardId, setCreditCardId] = useState('');
+  const [creditCards, setCreditCards] = useState<{ id: string; name: string; closing_day: number; due_day: number; closing_strategy: string; closing_days_before_due: number }[]>([]);
+  const [installments, setInstallments] = useState('1');
+  const [installmentValueType, setInstallmentValueType] = useState<'total' | 'per_installment'>('total');
 
   useEffect(() => {
     if (!open || !user) return;
-    // Get most used wallet (by expense count) or first one
-    supabase
-      .from('wallets')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .then(({ data }) => {
-        setDefaultWalletId(data?.[0]?.id || null);
-      });
+    Promise.all([
+      supabase.from('wallets').select('id').eq('user_id', user.id).order('created_at', { ascending: true }).limit(1),
+      supabase.from('credit_cards').select('id, name, closing_day, due_day, closing_strategy, closing_days_before_due').eq('user_id', user.id).order('name'),
+    ]).then(([walletsRes, cardsRes]) => {
+      setDefaultWalletId(walletsRes.data?.[0]?.id || null);
+      setCreditCards(cardsRes.data || []);
+    });
   }, [open, user]);
+
+  const isCredit = type === 'expense' && paymentMethod === 'credit';
+  const numInstallments = isCredit ? (parseInt(installments) || 1) : 1;
+
+  const selectedCard = useMemo(() => creditCards.find(c => c.id === creditCardId), [creditCards, creditCardId]);
+
+  function calcInvoiceMonth(card: typeof creditCards[0], expenseDate: string): string {
+    const d = new Date(expenseDate + 'T12:00:00');
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const day = d.getDate();
+    let closingDay = card.closing_strategy === 'relative'
+      ? (card.due_day - card.closing_days_before_due <= 0 ? card.due_day - card.closing_days_before_due + 30 : card.due_day - card.closing_days_before_due)
+      : card.closing_day;
+    if (day < closingDay) {
+      return `${year}-${String(month + 1).padStart(2, '0')}`;
+    }
+    const next = new Date(year, month + 1, 1);
+    return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+  }
 
   const reset = () => {
     setValue('');
     setCategory('alimentacao');
     setType('expense');
+    setPaymentMethod('debit');
+    setCreditCardId('');
+    setInstallments('1');
+    setInstallmentValueType('total');
   };
 
   const handleSave = async () => {
@@ -54,25 +81,70 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
     }
 
     setSaving(true);
-    const { error } = await supabase.from('expenses').insert({
-      user_id: user.id,
-      description: type === 'income' ? 'Receita rápida' : 'Despesa rápida',
-      value: numValue,
-      type,
-      final_category: type === 'income' ? 'salary' : category,
-      date: format(new Date(), 'yyyy-MM-dd'),
-      is_paid: true,
-      wallet_id: defaultWalletId,
-    });
+    const today = format(new Date(), 'yyyy-MM-dd');
 
-    setSaving(false);
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    if (isCredit && numInstallments > 1 && selectedCard) {
+      const groupId = crypto.randomUUID();
+      const perInstallment = installmentValueType === 'total'
+        ? Math.round((numValue / numInstallments) * 100) / 100
+        : numValue;
+      const baseInvoice = calcInvoiceMonth(selectedCard, today);
+      const [baseY, baseM] = baseInvoice.split('-').map(Number);
+
+      const rows = Array.from({ length: numInstallments }, (_, i) => {
+        const m = new Date(baseY, baseM - 1 + i, 1);
+        const im = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
+        return {
+          user_id: user.id,
+          description: `Despesa rápida (${i + 1}/${numInstallments})`,
+          value: perInstallment,
+          type: 'expense' as const,
+          final_category: category,
+          date: today,
+          is_paid: false,
+          payment_method: 'credit',
+          credit_card_id: creditCardId,
+          installments: numInstallments,
+          installment_group_id: groupId,
+          installment_info: `${i + 1}/${numInstallments}`,
+          invoice_month: im,
+        };
+      });
+
+      const { error } = await supabase.from('expenses').insert(rows);
+      setSaving(false);
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Parcelas criadas!', description: `${numInstallments} parcelas salvas.` });
+        reset();
+        onOpenChange(false);
+        onCreated?.();
+      }
     } else {
-      toast({ title: 'Lançamento criado!', description: `${type === 'income' ? 'Receita' : 'Despesa'} de R$ ${numValue.toFixed(2)} registrada.` });
-      reset();
-      onOpenChange(false);
-      onCreated?.();
+      const { error } = await supabase.from('expenses').insert({
+        user_id: user.id,
+        description: type === 'income' ? 'Receita rápida' : 'Despesa rápida',
+        value: numValue,
+        type,
+        final_category: type === 'income' ? 'salary' : category,
+        date: today,
+        is_paid: isCredit ? false : true,
+        wallet_id: isCredit ? null : defaultWalletId,
+        payment_method: isCredit ? 'credit' : 'debit',
+        credit_card_id: isCredit ? creditCardId : null,
+        invoice_month: isCredit && selectedCard ? calcInvoiceMonth(selectedCard, today) : null,
+      });
+
+      setSaving(false);
+      if (error) {
+        toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Lançamento criado!', description: `${type === 'income' ? 'Receita' : 'Despesa'} de R$ ${numValue.toFixed(2)} registrada.` });
+        reset();
+        onOpenChange(false);
+        onCreated?.();
+      }
     }
   };
 
@@ -131,19 +203,72 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
 
           {/* Category (only for expenses) */}
           {isExpense && (
-            <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Categoria</label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="rounded-xl h-12 text-base">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map(c => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Categoria</label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="rounded-xl h-12 text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(c => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Payment method */}
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                <button type="button" onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInstallments('1'); }}
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'debit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                  💳 Débito
+                </button>
+                <button type="button" onClick={() => setPaymentMethod('credit')}
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'credit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                  <CreditCard className="h-3.5 w-3.5 inline mr-1" />Crédito
+                </button>
+              </div>
+
+              {/* Credit card fields */}
+              {paymentMethod === 'credit' && creditCards.length > 0 && (
+                <>
+                  <Select value={creditCardId} onValueChange={setCreditCardId}>
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecione o cartão" /></SelectTrigger>
+                    <SelectContent>
+                      {creditCards.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {creditCardId && (
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1 space-y-1">
+                        <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Parcelas</label>
+                        <Input type="number" min="1" max="72" value={installments} onChange={e => setInstallments(e.target.value)} className="rounded-xl h-11" />
+                      </div>
+                    </div>
+                  )}
+                  {creditCardId && parseInt(installments) > 1 && (
+                    <div className="space-y-1.5">
+                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                        <button type="button" onClick={() => setInstallmentValueType('total')}
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'total' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                          Valor Total
+                        </button>
+                        <button type="button" onClick={() => setInstallmentValueType('per_installment')}
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                          Valor da Parcela
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        {installmentValueType === 'total'
+                          ? `${installments}x de R$ ${value ? (parseFloat(value.replace(',', '.')) / parseInt(installments)).toFixed(2) : '0,00'}`
+                          : `Total: R$ ${value ? (parseFloat(value.replace(',', '.')) * parseInt(installments)).toFixed(2) : '0,00'}`}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
 
           {/* Save button */}
