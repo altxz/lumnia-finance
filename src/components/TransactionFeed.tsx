@@ -135,7 +135,7 @@ export function TransactionFeed({
       const period = getInvoicePeriod(card, targetYear, targetMonth);
       return matchExpensesToInvoice(ccPool, period);
     });
-  }, [creditCards, allExpenses, expenses, targetYear, targetMonth]);
+  }, [creditCards, invoiceExpenses, allExpenses, expenses, targetYear, targetMonth]);
 
   // Map card ID -> due date key for this month
   const cardDueDateMap = useMemo(() => {
