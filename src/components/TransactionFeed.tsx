@@ -389,7 +389,7 @@ export function TransactionFeed({
                               </Badge>
                             )}
                             {exp.invoice_month && exp.credit_card_id && (
-                              <Pin className="h-3 w-3 text-muted-foreground shrink-0" title="Fatura definida manualmente" />
+                              <Pin className="h-3 w-3 text-muted-foreground shrink-0" />
                             )}
                           </div>
                           <div className="flex items-center gap-1 mt-0.5 flex-wrap">
