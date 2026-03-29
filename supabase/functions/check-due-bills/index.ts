@@ -21,11 +21,8 @@ Deno.serve(async (req) => {
     const tomorrowDay = tomorrow.getDate();
     const tomorrowDateStr = tomorrow.toISOString().slice(0, 10);
 
-    // 1. Check credit card due dates (due_day = tomorrow's day)
-    const { data: cards } = await supabase
-      .from("credit_cards")
-      .select("id, user_id, name, due_day")
-      .eq("due_day", tomorrowDay);
+    const today = new Date();
+    const todayDay = today.getDate();
 
     const notifications: {
       user_id: string;
@@ -33,28 +30,66 @@ Deno.serve(async (req) => {
       message: string;
     }[] = [];
 
+    // 1. Check credit card due dates (due_day = tomorrow's day)
+    const { data: cards } = await supabase
+      .from("credit_cards")
+      .select("id, user_id, name, due_day, closing_day, closing_strategy, closing_days_before_due");
+
     if (cards && cards.length > 0) {
-      // For each card due tomorrow, get the current invoice total
       for (const card of cards) {
-        const currentMonth = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}`;
-        const { data: invoiceExpenses } = await supabase
-          .from("expenses")
-          .select("value")
-          .eq("user_id", card.user_id)
-          .eq("credit_card_id", card.id)
-          .eq("invoice_month", currentMonth);
+        // Calculate effective closing day
+        let closingDay = card.closing_day;
+        if (card.closing_strategy === "relative") {
+          closingDay = card.due_day - card.closing_days_before_due;
+          if (closingDay <= 0) closingDay += 30;
+        }
 
-        const total = (invoiceExpenses || []).reduce(
-          (sum: number, e: { value: number }) => sum + e.value,
-          0
-        );
+        const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
-        if (total > 0) {
-          notifications.push({
-            user_id: card.user_id,
-            title: "Fatura a vencer",
-            message: `Lembrete: A sua fatura ${card.name} de R$ ${total.toFixed(2).replace(".", ",")} vence amanhã.`,
-          });
+        // Invoice closing notification (closing_day = today)
+        if (closingDay === todayDay) {
+          const { data: invoiceExpenses } = await supabase
+            .from("expenses")
+            .select("value")
+            .eq("user_id", card.user_id)
+            .eq("credit_card_id", card.id)
+            .eq("invoice_month", currentMonth);
+
+          const total = (invoiceExpenses || []).reduce(
+            (sum: number, e: { value: number }) => sum + e.value,
+            0
+          );
+
+          if (total > 0) {
+            notifications.push({
+              user_id: card.user_id,
+              title: "Fatura fechada",
+              message: `A fatura ${card.name} de R$ ${total.toFixed(2).replace(".", ",")} fechou hoje. Vencimento dia ${card.due_day}.`,
+            });
+          }
+        }
+
+        // Invoice due tomorrow notification
+        if (card.due_day === tomorrowDay) {
+          const { data: invoiceExpenses } = await supabase
+            .from("expenses")
+            .select("value")
+            .eq("user_id", card.user_id)
+            .eq("credit_card_id", card.id)
+            .eq("invoice_month", currentMonth);
+
+          const total = (invoiceExpenses || []).reduce(
+            (sum: number, e: { value: number }) => sum + e.value,
+            0
+          );
+
+          if (total > 0) {
+            notifications.push({
+              user_id: card.user_id,
+              title: "Fatura a vencer",
+              message: `Lembrete: A sua fatura ${card.name} de R$ ${total.toFixed(2).replace(".", ",")} vence amanhã.`,
+            });
+          }
         }
       }
     }
