@@ -173,6 +173,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                 </div>
               )}
 
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categoria</Label>
                 <CategoryPicker
                   categories={dbCategories}
                   value={finalCategory}
