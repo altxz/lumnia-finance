@@ -38,62 +38,84 @@ interface ImportTransactionsModalProps {
 }
 
 function parseCSV(text: string): ParsedTransaction[] {
-  const lines = text.trim().split(/\r?\n/);
+  const lines = text.split('\n').filter(line => line.trim().length > 0);
   if (lines.length < 2) return [];
 
-  const header = lines[0].toLowerCase();
-  const separator = header.includes(';') ? ';' : ',';
-  const headers = header.split(separator).map(h => h.trim().replace(/"/g, ''));
+  const headerLine = lines[0].toLowerCase();
 
-  const dateIdx = headers.findIndex(h => /data|date/.test(h));
-  const descIdx = headers.findIndex(h => /descri|description|hist|memo/.test(h));
-  const valueIdx = headers.findIndex(h => /valor|value|amount|quantia/.test(h));
+  // Detecta padrão Nubank (date,title,amount)
+  const isNubank = headerLine.includes('date') && headerLine.includes('title') && headerLine.includes('amount');
 
-  if (dateIdx === -1 || descIdx === -1 || valueIdx === -1) return [];
+  const delimiter = headerLine.includes(';') ? ';' : ',';
 
   const transactions: ParsedTransaction[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
+    // Divide respeitando aspas (descrições com vírgulas)
+    const row = delimiter === ';'
+      ? lines[i].split(';').map(c => c.trim().replace(/^"|"$/g, ''))
+      : lines[i].match(/(?:"[^"]*"|[^,]+)+/g)?.map(c => c.trim().replace(/^"|"$/g, ''));
 
-    const cols = line.split(separator).map(c => c.trim().replace(/"/g, ''));
-    const rawDate = cols[dateIdx];
-    const description = cols[descIdx];
-    const rawValue = cols[valueIdx];
+    if (!row || row.length < 3) continue;
 
-    if (!rawDate || !description || !rawValue) continue;
+    const rawDate = row[0].trim();
+    const rawDesc = row[1].trim();
+    const rawValue = row[2].trim();
 
-    // Parse value: handle "1.234,56" (BR) and "1,234.56" (US)
+    // Parse valor: aceita "1.234,56" (BR) e "1234.56" (US/Nubank)
     let numericValue: number;
     if (rawValue.includes(',') && rawValue.lastIndexOf(',') > rawValue.lastIndexOf('.')) {
-      // BR format: 1.234,56
       numericValue = parseFloat(rawValue.replace(/\./g, '').replace(',', '.'));
     } else {
       numericValue = parseFloat(rawValue.replace(/,/g, ''));
     }
-
     if (isNaN(numericValue)) continue;
 
-    // Parse date: handle dd/mm/yyyy, yyyy-mm-dd
+    let type: 'income' | 'expense';
+    let finalValue: number;
+
+    if (isNubank) {
+      // Fatura de cartão: positivo = despesa, negativo = estorno/pagamento
+      if (numericValue > 0) {
+        type = 'expense';
+        finalValue = numericValue;
+      } else {
+        type = 'income';
+        finalValue = Math.abs(numericValue);
+      }
+    } else {
+      // Extrato bancário: positivo = entrada, negativo = saída
+      if (numericValue < 0) {
+        type = 'expense';
+        finalValue = Math.abs(numericValue);
+      } else {
+        type = 'income';
+        finalValue = numericValue;
+      }
+    }
+
+    // Parse data: aceita YYYY-MM-DD e DD/MM/YYYY
     let isoDate: string;
-    if (/^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(rawDate)) {
-      const parts = rawDate.split(/[\/\-]/);
-      isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-    } else if (/^\d{4}[\/\-]\d{2}[\/\-]\d{2}$/.test(rawDate)) {
+    if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(rawDate)) {
       isoDate = rawDate.replace(/\//g, '-');
+    } else if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(rawDate)) {
+      const parts = rawDate.split(/[/-]/);
+      isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
     } else {
       continue;
     }
 
-    const isIncome = numericValue > 0;
+    const defaultCategory = type === 'income'
+      ? (rawDesc.toLowerCase().includes('pagamento') ? 'salary' : 'salary')
+      : 'outros';
+
     transactions.push({
       date: isoDate,
-      description,
-      value: Math.abs(numericValue),
-      type: isIncome ? 'income' : 'expense',
+      description: rawDesc,
+      value: finalValue,
+      type,
       selected: true,
-      category: isIncome ? 'salary' : 'outros',
+      category: defaultCategory,
     });
   }
 
