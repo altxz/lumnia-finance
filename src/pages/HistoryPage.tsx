@@ -97,6 +97,7 @@ export default function HistoryPage() {
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
   useEffect(() => { fetchWalletsAndBalance(); }, [fetchWalletsAndBalance]);
   useEffect(() => { fetchSubscriptions(); }, [fetchSubscriptions]);
+  useEffect(() => { fetchCreditCards(); }, [fetchCreditCards]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
