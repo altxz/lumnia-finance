@@ -38,9 +38,19 @@ const PRESET_COLORS = [
 ];
 
 const ICON_OPTIONS = [
-  'utensils', 'car', 'gamepad-2', 'heart-pulse', 'house', 'graduation-cap',
-  'tag', 'shopping-cart', 'plane', 'shirt', 'wifi', 'baby', 'dog', 'music',
-  'dumbbell', 'scissors', 'wrench', 'gift', 'coffee', 'book',
+  'utensils', 'coffee', 'wine', 'beef', 'apple', 'cookie', 'ice-cream-cone', 'pizza',
+  'car', 'bus', 'fuel', 'plane', 'train-front', 'bike', 'ship',
+  'house', 'building-2', 'key-round', 'sofa', 'lamp', 'shower-head',
+  'heart-pulse', 'pill', 'dumbbell', 'brain', 'stethoscope', 'syringe',
+  'graduation-cap', 'book', 'laptop', 'briefcase', 'notebook-pen',
+  'gamepad-2', 'music', 'tv', 'film', 'ticket', 'palette', 'drama',
+  'shopping-cart', 'shopping-bag', 'shirt', 'scissors', 'sparkles', 'gem',
+  'baby', 'dog', 'cat', 'users',
+  'wallet', 'banknote', 'coins', 'credit-card', 'piggy-bank', 'landmark', 'receipt', 'hand-coins',
+  'percent', 'trending-up', 'trending-down', 'arrow-up-down', 'calculator', 'file-text', 'scale',
+  'circle-dollar-sign', 'badge-dollar-sign', 'chart-line', 'chart-bar', 'chart-pie',
+  'wifi', 'zap', 'droplets', 'phone', 'smartphone', 'monitor', 'cloud',
+  'gift', 'wrench', 'shield', 'flag', 'star', 'tag', 'bookmark', 'globe',
 ];
 
 function LucideIcon({ name, className }: { name: string; className?: string }) {
