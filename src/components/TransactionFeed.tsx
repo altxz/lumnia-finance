@@ -199,14 +199,8 @@ export function TransactionFeed({
       }
     });
 
-    // 3. Handle CC expenses from `expenses` that don't match any invoice period
-    expenses.forEach(exp => {
-      if (!exp.credit_card_id || addedIds.has(exp.id)) return;
-      // No matching invoice — show on original date
-      ensureDay(exp.date);
-      dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
-      addedIds.add(exp.id);
-    });
+    // 3. Regra de ouro: NUNCA exibir compra de cartão no mês da compra.
+    // Se não caiu em nenhuma fatura com vencimento no mês selecionado, fica oculta neste mês.
 
     // Calculate running balance for the selected month
     const allTxns = allExpenses || expenses;
