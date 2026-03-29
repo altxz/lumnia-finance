@@ -17,7 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
-import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
@@ -112,7 +112,10 @@ export default function WalletPage() {
   const [cardsLoading, setCardsLoading] = useState(true);
   const [cardModalOpen, setCardModalOpen] = useState(false);
   const [cardSaving, setCardSaving] = useState(false);
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [cardForm, setCardForm] = useState({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed' as string, closing_days_before_due: '7' });
+  const [recalcDialogOpen, setRecalcDialogOpen] = useState(false);
+  const [pendingCardSave, setPendingCardSave] = useState<(() => Promise<void>) | null>(null);
 
   // ─── Invoice View state ───
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -250,30 +253,115 @@ export default function WalletPage() {
   };
 
   // ─── Credit Card handlers ───
+  const openEditCard = (card: CreditCardRow) => {
+    setEditingCardId(card.id);
+    setCardForm({
+      name: card.name,
+      limit_amount: String(card.limit_amount),
+      closing_day: String(card.closing_day),
+      due_day: String(card.due_day),
+      closing_strategy: card.closing_strategy,
+      closing_days_before_due: String(card.closing_days_before_due),
+    });
+    setCardModalOpen(true);
+  };
+
+  const resetCardForm = () => {
+    setEditingCardId(null);
+    setCardForm({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed', closing_days_before_due: '7' });
+  };
+
+  const buildCardPayload = () => ({
+    user_id: user?.id,
+    name: cardForm.name.trim(),
+    limit_amount: parseFloat(cardForm.limit_amount),
+    closing_day: cardForm.closing_strategy === 'fixed' ? (parseInt(cardForm.closing_day) || 25) : 1,
+    due_day: parseInt(cardForm.due_day) || 10,
+    closing_strategy: cardForm.closing_strategy,
+    closing_days_before_due: cardForm.closing_strategy === 'relative' ? (parseInt(cardForm.closing_days_before_due) || 7) : 7,
+  });
+
   const handleAddCard = async () => {
     if (!cardForm.name.trim() || !cardForm.limit_amount) {
       toast({ title: 'Erro', description: 'Preencha nome e limite.', variant: 'destructive' });
       return;
     }
     setCardSaving(true);
-    const { error } = await supabase.from('credit_cards').insert({
-      user_id: user?.id,
-      name: cardForm.name.trim(),
-      limit_amount: parseFloat(cardForm.limit_amount),
-      closing_day: cardForm.closing_strategy === 'fixed' ? (parseInt(cardForm.closing_day) || 25) : 1,
-      due_day: parseInt(cardForm.due_day) || 10,
-      closing_strategy: cardForm.closing_strategy,
-      closing_days_before_due: cardForm.closing_strategy === 'relative' ? (parseInt(cardForm.closing_days_before_due) || 7) : 7,
-    });
+    const { error } = await supabase.from('credit_cards').insert(buildCardPayload());
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Cartão adicionado!' });
-      setCardForm({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed', closing_days_before_due: '7' });
+      resetCardForm();
       setCardModalOpen(false);
       fetchCards();
     }
     setCardSaving(false);
+  };
+
+  const handleSaveEditCard = async (recalculate: boolean) => {
+    if (!editingCardId || !user) return;
+    setCardSaving(true);
+    const payload = buildCardPayload();
+    delete (payload as any).user_id;
+    const { error } = await supabase.from('credit_cards').update(payload).eq('id', editingCardId);
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setCardSaving(false);
+      return;
+    }
+
+    if (recalculate) {
+      // Recalculate invoice_month for all expenses on this card
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('id, date')
+        .eq('user_id', user.id)
+        .eq('credit_card_id', editingCardId);
+
+      if (expenses && expenses.length > 0) {
+        const closingDay = payload.closing_strategy === 'fixed'
+          ? payload.closing_day
+          : Math.max((payload.due_day || 10) - (payload.closing_days_before_due || 7), 1);
+
+        for (const exp of expenses) {
+          const [year, month, day] = exp.date.split('-').map(Number);
+          let invMonth: string;
+          if (day > closingDay) {
+            const nm = month === 12 ? 1 : month + 1;
+            const ny = month === 12 ? year + 1 : year;
+            invMonth = `${ny}-${String(nm).padStart(2, '0')}`;
+          } else {
+            invMonth = `${year}-${String(month).padStart(2, '0')}`;
+          }
+          await supabase.from('expenses').update({ invoice_month: invMonth }).eq('id', exp.id);
+        }
+        toast({ title: 'Cartão atualizado!', description: `${expenses.length} faturas recalculadas.` });
+      } else {
+        toast({ title: 'Cartão atualizado!' });
+      }
+    } else {
+      toast({ title: 'Cartão atualizado!' });
+    }
+
+    resetCardForm();
+    setCardModalOpen(false);
+    setRecalcDialogOpen(false);
+    fetchCards();
+    fetchInvoiceTransactions();
+    setCardSaving(false);
+  };
+
+  const handleSubmitCard = () => {
+    if (!cardForm.name.trim() || !cardForm.limit_amount) {
+      toast({ title: 'Erro', description: 'Preencha nome e limite.', variant: 'destructive' });
+      return;
+    }
+    if (editingCardId) {
+      setRecalcDialogOpen(true);
+    } else {
+      handleAddCard();
+    }
   };
 
   const handleDeleteCard = async (id: string) => {
@@ -281,6 +369,27 @@ export default function WalletPage() {
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Cartão removido' }); fetchCards(); }
   };
+
+  // ─── Invoice date preview ───
+  const invoiceDatePreview = useMemo(() => {
+    const dueDay = parseInt(cardForm.due_day) || 10;
+    let closingDay: number;
+    if (cardForm.closing_strategy === 'relative') {
+      closingDay = dueDay - (parseInt(cardForm.closing_days_before_due) || 7);
+      if (closingDay <= 0) closingDay += 30;
+    } else {
+      closingDay = parseInt(cardForm.closing_day) || 25;
+    }
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const closingMonth = monthNames[month];
+    const dueMonthIdx = closingDay >= dueDay ? (month + 1) % 12 : month;
+    const dueMonthName = monthNames[dueMonthIdx];
+    const dueYear = closingDay >= dueDay && month === 11 ? year + 1 : year;
+    return `Com essas configurações, sua fatura de ${closingMonth} fechará dia ${String(closingDay).padStart(2, '0')}/${String(month + 1).padStart(2, '0')} e vencerá dia ${String(dueDay).padStart(2, '0')}/${String(dueMonthIdx + 1).padStart(2, '0')}`;
+  }, [cardForm.due_day, cardForm.closing_day, cardForm.closing_strategy, cardForm.closing_days_before_due]);
 
   // ─── Pay Invoice handler ───
   const handlePayInvoice = async () => {
@@ -688,23 +797,28 @@ export default function WalletPage() {
                                       <p className="text-xs text-muted-foreground">Limite: {formatCurrency(card.limit_amount)}</p>
                                     </div>
                                   </div>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={e => e.stopPropagation()}>
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="rounded-2xl">
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Remover cartão?</AlertDialogTitle>
-                                        <AlertDialogDescription>O cartão será removido mas as transações vinculadas serão mantidas.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteCard(card.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Remover</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                   <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl" onClick={e => { e.stopPropagation(); openEditCard(card); }}>
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={e => e.stopPropagation()}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent className="rounded-2xl">
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Remover cartão?</AlertDialogTitle>
+                                          <AlertDialogDescription>O cartão será removido mas as transações vinculadas serão mantidas.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDeleteCard(card.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Remover</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                   </div>
                                 </div>
                                 <div className="space-y-1.5">
                                   <div className="flex justify-between text-sm">
@@ -818,16 +932,16 @@ export default function WalletPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Card Modal */}
-      <Dialog open={cardModalOpen} onOpenChange={setCardModalOpen}>
+      {/* Add/Edit Card Modal */}
+      <Dialog open={cardModalOpen} onOpenChange={(open) => { if (!open) resetCardForm(); setCardModalOpen(open); }}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Novo Cartão de Crédito</DialogTitle>
+            <DialogTitle className="text-xl font-bold">{editingCardId ? 'Editar Cartão' : 'Novo Cartão de Crédito'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Nome do cartão</Label>
-              <Input placeholder="Ex: Nubank, ActivoBank" value={cardForm.name} onChange={e => setCardForm(f => ({ ...f, name: e.target.value }))} className="rounded-xl h-11" />
+              <Input placeholder="Ex: Nubank, Inter" value={cardForm.name} onChange={e => setCardForm(f => ({ ...f, name: e.target.value }))} className="rounded-xl h-11" />
             </div>
             <div className="space-y-2">
               <Label>Limite (R$)</Label>
@@ -835,10 +949,17 @@ export default function WalletPage() {
             </div>
             <div className="space-y-2">
               <Label>Dia de vencimento</Label>
-              <Input type="number" min="1" max="31" value={cardForm.due_day} onChange={e => setCardForm(f => ({ ...f, due_day: e.target.value }))} className="rounded-xl h-11" />
+              <Select value={cardForm.due_day} onValueChange={v => setCardForm(f => ({ ...f, due_day: v }))}>
+                <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                    <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label>Estratégia de fecho da fatura</Label>
+              <Label>Tipo de fechamento</Label>
               <Select value={cardForm.closing_strategy} onValueChange={v => setCardForm(f => ({ ...f, closing_strategy: v }))}>
                 <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -849,25 +970,58 @@ export default function WalletPage() {
             </div>
             {cardForm.closing_strategy === 'fixed' ? (
               <div className="space-y-2">
-                <Label>Dia de fecho (1-31)</Label>
-                <Input type="number" min="1" max="31" value={cardForm.closing_day} onChange={e => setCardForm(f => ({ ...f, closing_day: e.target.value }))} className="rounded-xl h-11" />
+                <Label>Dia de fechamento (1-31)</Label>
+                <Select value={cardForm.closing_day} onValueChange={v => setCardForm(f => ({ ...f, closing_day: v }))}>
+                  <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                      <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             ) : (
               <div className="space-y-2">
-                <Label>Dias antes do vencimento</Label>
+                <Label>Quantos dias antes do vencimento?</Label>
                 <Input type="number" min="1" max="30" placeholder="7" value={cardForm.closing_days_before_due} onChange={e => setCardForm(f => ({ ...f, closing_days_before_due: e.target.value }))} className="rounded-xl h-11" />
-                <p className="text-xs text-muted-foreground">A fatura fechará {cardForm.closing_days_before_due || '7'} dias antes do dia {cardForm.due_day || '10'}</p>
               </div>
             )}
+            {/* Invoice date preview */}
+            <div className="rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {invoiceDatePreview}
+              </p>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCardModalOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleAddCard} disabled={cardSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {cardSaving ? 'Salvando...' : 'Adicionar'}
+            <Button variant="outline" onClick={() => { resetCardForm(); setCardModalOpen(false); }} className="rounded-xl">Cancelar</Button>
+            <Button onClick={handleSubmitCard} disabled={cardSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+              {cardSaving ? 'Salvando...' : editingCardId ? 'Salvar Alterações' : 'Adicionar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Recalculate Invoices Dialog */}
+      <AlertDialog open={recalcDialogOpen} onOpenChange={setRecalcDialogOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Recalcular faturas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              As configurações de fechamento foram alteradas. Deseja recalcular o mês da fatura de todas as transações passadas deste cartão?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => { setRecalcDialogOpen(false); handleSaveEditCard(false); }}>
+              Apenas novas transações
+            </Button>
+            <Button className="rounded-xl bg-primary text-primary-foreground" disabled={cardSaving} onClick={() => handleSaveEditCard(true)}>
+              {cardSaving ? 'Recalculando...' : 'Recalcular tudo'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ═══ Pay Invoice Dialog ═══ */}
       <Dialog open={payInvoiceOpen} onOpenChange={setPayInvoiceOpen}>
