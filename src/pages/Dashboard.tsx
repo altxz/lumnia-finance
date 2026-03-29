@@ -246,20 +246,20 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[350px]"><WeekComparisonChart expenses={expenses} /></div>
                   <div className="flex flex-col min-h-[350px]"><BurndownChart expenses={expenses} totalBudget={budgetTotals.totalBudget} /></div>
 
-                  {/* Pares 5: Evolução e Previsão */}
-                  <div className="flex flex-col min-h-[350px]"><NetWorthChart /></div>
+                  {/* Pares 5: Previsão e Calendário */}
                   <div className="flex flex-col min-h-[350px]"><EndOfMonthForecast /></div>
-
-                  {/* Pares 6: Perfil de Gastos */}
-                  <div className="flex flex-col min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
-                  <div className="flex flex-col min-h-[350px]"><CreditUsageChart /></div>
-
-                  {/* Pares 7: Saúde e Mapa de Calor */}
-                  <div className="flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
-                  <div className="flex flex-col min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
-
-                  {/* Pares 8: Calendário */}
                   <div className="flex flex-col min-h-[400px]"><CalendarView /></div>
+
+                  {/* Pares 6: Evolução e Perfil */}
+                  <div className="flex flex-col min-h-[350px]"><NetWorthChart /></div>
+                  <div className="flex flex-col min-h-[350px]"><FixedVsVariableChart expenses={expenses} /></div>
+
+                  {/* Pares 7: Cartão e Poupança */}
+                  <div className="flex flex-col min-h-[350px]"><CreditUsageChart /></div>
+                  <div className="flex flex-col min-h-[350px]"><SavingsRateGauge totalIncome={summary.totalIncome} totalExpense={summary.totalExpense} /></div>
+
+                  {/* Pares 8: Mapa de Calor */}
+                  <div className="flex flex-col min-h-[350px]"><SpendingHeatmap expenses={expenses} /></div>
                 </div>
               </>
             )}
