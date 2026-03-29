@@ -284,6 +284,24 @@ export default function HistoryPage() {
                 )}
               </TabsContent>
             </Tabs>
+
+            {/* Saldo do mês anterior */}
+            <Card className="rounded-2xl border-0 shadow-md p-4 sm:p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Saldo do mês anterior</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">Como você iniciou este mês</p>
+                  </div>
+                </div>
+                <span className={`text-lg sm:text-xl font-bold ${startingMonthBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                  {startingMonthBalance >= 0 ? '+' : ''}{formatCurrency(startingMonthBalance)}
+                </span>
+              </div>
+            </Card>
           </main>
         </div>
       </div>
