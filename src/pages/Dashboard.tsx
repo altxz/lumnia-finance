@@ -31,6 +31,7 @@ import { IncomeSourcesPie } from '@/components/analytics/IncomeSourcesPie';
 import { WaterfallChart } from '@/components/analytics/WaterfallChart';
 import { SpendingHeatmap } from '@/components/analytics/SpendingHeatmap';
 import { BurndownChart } from '@/components/analytics/BurndownChart';
+import { DashboardGrid, GridWidget } from '@/components/DashboardGrid';
 import type { Expense } from '@/components/ExpenseTable';
 
 function DashboardSkeleton() {
