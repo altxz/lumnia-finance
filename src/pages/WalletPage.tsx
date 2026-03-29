@@ -253,30 +253,115 @@ export default function WalletPage() {
   };
 
   // ─── Credit Card handlers ───
+  const openEditCard = (card: CreditCardRow) => {
+    setEditingCardId(card.id);
+    setCardForm({
+      name: card.name,
+      limit_amount: String(card.limit_amount),
+      closing_day: String(card.closing_day),
+      due_day: String(card.due_day),
+      closing_strategy: card.closing_strategy,
+      closing_days_before_due: String(card.closing_days_before_due),
+    });
+    setCardModalOpen(true);
+  };
+
+  const resetCardForm = () => {
+    setEditingCardId(null);
+    setCardForm({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed', closing_days_before_due: '7' });
+  };
+
+  const buildCardPayload = () => ({
+    user_id: user?.id,
+    name: cardForm.name.trim(),
+    limit_amount: parseFloat(cardForm.limit_amount),
+    closing_day: cardForm.closing_strategy === 'fixed' ? (parseInt(cardForm.closing_day) || 25) : 1,
+    due_day: parseInt(cardForm.due_day) || 10,
+    closing_strategy: cardForm.closing_strategy,
+    closing_days_before_due: cardForm.closing_strategy === 'relative' ? (parseInt(cardForm.closing_days_before_due) || 7) : 7,
+  });
+
   const handleAddCard = async () => {
     if (!cardForm.name.trim() || !cardForm.limit_amount) {
       toast({ title: 'Erro', description: 'Preencha nome e limite.', variant: 'destructive' });
       return;
     }
     setCardSaving(true);
-    const { error } = await supabase.from('credit_cards').insert({
-      user_id: user?.id,
-      name: cardForm.name.trim(),
-      limit_amount: parseFloat(cardForm.limit_amount),
-      closing_day: cardForm.closing_strategy === 'fixed' ? (parseInt(cardForm.closing_day) || 25) : 1,
-      due_day: parseInt(cardForm.due_day) || 10,
-      closing_strategy: cardForm.closing_strategy,
-      closing_days_before_due: cardForm.closing_strategy === 'relative' ? (parseInt(cardForm.closing_days_before_due) || 7) : 7,
-    });
+    const { error } = await supabase.from('credit_cards').insert(buildCardPayload());
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Cartão adicionado!' });
-      setCardForm({ name: '', limit_amount: '', closing_day: '25', due_day: '10', closing_strategy: 'fixed', closing_days_before_due: '7' });
+      resetCardForm();
       setCardModalOpen(false);
       fetchCards();
     }
     setCardSaving(false);
+  };
+
+  const handleSaveEditCard = async (recalculate: boolean) => {
+    if (!editingCardId || !user) return;
+    setCardSaving(true);
+    const payload = buildCardPayload();
+    delete (payload as any).user_id;
+    const { error } = await supabase.from('credit_cards').update(payload).eq('id', editingCardId);
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      setCardSaving(false);
+      return;
+    }
+
+    if (recalculate) {
+      // Recalculate invoice_month for all expenses on this card
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('id, date')
+        .eq('user_id', user.id)
+        .eq('credit_card_id', editingCardId);
+
+      if (expenses && expenses.length > 0) {
+        const closingDay = payload.closing_strategy === 'fixed'
+          ? payload.closing_day
+          : Math.max((payload.due_day || 10) - (payload.closing_days_before_due || 7), 1);
+
+        for (const exp of expenses) {
+          const [year, month, day] = exp.date.split('-').map(Number);
+          let invMonth: string;
+          if (day > closingDay) {
+            const nm = month === 12 ? 1 : month + 1;
+            const ny = month === 12 ? year + 1 : year;
+            invMonth = `${ny}-${String(nm).padStart(2, '0')}`;
+          } else {
+            invMonth = `${year}-${String(month).padStart(2, '0')}`;
+          }
+          await supabase.from('expenses').update({ invoice_month: invMonth }).eq('id', exp.id);
+        }
+        toast({ title: 'Cartão atualizado!', description: `${expenses.length} faturas recalculadas.` });
+      } else {
+        toast({ title: 'Cartão atualizado!' });
+      }
+    } else {
+      toast({ title: 'Cartão atualizado!' });
+    }
+
+    resetCardForm();
+    setCardModalOpen(false);
+    setRecalcDialogOpen(false);
+    fetchCards();
+    fetchInvoiceTransactions();
+    setCardSaving(false);
+  };
+
+  const handleSubmitCard = () => {
+    if (!cardForm.name.trim() || !cardForm.limit_amount) {
+      toast({ title: 'Erro', description: 'Preencha nome e limite.', variant: 'destructive' });
+      return;
+    }
+    if (editingCardId) {
+      setRecalcDialogOpen(true);
+    } else {
+      handleAddCard();
+    }
   };
 
   const handleDeleteCard = async (id: string) => {
@@ -284,6 +369,27 @@ export default function WalletPage() {
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Cartão removido' }); fetchCards(); }
   };
+
+  // ─── Invoice date preview ───
+  const invoiceDatePreview = useMemo(() => {
+    const dueDay = parseInt(cardForm.due_day) || 10;
+    let closingDay: number;
+    if (cardForm.closing_strategy === 'relative') {
+      closingDay = dueDay - (parseInt(cardForm.closing_days_before_due) || 7);
+      if (closingDay <= 0) closingDay += 30;
+    } else {
+      closingDay = parseInt(cardForm.closing_day) || 25;
+    }
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const closingMonth = monthNames[month];
+    const dueMonthIdx = closingDay >= dueDay ? (month + 1) % 12 : month;
+    const dueMonthName = monthNames[dueMonthIdx];
+    const dueYear = closingDay >= dueDay && month === 11 ? year + 1 : year;
+    return `Com essas configurações, sua fatura de ${closingMonth} fechará dia ${String(closingDay).padStart(2, '0')}/${String(month + 1).padStart(2, '0')} e vencerá dia ${String(dueDay).padStart(2, '0')}/${String(dueMonthIdx + 1).padStart(2, '0')}`;
+  }, [cardForm.due_day, cardForm.closing_day, cardForm.closing_strategy, cardForm.closing_days_before_due]);
 
   // ─── Pay Invoice handler ───
   const handlePayInvoice = async () => {
