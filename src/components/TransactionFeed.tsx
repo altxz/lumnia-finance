@@ -165,10 +165,14 @@ export function TransactionFeed({ expenses, allExpenses, loading, onDeleted, pag
                       {/* Description + wallet */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
-                        {walletName && (
+                        {(walletName || exp.credit_card_id) && (
                           <div className="flex items-center gap-1 mt-0.5">
                             <Wallet className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground truncate" title={walletName}>{walletName}</span>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {walletName || ''}
+                              {walletName && exp.credit_card_id ? ' | ' : !walletName && exp.credit_card_id ? '' : ''}
+                              {exp.credit_card_id ? 'Cartão de crédito' : walletName ? ' | Débito em conta' : ''}
+                            </span>
                           </div>
                         )}
                       </div>
