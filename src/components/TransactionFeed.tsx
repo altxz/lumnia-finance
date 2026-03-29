@@ -171,7 +171,7 @@ export function TransactionFeed({ expenses, loading, onDeleted, page, totalPages
                       </div>
 
                       {/* Quick actions */}
-                      <div className="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"

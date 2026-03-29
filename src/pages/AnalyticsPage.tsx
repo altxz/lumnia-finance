@@ -38,14 +38,14 @@ export default function AnalyticsPage() {
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto">
             {/* Header + Filters */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-                <p className="text-sm text-muted-foreground mt-1">Insights preditivos e visualizações interativas</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Insights preditivos e visualizações interativas</p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <Select value={filters.period} onValueChange={v => setFilters(f => ({ ...f, period: v }))}>
-                  <SelectTrigger className="w-[160px] rounded-xl">
+                  <SelectTrigger className="w-[140px] sm:w-[160px] rounded-xl text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

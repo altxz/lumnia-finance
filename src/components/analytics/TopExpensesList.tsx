@@ -31,9 +31,9 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-            <XAxis type="number" tickFormatter={(v: number) => formatCurrency(v)} fontSize={10} />
-            <YAxis type="category" dataKey="name" width={100} fontSize={10} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <XAxis type="number" tickFormatter={(v: number) => formatCurrency(v)} fontSize={9} />
+            <YAxis type="category" dataKey="name" width={80} fontSize={9} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
             <Tooltip
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
