@@ -33,10 +33,10 @@ function simulateAiResponse(text: string): string {
     return `Você pode gerenciar suas categorias em **Configurações → Categorias**. Temos categorias com subcategorias e palavras-chave para a IA categorizar automaticamente!`;
   }
   if (lower.includes('ajuda') || lower.includes('help') || lower.includes('o que') || lower.includes('como')) {
-    return `Sou o **Genius**, seu assistente financeiro! 🧠\n\nPosso ajudá-lo a:\n- 📝 Registar despesas e receitas\n- 📊 Consultar saldos e orçamentos\n- 🏷️ Gerenciar categorias\n- 💡 Dar dicas financeiras\n\nExperimente: *"Gastei 50 reais no supermercado"*`;
+    return `Sou a inteligência da **Lumnia**, sua assistente financeira! 🧠\n\nPosso ajudá-lo a:\n- 📝 Registar despesas e receitas\n- 📊 Consultar saldos e orçamentos\n- 🏷️ Gerenciar categorias\n- 💡 Dar dicas financeiras\n\nExperimente: *"Gastei 50 reais no supermercado"*`;
   }
   if (lower.includes('olá') || lower.includes('oi') || lower.includes('hey') || lower.includes('bom dia') || lower.includes('boa tarde')) {
-    return `Olá! 👋 Sou o **Genius**, seu assistente financeiro inteligente. Como posso ajudá-lo hoje?`;
+    return `Olá! 👋 Sou a inteligência da **Lumnia**. Como posso ajudá-lo hoje?`;
   }
   return `Entendi sua mensagem! 🤔 No momento estou aprendendo a processar pedidos mais complexos. Tente algo como:\n- *"Gastei 30 no almoço"*\n- *"Qual meu saldo?"*\n- *"Ajuda"*`;
 }
@@ -47,7 +47,7 @@ export function GeniusChatbot() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Olá! 👋 Sou o **Genius**, seu assistente financeiro. Como posso ajudá-lo?',
+      content: 'Olá! 👋 Sou a inteligência da **Lumnia**, sua assistente financeira. Como posso ajudá-lo?',
       timestamp: new Date(),
     },
   ]);
@@ -129,8 +129,8 @@ export function GeniusChatbot() {
               <Brain className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-sm">Genius AI</h3>
-              <p className="text-[11px] opacity-80">Assistente financeiro inteligente</p>
+              <h3 className="font-bold text-sm">Lumnia AI</h3>
+              <p className="text-[11px] opacity-80">Assistente financeira inteligente</p>
             </div>
             <Button
               variant="ghost"

@@ -36,7 +36,7 @@ export function AppSidebar() {
             <DollarSign className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="font-bold text-sidebar-foreground text-xl tracking-tight">FinAI</span>
+            <span className="font-bold text-sidebar-foreground text-xl tracking-tight">Lumnia</span>
           )}
         </div>
       </SidebarHeader>

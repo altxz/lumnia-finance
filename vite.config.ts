@@ -26,8 +26,8 @@ export default defineConfig(({ mode }) => ({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
-        name: "Expense Genius",
-        short_name: "Genius",
+        name: "Lumnia",
+        short_name: "Lumnia",
         description: "Gerencie receitas e despesas com IA",
         theme_color: "#ffffff",
         background_color: "#ffffff",

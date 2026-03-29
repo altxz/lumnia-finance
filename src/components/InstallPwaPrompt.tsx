@@ -37,7 +37,7 @@ export function InstallPwaPrompt() {
           <Download className="h-4 w-4 text-primary" />
         </div>
         <p className="text-sm font-medium truncate">
-          Instalar a App Expense Genius no telemóvel
+          Instalar a App Lumnia no telemóvel
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">

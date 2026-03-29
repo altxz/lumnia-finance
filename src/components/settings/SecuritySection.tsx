@@ -48,7 +48,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
     const blob = new Blob([JSON.stringify({ expenses, exported_at: new Date().toISOString(), user_email: user.email }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'meus-dados-finai.json'; a.click();
+    a.href = url; a.download = 'meus-dados-lumnia.json'; a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Dados exportados!', description: 'Arquivo JSON baixado com sucesso.' });
     setExporting(false);
