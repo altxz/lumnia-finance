@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, ChevronLeft, ChevronRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,8 @@ const CATEGORY_ICONS: Record<string, { icon: typeof Utensils; bg: string; text: 
 
 const STORAGE_KEY = 'txfeed_group_cards';
 
+const ITEMS_PER_PAGE = 30;
+
 interface TransactionFeedProps {
   expenses: Expense[];
   allExpenses?: Expense[];
@@ -35,9 +37,6 @@ interface TransactionFeedProps {
   onDeleted: () => void;
   filters: { category: string };
   onFilterChange: (key: string, value: string) => void;
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
   wallets?: { id: string; name: string }[];
   startingMonthBalance?: number;
   creditCards?: CreditCardType[];
