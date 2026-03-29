@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.chat-genius]
 verify_jwt = false
+
+[functions.generate-recurring]
+verify_jwt = false
