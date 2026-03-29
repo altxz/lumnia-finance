@@ -70,7 +70,7 @@ export function useProjectedTotals(): ProjectedTotals {
     setMonthExpenses((expData || []) as Expense[]);
     setInvoiceExpenses((ccExpData || []) as Expense[]);
     setCreditCards((cardsData || []) as CreditCardType[]);
-    setWallets((walletsData || []).map((w: any) => ({ id: w.id, name: w.name })));
+    setWallets((walletsData || []).map((w: any) => ({ id: w.id, name: w.name, initial_balance: w.initial_balance ?? 0 })));
 
     // Starting balance comes from the RPC now (server-side calculation)
     setStartingBalance(balanceResult ?? 0);
