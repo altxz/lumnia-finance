@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Expense } from '@/components/ExpenseTable';
+import { getPaymentDate } from '@/lib/invoiceHelpers';
+import type { CreditCard } from '@/lib/invoiceHelpers';
 
 export interface AnalyticsFilters {
   period: string; // '3', '6', '12', 'all'
@@ -23,10 +25,36 @@ export interface CategoryStats {
   change: number;
 }
 
+/**
+ * Get the effective cash-flow month key for an expense.
+ * CC expenses use invoice_month (manual override) or getPaymentDate.
+ * Non-CC expenses use their transaction date.
+ */
+function getCashFlowMonthKey(e: Expense, cards: CreditCard[]): string {
+  // Manual override: if invoice_month is set, use it directly
+  if (e.invoice_month) {
+    return e.invoice_month;
+  }
+
+  // CC expenses: calculate payment date
+  if (e.credit_card_id) {
+    const card = cards.find(c => c.id === e.credit_card_id);
+    if (card) {
+      const payDate = getPaymentDate(e.date, card);
+      return `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, '0')}`;
+    }
+  }
+
+  // Non-CC: use transaction date
+  const d = new Date(e.date + 'T12:00:00');
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export function useAnalyticsData(filters: AnalyticsFilters) {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [previousExpenses, setPreviousExpenses] = useState<Expense[]>([]);
+  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchExpenses = useCallback(async () => {
@@ -37,26 +65,48 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     const fromDate = new Date();
     fromDate.setMonth(fromDate.getMonth() - months);
 
-    const { data } = await supabase
-      .from('expenses')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('date', fromDate.toISOString().split('T')[0])
-      .order('date', { ascending: true });
+    // We need to fetch CC expenses from further back since they may fall into our period
+    const ccFromDate = new Date(fromDate);
+    ccFromDate.setMonth(ccFromDate.getMonth() - 2);
 
-    setExpenses((data || []) as Expense[]);
+    const [{ data }, { data: cardsData }] = await Promise.all([
+      supabase
+        .from('expenses')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', ccFromDate.toISOString().split('T')[0])
+        .order('date', { ascending: true }),
+      supabase
+        .from('credit_cards')
+        .select('*')
+        .eq('user_id', user.id),
+    ]);
+
+    const allExpenses = (data || []) as Expense[];
+    const cards = (cardsData || []) as CreditCard[];
+    setCreditCards(cards);
+
+    // Filter expenses by their cash-flow month, not purchase date
+    const periodStart = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, '0')}`;
+    const now = new Date();
+    const periodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    const currentPeriod = allExpenses.filter(e => {
+      const key = getCashFlowMonthKey(e, cards);
+      return key >= periodStart && key <= periodEnd;
+    });
+
+    setExpenses(currentPeriod);
 
     if (filters.compare) {
       const prevFrom = new Date(fromDate);
       prevFrom.setMonth(prevFrom.getMonth() - months);
-      const { data: prev } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('date', prevFrom.toISOString().split('T')[0])
-        .lt('date', fromDate.toISOString().split('T')[0])
-        .order('date', { ascending: true });
-      setPreviousExpenses((prev || []) as Expense[]);
+      const prevStart = `${prevFrom.getFullYear()}-${String(prevFrom.getMonth() + 1).padStart(2, '0')}`;
+      const prev = allExpenses.filter(e => {
+        const key = getCashFlowMonthKey(e, cards);
+        return key >= prevStart && key < periodStart;
+      });
+      setPreviousExpenses(prev);
     } else {
       setPreviousExpenses([]);
     }
@@ -69,28 +119,39 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   const monthlyData = useMemo<MonthlyData[]>(() => {
     const map: Record<string, MonthlyData> = {};
     expenses.forEach(e => {
-      const d = new Date(e.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (e.type === 'transfer') return;
+      const key = getCashFlowMonthKey(e, creditCards);
       if (!map[key]) {
-        map[key] = { month: key, label: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), total: 0, byCategory: {} };
+        const [y, m] = key.split('-').map(Number);
+        const d = new Date(y, m - 1, 1);
+        map[key] = {
+          month: key,
+          label: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+          total: 0,
+          byCategory: {},
+        };
       }
-      map[key].total += e.value;
-      map[key].byCategory[e.final_category] = (map[key].byCategory[e.final_category] || 0) + e.value;
+      if (e.type !== 'income') {
+        map[key].total += e.value;
+        map[key].byCategory[e.final_category] = (map[key].byCategory[e.final_category] || 0) + e.value;
+      }
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
-  }, [expenses]);
+  }, [expenses, creditCards]);
 
   const categoryStats = useMemo<CategoryStats[]>(() => {
     const current: Record<string, { total: number; count: number }> = {};
     const prev: Record<string, { total: number }> = {};
 
     expenses.forEach(e => {
+      if (e.type === 'income' || e.type === 'transfer') return;
       if (!current[e.final_category]) current[e.final_category] = { total: 0, count: 0 };
       current[e.final_category].total += e.value;
       current[e.final_category].count += 1;
     });
 
     previousExpenses.forEach(e => {
+      if (e.type === 'income' || e.type === 'transfer') return;
       if (!prev[e.final_category]) prev[e.final_category] = { total: 0 };
       prev[e.final_category].total += e.value;
     });
@@ -102,22 +163,47 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
         return { category, total, count, previousTotal, change };
       })
       .sort((a, b) => b.total - a.total);
-  }, [expenses, previousExpenses]);
+  }, [expenses, previousExpenses, creditCards]);
 
-  const totalCurrentPeriod = useMemo(() => expenses.reduce((s, e) => s + e.value, 0), [expenses]);
-  const totalPreviousPeriod = useMemo(() => previousExpenses.reduce((s, e) => s + e.value, 0), [previousExpenses]);
+  const totalCurrentPeriod = useMemo(() =>
+    expenses.filter(e => e.type !== 'income' && e.type !== 'transfer').reduce((s, e) => s + e.value, 0),
+    [expenses]);
+  const totalPreviousPeriod = useMemo(() =>
+    previousExpenses.filter(e => e.type !== 'income' && e.type !== 'transfer').reduce((s, e) => s + e.value, 0),
+    [previousExpenses]);
 
   const avgMonthly = useMemo(() => {
     if (monthlyData.length === 0) return 0;
     return totalCurrentPeriod / monthlyData.length;
   }, [totalCurrentPeriod, monthlyData]);
 
+  // Smart prediction: recurring + installments + variable average
   const predictedNextMonth = useMemo(() => {
-    if (monthlyData.length < 2) return avgMonthly;
-    const recent = monthlyData.slice(-3);
-    const trend = recent.reduce((s, m) => s + m.total, 0) / recent.length;
-    return Math.round(trend * 1.02); // slight uptrend bias
-  }, [monthlyData, avgMonthly]);
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const nextKey = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    // 1. Recurring/fixed subscriptions (is_recurring=true)
+    const recurringTotal = expenses
+      .filter(e => e.is_recurring && e.type !== 'income' && e.type !== 'transfer')
+      .reduce((s, e) => s + e.value, 0) / Math.max(monthlyData.length, 1);
+
+    // 2. CC installments already scheduled for next month
+    const scheduledInstallments = expenses.filter(e => {
+      if (!e.credit_card_id || !e.installment_group_id) return false;
+      const key = getCashFlowMonthKey(e, creditCards);
+      return key === nextKey;
+    }).reduce((s, e) => s + e.value, 0);
+
+    // 3. Variable spending average (non-recurring, non-installment)
+    const variableTotal = expenses
+      .filter(e => !e.is_recurring && !e.installment_group_id && e.type !== 'income' && e.type !== 'transfer')
+      .reduce((s, e) => s + e.value, 0);
+    const variableAvg = monthlyData.length > 0 ? variableTotal / monthlyData.length : 0;
+
+    const predicted = recurringTotal + scheduledInstallments + variableAvg;
+    return predicted > 0 ? Math.round(predicted) : avgMonthly;
+  }, [expenses, creditCards, monthlyData, avgMonthly]);
 
   const financialScore = useMemo(() => {
     if (expenses.length === 0) return 500;
@@ -130,16 +216,16 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   const weekdayAnalysis = useMemo(() => {
     const weekday: Record<number, number[]> = {};
     expenses.forEach(e => {
-      const day = new Date(e.date).getDay();
+      if (e.type === 'income' || e.type === 'transfer') return;
+      const day = new Date(e.date + 'T12:00:00').getDay();
       if (!weekday[day]) weekday[day] = [];
       weekday[day].push(e.value);
     });
-    const avgByDay = Object.entries(weekday).map(([day, vals]) => ({
+    return Object.entries(weekday).map(([day, vals]) => ({
       day: parseInt(day),
       avg: vals.reduce((s, v) => s + v, 0) / vals.length,
       count: vals.length,
     }));
-    return avgByDay;
   }, [expenses]);
 
   const biggestSavingOpportunity = useMemo(() => {
@@ -152,6 +238,6 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     expenses, loading, monthlyData, categoryStats,
     totalCurrentPeriod, totalPreviousPeriod, avgMonthly,
     predictedNextMonth, financialScore, weekdayAnalysis,
-    biggestSavingOpportunity, refetch: fetchExpenses,
+    biggestSavingOpportunity, creditCards, refetch: fetchExpenses,
   };
 }

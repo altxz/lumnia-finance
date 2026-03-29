@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, Brain, PiggyBank, Shield } from 'lucide-react';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
 import { Progress } from '@/components/ui/progress';
+import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 
 interface Props {
   avgMonthly: number;
@@ -13,20 +14,26 @@ interface Props {
 }
 
 export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predictedNextMonth, financialScore, biggestSaving }: Props) {
+  const { projectedBalance } = useProjectedTotals();
   const changePercent = totalPrevious > 0 ? ((totalCurrent - totalPrevious) / totalPrevious * 100) : 0;
+  const isNegativeBalance = projectedBalance < 0;
 
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-      <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
+      {/* Saldo Projetado (priority card) */}
+      <Card className={`rounded-2xl border-0 shadow-md ${isNegativeBalance ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>
         <CardContent className="p-5">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isNegativeBalance ? 'bg-destructive-foreground/20' : 'bg-primary-foreground/20'}`}>
               <TrendingUp className="h-5 w-5" />
             </div>
-            <p className="text-sm font-medium opacity-80">Gasto Médio Mensal</p>
+            <p className="text-sm font-medium opacity-80">Saldo Projetado (Fim do Mês)</p>
           </div>
-          <p className="text-2xl font-bold">{formatCurrency(avgMonthly)}</p>
-          {totalPrevious > 0 && (
+          <p className="text-2xl font-bold">{formatCurrency(projectedBalance)}</p>
+          {isNegativeBalance && (
+            <p className="text-xs mt-1 opacity-90">⚠️ Atenção: saldo negativo projetado</p>
+          )}
+          {!isNegativeBalance && totalPrevious > 0 && (
             <p className={`text-xs mt-1 ${changePercent > 0 ? 'opacity-90' : 'opacity-70'}`}>
               {changePercent > 0 ? '↑' : '↓'} {Math.abs(changePercent).toFixed(1)}% vs. período anterior
             </p>
@@ -43,7 +50,7 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
             <p className="text-sm font-medium opacity-80">Previsão Próx. Mês</p>
           </div>
           <p className="text-2xl font-bold">{formatCurrency(predictedNextMonth)}</p>
-          <p className="text-xs mt-1 opacity-70">Confiança: 78% • Baseado em tendência</p>
+          <p className="text-xs mt-1 opacity-70">Fixos + Parcelas + Média variável</p>
         </CardContent>
       </Card>
 

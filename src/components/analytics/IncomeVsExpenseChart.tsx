@@ -1,47 +1,20 @@
-import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSelectedDate } from '@/contexts/DateContext';
-import { supabase } from '@/lib/supabase';
+import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { InfoPopover } from '@/components/ui/info-popover';
 
 export function IncomeVsExpenseChart() {
-  const { user } = useAuth();
-  const { startDate, endDate } = useSelectedDate();
-  const [txns, setTxns] = useState<any[]>([]);
+  const { totalIncome, totalExpense } = useProjectedTotals();
 
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await supabase
-        .from('expenses')
-        .select('date, value, type, credit_card_id, final_category')
-        .eq('user_id', user.id)
-        .gte('date', startDate)
-        .lt('date', endDate)
-        .neq('type', 'transfer');
-      setTxns(data || []);
-    })();
-  }, [user, startDate, endDate]);
-
-  const data = useMemo(() => {
-    let receitas = 0;
-    let despesas = 0;
-    txns.forEach((t: any) => {
-      if (t.type === 'income') receitas += t.value;
-      else despesas += t.value;
-    });
-    return [{ name: 'Mês Atual', receitas, despesas }];
-  }, [txns]);
+  const data = [{ name: 'Mês Atual', receitas: totalIncome, despesas: totalExpense }];
 
   return (
     <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Receita vs Despesas</CardTitle>
-          <InfoPopover><p>Comparação direta entre o volume total de dinheiro que entrou e o que saiu.</p></InfoPopover>
+          <InfoPopover><p>Comparação direta entre o volume total de dinheiro que entrou e o que saiu, considerando faturas de cartão pelo mês de vencimento.</p></InfoPopover>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
