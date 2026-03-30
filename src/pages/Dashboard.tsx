@@ -201,27 +201,28 @@ export default function Dashboard() {
               <DashboardSkeleton />
             ) : (
               <>
-                <AnomalyInsights />
-
-                {budgetAlerts.length > 0 && (
-                  <Alert variant="destructive" className="rounded-xl border-destructive/50 bg-destructive/10">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="font-medium text-sm">
-                      Atenção: Você está quase ultrapassando seu orçamento em{' '}
-                      <span className="font-bold">{budgetAlerts.join(' e ')}</span>!
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {projected.projectedBalance < 0 && (
-                  <Alert variant="destructive" className="rounded-xl border-destructive/50 bg-destructive/10">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="font-medium text-sm">
-                      Alerta: Seu saldo previsto está negativo ({new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(projected.projectedBalance)}).
-                      Revise suas despesas e faturas do mês.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                {(() => {
+                  const allAlerts: SmartAlert[] = [...anomalyAlerts];
+                  if (projected.projectedBalance < 0) {
+                    allAlerts.unshift({
+                      id: 'negative-balance',
+                      type: 'critical',
+                      icon: 'wallet',
+                      title: 'Saldo previsto negativo',
+                      description: `${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(projected.projectedBalance)}. Revise suas despesas.`,
+                    });
+                  }
+                  budgetAlerts.forEach((label, i) => {
+                    allAlerts.push({
+                      id: `budget-${i}`,
+                      type: 'warning',
+                      icon: 'budget',
+                      title: `Orçamento: ${label}`,
+                      description: 'Você está próximo de ultrapassar o limite definido para esta categoria.',
+                    });
+                  });
+                  return <SmartAlertsCarousel alerts={allAlerts} />;
+                })()}
 
                 <SummaryCards
                   balance={projected.projectedBalance}
