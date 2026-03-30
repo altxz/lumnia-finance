@@ -108,7 +108,9 @@ export function TransactionFeed({
 
   const handleMarkAsPaid = async (exp: Expense) => {
     try {
-      const { error } = await supabase.from('expenses').update({ is_paid: true }).eq('id', exp.id);
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const { error } = await supabase.from('expenses').update({ is_paid: true, date: todayStr }).eq('id', exp.id);
       if (error) throw error;
       toast({ title: exp.type === 'income' ? 'Recebimento confirmado!' : 'Pagamento confirmado!' });
       onDeleted();
@@ -463,7 +465,7 @@ export function TransactionFeed({
                         {/* Description + meta */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
+                            <p className="text-sm font-medium break-words" title={exp.description}>{exp.description}</p>
                             {isInvoiceItem && (
                               <Badge variant="outline" className="text-[9px] px-1 py-0 bg-accent/15 text-accent-foreground border-accent/30 shrink-0">
                                 <Receipt className="h-2.5 w-2.5 mr-0.5" />
