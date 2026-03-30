@@ -11,6 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, CreditCard } from 'lucide-react';
+import { QuickCalculator } from '@/components/QuickCalculator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CategoryPicker } from '@/components/CategoryPicker';
 import { supabase } from '@/lib/supabase';
@@ -227,6 +228,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
               <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2">R$</span>
               <input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)}
                 className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+              <QuickCalculator onSelect={(v) => setValue(String(v))} />
             </div>
           </div>
         </div>
