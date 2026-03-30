@@ -120,11 +120,11 @@ export function TransactionFeed({
     setDeleting(true);
     try {
       if (mode === 'all') {
-        // Delete all recurring entries with same signature
+        // Delete all recurring entries with same description, type, and value
         const { error } = await supabase.from('expenses').delete()
-          .eq('user_id', deletingExpense.id ? '' : '') // placeholder, real filter below
           .eq('description', deletingExpense.description)
           .eq('type', deletingExpense.type)
+          .eq('value', deletingExpense.value)
           .eq('is_recurring', true);
         if (error) throw error;
         toast({ title: 'Todas as recorrências excluídas', description: 'Todos os lançamentos recorrentes foram removidos.' });
