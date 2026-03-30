@@ -60,7 +60,7 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
-  const { settings: userSettings, refetch: refetchSettings } = useUserSettings();
+  const { settings: userSettings, loading: settingsLoading, refetch: refetchSettings } = useUserSettings();
   const projected = useProjectedTotals();
   const [modalOpen, setModalOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -120,12 +120,12 @@ export default function Dashboard() {
 
   useEffect(() => { fetchExtraData(); }, [fetchExtraData]);
 
-  // Show onboarding for new users
+  // Show onboarding only once: after settings are loaded and onboarding not completed
   useEffect(() => {
-    if (user && !userSettings.onboarding_completed) {
+    if (!settingsLoading && user && !userSettings.onboarding_completed) {
       setShowOnboarding(true);
     }
-  }, [user, userSettings.onboarding_completed]);
+  }, [user, settingsLoading, userSettings.onboarding_completed]);
 
   const [budgetDataRaw, setBudgetDataRaw] = useState<any[]>([]);
 
