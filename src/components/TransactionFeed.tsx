@@ -565,8 +565,6 @@ export function TransactionFeed({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {invoiceModal && (
         <InvoiceDetailsModal
