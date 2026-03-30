@@ -19,6 +19,7 @@ interface DateContextType {
 
 const DateContext = createContext<DateContextType | null>(null);
 
+
 export function DateProvider({ children }: { children: ReactNode }) {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
