@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,14 +49,39 @@ interface ExpenseTableProps {
 
 export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterChange, page, totalPages, onPageChange }: ExpenseTableProps) {
   const { toast } = useToast();
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Despesa excluída' });
+  const handleDeleteClick = (exp: Expense) => {
+    setDeletingExpense(exp);
+    setDeleteMode(exp.is_recurring ? null : 'single');
+  };
+
+  const handleDelete = async (mode: 'single' | 'all') => {
+    if (!deletingExpense) return;
+    setDeleting(true);
+    try {
+      if (mode === 'all') {
+        const { error } = await supabase.from('expenses').delete()
+          .eq('description', deletingExpense.description)
+          .eq('type', deletingExpense.type)
+          .eq('value', deletingExpense.value)
+          .eq('is_recurring', true);
+        if (error) throw error;
+        toast({ title: 'Todas as recorrências excluídas' });
+      } else {
+        const { error } = await supabase.from('expenses').delete().eq('id', deletingExpense.id);
+        if (error) throw error;
+        toast({ title: 'Despesa excluída' });
+      }
       onDeleted();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+      setDeletingExpense(null);
+      setDeleteMode(null);
     }
   };
 
@@ -102,23 +128,9 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
                     <span className={`text-sm font-bold ${exp.type === 'income' ? 'text-green-600' : ''}`}>
                       {exp.type === 'income' ? '+' : ''}{formatCurrency(exp.value)}
                     </span>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive rounded-lg">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-2xl mx-4">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
-                          <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(exp.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive rounded-lg" onClick={() => handleDeleteClick(exp)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -175,23 +187,9 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-2xl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(exp.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Excluir</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={() => handleDeleteClick(exp)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -216,6 +214,36 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!deletingExpense} onOpenChange={(open) => { if (!open) { setDeletingExpense(null); setDeleteMode(null); } }}>
+        <AlertDialogContent className="rounded-2xl mx-4">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingExpense?.is_recurring && deleteMode === null
+                ? 'Esta é uma transação recorrente. Deseja excluir apenas este lançamento ou todos os lançamentos recorrentes?'
+                : 'Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className={deletingExpense?.is_recurring && deleteMode === null ? 'flex-col sm:flex-row gap-2' : ''}>
+            <AlertDialogCancel className="rounded-xl" onClick={() => { setDeletingExpense(null); setDeleteMode(null); }}>Cancelar</AlertDialogCancel>
+            {deletingExpense?.is_recurring && deleteMode === null ? (
+              <>
+                <Button variant="outline" className="rounded-xl" disabled={deleting} onClick={() => handleDelete('single')}>
+                  Apenas esta
+                </Button>
+                <Button variant="destructive" className="rounded-xl" disabled={deleting} onClick={() => handleDelete('all')}>
+                  {deleting ? 'Excluindo...' : 'Todas as recorrências'}
+                </Button>
+              </>
+            ) : (
+              <AlertDialogAction onClick={() => handleDelete('single')} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
+                {deleting ? 'Excluindo...' : 'Excluir'}
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

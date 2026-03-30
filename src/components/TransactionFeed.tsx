@@ -94,6 +94,7 @@ export function TransactionFeed({
 }: TransactionFeedProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [groupCards, setGroupCards] = useState(() => {
     try { return localStorage.getItem(STORAGE_KEY) === 'true'; } catch { return false; }
@@ -105,17 +106,40 @@ export function TransactionFeed({
     try { localStorage.setItem(STORAGE_KEY, String(groupCards)); } catch {}
   }, [groupCards]);
 
-  const handleDelete = async () => {
+  const handleDeleteClick = (exp: Expense) => {
+    setDeletingExpense(exp);
+    if (exp.is_recurring) {
+      setDeleteMode(null); // show choice dialog
+    } else {
+      setDeleteMode('single'); // go straight to confirm
+    }
+  };
+
+  const handleDelete = async (mode: 'single' | 'all') => {
     if (!deletingExpense) return;
     setDeleting(true);
-    const { error } = await supabase.from('expenses').delete().eq('id', deletingExpense.id);
-    setDeleting(false);
-    setDeletingExpense(null);
-    if (error) {
-      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Transação excluída' });
+    try {
+      if (mode === 'all') {
+        // Delete all recurring entries with same description, type, and value
+        const { error } = await supabase.from('expenses').delete()
+          .eq('description', deletingExpense.description)
+          .eq('type', deletingExpense.type)
+          .eq('value', deletingExpense.value)
+          .eq('is_recurring', true);
+        if (error) throw error;
+        toast({ title: 'Todas as recorrências excluídas', description: 'Todos os lançamentos recorrentes foram removidos.' });
+      } else {
+        const { error } = await supabase.from('expenses').delete().eq('id', deletingExpense.id);
+        if (error) throw error;
+        toast({ title: 'Transação excluída' });
+      }
       onDeleted();
+    } catch (err: any) {
+      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+      setDeletingExpense(null);
+      setDeleteMode(null);
     }
   };
 
@@ -482,7 +506,7 @@ export function TransactionFeed({
                           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setEditingExpense(exp)}>
                             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeletingExpense(exp)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(exp)}>
                             <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </div>
@@ -512,17 +536,32 @@ export function TransactionFeed({
         />
       )}
 
-      <AlertDialog open={!!deletingExpense} onOpenChange={(open) => { if (!open) setDeletingExpense(null); }}>
+      <AlertDialog open={!!deletingExpense} onOpenChange={(open) => { if (!open) { setDeletingExpense(null); setDeleteMode(null); } }}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
-            <AlertDialogDescription>Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</AlertDialogDescription>
+            <AlertDialogDescription>
+              {deletingExpense?.is_recurring && deleteMode === null
+                ? 'Esta é uma transação recorrente. Deseja excluir apenas este lançamento ou todos os lançamentos recorrentes?'
+                : 'Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.'}
+            </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
-              {deleting ? 'Excluindo...' : 'Excluir'}
-            </AlertDialogAction>
+          <AlertDialogFooter className={deletingExpense?.is_recurring && deleteMode === null ? 'flex-col sm:flex-row gap-2' : ''}>
+            <AlertDialogCancel className="rounded-xl" onClick={() => { setDeletingExpense(null); setDeleteMode(null); }}>Cancelar</AlertDialogCancel>
+            {deletingExpense?.is_recurring && deleteMode === null ? (
+              <>
+                <Button variant="outline" className="rounded-xl" disabled={deleting} onClick={() => handleDelete('single')}>
+                  Apenas esta
+                </Button>
+                <Button variant="destructive" className="rounded-xl" disabled={deleting} onClick={() => handleDelete('all')}>
+                  {deleting ? 'Excluindo...' : 'Todas as recorrências'}
+                </Button>
+              </>
+            ) : (
+              <AlertDialogAction onClick={() => handleDelete('single')} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
+                {deleting ? 'Excluindo...' : 'Excluir'}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
