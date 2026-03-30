@@ -167,9 +167,20 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     // Recurring projections — project into ALL days in range (not just future)
     // To avoid double-counting, check if a real transaction already exists for this
     // recurring item in the same month
+    // Build signature set for real expenses in range to detect duplicates
+    const realInRangeSignatures = new Set<string>();
+    allExpenses.forEach(e => {
+      if (e.date >= rangeStartStr && e.date <= rangeEndStr) {
+        realInRangeSignatures.add(`${e.type}|${Number(e.value).toFixed(2)}`);
+      }
+    });
+
     recurringExpenses.forEach(r => {
       if (r.type === 'transfer') return;
       if (r.credit_card_id) return; // CC recurring handled by invoice logic
+      // Check if a matching real entry already exists in this month's range
+      const rSig = `${r.type}|${Number(r.value).toFixed(2)}`;
+      if (realInRangeSignatures.has(rSig)) return;
       const origDay = parseISO(r.date).getDate();
       const recurringStartStr = r.date; // original start date
       // Project into each month in range
@@ -186,13 +197,6 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
         if (projStr < rangeStartStr || projStr > rangeEndStr) return;
         // Only project if the recurring tx started on or before this projected date
         if (recurringStartStr > projStr) return;
-        // Check if a real transaction already exists on this date (avoid double-count)
-        const realOnDate = txByDate[projStr];
-        // We check allExpenses for a matching recurring entry on this exact date
-        const alreadyHasReal = allExpenses.some(e =>
-          e.is_recurring && e.type === r.type && e.date === projStr && Math.abs(Number(e.value) - Number(r.value)) < 0.01
-        );
-        if (alreadyHasReal) return;
         if (!projByDate[projStr]) projByDate[projStr] = { income: 0, expense: 0 };
         if (r.type === 'income') projByDate[projStr].income += Number(r.value);
         else projByDate[projStr].expense += Number(r.value);
