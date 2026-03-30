@@ -94,14 +94,16 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     allExpenses.forEach(e => {
       if (e.type === 'transfer') return;
       const dStr = e.date;
-      if (dStr < rangeStartStr) {
-        // Before range: accumulate projected (ignore is_paid)
-        if (e.type === 'income') preRangeBalance += Number(e.value);
-        else if (e.type === 'expense' && !e.credit_card_id) preRangeBalance -= Number(e.value);
-        // Credit card expenses: subtract based on invoice_month
-        else if (e.type === 'expense' && e.credit_card_id && e.invoice_month && e.invoice_month < rangeYm) {
+
+      if (e.credit_card_id && e.type === 'expense') {
+        // Credit card: subtract based on invoice_month, not date
+        if (e.invoice_month && e.invoice_month < rangeYm) {
           preRangeBalance -= Number(e.value);
         }
+      } else if (dStr < rangeStartStr) {
+        // Non-CC: accumulate by date (ignore is_paid)
+        if (e.type === 'income') preRangeBalance += Number(e.value);
+        else if (e.type === 'expense') preRangeBalance -= Number(e.value);
       }
     });
 
