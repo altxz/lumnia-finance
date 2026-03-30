@@ -13,6 +13,8 @@ interface DateContextType {
   label: string;
   goToPrevMonth: () => void;
   goToNextMonth: () => void;
+  goToCurrentMonth: () => void;
+  isCurrentMonth: boolean;
 }
 
 const DateContext = createContext<DateContextType | null>(null);
@@ -36,6 +38,14 @@ export function DateProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const goToCurrentMonth = () => {
+    const today = new Date();
+    setMonth(today.getMonth());
+    setYear(today.getFullYear());
+  };
+
+  const isCurrentMonth = month === new Date().getMonth() && year === new Date().getFullYear();
+
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   
@@ -46,7 +56,7 @@ export function DateProvider({ children }: { children: ReactNode }) {
   const label = new Date(year, month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   return (
-    <DateContext.Provider value={{ selectedMonth: month, selectedYear: year, monthKey, startDate, endDate, label, goToPrevMonth, goToNextMonth }}>
+    <DateContext.Provider value={{ selectedMonth: month, selectedYear: year, monthKey, startDate, endDate, label, goToPrevMonth, goToNextMonth, goToCurrentMonth, isCurrentMonth }}>
       {children}
     </DateContext.Provider>
   );
