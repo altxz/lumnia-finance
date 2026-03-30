@@ -133,15 +133,53 @@ export function useProjectedTotals(): ProjectedTotals {
     const pendingAmount = pendingExpenses.reduce((s: number, e: any) => s + e.value, 0)
       - pendingIncome.reduce((s: number, e: any) => s + e.value, 0);
 
-    // 3. CC invoice totals for months before the selected month
+    // 3. Virtual recurring contributions for months BEFORE the selected month
+    // For each recurring tx, check every month between its start and selectedMonth.
+    // If no real entry exists for that month, add its virtual contribution.
+    let virtualRecurringBalance = 0;
+
+    // Build a lookup: for each month + signature, does a real entry exist?
+    const realByMonthSig = new Set<string>();
+    historicalExpenses.forEach((e: any) => {
+      if (e.type === 'transfer') return;
+      const ym = e.date ? e.date.substring(0, 7) : '';
+      if (ym) realByMonthSig.add(`${ym}|${e.type}|${Number(e.value).toFixed(2)}`);
+    });
+    // Also include current month real data to avoid double-counting at boundary
+    monthExpenses.forEach((e: any) => {
+      if (e.type === 'transfer') return;
+      const ym = e.date ? e.date.substring(0, 7) : '';
+      if (ym) realByMonthSig.add(`${ym}|${e.type}|${Number(e.value).toFixed(2)}`);
+    });
+
+    const selectedMonthStart = selectedYear * 12 + selectedMonth; // months since epoch
+
+    recurringExpenses.forEach(r => {
+      if (r.type === 'transfer' || r.credit_card_id) return;
+      const rDate = new Date(r.date + 'T12:00:00');
+      const rStartMonth = rDate.getFullYear() * 12 + rDate.getMonth();
+
+      // For each month from the recurring start up to (but NOT including) the selected month
+      for (let m = rStartMonth; m < selectedMonthStart; m++) {
+        const yr = Math.floor(m / 12);
+        const mo = m % 12;
+        const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
+        const sig = `${monthKey}|${r.type}|${Number(r.value).toFixed(2)}`;
+        // Skip if a real entry already exists for this month (already counted in historicalIncome/Debit)
+        if (realByMonthSig.has(sig)) continue;
+        // Add virtual contribution
+        if (r.type === 'income') virtualRecurringBalance += Number(r.value);
+        else virtualRecurringBalance -= Number(r.value);
+      }
+    });
+
+    // 4. CC invoice totals for months before the selected month
     let ccInvoiceTotal = 0;
     if (creditCards.length > 0) {
       const ccPool = invoiceExpenses.length > 0 ? invoiceExpenses : [];
-      // Iterate through previous months (up to 24 months back to be safe)
       const selectedDate = new Date(selectedYear, selectedMonth, 1);
       
       creditCards.forEach(card => {
-        // Go back up to 24 months
         for (let i = 1; i <= 24; i++) {
           const dt = new Date(selectedDate);
           dt.setMonth(dt.getMonth() - i);
@@ -149,7 +187,6 @@ export function useProjectedTotals(): ProjectedTotals {
           const y = dt.getFullYear();
           const period = getInvoicePeriod(card, y, m);
           const invoice = matchExpensesToInvoice(ccPool, period);
-          // Only count if there are actual transactions and invoice is NOT already paid
           if (invoice.total > 0 && invoice.status !== 'paid') {
             ccInvoiceTotal += invoice.total;
           }
@@ -157,9 +194,9 @@ export function useProjectedTotals(): ProjectedTotals {
       });
     }
 
-    const balance = walletSum + historicalIncome - historicalDebit - ccInvoiceTotal;
+    const balance = walletSum + historicalIncome - historicalDebit + virtualRecurringBalance - ccInvoiceTotal;
     return { startingBalance: balance, pendingInStartingBalance: pendingAmount };
-  }, [wallets, historicalExpenses, creditCards, invoiceExpenses, selectedMonth, selectedYear]);
+  }, [wallets, historicalExpenses, monthExpenses, recurringExpenses, creditCards, invoiceExpenses, selectedMonth, selectedYear]);
 
   // Build invoice periods for the selected month (due month)
   const invoiceTotals = useMemo(() => {
