@@ -97,7 +97,7 @@ export function TransactionFeed({
   const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [groupCards, setGroupCards] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) === 'true'; } catch { return false; }
+    try { const v = localStorage.getItem(STORAGE_KEY); return v === null ? true : v === 'true'; } catch { return true; }
   });
   const [invoiceModal, setInvoiceModal] = useState<InvoicePeriod | null>(null);
   const { toast } = useToast();
