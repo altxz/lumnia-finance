@@ -361,13 +361,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   const isCredit = type === 'expense' && paymentMethod === 'credit';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100vh-2rem)] overflow-x-hidden overflow-y-auto p-0 rounded-2xl sm:w-full sm:max-h-[90vh]">
+    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
         {/* Type selector header */}
-        <div className={`p-3 pb-0 sm:p-4 sm:pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
-          <DialogHeader className="pb-2 sm:pb-3">
-            <DialogTitle className="text-base sm:text-lg font-bold">Nova Transação</DialogTitle>
-          </DialogHeader>
+        <div className={`p-3 pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
+          <ResponsiveModalHeader className="pb-2 sm:pb-3">
+            <ResponsiveModalTitle className="text-base sm:text-lg font-bold">Nova Transação</ResponsiveModalTitle>
+          </ResponsiveModalHeader>
           <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-background/60 backdrop-blur-sm">
             <button
               type="button"
@@ -426,7 +425,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         </div>
 
         {/* Form body */}
-        <div className="p-3 pt-2 sm:p-4 sm:pt-2 space-y-3 sm:space-y-4 overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto p-3 pt-2 space-y-3 overflow-x-hidden">
           {/* Date row */}
           <div className="space-y-1.5">
             <Label htmlFor="expense-date" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Data</Label>
@@ -764,13 +763,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         </div>
 
         {/* Footer */}
-        <DialogFooter className="p-4 pt-0 gap-2">
+        <ResponsiveModalFooter className="p-3 pt-0 gap-2 flex-row justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
           <Button onClick={handleSave} disabled={saving} className={`rounded-xl font-semibold transition-colors ${style.accent}`}>
             {saving ? 'Salvando...' : 'Salvar'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveModalFooter>
+    </ResponsiveModal>
   );
 }
