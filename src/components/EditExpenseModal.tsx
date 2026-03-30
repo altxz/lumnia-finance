@@ -97,6 +97,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   useEffect(() => {
     if (!user || !open) return;
     setWantInstallment(false);
+    setInstallmentMode('limited');
     setNumInstallments(2);
     setValueMode('total');
     Promise.all([
