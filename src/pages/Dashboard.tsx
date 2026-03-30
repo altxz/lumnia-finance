@@ -294,7 +294,11 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
-      <AddExpenseModal open={modalOpen} onOpenChange={setModalOpen} onExpenseAdded={projected.refetch} />
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <AddExpenseModal open={modalOpen} onOpenChange={setModalOpen} onExpenseAdded={projected.refetch} />
+        </Suspense>
+      )}
     </SidebarProvider>
   );
 }
