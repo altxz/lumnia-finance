@@ -79,7 +79,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
                   </TooltipProvider>
                 )}
               </div>
-              <p className={`text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate ${balance < 0 ? 'text-red-300' : ''}`}>
+              <p className={`text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate ${balance < 0 ? 'text-red-300 dark:text-destructive' : ''}`}>
                 {balance >= 0 ? '+' : ''}{formatCurrency(balance)}
               </p>
               {prevBalance !== undefined && <TrendBadge current={balance} previous={prevBalance} />}
