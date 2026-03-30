@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, CreditCard } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, Repeat, Hash } from 'lucide-react';
 import { QuickCalculator } from '@/components/QuickCalculator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CategoryPicker } from '@/components/CategoryPicker';
