@@ -465,7 +465,7 @@ export function TransactionFeed({
                         {/* Description + meta */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium truncate" title={exp.description}>{exp.description}</p>
+                            <p className="text-sm font-medium break-words" title={exp.description}>{exp.description}</p>
                             {isInvoiceItem && (
                               <Badge variant="outline" className="text-[9px] px-1 py-0 bg-accent/15 text-accent-foreground border-accent/30 shrink-0">
                                 <Receipt className="h-2.5 w-2.5 mr-0.5" />
