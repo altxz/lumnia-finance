@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { OnboardingWizard } from '@/components/OnboardingWizard';
+
 import { useUserSettings } from '@/contexts/UserSettingsContext';
 
 import { SummaryCards } from '@/components/SummaryCards';
@@ -63,7 +63,7 @@ export default function Dashboard() {
   const projected = useProjectedTotals();
   const anomalyAlerts = useAnomalyAlerts();
   const [modalOpen, setModalOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
   
   const [dbCategories, setDbCategories] = useState<any[]>([]);
@@ -120,12 +120,6 @@ export default function Dashboard() {
 
   useEffect(() => { fetchExtraData(); }, [fetchExtraData]);
 
-  // Show onboarding only once: after settings are loaded and onboarding not completed
-  useEffect(() => {
-    if (!settingsLoading && user && !userSettings.onboarding_completed) {
-      setShowOnboarding(true);
-    }
-  }, [user, settingsLoading, userSettings.onboarding_completed]);
 
   const [budgetDataRaw, setBudgetDataRaw] = useState<any[]>([]);
 
@@ -191,10 +185,6 @@ export default function Dashboard() {
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
             <InstallPwaPrompt />
-            <OnboardingWizard
-              open={showOnboarding}
-              onComplete={() => { setShowOnboarding(false); refetchSettings(); fetchExtraData(); }}
-            />
             <MonthSelector />
 
             {isLoading ? (
