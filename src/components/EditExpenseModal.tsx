@@ -486,7 +486,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
             <Button onClick={handleSave} disabled={saving} className={`rounded-xl font-semibold transition-colors ${style.accent}`}>
-              {saving ? 'Salvando...' : wantInstallment ? `Parcelar em ${numInstallments}x` : 'Salvar'}
+              {saving ? 'Salvando...' : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
             </Button>
           </div>
         </DialogFooter>
