@@ -80,11 +80,11 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
   const [dbCategories, setDbCategories] = useState<{ id: string; name: string; parent_id: string | null; icon: string; color: string }[]>([]);
 
-  // Installment conversion state
-  const [wantInstallment, setWantInstallment] = useState(false);
-  const [installmentMode, setInstallmentMode] = useState<'fixed' | 'limited'>('limited');
-  const [numInstallments, setNumInstallments] = useState(2);
-  const [valueMode, setValueMode] = useState<'total' | 'per_installment'>('total');
+  // Installment conversion state — initialize from existing expense
+  const [wantInstallment, setWantInstallment] = useState(expense.is_recurring || false);
+  const [installmentMode, setInstallmentMode] = useState<'fixed' | 'limited'>(expense.is_recurring ? 'fixed' : 'limited');
+  const [numInstallments, setNumInstallments] = useState(expense.installments > 1 ? expense.installments : 2);
+  const [valueMode, setValueMode] = useState<'total' | 'per_installment'>('per_installment');
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -97,10 +97,12 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
   useEffect(() => {
     if (!user || !open) return;
-    setWantInstallment(false);
-    setInstallmentMode('limited');
-    setNumInstallments(2);
-    setValueMode('total');
+    // Reset state from the expense being edited
+    setWantInstallment(expense.is_recurring || false);
+    setInstallmentMode(expense.is_recurring ? 'fixed' : 'limited');
+    setNumInstallments(expense.installments > 1 ? expense.installments : 2);
+    setValueMode('per_installment');
+    setFrequency(expense.frequency || 'monthly');
     Promise.all([
       supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
       supabase.from('categories').select('id, name, parent_id, icon, color').eq('user_id', user.id).eq('active', true).order('sort_order'),
