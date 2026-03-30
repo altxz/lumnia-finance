@@ -81,6 +81,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
   // Installment conversion state
   const [wantInstallment, setWantInstallment] = useState(false);
+  const [installmentMode, setInstallmentMode] = useState<'fixed' | 'limited'>('limited');
   const [numInstallments, setNumInstallments] = useState(2);
   const [valueMode, setValueMode] = useState<'total' | 'per_installment'>('total');
 
