@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Plus } from 'lucide-react';
-import { AddExpenseModal } from './AddExpenseModal';
+
+const AddExpenseModal = lazy(() => import('./AddExpenseModal').then(m => ({ default: m.AddExpenseModal })));
 
 interface FloatingActionButtonProps {
   onCreated?: () => void;
@@ -18,7 +19,11 @@ export function FloatingActionButton({ onCreated }: FloatingActionButtonProps) {
       >
         <Plus className="h-7 w-7" strokeWidth={2.5} />
       </button>
-      <AddExpenseModal open={open} onOpenChange={setOpen} onExpenseAdded={() => onCreated?.()} />
+      {open && (
+        <Suspense fallback={null}>
+          <AddExpenseModal open={open} onOpenChange={setOpen} onExpenseAdded={() => onCreated?.()} />
+        </Suspense>
+      )}
     </>
   );
 }

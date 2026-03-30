@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, Menu, Sun, Moon, Monitor, Plus } from 'lucide-react';
-import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { useSidebar } from '@/components/ui/sidebar';
+
+const AddExpenseModal = lazy(() => import('@/components/AddExpenseModal').then(m => ({ default: m.AddExpenseModal })));
 import { NotificationBell } from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -92,7 +93,11 @@ export function DashboardHeader() {
         </Button>
       </div>
 
-      <AddExpenseModal open={addModalOpen} onOpenChange={setAddModalOpen} onExpenseAdded={() => {}} />
+      {addModalOpen && (
+        <Suspense fallback={null}>
+          <AddExpenseModal open={addModalOpen} onOpenChange={setAddModalOpen} onExpenseAdded={() => {}} />
+        </Suspense>
+      )}
     </header>
   );
 }
