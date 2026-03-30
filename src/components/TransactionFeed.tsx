@@ -106,6 +106,17 @@ export function TransactionFeed({
     try { localStorage.setItem(STORAGE_KEY, String(groupCards)); } catch {}
   }, [groupCards]);
 
+  const handleMarkAsPaid = async (exp: Expense) => {
+    try {
+      const { error } = await supabase.from('expenses').update({ is_paid: true }).eq('id', exp.id);
+      if (error) throw error;
+      toast({ title: exp.type === 'income' ? 'Recebimento confirmado!' : 'Pagamento confirmado!' });
+      onDeleted();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleDeleteClick = (exp: Expense) => {
     setDeletingExpense(exp);
     if (exp.is_recurring) {
