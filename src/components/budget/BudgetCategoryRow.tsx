@@ -43,7 +43,7 @@ function ProgressRow({
   const barColor = isOver
     ? '[&>div]:bg-destructive'
     : isWarning
-      ? '[&>div]:bg-orange-500'
+      ? '[&>div]:bg-amber-500 dark:[&>div]:bg-destructive/70'
       : '[&>div]:bg-green-500';
 
   const handleApplySuggestion = () => {
@@ -90,7 +90,7 @@ function ProgressRow({
 
       <div className="flex-1 space-y-1 min-w-0">
         <div className="flex justify-between text-xs">
-          <span className={`flex items-center gap-1 ${isOver ? 'text-destructive font-semibold' : isWarning ? 'text-orange-600 font-semibold' : 'text-muted-foreground'}`}>
+          <span className={`flex items-center gap-1 ${isOver ? 'text-destructive font-semibold' : isWarning ? 'text-orange-600 dark:text-destructive/80 font-semibold' : 'text-muted-foreground'}`}>
             {isOver && <AlertTriangle className="h-3 w-3" />}
             {formatCurrency(spent)}
           </span>
@@ -106,7 +106,7 @@ function ProgressRow({
           </p>
         )}
         {isWarning && (
-          <p className="text-[11px] text-orange-600 font-medium">
+          <p className="text-[11px] text-orange-600 dark:text-destructive/80 font-medium">
             Atenção: próximo do limite ({pct.toFixed(0)}%)
           </p>
         )}

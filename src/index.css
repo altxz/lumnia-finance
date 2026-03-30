@@ -92,9 +92,9 @@
     --accent: 145 18% 50%;
     --accent-foreground: 0 0% 100%;
 
-    /* Dusty amber for destructive / expenses */
-    --destructive: 30 35% 52%;
-    --destructive-foreground: 220 10% 93%;
+    /* Dusty rose/pastel red for destructive / expenses */
+    --destructive: 0 40% 62%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Dusty sage green success / income */
     --success: 145 18% 50%;
@@ -126,7 +126,7 @@
     /* Chart palette — dusty desaturated harmonious tones */
     --chart-1: 185 25% 52%;   /* teal */
     --chart-2: 145 18% 50%;   /* sage */
-    --chart-3: 30 35% 52%;    /* amber */
+    --chart-3: 0 40% 62%;    /* dusty rose */
     --chart-4: 340 22% 55%;   /* wine */
     --chart-5: 260 22% 58%;   /* lavender */
     --chart-6: 200 20% 48%;   /* steel blue */
