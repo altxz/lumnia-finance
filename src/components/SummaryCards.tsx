@@ -60,8 +60,8 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
 
         <SummaryCard className="bg-primary dark:bg-card dark:border dark:border-primary/30 text-primary-foreground dark:text-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
-              <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 dark:bg-primary/15 flex items-center justify-center shrink-0">
+              <Wallet className="h-4 w-4 sm:h-5 sm:w-5 dark:text-primary" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">
@@ -89,12 +89,12 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
 
         <SummaryCard className="bg-success dark:bg-card dark:border dark:border-success/30 text-success-foreground dark:text-foreground cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=income')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 dark:bg-success/15 flex items-center justify-center shrink-0">
+              <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5 dark:text-success" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Entradas</p>
-              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">+{formatCurrency(totalIncome)}</p>
+              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate dark:text-success">+{formatCurrency(totalIncome)}</p>
               {prevIncome !== undefined && <TrendBadge current={totalIncome} previous={prevIncome} />}
             </div>
           </div>
@@ -102,12 +102,12 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
 
         <SummaryCard className="bg-destructive dark:bg-card dark:border dark:border-destructive/30 text-destructive-foreground dark:text-foreground cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=expense')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center shrink-0">
-              <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-destructive-foreground/20 dark:bg-destructive/15 flex items-center justify-center shrink-0">
+              <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5 dark:text-destructive" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Saídas</p>
-              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">-{formatCurrency(totalExpense)}</p>
+              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate dark:text-destructive">-{formatCurrency(totalExpense)}</p>
               {prevExpense !== undefined && <TrendBadge current={totalExpense} previous={prevExpense} invertColor />}
             </div>
           </div>
@@ -118,8 +118,8 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
           onClick={() => largestCategory && navigate(`/historico?category=${encodeURIComponent(largestCategory.categoryKey)}`)}
         >
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-pink-foreground/10 dark:bg-pink/15 flex items-center justify-center shrink-0">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 dark:text-pink" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Maior Subcategoria</p>
