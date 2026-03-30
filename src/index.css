@@ -58,40 +58,71 @@
   }
 
   .dark {
-    --background: 245 40% 7%;
-    --foreground: 250 30% 95%;
-    --card: 245 40% 10%;
-    --card-foreground: 250 30% 95%;
-    --popover: 245 40% 10%;
-    --popover-foreground: 250 30% 95%;
-    --primary: 80 80% 66%;
-    --primary-foreground: 245 40% 16%;
-    --secondary: 245 30% 18%;
-    --secondary-foreground: 250 30% 95%;
-    --muted: 245 30% 18%;
-    --muted-foreground: 250 20% 65%;
-    --accent: 80 80% 66%;
-    --accent-foreground: 245 40% 16%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 80 80% 66%;
-    --success-foreground: 245 40% 16%;
-    --ai: 230 96% 64%;
-    --ai-foreground: 0 0% 100%;
-    --pink: 280 94% 78%;
-    --pink-foreground: 245 40% 16%;
-    --border: 245 30% 18%;
-    --input: 245 30% 18%;
-    --ring: 80 80% 66%;
-    --sidebar-background: 245 40% 7%;
-    --sidebar-foreground: 250 30% 90%;
-    --sidebar-primary: 80 80% 66%;
-    --sidebar-primary-foreground: 245 40% 16%;
-    --sidebar-accent: 245 40% 14%;
-    --sidebar-accent-foreground: 250 30% 95%;
-    --sidebar-border: 245 40% 14%;
-    --sidebar-ring: 80 80% 66%;
-    --sidebar-muted: 250 15% 50%;
+    /* Very dark desaturated slate background */
+    --background: 220 14% 7%;
+    --foreground: 220 10% 93%;
+
+    /* Deep charcoal cards */
+    --card: 220 12% 11%;
+    --card-foreground: 220 10% 93%;
+
+    --popover: 220 12% 11%;
+    --popover-foreground: 220 10% 93%;
+
+    /* Dusty teal/cyan primary */
+    --primary: 185 25% 52%;
+    --primary-foreground: 220 14% 7%;
+
+    --secondary: 220 12% 15%;
+    --secondary-foreground: 220 10% 85%;
+
+    --muted: 220 10% 15%;
+    --muted-foreground: 220 8% 55%;
+
+    /* Dusty sage green accent */
+    --accent: 145 18% 50%;
+    --accent-foreground: 220 14% 7%;
+
+    /* Dusty amber for destructive / expenses */
+    --destructive: 30 35% 52%;
+    --destructive-foreground: 220 10% 93%;
+
+    /* Dusty sage green success / income */
+    --success: 145 18% 50%;
+    --success-foreground: 220 14% 7%;
+
+    /* Dusty lavender for AI */
+    --ai: 260 22% 58%;
+    --ai-foreground: 220 10% 93%;
+
+    /* Dusty wine/crimson pink */
+    --pink: 340 22% 55%;
+    --pink-foreground: 220 10% 93%;
+
+    --border: 220 10% 16%;
+    --input: 220 10% 16%;
+    --ring: 185 25% 52%;
+
+    /* Sidebar: slightly lighter charcoal */
+    --sidebar-background: 220 14% 9%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-primary: 185 25% 52%;
+    --sidebar-primary-foreground: 220 14% 7%;
+    --sidebar-accent: 220 12% 14%;
+    --sidebar-accent-foreground: 220 10% 90%;
+    --sidebar-border: 220 10% 14%;
+    --sidebar-ring: 185 25% 52%;
+    --sidebar-muted: 220 8% 45%;
+
+    /* Chart palette — dusty desaturated harmonious tones */
+    --chart-1: 185 25% 52%;   /* teal */
+    --chart-2: 145 18% 50%;   /* sage */
+    --chart-3: 30 35% 52%;    /* amber */
+    --chart-4: 340 22% 55%;   /* wine */
+    --chart-5: 260 22% 58%;   /* lavender */
+    --chart-6: 200 20% 48%;   /* steel blue */
+    --chart-7: 55 25% 50%;    /* olive */
+    --chart-8: 12 28% 52%;    /* terracotta */
   }
 }
 
