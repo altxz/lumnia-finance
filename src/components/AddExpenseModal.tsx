@@ -210,7 +210,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
     const isTransfer = type === 'transfer';
     const isCredit = type === 'expense' && paymentMethod === 'credit';
     const isRepeatMode = isRecurring && recurringMode === 'limited';
-    const numRepeats = isRepeatMode ? (parseInt(repeatCount) || 2) : 1;
+    const numRepeats = isRepeatMode ? Math.max(2, Math.min(72, parseInt(repeatCount) || 2)) : 1;
 
     if (isTransfer) {
       if (!value || !walletId || !destinationWalletId) {
@@ -589,7 +589,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               {isRecurring && (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
                   {/* Mode selector */}
-                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                       <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
                     <button
                       type="button"
                       onClick={() => setRecurringMode('fixed')}
@@ -598,7 +598,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       }`}
                     >
                       <Repeat className="h-3.5 w-3.5" />
-                      Fixa
+                          Fixo (Mensal/Anual)
                     </button>
                     <button
                       type="button"
@@ -608,7 +608,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       }`}
                     >
                       <Hash className="h-3.5 w-3.5" />
-                      Repetir vezes
+                          Repetir Vezes (Parcelar)
                     </button>
                   </div>
 
@@ -623,7 +623,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                         </SelectContent>
                       </Select>
                       <p className="text-[11px] text-muted-foreground">
-                        Este lançamento será replicado automaticamente todo mês/ano.
+                        Isso salva um único registro com recorrência ativa (mensal ou anual).
                       </p>
                     </div>
                   ) : (
@@ -682,7 +682,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                               <p className="text-[11px] text-muted-foreground mt-1">
                                 Isso criará {parseInt(repeatCount)} lançamentos de R$ {installmentValueType === 'total'
                                   ? (parseFloat(value) / parseInt(repeatCount)).toFixed(2)
-                                  : parseFloat(value).toFixed(2)} nos próximos {parseInt(repeatCount)} meses.
+                                  : parseFloat(value).toFixed(2)} nos próximos meses.
                               </p>
                             </div>
                           )}
