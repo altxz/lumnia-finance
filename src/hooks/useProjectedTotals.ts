@@ -37,6 +37,7 @@ export function useProjectedTotals(): ProjectedTotals {
   const { user } = useAuth();
   const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
   const [monthExpenses, setMonthExpenses] = useState<Expense[]>([]);
+  const [recurringExpenses, setRecurringExpenses] = useState<Expense[]>([]);
   const [invoiceExpenses, setInvoiceExpenses] = useState<Expense[]>([]);
   const [historicalExpenses, setHistoricalExpenses] = useState<Expense[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCardType[]>([]);
@@ -49,6 +50,7 @@ export function useProjectedTotals(): ProjectedTotals {
 
     const [
       { data: expData },
+      { data: recurringData },
       { data: ccExpData },
       { data: historicalData },
       { data: cardsData },
@@ -57,6 +59,9 @@ export function useProjectedTotals(): ProjectedTotals {
       // Month expenses with specific columns
       supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id)
         .gte('date', startDate).lt('date', endDate).order('date', { ascending: false }),
+      // All recurring transactions that started before end of selected month
+      supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id)
+        .eq('is_recurring', true).lt('date', endDate),
       // CC expenses for invoice matching (only needed cols)
       supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id)
         .not('credit_card_id', 'is', null),
@@ -68,6 +73,7 @@ export function useProjectedTotals(): ProjectedTotals {
     ]);
 
     setMonthExpenses((expData || []) as Expense[]);
+    setRecurringExpenses((recurringData || []) as Expense[]);
     setInvoiceExpenses((ccExpData || []) as Expense[]);
     setHistoricalExpenses((historicalData || []) as any[]);
     setCreditCards((cardsData || []) as CreditCardType[]);
@@ -76,6 +82,33 @@ export function useProjectedTotals(): ProjectedTotals {
   }, [user, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Virtual recurring: inject recurring transactions into monthExpenses if not already present
+  const effectiveMonthExpenses = useMemo(() => {
+    const realIds = new Set(monthExpenses.map(e => e.id));
+    const virtualEntries: Expense[] = [];
+
+    recurringExpenses.forEach(r => {
+      // Skip if already in this month's real data
+      if (realIds.has(r.id)) return;
+      // Skip transfers and credit card recurring (handled by invoice logic)
+      if (r.type === 'transfer' || r.credit_card_id) return;
+      // The recurring tx started on or before this month — project it
+      virtualEntries.push({
+        ...r,
+        // Use a virtual date within the selected month (same day, current month)
+        date: (() => {
+          const origDay = new Date(r.date + 'T12:00:00').getDate();
+          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+          const day = Math.min(origDay, daysInMonth);
+          return `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        })(),
+        is_paid: false, // virtual projection
+      });
+    });
+
+    return [...monthExpenses, ...virtualEntries];
+  }, [monthExpenses, recurringExpenses, selectedMonth, selectedYear]);
 
   // Calculate projected starting balance
   const { startingBalance, pendingInStartingBalance } = useMemo(() => {
@@ -143,7 +176,7 @@ export function useProjectedTotals(): ProjectedTotals {
 
   // Compute totals
   const result = useMemo(() => {
-    const nonTransfers = monthExpenses.filter(e => e.type !== 'transfer');
+    const nonTransfers = effectiveMonthExpenses.filter(e => e.type !== 'transfer');
     const totalIncome = nonTransfers.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
 
     // Debit (non-CC) expenses
@@ -167,7 +200,7 @@ export function useProjectedTotals(): ProjectedTotals {
       projectedBalance: startingBalance + totalIncome - totalExpense,
       largestCategory: largest ? { name: largest[0], total: largest[1], categoryKey: largest[0] } : null,
     };
-  }, [monthExpenses, invoiceTotals, startingBalance]);
+  }, [effectiveMonthExpenses, invoiceTotals, startingBalance]);
 
   return {
     ...result,
@@ -175,7 +208,7 @@ export function useProjectedTotals(): ProjectedTotals {
     pendingInStartingBalance,
     loading,
     refetch: fetchData,
-    monthExpenses,
+    monthExpenses: effectiveMonthExpenses,
     invoiceExpenses,
     creditCards,
     wallets,
