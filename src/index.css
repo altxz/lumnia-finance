@@ -55,6 +55,15 @@
     --sidebar-border: 245 45% 58%;
     --sidebar-ring: 80 80% 66%;
     --sidebar-muted: 250 20% 75%;
+
+    --chart-1: 245 45% 51%;
+    --chart-2: 80 80% 66%;
+    --chart-3: 0 84% 60%;
+    --chart-4: 280 94% 78%;
+    --chart-5: 230 96% 64%;
+    --chart-6: 200 60% 50%;
+    --chart-7: 50 70% 50%;
+    --chart-8: 15 80% 55%;
   }
 
   .dark {
