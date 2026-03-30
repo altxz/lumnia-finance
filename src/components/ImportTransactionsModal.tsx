@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { CategoryPicker } from '@/components/CategoryPicker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ParsedTransaction {
@@ -526,7 +527,16 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
                   <Checkbox checked={t.selected} onCheckedChange={() => toggleOne(i)} />
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-xs">{t.date}</TableCell>
-                <TableCell className="max-w-[160px] truncate text-xs">{t.description}</TableCell>
+                <TableCell className="max-w-[160px] text-xs">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="block truncate cursor-default">{t.description}</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[300px] whitespace-normal">
+                      {t.description}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
                 <TableCell>
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                     t.type === 'income'

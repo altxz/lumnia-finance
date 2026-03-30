@@ -87,7 +87,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
   );
 
   const categoryList = (
-    <div className={cn(isMobile ? 'max-h-[70vh]' : 'max-h-[300px]', 'overflow-y-auto overflow-x-hidden px-1')}>
+    <div className={cn(isMobile ? 'max-h-[70vh]' : 'max-h-[400px]', 'overflow-y-auto overflow-x-hidden px-1')}>
       <Accordion type="single" collapsible defaultValue={defaultAccordion}>
         {grouped.map(group => {
           const hasSubs = group.subs.length > 0;
@@ -171,7 +171,7 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
         {triggerButton}
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border-border"
+        className="min-w-[280px] w-max max-w-[400px] p-0 rounded-xl shadow-xl border-border"
         align="start"
         sideOffset={4}
       >
