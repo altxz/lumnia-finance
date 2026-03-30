@@ -174,6 +174,9 @@ export function useProjectedTotals(): ProjectedTotals {
     });
 
     // 4. CC invoice totals for months before the selected month
+    // IMPORTANT: Count ALL invoices regardless of paid status for continuity.
+    // If we only counted unpaid ones, paying an invoice would shift the starting balance
+    // of all future months, breaking the chain (endBalance(N) ≠ startBalance(N+1)).
     let ccInvoiceTotal = 0;
     if (creditCards.length > 0) {
       const ccPool = invoiceExpenses.length > 0 ? invoiceExpenses : [];
@@ -187,7 +190,7 @@ export function useProjectedTotals(): ProjectedTotals {
           const y = dt.getFullYear();
           const period = getInvoicePeriod(card, y, m);
           const invoice = matchExpensesToInvoice(ccPool, period);
-          if (invoice.total > 0 && invoice.status !== 'paid') {
+          if (invoice.total > 0) {
             ccInvoiceTotal += invoice.total;
           }
         }
