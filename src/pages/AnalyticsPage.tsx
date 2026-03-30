@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             ) : (
-              <>
+              <Suspense fallback={<div className="space-y-4"><Skeleton className="h-[130px] rounded-2xl" /><Skeleton className="h-[320px] rounded-2xl" /></div>}>
                 <OverviewCards
                   avgMonthly={data.avgMonthly}
                   totalCurrent={data.totalCurrentPeriod}
@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
                 <GoalsSection avgMonthly={data.avgMonthly} totalCurrentPeriod={data.totalCurrentPeriod} />
                 <EmergencyFundCard />
                 <NetWorthChart />
-              </>
+              </Suspense>
             )}
           </main>
         </div>
