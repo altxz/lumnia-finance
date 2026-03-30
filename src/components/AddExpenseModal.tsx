@@ -680,6 +680,11 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                                   ? parseFloat(value).toFixed(2)
                                   : (parseFloat(value) * parseInt(repeatCount)).toFixed(2)}
                               </p>
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                Isso criará {parseInt(repeatCount)} lançamentos de R$ {installmentValueType === 'total'
+                                  ? (parseFloat(value) / parseInt(repeatCount)).toFixed(2)
+                                  : parseFloat(value).toFixed(2)} nos próximos {parseInt(repeatCount)} meses.
+                              </p>
                             </div>
                           )}
                         </>

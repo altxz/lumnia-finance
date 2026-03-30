@@ -9,8 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, CreditCard } from 'lucide-react';
+
+import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, Repeat, Hash } from 'lucide-react';
 import { QuickCalculator } from '@/components/QuickCalculator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CategoryPicker } from '@/components/CategoryPicker';
@@ -81,6 +81,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
   // Installment conversion state
   const [wantInstallment, setWantInstallment] = useState(false);
+  const [installmentMode, setInstallmentMode] = useState<'fixed' | 'limited'>('limited');
   const [numInstallments, setNumInstallments] = useState(2);
   const [valueMode, setValueMode] = useState<'total' | 'per_installment'>('total');
 
@@ -90,12 +91,13 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const style = TYPE_STYLES[type];
   const isCredit = !!expense.credit_card_id;
   const isExistingInstallment = !!expense.installment_group_id;
-  const canConvertToInstallment = isCredit && !isExistingInstallment;
+  const canConvertToInstallment = !isExistingInstallment && type !== 'transfer';
   const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
 
   useEffect(() => {
     if (!user || !open) return;
     setWantInstallment(false);
+    setInstallmentMode('limited');
     setNumInstallments(2);
     setValueMode('total');
     Promise.all([
@@ -135,14 +137,16 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         invoice_month: isCredit ? (invoiceMonth || null) : null,
       };
 
-      if (wantInstallment && canConvertToInstallment) {
-        // Convert single expense to installment plan
+      if (wantInstallment && canConvertToInstallment && installmentMode === 'limited') {
+        // Convert single expense to installment/repeat plan
         const installmentValue = valueMode === 'total'
           ? Math.round((parsedValue / numInstallments) * 100) / 100
           : parsedValue;
 
         const groupId = crypto.randomUUID();
-        const baseInvoice = invoiceMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        const baseInvoice = isCredit
+          ? (invoiceMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`)
+          : null;
 
         // Update existing expense as installment 1
         const { error: updateError } = await supabase.from('expenses').update({
@@ -150,7 +154,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           value: installmentValue,
           installment_group_id: groupId,
           installment_info: `1/${numInstallments}`,
-          invoice_month: baseInvoice,
+          is_recurring: false,
+          ...(isCredit && baseInvoice ? { invoice_month: baseInvoice } : {}),
         }).eq('id', expense.id);
 
         if (updateError) throw updateError;
@@ -158,9 +163,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         // Generate remaining installments (2..N)
         const newInstallments = [];
         for (let i = 2; i <= numInstallments; i++) {
-          newInstallments.push({
+          const row: Record<string, unknown> = {
             user_id: user!.id,
-            date: advanceDateByMonths(date, i - 1),
             description: description.trim(),
             value: installmentValue,
             type: expense.type,
@@ -175,15 +179,35 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             installments: numInstallments,
             installment_group_id: groupId,
             installment_info: `${i}/${numInstallments}`,
-            invoice_month: advanceInvoiceMonth(baseInvoice, i - 1),
             payment_method: expense.payment_method,
-          });
+          };
+
+          if (isCredit && baseInvoice) {
+            row.date = date;
+            row.invoice_month = advanceInvoiceMonth(baseInvoice, i - 1);
+          } else {
+            row.date = advanceDateByMonths(date, i - 1);
+            row.invoice_month = null;
+          }
+
+          newInstallments.push(row);
         }
 
         const { error: insertError } = await supabase.from('expenses').insert(newInstallments);
         if (insertError) throw insertError;
 
         toast({ title: 'Parcelamento criado!', description: `Transação dividida em ${numInstallments}x de R$ ${installmentValue.toFixed(2)}` });
+      } else if (wantInstallment && canConvertToInstallment && installmentMode === 'fixed') {
+        // Convert to fixed recurring
+        const { error } = await supabase.from('expenses').update({
+          ...baseFields,
+          value: parsedValue,
+          is_recurring: true,
+          frequency: 'monthly',
+        }).eq('id', expense.id);
+
+        if (error) throw error;
+        toast({ title: 'Recorrência ativada!', description: 'Esta transação será replicada automaticamente todo mês.' });
       } else {
         // Normal single update
         const { error } = await supabase.from('expenses').update({
@@ -279,15 +303,15 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                 </div>
               )}
 
-              {/* Installment conversion section */}
+              {/* Installment / Recurring conversion section */}
               {canConvertToInstallment && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between rounded-xl border p-3">
                     <div className="flex items-center gap-2 min-w-0">
-                      <CreditCard className="h-4 w-4 text-primary shrink-0" />
+                      <Repeat className="h-4 w-4 text-primary shrink-0" />
                       <div className="min-w-0">
-                        <span className="text-sm font-medium">Transformar em parcelamento</span>
-                        <p className="text-xs text-muted-foreground">Dividir esta compra em parcelas</p>
+                        <span className="text-sm font-medium">Recorrente / Repetir</span>
+                        <p className="text-xs text-muted-foreground">Conta fixa ou parcelamento</p>
                       </div>
                     </div>
                     <Switch checked={wantInstallment} onCheckedChange={setWantInstallment} />
@@ -295,51 +319,91 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
                   {wantInstallment && (
                     <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número de Parcelas</Label>
-                        <Input
-                          type="number"
-                          min={2}
-                          max={72}
-                          value={numInstallments}
-                          onChange={e => setNumInstallments(Math.max(2, Math.min(72, parseInt(e.target.value) || 2)))}
-                          className="rounded-xl h-11"
-                        />
+                      {/* Mode selector: Fixed vs Repeat */}
+                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                        <button
+                          type="button"
+                          onClick={() => setInstallmentMode('fixed')}
+                          className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                            installmentMode === 'fixed' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Repeat className="h-3.5 w-3.5" />
+                          Fixa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInstallmentMode('limited')}
+                          className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                            installmentMode === 'limited' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Hash className="h-3.5 w-3.5" />
+                          Repetir vezes
+                        </button>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">O valor informado é</Label>
-                        <RadioGroup value={valueMode} onValueChange={v => setValueMode(v as 'total' | 'per_installment')} className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem value="total" id="val-total" />
-                            <Label htmlFor="val-total" className="text-sm cursor-pointer">
-                              Valor Total da Compra
-                              <span className="text-xs text-muted-foreground ml-1">(divide pelas parcelas)</span>
-                            </Label>
+                      {installmentMode === 'fixed' ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          Este lançamento será replicado automaticamente todo mês.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número de Repetições</Label>
+                            <Input
+                              type="number"
+                              min={2}
+                              max={72}
+                              value={numInstallments}
+                              onChange={e => setNumInstallments(Math.max(2, Math.min(72, parseInt(e.target.value) || 2)))}
+                              className="rounded-xl h-11"
+                            />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem value="per_installment" id="val-per" />
-                            <Label htmlFor="val-per" className="text-sm cursor-pointer">
-                              Valor da Parcela
-                              <span className="text-xs text-muted-foreground ml-1">(cada parcela terá este valor)</span>
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
 
-                      {value && parseFloat(value) > 0 && (
-                        <div className="rounded-lg bg-background/80 border p-2.5 text-center">
-                          <p className="text-xs text-muted-foreground">Valor de cada parcela</p>
-                          <p className="text-lg font-bold text-primary">
-                            {numInstallments}x de R$ {valueMode === 'total'
-                              ? (parseFloat(value) / numInstallments).toFixed(2)
-                              : parseFloat(value).toFixed(2)}
-                          </p>
-                          {valueMode === 'total' && (
-                            <p className="text-xs text-muted-foreground">Total: R$ {parseFloat(value).toFixed(2)}</p>
-                          )}
-                          {valueMode === 'per_installment' && (
-                            <p className="text-xs text-muted-foreground">Total: R$ {(parseFloat(value) * numInstallments).toFixed(2)}</p>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tipo de Valor</Label>
+                            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                              <button
+                                type="button"
+                                onClick={() => setValueMode('total')}
+                                className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                                  valueMode === 'total' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              >
+                                Valor Total
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setValueMode('per_installment')}
+                                className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                                  valueMode === 'per_installment' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              >
+                                Valor da Parcela
+                              </button>
+                            </div>
+                          </div>
+
+                          {value && parseFloat(value) > 0 && (
+                            <div className="rounded-lg bg-background/80 border p-2.5 text-center">
+                              <p className="text-xs text-muted-foreground">Resumo</p>
+                              <p className="text-lg font-bold text-primary">
+                                {numInstallments}x de R$ {valueMode === 'total'
+                                  ? (parseFloat(value) / numInstallments).toFixed(2)
+                                  : parseFloat(value).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Total: R$ {valueMode === 'total'
+                                  ? parseFloat(value).toFixed(2)
+                                  : (parseFloat(value) * numInstallments).toFixed(2)}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                Isso criará {numInstallments} lançamentos de R$ {valueMode === 'total'
+                                  ? (parseFloat(value) / numInstallments).toFixed(2)
+                                  : parseFloat(value).toFixed(2)} nos próximos {numInstallments} meses.
+                              </p>
+                            </div>
                           )}
                         </div>
                       )}
@@ -422,7 +486,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
             <Button onClick={handleSave} disabled={saving} className={`rounded-xl font-semibold transition-colors ${style.accent}`}>
-              {saving ? 'Salvando...' : wantInstallment ? `Parcelar em ${numInstallments}x` : 'Salvar'}
+              {saving ? 'Salvando...' : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
             </Button>
           </div>
         </DialogFooter>
