@@ -67,19 +67,17 @@
   }
 
   .dark {
-    /* Very dark desaturated slate background */
     --background: 220 14% 7%;
     --foreground: 220 10% 93%;
 
-    /* Deep charcoal cards */
     --card: 220 12% 11%;
     --card-foreground: 220 10% 93%;
 
     --popover: 220 12% 11%;
     --popover-foreground: 220 10% 93%;
 
-    /* Dusty teal/cyan primary */
-    --primary: 185 25% 52%;
+    /* Pastel purple (same hue as light: 245) */
+    --primary: 245 30% 58%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 15%;
@@ -88,50 +86,50 @@
     --muted: 220 10% 15%;
     --muted-foreground: 220 8% 55%;
 
-    /* Dusty sage green accent */
-    --accent: 145 18% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Pastel lime-green (same hue as light: 80) */
+    --accent: 80 40% 58%;
+    --accent-foreground: 220 14% 10%;
 
-    /* Dusty rose/pastel red for destructive / expenses */
-    --destructive: 0 40% 62%;
+    /* Pastel red (same hue as light: 0) */
+    --destructive: 0 45% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Dusty sage green success / income */
-    --success: 145 18% 50%;
-    --success-foreground: 0 0% 100%;
+    /* Pastel lime-green for success (same hue as light: 80) */
+    --success: 80 40% 58%;
+    --success-foreground: 220 14% 10%;
 
-    /* Dusty lavender for AI */
-    --ai: 260 22% 58%;
-    --ai-foreground: 220 10% 93%;
+    /* Pastel blue for AI (same hue as light: 230) */
+    --ai: 230 45% 62%;
+    --ai-foreground: 0 0% 100%;
 
-    /* Dusty wine/crimson pink */
-    --pink: 340 22% 55%;
-    --pink-foreground: 220 10% 93%;
+    /* Pastel pink/magenta (same hue as light: 280) */
+    --pink: 280 40% 68%;
+    --pink-foreground: 220 14% 10%;
 
     --border: 220 10% 16%;
     --input: 220 10% 16%;
-    --ring: 185 25% 52%;
+    --ring: 245 30% 58%;
 
-    /* Sidebar: slightly lighter charcoal */
+    /* Sidebar: pastel purple */
     --sidebar-background: 220 14% 9%;
     --sidebar-foreground: 220 10% 85%;
-    --sidebar-primary: 185 25% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 80 40% 58%;
+    --sidebar-primary-foreground: 220 14% 10%;
     --sidebar-accent: 220 12% 14%;
     --sidebar-accent-foreground: 220 10% 90%;
     --sidebar-border: 220 10% 14%;
-    --sidebar-ring: 185 25% 52%;
+    --sidebar-ring: 80 40% 58%;
     --sidebar-muted: 220 8% 45%;
 
-    /* Chart palette — dusty desaturated harmonious tones */
-    --chart-1: 185 25% 52%;   /* teal */
-    --chart-2: 145 18% 50%;   /* sage */
-    --chart-3: 0 40% 62%;    /* dusty rose */
-    --chart-4: 340 22% 55%;   /* wine */
-    --chart-5: 260 22% 58%;   /* lavender */
-    --chart-6: 200 20% 48%;   /* steel blue */
-    --chart-7: 55 25% 50%;    /* olive */
-    --chart-8: 12 28% 52%;    /* terracotta */
+    /* Chart palette — pastel versions of light mode hues */
+    --chart-1: 245 30% 58%;   /* pastel purple */
+    --chart-2: 80 40% 58%;    /* pastel lime */
+    --chart-3: 0 45% 60%;     /* pastel red */
+    --chart-4: 280 40% 68%;   /* pastel magenta */
+    --chart-5: 230 45% 62%;   /* pastel blue */
+    --chart-6: 200 35% 55%;   /* pastel cyan */
+    --chart-7: 50 40% 55%;    /* pastel gold */
+    --chart-8: 15 40% 58%;    /* pastel coral */
   }
 }
 
