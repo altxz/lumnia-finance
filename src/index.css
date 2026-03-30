@@ -80,7 +80,7 @@
 
     /* Dusty teal/cyan primary */
     --primary: 185 25% 52%;
-    --primary-foreground: 220 14% 7%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 220 12% 15%;
     --secondary-foreground: 220 10% 85%;
@@ -90,7 +90,7 @@
 
     /* Dusty sage green accent */
     --accent: 145 18% 50%;
-    --accent-foreground: 220 14% 7%;
+    --accent-foreground: 0 0% 100%;
 
     /* Dusty amber for destructive / expenses */
     --destructive: 30 35% 52%;
@@ -98,7 +98,7 @@
 
     /* Dusty sage green success / income */
     --success: 145 18% 50%;
-    --success-foreground: 220 14% 7%;
+    --success-foreground: 0 0% 100%;
 
     /* Dusty lavender for AI */
     --ai: 260 22% 58%;
@@ -116,7 +116,7 @@
     --sidebar-background: 220 14% 9%;
     --sidebar-foreground: 220 10% 85%;
     --sidebar-primary: 185 25% 52%;
-    --sidebar-primary-foreground: 220 14% 7%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 12% 14%;
     --sidebar-accent-foreground: 220 10% 90%;
     --sidebar-border: 220 10% 14%;

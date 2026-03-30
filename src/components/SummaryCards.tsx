@@ -87,7 +87,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
           </div>
         </SummaryCard>
 
-        <SummaryCard className="bg-green-600 text-white cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=income')}>
+        <SummaryCard className="bg-success text-success-foreground cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=income')}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
               <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
