@@ -60,7 +60,7 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
           <div className="flex-1 min-w-0">
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={82} paddingAngle={3} dataKey="value" strokeWidth={0}>
                   {data.map((entry, i) => (
                     <Cell key={i} fill={entry.color || COLORS[i % COLORS.length]} />
                   ))}

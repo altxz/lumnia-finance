@@ -118,9 +118,16 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
       .map(([cat]) => cat);
     const top6Set = new Set(top6);
 
+    // Check if there are categories outside top 6
+    const hasOutras = Object.keys(globalCatTotals).some(cat => !top6Set.has(cat));
+    // Build the full key list (every month must have ALL keys to avoid stacking gaps)
+    const allKeys = [...top6, ...(hasOutras ? ['Outras'] : [])];
+
     const result = Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
     result.forEach(m => {
       const grouped: Record<string, number> = {};
+      // Initialize ALL keys to 0 first
+      allKeys.forEach(k => { grouped[k] = 0; });
       let outrasTotal = 0;
       Object.entries(m.byCategory).forEach(([cat, val]) => {
         if (top6Set.has(cat)) {
@@ -129,7 +136,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
           outrasTotal += val;
         }
       });
-      if (outrasTotal > 0) grouped['Outras'] = outrasTotal;
+      if (hasOutras) grouped['Outras'] = outrasTotal;
       m.byCategory = grouped;
     });
 
