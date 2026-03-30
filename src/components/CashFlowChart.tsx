@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { addDays, format, startOfDay, eachDayOfInterval, isBefore, isAfter, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -28,6 +29,7 @@ interface CashFlowChartProps {
 
 export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: CashFlowChartProps) {
   const { user } = useAuth();
+  const { startDate: ctxStart, endDate: ctxEnd, selectedMonth, selectedYear } = useSelectedDate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [allExpenses, setAllExpenses] = useState<any[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
@@ -38,18 +40,20 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
 
   // Compute date range based on filter
   const { rangeStart, rangeEnd } = useMemo(() => {
-    const now = new Date();
     if (timeFilter === '7days') {
+      const now = new Date();
       return { rangeStart: addDays(now, -7), rangeEnd: addDays(now, 7) };
     }
     if (timeFilter === '30days') {
+      const now = new Date();
       return { rangeStart: now, rangeEnd: addDays(now, 30) };
     }
-    // 'month' — current calendar month
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    return { rangeStart: new Date(y, m, 1), rangeEnd: new Date(y, m + 1, 0) };
-  }, [timeFilter]);
+    // 'month' — selected calendar month from context
+    return {
+      rangeStart: new Date(selectedYear, selectedMonth, 1),
+      rangeEnd: new Date(selectedYear, selectedMonth + 1, 0),
+    };
+  }, [timeFilter, selectedMonth, selectedYear]);
 
   const rangeStartStr = format(rangeStart, 'yyyy-MM-dd');
   const rangeEndStr = format(rangeEnd, 'yyyy-MM-dd');
@@ -83,24 +87,70 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     const walletsBase = propWallets.reduce((s, w) => s + Number(w.initial_balance || 0), 0);
 
     // 2) Compute running balance up to rangeStart from all real transactions
+    // Uses projected logic: ignores is_paid, assumes everything scheduled happened
     let preRangeBalance = walletsBase;
-    const txByDate: Record<string, { income: number; expense: number }> = {};
 
     allExpenses.forEach(e => {
       if (e.type === 'transfer') return;
       const dStr = e.date;
       if (dStr < rangeStartStr) {
-        // Before range: accumulate into pre-range balance
-        if (e.type === 'income' && e.is_paid) preRangeBalance += Number(e.value);
-        else if (e.type === 'expense' && e.is_paid && !e.credit_card_id) preRangeBalance -= Number(e.value);
-      } else if (dStr <= rangeEndStr) {
+        // Before range: accumulate projected (ignore is_paid)
+        if (e.type === 'income') preRangeBalance += Number(e.value);
+        else if (e.type === 'expense' && !e.credit_card_id) preRangeBalance -= Number(e.value);
+      }
+    });
+
+    // Subtract credit card invoices from months before range
+    unpaidCreditExpenses.forEach(e => {
+      if (!e.invoice_month) return;
+      const invoiceYm = e.invoice_month;
+      const rangeYm = `${format(rangeStart, 'yyyy-MM')}`;
+      if (invoiceYm < rangeYm) {
+        preRangeBalance -= Number(e.value);
+      }
+    });
+
+    // Also subtract paid credit expenses from before range
+    allExpenses.forEach(e => {
+      if (e.type !== 'expense' || !e.credit_card_id) return;
+      const invMonth = e.invoice_month;
+      if (!invMonth) return;
+      const rangeYm = format(rangeStart, 'yyyy-MM');
+      if (invMonth < rangeYm) {
+        preRangeBalance -= Number(e.value);
+      }
+    });
+
+    // 3) Build in-range transactions by date (all, regardless of is_paid)
+    const txByDate: Record<string, { income: number; expense: number }> = {};
+    allExpenses.forEach(e => {
+      if (e.type === 'transfer') return;
+      const dStr = e.date;
+      if (dStr >= rangeStartStr && dStr <= rangeEndStr) {
         if (!txByDate[dStr]) txByDate[dStr] = { income: 0, expense: 0 };
         if (e.type === 'income') txByDate[dStr].income += Number(e.value);
         else if (!e.credit_card_id) txByDate[dStr].expense += Number(e.value);
       }
     });
 
-    // 3) Build projected data for future days
+    // Credit card expenses within range month (by invoice_month)
+    const rangeYm = format(rangeStart, 'yyyy-MM');
+    allExpenses.forEach(e => {
+      if (e.type !== 'expense' || !e.credit_card_id) return;
+      if (e.invoice_month !== rangeYm) return;
+      // Find due day from card
+      const card = propCards.find(c => c.id === e.credit_card_id);
+      if (!card) return;
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      const dueDay = Math.min(card.due_day || 10, daysInMonth);
+      const dueDateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
+      if (dueDateStr >= rangeStartStr && dueDateStr <= rangeEndStr) {
+        if (!txByDate[dueDateStr]) txByDate[dueDateStr] = { income: 0, expense: 0 };
+        txByDate[dueDateStr].expense += Number(e.value);
+      }
+    });
+
+    // 4) Build projected data for future days (recurring)
     const projByDate: Record<string, { income: number; expense: number }> = {};
     const todayStr = format(today, 'yyyy-MM-dd');
 
@@ -152,7 +202,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
       });
     });
 
-    // 4) Build day-by-day chart
+    // 5) Build day-by-day chart
     const daysList = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
     let runningBalance = preRangeBalance;
     const result: DayData[] = [];
