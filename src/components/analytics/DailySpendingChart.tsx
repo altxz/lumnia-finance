@@ -5,6 +5,20 @@ import { formatCurrency } from '@/lib/constants';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { InfoPopover } from '@/components/ui/info-popover';
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg px-3 py-2 shadow-lg border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
+      <p className="text-xs text-white/70 mb-1">Dia {label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="text-xs font-semibold" style={{ color: p.color || '#fff' }}>
+          {p.name}: {formatCurrency(p.value)}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 interface Props {
   expenses: any[];
 }
@@ -18,8 +32,6 @@ export function DailySpendingChart({ expenses }: Props) {
 
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
-
-      // Regime de Competência: usar sempre a data da transação
       const d = new Date(e.date + 'T12:00:00');
       if (d.getMonth() !== selectedMonth || d.getFullYear() !== selectedYear) return;
       const day = d.getDate();
@@ -47,17 +59,21 @@ export function DailySpendingChart({ expenses }: Props) {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
-              <linearGradient id="gradDaily" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+              <linearGradient id="gradDailySpend" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(210, 80%, 55%)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="hsl(210, 80%, 55%)" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="gradDailyAvg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-            <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} interval={Math.floor(daysInMonth / 8)} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
+            <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} interval={4} />
             <YAxis tickFormatter={v => `R$${v}`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} labelFormatter={l => `Dia ${l}`} />
-            <Area type="monotone" dataKey="gasto" name="Gasto" stroke="hsl(var(--muted-foreground))" strokeWidth={1} fill="url(#gradDaily)" dot={false} />
-            <Area type="monotone" dataKey="media" name="Média" stroke="hsl(var(--primary))" strokeWidth={2} fill="none" dot={false} strokeDasharray="4 2" />
+            <Tooltip content={<CustomTooltip />} />
+            <Area type="monotone" dataKey="gasto" name="Gasto" stroke="hsl(210, 80%, 55%)" strokeWidth={1.5} fill="url(#gradDailySpend)" dot={false} />
+            <Area type="monotone" dataKey="media" name="Média" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#gradDailyAvg)" dot={false} strokeDasharray="4 2" />
           </AreaChart>
         </ResponsiveContainer>
       </CardContent>

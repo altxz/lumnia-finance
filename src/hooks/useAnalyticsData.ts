@@ -87,7 +87,10 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
 
   const monthlyData = useMemo<MonthlyData[]>(() => {
+    // Step 1: build raw data
     const map: Record<string, MonthlyData> = {};
+    const globalCatTotals: Record<string, number> = {};
+
     expenses.forEach(e => {
       if (e.type === 'transfer') return;
       const key = getAnalyticsMonthKey(e);
@@ -104,9 +107,33 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
       if (e.type !== 'income') {
         map[key].total += e.value;
         map[key].byCategory[e.final_category] = (map[key].byCategory[e.final_category] || 0) + e.value;
+        globalCatTotals[e.final_category] = (globalCatTotals[e.final_category] || 0) + e.value;
       }
     });
-    return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
+
+    // Step 2: identify Top 6 categories, group rest as "Outras"
+    const top6 = Object.entries(globalCatTotals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([cat]) => cat);
+    const top6Set = new Set(top6);
+
+    const result = Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
+    result.forEach(m => {
+      const grouped: Record<string, number> = {};
+      let outrasTotal = 0;
+      Object.entries(m.byCategory).forEach(([cat, val]) => {
+        if (top6Set.has(cat)) {
+          grouped[cat] = val;
+        } else {
+          outrasTotal += val;
+        }
+      });
+      if (outrasTotal > 0) grouped['Outras'] = outrasTotal;
+      m.byCategory = grouped;
+    });
+
+    return result;
   }, [expenses]);
 
   const categoryStats = useMemo<CategoryStats[]>(() => {

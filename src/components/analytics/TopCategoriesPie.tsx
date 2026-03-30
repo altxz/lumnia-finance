@@ -1,15 +1,25 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(142, 71%, 45%)', 'hsl(var(--accent))', 'hsl(280, 60%, 55%)'];
+const COLORS = ['hsl(245, 45%, 51%)', 'hsl(142, 71%, 45%)', 'hsl(280, 60%, 55%)', 'hsl(40, 90%, 55%)', 'hsl(0, 84%, 60%)'];
 
 interface Props {
   expenses: any[];
   categories: any[];
 }
+
+const CustomTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg px-3 py-2 shadow-lg border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
+      <p className="text-xs font-semibold text-white">{payload[0].name}</p>
+      <p className="text-xs text-white/80">{formatCurrency(payload[0].value)}</p>
+    </div>
+  );
+};
 
 export function TopCategoriesPie({ expenses, categories }: Props) {
   const data = useMemo(() => {
@@ -21,9 +31,12 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
     return sorted.map(([cat, total]) => {
       const dbCat = categories.find((c: any) => c.name.toLowerCase() === cat);
-      return { name: dbCat?.name || cat, value: total, color: dbCat?.color };
+      const name = cat.toLowerCase() === 'outros' ? 'Outras Despesas' : (dbCat?.name || cat);
+      return { name, value: total, color: dbCat?.color };
     });
   }, [expenses, categories]);
+
+  const grandTotal = useMemo(() => data.reduce((s, d) => s + d.value, 0), [data]);
 
   if (data.length === 0) {
     return (
@@ -43,17 +56,32 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={3} dataKey="value">
-              {data.map((entry, i) => (
-                <Cell key={i} fill={entry.color || COLORS[i % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(v: number) => formatCurrency(v)} />
-            <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
-          </PieChart>
-        </ResponsiveContainer>
+        <div className="flex items-center gap-2 h-full">
+          <div className="flex-1 min-w-0">
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                  {data.map((entry, i) => (
+                    <Cell key={i} fill={entry.color || COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-col gap-1.5 text-xs min-w-[90px]">
+            {data.map((entry, i) => {
+              const pct = grandTotal > 0 ? ((entry.value / grandTotal) * 100).toFixed(1) : '0';
+              return (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: entry.color || COLORS[i % COLORS.length] }} />
+                  <span className="truncate text-muted-foreground">{entry.name}</span>
+                  <span className="font-semibold ml-auto">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
