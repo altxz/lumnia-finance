@@ -32,7 +32,9 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4">
-        <Logo size={68} showText={!collapsed} />
+        <div className="flex items-center gap-3">
+          <img src="/logo-sidebar.svg" alt="Lumnia" className="shrink-0" style={{ height: 32 }} />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
