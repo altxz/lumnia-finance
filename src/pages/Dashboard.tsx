@@ -36,6 +36,7 @@ import { SpendingHeatmap } from '@/components/analytics/SpendingHeatmap';
 import { BurndownChart } from '@/components/analytics/BurndownChart';
 import { NetWorthChart } from '@/components/analytics/NetWorthChart';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
+import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 
 function DashboardSkeleton() {
   return (
@@ -176,8 +177,8 @@ export default function Dashboard() {
     if (projected.creditCards.length > 0) {
       const ccPool = projected.invoiceExpenses;
       projected.creditCards.forEach((card: any) => {
-        const period = require('@/lib/invoiceHelpers').getInvoicePeriod(card, prevYear, prevMonth);
-        const invoice = require('@/lib/invoiceHelpers').matchExpensesToInvoice(ccPool, period);
+        const period = getInvoicePeriod(card, prevYear, prevMonth);
+        const invoice = matchExpensesToInvoice(ccPool, period);
         ccTotal += invoice.total;
       });
     }
