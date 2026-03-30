@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } fro
 import { useUserSettings } from '@/contexts/UserSettingsContext';
 
 import { SummaryCards } from '@/components/SummaryCards';
-import { AddExpenseModal } from '@/components/AddExpenseModal';
+const AddExpenseModal = lazy(() => import('@/components/AddExpenseModal').then(m => ({ default: m.AddExpenseModal })));
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { InstallPwaPrompt } from '@/components/InstallPwaPrompt';
 import { SmartAlertsCarousel, SmartAlert } from '@/components/SmartAlertsCarousel';
