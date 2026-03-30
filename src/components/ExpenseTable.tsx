@@ -214,6 +214,36 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!deletingExpense} onOpenChange={(open) => { if (!open) { setDeletingExpense(null); setDeleteMode(null); } }}>
+        <AlertDialogContent className="rounded-2xl mx-4">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingExpense?.is_recurring && deleteMode === null
+                ? 'Esta é uma transação recorrente. Deseja excluir apenas este lançamento ou todos os lançamentos recorrentes?'
+                : 'Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className={deletingExpense?.is_recurring && deleteMode === null ? 'flex-col sm:flex-row gap-2' : ''}>
+            <AlertDialogCancel className="rounded-xl" onClick={() => { setDeletingExpense(null); setDeleteMode(null); }}>Cancelar</AlertDialogCancel>
+            {deletingExpense?.is_recurring && deleteMode === null ? (
+              <>
+                <Button variant="outline" className="rounded-xl" disabled={deleting} onClick={() => handleDelete('single')}>
+                  Apenas esta
+                </Button>
+                <Button variant="destructive" className="rounded-xl" disabled={deleting} onClick={() => handleDelete('all')}>
+                  {deleting ? 'Excluindo...' : 'Todas as recorrências'}
+                </Button>
+              </>
+            ) : (
+              <AlertDialogAction onClick={() => handleDelete('single')} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
+                {deleting ? 'Excluindo...' : 'Excluir'}
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
