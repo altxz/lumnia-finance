@@ -108,7 +108,9 @@ export function TransactionFeed({
 
   const handleMarkAsPaid = async (exp: Expense) => {
     try {
-      const { error } = await supabase.from('expenses').update({ is_paid: true }).eq('id', exp.id);
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const { error } = await supabase.from('expenses').update({ is_paid: true, date: todayStr }).eq('id', exp.id);
       if (error) throw error;
       toast({ title: exp.type === 'income' ? 'Recebimento confirmado!' : 'Pagamento confirmado!' });
       onDeleted();
