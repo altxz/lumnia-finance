@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Sparkles, Loader2, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Repeat, Hash } from 'lucide-react';
+import { QuickCalculator } from '@/components/QuickCalculator';
 import { CATEGORIES, getCategoryInfo } from '@/lib/constants';
 import { getPaymentDate } from '@/lib/invoiceHelpers';
 import { supabase } from '@/lib/supabase';
@@ -419,6 +420,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 onChange={e => setValue(e.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
+              <QuickCalculator onSelect={(v) => setValue(String(v))} />
             </div>
           </div>
         </div>
