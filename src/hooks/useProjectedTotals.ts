@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
+import { buildMonthRecurringSignature, buildRecurringSignature } from '@/lib/recurringProjection';
 import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
 
@@ -66,7 +67,7 @@ export function useProjectedTotals(): ProjectedTotals {
       supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id)
         .not('credit_card_id', 'is', null),
       // All non-CC expenses before startDate (for projected starting balance) — ignoring is_paid
-      supabase.from('expenses').select('id, value, type, credit_card_id, is_paid, final_category')
+      supabase.from('expenses').select('id, description, date, value, type, credit_card_id, is_paid, final_category')
         .eq('user_id', user.id).lt('date', startDate).is('credit_card_id', null),
       supabase.from('credit_cards').select('*').eq('user_id', user.id),
       supabase.from('wallets').select('id, name, initial_balance').eq('user_id', user.id).order('name'),
@@ -87,7 +88,7 @@ export function useProjectedTotals(): ProjectedTotals {
   const effectiveMonthExpenses = useMemo(() => {
     // Build a set of signatures to detect if a recurring tx already has a real entry this month
     const realSignatures = new Set(
-      monthExpenses.map(e => `${e.type}|${e.description.trim().toLowerCase()}|${Number(e.value).toFixed(2)}`)
+      monthExpenses.map(e => buildRecurringSignature(e.type, e.value, e.description))
     );
     const realIds = new Set(monthExpenses.map(e => e.id));
     const virtualEntries: Expense[] = [];
@@ -96,7 +97,7 @@ export function useProjectedTotals(): ProjectedTotals {
       // Skip if already in this month's real data
       if (realIds.has(r.id)) return;
       // Skip if a matching real entry already exists (edge function copy or manual entry)
-      const sig = `${r.type}|${r.description.trim().toLowerCase()}|${Number(r.value).toFixed(2)}`;
+      const sig = buildRecurringSignature(r.type, r.value, r.description);
       if (realSignatures.has(sig)) return;
       // Skip transfers and credit card recurring (handled by invoice logic)
       if (r.type === 'transfer' || r.credit_card_id) return;
@@ -143,13 +144,13 @@ export function useProjectedTotals(): ProjectedTotals {
     historicalExpenses.forEach((e: any) => {
       if (e.type === 'transfer') return;
       const ym = e.date ? e.date.substring(0, 7) : '';
-      if (ym) realByMonthSig.add(`${ym}|${e.type}|${Number(e.value).toFixed(2)}`);
+      if (ym) realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
     });
     // Also include current month real data to avoid double-counting at boundary
     monthExpenses.forEach((e: any) => {
       if (e.type === 'transfer') return;
       const ym = e.date ? e.date.substring(0, 7) : '';
-      if (ym) realByMonthSig.add(`${ym}|${e.type}|${Number(e.value).toFixed(2)}`);
+      if (ym) realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
     });
 
     const selectedMonthStart = selectedYear * 12 + selectedMonth; // months since epoch
@@ -164,7 +165,7 @@ export function useProjectedTotals(): ProjectedTotals {
         const yr = Math.floor(m / 12);
         const mo = m % 12;
         const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
-        const sig = `${monthKey}|${r.type}|${Number(r.value).toFixed(2)}`;
+        const sig = buildMonthRecurringSignature(monthKey, r.type, r.value, r.description);
         // Skip if a real entry already exists for this month (already counted in historicalIncome/Debit)
         if (realByMonthSig.has(sig)) continue;
         // Add virtual contribution
