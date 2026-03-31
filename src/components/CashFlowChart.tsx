@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
+import { buildMonthRecurringSignature, buildRecurringSignature } from '@/lib/recurringProjection';
 import { addDays, format, startOfDay, eachDayOfInterval, isBefore, isAfter, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { InfoPopover } from '@/components/ui/info-popover';
@@ -65,9 +66,9 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     const fetchAll = async () => {
       const [expensesRes, recurringRes, unpaidRes] = await Promise.all([
         // Fetch only needed columns instead of select('*')
-        supabase.from('expenses').select('value, type, credit_card_id, date, is_paid, is_recurring, invoice_month')
+        supabase.from('expenses').select('description, value, type, credit_card_id, date, is_paid, is_recurring, invoice_month')
           .eq('user_id', user.id).order('date'),
-        supabase.from('expenses').select('value, type, date, credit_card_id')
+        supabase.from('expenses').select('description, value, type, date, credit_card_id')
           .eq('user_id', user.id).eq('is_recurring', true),
         supabase.from('expenses').select('value, credit_card_id, invoice_month')
           .eq('user_id', user.id).eq('is_paid', false).not('credit_card_id', 'is', null),
@@ -115,7 +116,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     allExpenses.forEach(e => {
       if (e.type === 'transfer') return;
       const ym = e.date.substring(0, 7); // 'YYYY-MM'
-      realByMonthSig.add(`${ym}|${e.type}|${Number(e.value).toFixed(2)}`);
+      realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
     });
 
     recurringExpenses.forEach(r => {
@@ -123,11 +124,11 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
       const rDate = new Date(r.date + 'T12:00:00');
       const rStartMonth = rDate.getFullYear() * 12 + rDate.getMonth();
       const rangeMonth = rangeStart.getFullYear() * 12 + rangeStart.getMonth();
-      for (let m = rStartMonth + 1; m < rangeMonth; m++) {
+      for (let m = rStartMonth; m < rangeMonth; m++) {
         const yr = Math.floor(m / 12);
         const mo = m % 12;
         const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
-        const sig = `${monthKey}|${r.type}|${Number(r.value).toFixed(2)}`;
+        const sig = buildMonthRecurringSignature(monthKey, r.type, r.value, r.description);
         if (realByMonthSig.has(sig)) continue;
         if (r.type === 'income') preRangeBalance += Number(r.value);
         else preRangeBalance -= Number(r.value);
@@ -173,7 +174,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     const realInRangeSignatures = new Set<string>();
     allExpenses.forEach(e => {
       if (e.date >= rangeStartStr && e.date <= rangeEndStr) {
-        realInRangeSignatures.add(`${e.type}|${Number(e.value).toFixed(2)}`);
+        realInRangeSignatures.add(buildRecurringSignature(e.type, e.value, e.description));
       }
     });
 
@@ -181,7 +182,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
       if (r.type === 'transfer') return;
       if (r.credit_card_id) return; // CC recurring handled by invoice logic
       // Check if a matching real entry already exists in this month's range
-      const rSig = `${r.type}|${Number(r.value).toFixed(2)}`;
+      const rSig = buildRecurringSignature(r.type, r.value, r.description);
       if (realInRangeSignatures.has(rSig)) return;
       const origDay = parseISO(r.date).getDate();
       const recurringStartStr = r.date; // original start date
