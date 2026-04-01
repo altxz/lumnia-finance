@@ -298,6 +298,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             value: parsedValue,
             final_category: finalCategory,
             wallet_id: walletId || null,
+            credit_card_id: creditCardId || null,
             notes: notes.trim() || null,
             tags: tags.length > 0 ? tags : null,
           };
