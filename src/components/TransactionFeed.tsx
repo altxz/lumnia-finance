@@ -613,6 +613,36 @@ export function TransactionFeed({
           refetch={onDeleted}
         />
       )}
+
+      {/* Pay/receive date choice dialog */}
+      <AlertDialog open={!!payingExpense} onOpenChange={(open) => { if (!open) setPayingExpense(null); }}>
+        <AlertDialogContent className="rounded-2xl max-w-[calc(100vw-2rem)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {payingExpense?.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja manter a data original ou alterar para a data de hoje?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="rounded-xl" onClick={() => setPayingExpense(null)}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => payingExpense && handleMarkAsPaid(payingExpense, true)}
+            >
+              Manter data ({payingExpense ? new Date(payingExpense.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''})
+            </Button>
+            <Button
+              className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => payingExpense && handleMarkAsPaid(payingExpense, false)}
+            >
+              Mudar para hoje ({new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })})
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
