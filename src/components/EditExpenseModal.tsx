@@ -110,6 +110,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
     setNumInstallments(expense.installments > 1 ? expense.installments : 2);
     setValueMode('per_installment');
     setFrequency(expense.frequency || 'monthly');
+    setCreditCardId(expense.credit_card_id || '');
 
     const projectedCheck = isExistingRecurring
       ? supabase.from('expenses').select('date, is_recurring').eq('id', expense.id).maybeSingle()
