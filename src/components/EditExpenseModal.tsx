@@ -119,9 +119,11 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
     Promise.all([
       supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
       supabase.from('categories').select('id, name, parent_id, icon, color').eq('user_id', user.id).eq('active', true).order('sort_order'),
+      supabase.from('credit_cards').select('id, name').eq('user_id', user.id).order('name'),
       projectedCheck,
-    ]).then(([walletsRes, catsRes, projectedRes]) => {
+    ]).then(([walletsRes, catsRes, cardsRes, projectedRes]) => {
       setWallets(walletsRes.data || []);
+      setCreditCards(cardsRes.data || []);
       setDbCategories(catsRes.data || []);
       if (projectedRes?.data?.is_recurring) {
         setIsProjectedOccurrence(projectedRes.data.date !== expense.date);
