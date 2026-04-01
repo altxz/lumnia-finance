@@ -171,9 +171,10 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
       const baseFields = {
         date, description: description.trim(),
         final_category: finalCategory, wallet_id: walletId || null,
+        credit_card_id: creditCardId || null,
         is_paid: isPaid, notes: notes.trim() || null,
         tags: tags.length > 0 ? tags : null,
-        invoice_month: isCredit ? (invoiceMonth || null) : null,
+        invoice_month: creditCardId ? (invoiceMonth || null) : null,
       };
 
       // Editing a projected recurring occurrence and choosing "only this":
