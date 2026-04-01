@@ -78,6 +78,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const [frequency, setFrequency] = useState(expense.frequency || 'monthly');
   const [saving, setSaving] = useState(false);
   const [wallets, setWallets] = useState<{ id: string; name: string }[]>([]);
+  const [creditCards, setCreditCards] = useState<{ id: string; name: string }[]>([]);
+  const [creditCardId, setCreditCardId] = useState(expense.credit_card_id || '');
   const [dbCategories, setDbCategories] = useState<{ id: string; name: string; parent_id: string | null; icon: string; color: string }[]>([]);
   const [showRecurringConfirm, setShowRecurringConfirm] = useState(false);
   const [isProjectedOccurrence, setIsProjectedOccurrence] = useState(false);
@@ -92,7 +94,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
   const { user } = useAuth();
 
   const style = TYPE_STYLES[type];
-  const isCredit = !!expense.credit_card_id;
+  const isCredit = !!creditCardId;
   const isExistingInstallment = !!expense.installment_group_id;
   const canConvertToInstallment = !isExistingInstallment && type !== 'transfer';
   const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
@@ -108,6 +110,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
     setNumInstallments(expense.installments > 1 ? expense.installments : 2);
     setValueMode('per_installment');
     setFrequency(expense.frequency || 'monthly');
+    setCreditCardId(expense.credit_card_id || '');
 
     const projectedCheck = isExistingRecurring
       ? supabase.from('expenses').select('date, is_recurring').eq('id', expense.id).maybeSingle()
@@ -116,9 +119,11 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
     Promise.all([
       supabase.from('wallets').select('id, name').eq('user_id', user.id).order('name'),
       supabase.from('categories').select('id, name, parent_id, icon, color').eq('user_id', user.id).eq('active', true).order('sort_order'),
+      supabase.from('credit_cards').select('id, name').eq('user_id', user.id).order('name'),
       projectedCheck,
-    ]).then(([walletsRes, catsRes, projectedRes]) => {
+    ]).then(([walletsRes, catsRes, cardsRes, projectedRes]) => {
       setWallets(walletsRes.data || []);
+      setCreditCards(cardsRes.data || []);
       setDbCategories(catsRes.data || []);
       if (projectedRes?.data?.is_recurring) {
         setIsProjectedOccurrence(projectedRes.data.date !== expense.date);
@@ -166,9 +171,10 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
       const baseFields = {
         date, description: description.trim(),
         final_category: finalCategory, wallet_id: walletId || null,
+        credit_card_id: creditCardId || null,
         is_paid: isPaid, notes: notes.trim() || null,
         tags: tags.length > 0 ? tags : null,
-        invoice_month: isCredit ? (invoiceMonth || null) : null,
+        invoice_month: creditCardId ? (invoiceMonth || null) : null,
       };
 
       // Editing a projected recurring occurrence and choosing "only this":
@@ -181,7 +187,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           type: expense.type,
           final_category: finalCategory,
           category_ai: expense.category_ai,
-          credit_card_id: expense.credit_card_id,
+          credit_card_id: creditCardId || null,
           wallet_id: walletId || null,
           destination_wallet_id: expense.destination_wallet_id,
           debt_id: expense.debt_id,
@@ -242,7 +248,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             type: expense.type,
             final_category: finalCategory,
             category_ai: expense.category_ai,
-            credit_card_id: expense.credit_card_id,
+            credit_card_id: creditCardId || null,
             wallet_id: walletId || null,
             is_paid: false,
             is_recurring: false,
@@ -292,6 +298,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             value: parsedValue,
             final_category: finalCategory,
             wallet_id: walletId || null,
+            credit_card_id: creditCardId || null,
             notes: notes.trim() || null,
             tags: tags.length > 0 ? tags : null,
           };
@@ -406,6 +413,19 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                   <Select value={walletId} onValueChange={setWalletId}>
                     <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>{wallets.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {type === 'expense' && creditCards.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cartão de Crédito</Label>
+                  <Select value={creditCardId || '_none'} onValueChange={(v) => setCreditCardId(v === '_none' ? '' : v)}>
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Nenhum (débito)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Nenhum (débito em conta)</SelectItem>
+                      {creditCards.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </div>
               )}

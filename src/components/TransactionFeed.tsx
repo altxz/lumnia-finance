@@ -96,6 +96,7 @@ export function TransactionFeed({
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
   const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [payingExpense, setPayingExpense] = useState<Expense | null>(null);
   const [groupCards, setGroupCards] = useState(() => {
     try { const v = localStorage.getItem(STORAGE_KEY); return v === null ? true : v === 'true'; } catch { return true; }
   });
@@ -106,16 +107,22 @@ export function TransactionFeed({
     try { localStorage.setItem(STORAGE_KEY, String(groupCards)); } catch {}
   }, [groupCards]);
 
-  const handleMarkAsPaid = async (exp: Expense) => {
+  const handleMarkAsPaid = async (exp: Expense, keepOriginalDate: boolean) => {
     try {
-      const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      const { error } = await supabase.from('expenses').update({ is_paid: true, date: todayStr }).eq('id', exp.id);
+      const updateFields: Record<string, unknown> = { is_paid: true };
+      if (!keepOriginalDate) {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        updateFields.date = todayStr;
+      }
+      const { error } = await supabase.from('expenses').update(updateFields).eq('id', exp.id);
       if (error) throw error;
       toast({ title: exp.type === 'income' ? 'Recebimento confirmado!' : 'Pagamento confirmado!' });
       onDeleted();
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setPayingExpense(null);
     }
   };
 
@@ -523,7 +530,7 @@ export function TransactionFeed({
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-600"
-                                  onClick={() => handleMarkAsPaid(exp)}
+                                  onClick={() => setPayingExpense(exp)}
                                 >
                                   <Check className="h-3.5 w-3.5 text-emerald-600" />
                                 </Button>
@@ -606,6 +613,36 @@ export function TransactionFeed({
           refetch={onDeleted}
         />
       )}
+
+      {/* Pay/receive date choice dialog */}
+      <AlertDialog open={!!payingExpense} onOpenChange={(open) => { if (!open) setPayingExpense(null); }}>
+        <AlertDialogContent className="rounded-2xl max-w-[calc(100vw-2rem)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {payingExpense?.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja manter a data original ou alterar para a data de hoje?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="rounded-xl" onClick={() => setPayingExpense(null)}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => payingExpense && handleMarkAsPaid(payingExpense, true)}
+            >
+              Manter data ({payingExpense ? new Date(payingExpense.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''})
+            </Button>
+            <Button
+              className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => payingExpense && handleMarkAsPaid(payingExpense, false)}
+            >
+              Mudar para hoje ({new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })})
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
