@@ -110,22 +110,46 @@ export function TransactionFeed({
     try { localStorage.setItem(STORAGE_KEY, String(groupCards)); } catch {}
   }, [groupCards]);
 
+  const openPayDialog = (exp: Expense) => {
+    setPayingExpense(exp);
+    setPayValue(String(exp.value));
+    setPayValueChanged(false);
+    setPayApplyScope(null);
+  };
+
   const handleMarkAsPaid = async (exp: Expense, keepOriginalDate: boolean) => {
     try {
+      const newValue = parseFloat(payValue);
+      const valueChanged = !isNaN(newValue) && newValue !== exp.value;
       const updateFields: Record<string, unknown> = { is_paid: true };
       if (!keepOriginalDate) {
         const today = new Date();
         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         updateFields.date = todayStr;
       }
+      if (valueChanged) {
+        updateFields.value = newValue;
+      }
       const { error } = await supabase.from('expenses').update(updateFields).eq('id', exp.id);
       if (error) throw error;
+
+      // If value changed and user chose to apply to all installments
+      if (valueChanged && payApplyScope === 'all' && exp.installment_group_id) {
+        const { error: groupErr } = await supabase
+          .from('expenses')
+          .update({ value: newValue })
+          .eq('installment_group_id', exp.installment_group_id)
+          .neq('id', exp.id);
+        if (groupErr) throw groupErr;
+      }
+
       toast({ title: exp.type === 'income' ? 'Recebimento confirmado!' : 'Pagamento confirmado!' });
       onDeleted();
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     } finally {
       setPayingExpense(null);
+      setPayApplyScope(null);
     }
   };
 
