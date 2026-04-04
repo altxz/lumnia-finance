@@ -156,16 +156,16 @@ export default function SettingsPage() {
               <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
             ) : (
               <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
-                <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+                <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 pb-1 -webkit-overflow-scrolling-touch">
                   <TabsList className="rounded-xl bg-secondary/50 p-1 h-auto gap-1 w-max sm:w-auto sm:flex-wrap">
-                    <TabsTrigger value="profile" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Perfil</span><span className="sm:hidden">Perfil</span></TabsTrigger>
-                    <TabsTrigger value="ai" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />IA</TabsTrigger>
-                    <TabsTrigger value="automation" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Automação</span><span className="sm:hidden">Auto</span></TabsTrigger>
-                    <TabsTrigger value="notifications" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Notificações</span><span className="sm:hidden">Notif.</span></TabsTrigger>
-                    <TabsTrigger value="security" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden xs:inline">Segurança</span><span className="xs:hidden">Seg.</span></TabsTrigger>
-                    <TabsTrigger value="categories" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Categorias</span><span className="sm:hidden">Cat.</span></TabsTrigger>
-                    <TabsTrigger value="modules" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><ToggleRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Módulos</span><span className="sm:hidden">Mód.</span></TabsTrigger>
-                    <TabsTrigger value="plans" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm"><Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Planos</TabsTrigger>
+                    <TabsTrigger value="profile" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Perfil</TabsTrigger>
+                    <TabsTrigger value="ai" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />IA</TabsTrigger>
+                    <TabsTrigger value="automation" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Auto</TabsTrigger>
+                    <TabsTrigger value="notifications" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Notif.</TabsTrigger>
+                    <TabsTrigger value="security" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Seg.</TabsTrigger>
+                    <TabsTrigger value="categories" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Cat.</TabsTrigger>
+                    <TabsTrigger value="modules" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><ToggleRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Mód.</TabsTrigger>
+                    <TabsTrigger value="plans" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Planos</TabsTrigger>
                   </TabsList>
                 </div>
 
