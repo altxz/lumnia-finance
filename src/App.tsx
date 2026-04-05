@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DateProvider } from "@/contexts/DateContext";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { AuthenticatedExtras } from "@/components/AuthenticatedExtras";
+import { AnimatedRoutes } from "@/components/AnimatedRoute";
 
 // Lazy load all route pages
 const Dashboard = lazy(() => import("./pages/Dashboard"));
