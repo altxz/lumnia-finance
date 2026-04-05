@@ -438,6 +438,60 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit modal */}
+      {editingExpense && (
+        <EditExpenseModal
+          open={!!editingExpense}
+          expense={editingExpense}
+          onOpenChange={(v) => { if (!v) setEditingExpense(null); }}
+          onExpenseUpdated={() => {
+            setEditingExpense(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteMode(null); } }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteTarget?.installment_group_id && deleteMode === null
+                ? 'Excluir parcela'
+                : 'Excluir transação?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.installment_group_id && deleteMode === null
+                ? `Esta é a parcela ${deleteTarget.installment_info}. O que deseja excluir?`
+                : 'Esta ação não pode ser desfeita.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className={deleteTarget?.installment_group_id && deleteMode === null ? 'flex-col gap-2 sm:flex-col' : ''}>
+            {deleteTarget?.installment_group_id && deleteMode === null ? (
+              <>
+                <Button variant="outline" className="rounded-xl" onClick={() => { if (deleteTarget) handleDeleteTx(deleteTarget, 'single'); }}>
+                  Apenas esta parcela
+                </Button>
+                <Button variant="destructive" className="rounded-xl" onClick={() => { if (deleteTarget) handleDeleteTx(deleteTarget, 'all'); }}>
+                  Todas as parcelas do grupo
+                </Button>
+                <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+              </>
+            ) : (
+              <>
+                <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => { if (deleteTarget) handleDeleteTx(deleteTarget, 'single'); }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+                >
+                  Excluir
+                </AlertDialogAction>
+              </>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
