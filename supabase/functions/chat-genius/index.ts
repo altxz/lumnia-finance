@@ -1034,6 +1034,117 @@ async function executeTool(
       return JSON.stringify({ evolucao: resultado });
     }
 
+    case "oportunidades_economia": {
+      const month = (args.month as string) || getCurrentMonth();
+      const { start, end } = getMonthRange(month);
+      const [y, m] = month.split("-").map(Number);
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const now = new Date();
+      const isCurrentMonth = now.getFullYear() === y && now.getMonth() + 1 === m;
+      const daysElapsed = isCurrentMonth ? now.getDate() : daysInMonth;
+
+      // Previous month
+      const prevM = m === 1 ? 12 : m - 1;
+      const prevY = m === 1 ? y - 1 : y;
+      const prevMonth = `${prevY}-${String(prevM).padStart(2, "0")}`;
+      const prevRange = getMonthRange(prevMonth);
+
+      // Parallel queries
+      const [
+        { data: curExpenses },
+        { data: prevExpenses },
+        { data: budgets },
+        { data: recurring },
+      ] = await Promise.all([
+        supabase.from("expenses").select("value, type, final_category, description, is_recurring, credit_card_id")
+          .eq("user_id", userId).gte("date", start).lte("date", end),
+        supabase.from("expenses").select("value, type, final_category")
+          .eq("user_id", userId).neq("type", "income").neq("type", "transfer")
+          .gte("date", prevRange.start).lte("date", prevRange.end),
+        supabase.from("budgets").select("category, allocated_amount")
+          .eq("user_id", userId).eq("month_year", `${month}-01`),
+        supabase.from("expenses").select("description, value, type, final_category, frequency")
+          .eq("user_id", userId).eq("is_recurring", true).neq("type", "income"),
+      ]);
+
+      // Current month breakdown
+      const curByCategory: Record<string, number> = {};
+      let totalExpense = 0, totalIncome = 0;
+      for (const e of curExpenses || []) {
+        if (e.type === "income") { totalIncome += Number(e.value); continue; }
+        if (e.type === "transfer") continue;
+        totalExpense += Number(e.value);
+        curByCategory[e.final_category] = (curByCategory[e.final_category] || 0) + Number(e.value);
+      }
+
+      // Previous month breakdown
+      const prevByCategory: Record<string, number> = {};
+      let prevTotal = 0;
+      for (const e of prevExpenses || []) {
+        prevTotal += Number(e.value);
+        prevByCategory[e.final_category] = (prevByCategory[e.final_category] || 0) + Number(e.value);
+      }
+
+      // Top categories with comparison
+      const topCats = Object.entries(curByCategory)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([cat, val]) => ({
+          categoria: cat,
+          gasto_atual: val,
+          gasto_mes_anterior: prevByCategory[cat] || 0,
+          variacao_pct: prevByCategory[cat] > 0 ? Math.round(((val - prevByCategory[cat]) / prevByCategory[cat]) * 100) : null,
+          percentual_do_total: totalExpense > 0 ? Math.round((val / totalExpense) * 100) : 0,
+        }));
+
+      // Categories that increased significantly
+      const aumentaram = topCats.filter(c => c.variacao_pct !== null && c.variacao_pct > 20);
+
+      // Budget overruns
+      const orcamentosEstourados = (budgets || [])
+        .map(b => ({
+          categoria: b.category,
+          orcamento: b.allocated_amount,
+          gasto: curByCategory[b.category] || 0,
+          pct: b.allocated_amount > 0 ? Math.round(((curByCategory[b.category] || 0) / b.allocated_amount) * 100) : 0,
+        }))
+        .filter(b => b.pct >= 70);
+
+      // Recurring expenses summary
+      const seen = new Set<string>();
+      const uniqueRecurring = (recurring || []).filter(e => {
+        const key = `${e.description}-${e.value}`;
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+      const totalRecorrente = uniqueRecurring.reduce((s, e) => s + Number(e.value), 0);
+
+      // Daily average & projection
+      const mediaDiaria = daysElapsed > 0 ? totalExpense / daysElapsed : 0;
+      const projecaoMes = mediaDiaria * daysInMonth;
+      const taxaEconomia = totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) : 0;
+
+      return JSON.stringify({
+        mes: month,
+        resumo: {
+          receitas: totalIncome,
+          despesas: totalExpense,
+          taxa_economia: taxaEconomia,
+          media_diaria: Math.round(mediaDiaria * 100) / 100,
+          projecao_fim_mes: Math.round(projecaoMes * 100) / 100,
+          despesas_mes_anterior: prevTotal,
+          variacao_total_pct: prevTotal > 0 ? Math.round(((totalExpense - prevTotal) / prevTotal) * 100) : null,
+        },
+        top_categorias: topCats,
+        categorias_que_aumentaram: aumentaram,
+        orcamentos_em_risco: orcamentosEstourados,
+        despesas_fixas: {
+          total: totalRecorrente,
+          itens: uniqueRecurring.slice(0, 10).map(e => ({ descricao: e.description, valor: e.value, categoria: e.final_category })),
+        },
+      });
+    }
+
     default:
       return JSON.stringify({ error: "Função desconhecida" });
   }
