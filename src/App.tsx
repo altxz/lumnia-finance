@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DateProvider } from "@/contexts/DateContext";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { AuthenticatedExtras } from "@/components/AuthenticatedExtras";
+import { AnimatedRoutes } from "@/components/AnimatedRoute";
 
 // Lazy load all route pages
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -55,21 +56,23 @@ const App = () => (
             <UserSettingsProvider>
               <BrowserRouter>
                 <Suspense fallback={<PageFallback />}>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/categorias" element={<CategoriesPage />} />
-                    <Route path="/historico" element={<HistoryPage />} />
-                    <Route path="/configuracoes" element={<SettingsPage />} />
-                    <Route path="/analytics" element={<AnalyticsPage />} />
-                    <Route path="/wallet" element={<WalletPage />} />
-                    <Route path="/orcamento" element={<BudgetPage />} />
-                    <Route path="/projetos" element={<ProjectsPage />} />
-                    <Route path="/simulador-dividas" element={<DebtSimulatorPage />} />
-                    <Route path="/score-financeiro" element={<FinancialScorePage />} />
-                    <Route path="/novidades" element={<ChangelogPage />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <AnimatedRoutes>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/categorias" element={<CategoriesPage />} />
+                      <Route path="/historico" element={<HistoryPage />} />
+                      <Route path="/configuracoes" element={<SettingsPage />} />
+                      <Route path="/analytics" element={<AnalyticsPage />} />
+                      <Route path="/wallet" element={<WalletPage />} />
+                      <Route path="/orcamento" element={<BudgetPage />} />
+                      <Route path="/projetos" element={<ProjectsPage />} />
+                      <Route path="/simulador-dividas" element={<DebtSimulatorPage />} />
+                      <Route path="/score-financeiro" element={<FinancialScorePage />} />
+                      <Route path="/novidades" element={<ChangelogPage />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AnimatedRoutes>
                 </Suspense>
                 <AuthenticatedExtras />
               </BrowserRouter>
