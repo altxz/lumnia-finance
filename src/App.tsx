@@ -21,6 +21,7 @@ const WalletPage = lazy(() => import("./pages/WalletPage"));
 const BudgetPage = lazy(() => import("./pages/BudgetPage"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
 const DebtSimulatorPage = lazy(() => import("./pages/DebtSimulatorPage"));
+const FinancialScorePage = lazy(() => import("./pages/FinancialScorePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -64,6 +65,7 @@ const App = () => (
                     <Route path="/orcamento" element={<BudgetPage />} />
                     <Route path="/projetos" element={<ProjectsPage />} />
                     <Route path="/simulador-dividas" element={<DebtSimulatorPage />} />
+                    <Route path="/score-financeiro" element={<FinancialScorePage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
