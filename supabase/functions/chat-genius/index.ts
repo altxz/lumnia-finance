@@ -344,6 +344,39 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "preparar_orcamento",
+      description: "Busca todos os dados necessários para criar ou sugerir um orçamento mensal: receitas do mês atual e anterior, gastos por categoria, orçamentos existentes do mês anterior e categorias do utilizador. Usa quando perguntarem 'me ajude a criar um orçamento', 'quero montar meu orçamento', 'criar orçamento para o próximo mês'.",
+      parameters: {
+        type: "object",
+        properties: {
+          month: { type: "string", description: "Mês-alvo para o orçamento no formato YYYY-MM. Se omitido, usa o próximo mês." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "salvar_orcamento",
+      description: "Salva/atualiza o orçamento de uma categoria para um mês específico. Usa após o utilizador confirmar os valores sugeridos.",
+      parameters: {
+        type: "object",
+        properties: {
+          category_id: { type: "string", description: "ID da categoria." },
+          category_name: { type: "string", description: "Nome da categoria." },
+          amount: { type: "number", description: "Valor alocado para o orçamento." },
+          month: { type: "string", description: "Mês no formato YYYY-MM." },
+        },
+        required: ["category_id", "category_name", "amount", "month"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function getCurrentMonth(): string {
