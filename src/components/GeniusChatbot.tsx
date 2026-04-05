@@ -173,7 +173,7 @@ export function GeniusChatbot() {
                       : 'bg-secondary text-secondary-foreground rounded-bl-md'
                   )}
                 >
-                  {renderContent(msg.content)}
+                  {renderContent(msg.content, msg.role === 'user')}
                 </div>
               </div>
             ))}
