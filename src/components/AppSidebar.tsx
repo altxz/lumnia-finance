@@ -39,6 +39,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { settings } = useUserSettings();
   const hasUnread = useChangelogUnread();
+  const navigate = useNavigate();
 
   const items = [
     { title: 'Dashboard', url: '/', icon: LayoutDashboard, visible: true, badge: false },
@@ -52,9 +53,12 @@ export function AppSidebar() {
     { title: 'Configurações', url: '/configuracoes', icon: Settings, visible: true, badge: false },
   ];
 
-  const handleNavClick = () => {
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
     if (isMobile) {
+      e.preventDefault();
       setOpenMobile(false);
+      // Navigate after sidebar closes to avoid blocking the animation
+      setTimeout(() => navigate(url), 150);
     }
   };
 
