@@ -350,6 +350,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         toast({ title: expense.is_recurring && !wantInstallment ? 'Recorrência desativada!' : 'Transação atualizada!' });
       }
 
+      queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
       onExpenseUpdated();
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
@@ -364,6 +365,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Transação excluída' });
+      queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
       onExpenseUpdated();
     }
   };
