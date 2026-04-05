@@ -211,6 +211,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         if (insertOneOffError) throw insertOneOffError;
 
         toast({ title: 'Alteração aplicada apenas nesta ocorrência!' });
+        queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
         onExpenseUpdated();
         setSaving(false);
         return;
