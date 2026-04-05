@@ -20,6 +20,7 @@ const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
 const WalletPage = lazy(() => import("./pages/WalletPage"));
 const BudgetPage = lazy(() => import("./pages/BudgetPage"));
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
+const DebtSimulatorPage = lazy(() => import("./pages/DebtSimulatorPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -62,6 +63,7 @@ const App = () => (
                     <Route path="/wallet" element={<WalletPage />} />
                     <Route path="/orcamento" element={<BudgetPage />} />
                     <Route path="/projetos" element={<ProjectsPage />} />
+                    <Route path="/simulador-dividas" element={<DebtSimulatorPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
