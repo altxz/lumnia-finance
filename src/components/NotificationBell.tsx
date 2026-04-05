@@ -148,7 +148,7 @@ export function NotificationBell() {
   const handleQuickPayFromNotification = async (n: Notification) => {
     if (!user || !n.expense_id) return;
     markAsRead(n.id);
-    const { data: exp } = await supabase.from('expenses').select('id, description, value, date, type, installment_group_id').eq('id', n.expense_id).single();
+    const { data: exp } = await supabase.from('expenses').select('id, description, value, date, type, installment_group_id, is_recurring, final_category, wallet_id, credit_card_id, payment_method, notes, tags, project_id, invoice_month, user_id').eq('id', n.expense_id).single();
     if (!exp) {
       toast({ title: 'Transação não encontrada', description: 'Esta transação pode ter sido excluída.', variant: 'destructive' });
       return;
