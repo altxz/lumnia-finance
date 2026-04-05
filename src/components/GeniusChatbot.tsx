@@ -107,18 +107,29 @@ export function GeniusChatbot() {
     }
   };
 
-  const renderContent = (content: string) => {
-    const parts = content.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\n)/g);
-    return parts.map((part, i) => {
-      if (part === '\n') return <br key={i} />;
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return <em key={i} className="italic text-muted-foreground">{part.slice(1, -1)}</em>;
-      }
-      return <span key={i}>{part}</span>;
-    });
+  const renderContent = (content: string, isUser: boolean) => {
+    if (isUser) {
+      return <span>{content}</span>;
+    }
+    return (
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          strong: ({ children }) => <strong className="font-semibold text-primary">{children}</strong>,
+          em: ({ children }) => <em className="italic text-muted-foreground">{children}</em>,
+          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          h1: ({ children }) => <h1 className="text-base font-bold text-primary mb-1">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-sm font-bold text-primary mb-1">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold text-primary mb-1">{children}</h3>,
+          hr: () => <hr className="my-2 border-border/50" />,
+          code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-primary">{children}</code>,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
   };
 
   return (
