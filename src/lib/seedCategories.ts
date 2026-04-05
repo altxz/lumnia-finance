@@ -10,10 +10,7 @@ interface CategorySeed {
 
 const DEFAULT_CATEGORIES: CategorySeed[] = [
   {
-    name: 'Moradia',
-    icon: 'house',
-    color: '#14B8A6',
-    keywords: ['moradia', 'casa', 'apartamento'],
+    name: 'Moradia', icon: 'house', color: '#14B8A6', keywords: ['moradia', 'casa', 'apartamento'],
     children: [
       { name: 'Aluguel', icon: 'key-round', color: '#14B8A6', keywords: ['aluguel', 'renda', 'arrendamento'] },
       { name: 'Condomínio', icon: 'building-2', color: '#0D9488', keywords: ['condomínio', 'condominio', 'taxa condominial'] },
@@ -24,10 +21,7 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
     ],
   },
   {
-    name: 'Alimentação',
-    icon: 'utensils',
-    color: '#F97316',
-    keywords: ['alimentação', 'comida', 'alimentacao'],
+    name: 'Alimentação', icon: 'utensils', color: '#F97316', keywords: ['alimentação', 'comida', 'alimentacao'],
     children: [
       { name: 'Supermercado', icon: 'shopping-cart', color: '#F97316', keywords: ['supermercado', 'mercado', 'mercearia', 'hortifruti'] },
       { name: 'Restaurante', icon: 'chef-hat', color: '#EA580C', keywords: ['restaurante', 'almoço', 'jantar', 'refeição'] },
@@ -37,10 +31,7 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
     ],
   },
   {
-    name: 'Transporte',
-    icon: 'car',
-    color: '#4B6DFB',
-    keywords: ['transporte', 'locomoção', 'mobilidade'],
+    name: 'Transporte', icon: 'car', color: '#4B6DFB', keywords: ['transporte', 'locomoção', 'mobilidade'],
     children: [
       { name: 'Combustível', icon: 'fuel', color: '#4B6DFB', keywords: ['combustível', 'gasolina', 'etanol', 'diesel', 'posto'] },
       { name: 'Uber/Táxi', icon: 'car-taxi-front', color: '#1D4ED8', keywords: ['uber', 'táxi', 'taxi', '99', 'corrida'] },
@@ -50,10 +41,7 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
     ],
   },
   {
-    name: 'Saúde',
-    icon: 'heart-pulse',
-    color: '#EF4444',
-    keywords: ['saúde', 'saude', 'médico', 'hospital'],
+    name: 'Saúde', icon: 'heart-pulse', color: '#EF4444', keywords: ['saúde', 'saude', 'médico', 'hospital'],
     children: [
       { name: 'Plano de Saúde', icon: 'heart-handshake', color: '#EF4444', keywords: ['plano de saúde', 'convênio', 'unimed', 'amil'] },
       { name: 'Farmácia', icon: 'pill', color: '#DC2626', keywords: ['farmácia', 'remédio', 'medicamento', 'drogaria'] },
@@ -62,10 +50,7 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
     ],
   },
   {
-    name: 'Lazer & Estilo de Vida',
-    icon: 'gamepad-2',
-    color: '#DA90FC',
-    keywords: ['lazer', 'entretenimento', 'diversão'],
+    name: 'Lazer & Estilo de Vida', icon: 'gamepad-2', color: '#DA90FC', keywords: ['lazer', 'entretenimento', 'diversão'],
     children: [
       { name: 'Assinaturas (Streaming)', icon: 'tv', color: '#DA90FC', keywords: ['netflix', 'spotify', 'disney', 'hbo', 'streaming', 'assinatura'] },
       { name: 'Cinema/Teatro', icon: 'clapperboard', color: '#C084FC', keywords: ['cinema', 'teatro', 'filme', 'espetáculo'] },
@@ -74,18 +59,9 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
       { name: 'Roupas/Calçados', icon: 'shirt', color: '#EC4899', keywords: ['roupa', 'calçado', 'vestuário', 'shopping', 'moda'] },
     ],
   },
+  { name: 'Educação', icon: 'graduation-cap', color: '#F59E0B', keywords: ['educação', 'estudo', 'curso', 'escola'], children: [] },
   {
-    name: 'Educação',
-    icon: 'graduation-cap',
-    color: '#F59E0B',
-    keywords: ['educação', 'estudo', 'curso', 'escola'],
-    children: [],
-  },
-  {
-    name: 'Receitas',
-    icon: 'wallet',
-    color: '#22C55E',
-    keywords: ['receita', 'renda', 'ganho', 'entrada'],
+    name: 'Receitas', icon: 'wallet', color: '#22C55E', keywords: ['receita', 'renda', 'ganho', 'entrada'],
     children: [
       { name: 'Salário', icon: 'banknote', color: '#22C55E', keywords: ['salário', 'salario', 'pagamento', 'holerite'] },
       { name: 'Freelance', icon: 'laptop', color: '#16A34A', keywords: ['freelance', 'freela', 'serviço extra', 'bico'] },
@@ -94,25 +70,15 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
     ],
   },
   {
-    name: 'Despesas Financeiras',
-    icon: 'landmark',
-    color: '#78716C',
-    keywords: ['despesa financeira', 'juros', 'financeiro'],
+    name: 'Despesas Financeiras', icon: 'landmark', color: '#78716C', keywords: ['despesa financeira', 'juros', 'financeiro'],
     children: [
       { name: 'Empréstimo', icon: 'hand-coins', color: '#78716C', keywords: ['empréstimo', 'financiamento', 'prestação', 'parcela'] },
     ],
   },
-  {
-    name: 'Outros',
-    icon: 'tag',
-    color: '#8B5CF6',
-    keywords: ['outros', 'diverso', 'geral'],
-    children: [],
-  },
+  { name: 'Outros', icon: 'tag', color: '#8B5CF6', keywords: ['outros', 'diverso', 'geral'], children: [] },
 ];
 
 export async function seedDefaultCategories(userId: string) {
-  // Check if user already has ANY categories — skip if so
   const { count } = await supabase
     .from('categories')
     .select('*', { count: 'exact', head: true })
@@ -120,48 +86,46 @@ export async function seedDefaultCategories(userId: string) {
 
   if (count && count > 0) return;
 
-  // Double-check with a small delay to avoid race conditions from multiple calls
-  await new Promise(r => setTimeout(r, 300));
-  const { count: recheck } = await supabase
-    .from('categories')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId);
-
-  if (recheck && recheck > 0) return;
-
+  // Batch insert: first all parents, then all children
   let sortOrder = 0;
+  const parentRows = DEFAULT_CATEGORIES.map(cat => ({
+    user_id: userId,
+    name: cat.name,
+    icon: cat.icon,
+    color: cat.color,
+    keywords: cat.keywords,
+    sort_order: sortOrder++,
+    parent_id: null as string | null,
+  }));
 
-  for (const cat of DEFAULT_CATEGORIES) {
-    // Insert parent
-    const { data: parent, error: parentError } = await supabase
-      .from('categories')
-      .insert({
-        user_id: userId,
-        name: cat.name,
-        icon: cat.icon,
-        color: cat.color,
-        keywords: cat.keywords,
-        sort_order: sortOrder++,
-        parent_id: null,
-      })
-      .select('id')
-      .single();
+  const { data: parents, error } = await supabase
+    .from('categories')
+    .insert(parentRows)
+    .select('id, name');
 
-    if (parentError || !parent) continue;
+  if (error || !parents) return;
 
-    // Insert children
-    if (cat.children && cat.children.length > 0) {
-      const children = cat.children.map((child, i) => ({
+  // Map parent name → id
+  const parentMap = new Map(parents.map(p => [p.name, p.id]));
+
+  const childRows: typeof parentRows = [];
+  DEFAULT_CATEGORIES.forEach(cat => {
+    const parentId = parentMap.get(cat.name);
+    if (!parentId || !cat.children?.length) return;
+    cat.children.forEach(child => {
+      childRows.push({
         user_id: userId,
         name: child.name,
         icon: child.icon,
         color: child.color,
         keywords: child.keywords,
         sort_order: sortOrder++,
-        parent_id: parent.id,
-      }));
+        parent_id: parentId,
+      });
+    });
+  });
 
-      await supabase.from('categories').insert(children);
-    }
+  if (childRows.length > 0) {
+    await supabase.from('categories').insert(childRows);
   }
 }
