@@ -18,6 +18,7 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
       { name: 'Água', icon: 'droplets', color: '#06B6D4', keywords: ['água', 'agua', 'saneamento', 'conta de água'] },
       { name: 'Internet', icon: 'wifi', color: '#6366F1', keywords: ['internet', 'wifi', 'fibra', 'banda larga'] },
       { name: 'Manutenção', icon: 'wrench', color: '#78716C', keywords: ['manutenção', 'reparo', 'conserto', 'reforma'] },
+      { name: 'Financiamento', icon: 'badge-dollar-sign', color: '#14B8A6', keywords: ['Caixa', 'habitação'] },
     ],
   },
   {
@@ -33,49 +34,74 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
   {
     name: 'Transporte', icon: 'car', color: '#4B6DFB', keywords: ['transporte', 'locomoção', 'mobilidade'],
     children: [
-      { name: 'Combustível', icon: 'fuel', color: '#4B6DFB', keywords: ['combustível', 'gasolina', 'etanol', 'diesel', 'posto'] },
-      { name: 'Uber/Táxi', icon: 'car-taxi-front', color: '#1D4ED8', keywords: ['uber', 'táxi', 'taxi', '99', 'corrida'] },
-      { name: 'Manutenção Auto', icon: 'wrench', color: '#3B82F6', keywords: ['oficina', 'mecânico', 'revisão', 'borracharia'] },
-      { name: 'Seguros', icon: 'shield-check', color: '#2563EB', keywords: ['seguro auto', 'seguro carro', 'dpvat', 'ipva'] },
-      { name: 'Transporte Público', icon: 'bus', color: '#60A5FA', keywords: ['ônibus', 'metro', 'metrô', 'bilhete', 'passagem'] },
+      { name: 'Combustível', icon: 'fuel', color: '#8B5CF6', keywords: ['Posto', 'Shell', 'Petrobrás', 'Ipiranga'] },
+      { name: 'Estacionamento', icon: 'car', color: '#8B5CF6', keywords: ['Estacionamento', 'Estapar'] },
+      { name: 'Uber', icon: 'car', color: '#5447BC', keywords: ['Uber'] },
+      { name: 'Transporte Público', icon: 'bus', color: '#5447BC', keywords: ['ônibus', 'metro', 'metrô', 'bilhete', 'passagem'] },
     ],
   },
   {
-    name: 'Saúde', icon: 'heart-pulse', color: '#EF4444', keywords: ['saúde', 'saude', 'médico', 'hospital'],
+    name: 'Saúde e Bem-Estar', icon: 'heart-pulse', color: '#DA90FC', keywords: ['saúde', 'saude', 'médico', 'hospital'],
     children: [
-      { name: 'Plano de Saúde', icon: 'heart-handshake', color: '#EF4444', keywords: ['plano de saúde', 'convênio', 'unimed', 'amil'] },
-      { name: 'Farmácia', icon: 'pill', color: '#DC2626', keywords: ['farmácia', 'remédio', 'medicamento', 'drogaria'] },
-      { name: 'Consultas', icon: 'stethoscope', color: '#F87171', keywords: ['consulta', 'médico', 'dentista', 'exame'] },
-      { name: 'Terapia', icon: 'brain', color: '#FB923C', keywords: ['terapia', 'psicólogo', 'psicologia', 'terapeuta'] },
+      { name: 'Farmácia', icon: 'pill', color: '#DA90FC', keywords: ['Farmácia', 'Drogasil', 'Drogaria'] },
+      { name: 'Academia', icon: 'dumbbell', color: '#DA90FC', keywords: ['Academia', 'SmartFit'] },
     ],
   },
   {
-    name: 'Lazer & Estilo de Vida', icon: 'gamepad-2', color: '#DA90FC', keywords: ['lazer', 'entretenimento', 'diversão'],
+    name: 'Lazer e Entretenimento', icon: 'sofa', color: '#F59E0B', keywords: ['lazer', 'entretenimento', 'diversão'],
     children: [
-      { name: 'Assinaturas (Streaming)', icon: 'tv', color: '#DA90FC', keywords: ['netflix', 'spotify', 'disney', 'hbo', 'streaming', 'assinatura'] },
-      { name: 'Cinema/Teatro', icon: 'clapperboard', color: '#C084FC', keywords: ['cinema', 'teatro', 'filme', 'espetáculo'] },
-      { name: 'Bares/Festas', icon: 'wine', color: '#A855F7', keywords: ['bar', 'festa', 'happy hour', 'balada', 'drinks'] },
-      { name: 'Viagens', icon: 'plane', color: '#8B5CF6', keywords: ['viagem', 'hotel', 'passagem aérea', 'turismo', 'hospedagem'] },
-      { name: 'Roupas/Calçados', icon: 'shirt', color: '#EC4899', keywords: ['roupa', 'calçado', 'vestuário', 'shopping', 'moda'] },
-    ],
-  },
-  { name: 'Educação', icon: 'graduation-cap', color: '#F59E0B', keywords: ['educação', 'estudo', 'curso', 'escola'], children: [] },
-  {
-    name: 'Receitas', icon: 'wallet', color: '#22C55E', keywords: ['receita', 'renda', 'ganho', 'entrada'],
-    children: [
-      { name: 'Salário', icon: 'banknote', color: '#22C55E', keywords: ['salário', 'salario', 'pagamento', 'holerite'] },
-      { name: 'Freelance', icon: 'laptop', color: '#16A34A', keywords: ['freelance', 'freela', 'serviço extra', 'bico'] },
-      { name: 'Rendimentos de Investimentos', icon: 'trending-up', color: '#15803D', keywords: ['rendimento', 'dividendo', 'investimento', 'juros'] },
-      { name: 'Cashback', icon: 'rotate-ccw', color: '#4ADE80', keywords: ['cashback', 'reembolso', 'estorno'] },
+      { name: 'Viagens', icon: 'plane', color: '#F59E0B', keywords: ['Gol', 'Azul', 'Linhas Aéreas'] },
+      { name: 'Cinema', icon: 'film', color: '#F59E0B', keywords: ['Cinema', 'Cinemark', 'Cinépolis'] },
+      { name: 'Bares', icon: 'wine', color: '#F59E0B', keywords: ['Bar'] },
     ],
   },
   {
-    name: 'Despesas Financeiras', icon: 'landmark', color: '#78716C', keywords: ['despesa financeira', 'juros', 'financeiro'],
+    name: 'Cuidados Pessoais', icon: 'scissors', color: '#4B6DFB', keywords: ['cuidados pessoais', 'beleza'],
     children: [
-      { name: 'Empréstimo', icon: 'hand-coins', color: '#78716C', keywords: ['empréstimo', 'financiamento', 'prestação', 'parcela'] },
+      { name: 'Barbearia', icon: 'scissors', color: '#4B6DFB', keywords: ['Barbearia'] },
+      { name: 'Perfumaria', icon: 'sparkles', color: '#4B6DFB', keywords: ['Perfumaria'] },
     ],
   },
-  { name: 'Outros', icon: 'tag', color: '#8B5CF6', keywords: ['outros', 'diverso', 'geral'], children: [] },
+  {
+    name: 'Educação', icon: 'graduation-cap', color: '#06B6D4', keywords: ['educação', 'estudo', 'curso', 'escola'],
+    children: [
+      { name: 'Cursos', icon: 'notebook-pen', color: '#06B6D4', keywords: ['Curso'] },
+      { name: 'Mensalidade Escolar', icon: 'receipt', color: '#06B6D4', keywords: [] },
+    ],
+  },
+  {
+    name: 'Financeiro', icon: 'circle-dollar-sign', color: '#EF4444', keywords: ['despesa financeira', 'juros', 'financeiro'],
+    children: [
+      { name: 'Investimentos', icon: 'trending-up', color: '#BEEE62', keywords: ['Invest'] },
+      { name: 'Juros/Multas', icon: 'percent', color: '#EF4444', keywords: ['Juros', 'Renegociação', 'Despesa'] },
+      { name: 'Empréstimos', icon: 'hand-coins', color: '#EF4444', keywords: ['Empréstimo'] },
+      { name: 'Transferências', icon: 'arrow-up-down', color: '#EF4444', keywords: [] },
+    ],
+  },
+  {
+    name: 'Receitas', icon: 'trending-up', color: '#84CC16', keywords: ['receita', 'renda', 'ganho', 'entrada'],
+    children: [
+      { name: 'Salário', icon: 'circle-dollar-sign', color: '#84CC16', keywords: ['salário', 'salario', 'pagamento', 'holerite'] },
+      { name: 'Freelance', icon: 'briefcase', color: '#84CC16', keywords: ['freelance', 'freela', 'serviço extra'] },
+      { name: 'Rendimentos', icon: 'chart-line', color: '#84CC16', keywords: ['rendimento', 'dividendo', 'investimento'] },
+      { name: 'Reembolsos', icon: 'arrow-up-down', color: '#84CC16', keywords: ['Reembolso'] },
+      { name: 'Transferências', icon: 'arrow-up-down', color: '#84CC16', keywords: ['Transferência'] },
+    ],
+  },
+  {
+    name: 'Compras', icon: 'shopping-bag', color: '#8B5CF6', keywords: ['compras', 'shopping'],
+    children: [
+      { name: 'Eletrônicos', icon: 'laptop', color: '#8B5CF6', keywords: ['Fast Shop', 'Magalu'] },
+      { name: 'Vestuário e Acessórios', icon: 'shirt', color: '#5447BC', keywords: ['Roupa', 'Zara', 'Riachuelo', 'C&A', 'Renner', 'Adidas', 'Nike', 'New Balance'] },
+      { name: 'Casa e Decoração', icon: 'house', color: '#8B5CF6', keywords: ['Tok & Stok', 'Mobly', 'Camicado'] },
+      { name: 'Eletrodomésticos', icon: 'tv', color: '#8B5CF6', keywords: ['Fast Shop'] },
+      { name: 'Pet Shop', icon: 'dog', color: '#8B5CF6', keywords: ['Pet', 'Petlove', 'Petz'] },
+      { name: 'Presentes', icon: 'gift', color: '#8B5CF6', keywords: [] },
+      { name: 'Assinaturas', icon: 'gem', color: '#8B5CF6', keywords: ['Netflix', 'YouTube', 'Spotify', 'Microsoft', 'Game Pass'] },
+      { name: 'Jogos', icon: 'gamepad-2', color: '#8B5CF6', keywords: ['Xbox'] },
+      { name: 'Ferramentas', icon: 'wrench', color: '#8B5CF6', keywords: [] },
+    ],
+  },
 ];
 
 export async function seedDefaultCategories(userId: string) {
