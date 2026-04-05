@@ -48,7 +48,8 @@ export function GuidedTour() {
         .select('onboarding_completed')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (data && !data.onboarding_completed) {
+      // Show tour if no settings record exists OR if onboarding not completed
+      if (!data || !data.onboarding_completed) {
         setShow(true);
       }
     };
@@ -60,8 +61,7 @@ export function GuidedTour() {
     if (!user) return;
     await supabase
       .from('user_settings')
-      .update({ onboarding_completed: true })
-      .eq('user_id', user.id);
+      .upsert({ user_id: user.id, onboarding_completed: true }, { onConflict: 'user_id' });
   };
 
   const handleSkip = () => completeTour();
