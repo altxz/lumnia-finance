@@ -151,7 +151,7 @@ export default function SettingsPage() {
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">Personalize sua experiência na Lumnia</p>
             </div>
 
-            {loading ? (
+            {(loading || authLoading) ? (
               <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
             ) : (
               <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
