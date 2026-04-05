@@ -99,19 +99,14 @@ export default {
           to: { height: "0" },
         },
         "page-enter": {
-          "0%": { opacity: "0", transform: "translateY(6px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "page-exit": {
-          "0%": { opacity: "1", transform: "translateY(0)" },
-          "100%": { opacity: "0", transform: "translateY(-6px)" },
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "page-enter": "page-enter 0.25s ease-out forwards",
-        "page-exit": "page-exit 0.15s ease-in forwards",
+        "page-enter": "page-enter 0.2s ease-out",
       },
     },
   },
