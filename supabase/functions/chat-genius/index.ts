@@ -1293,34 +1293,39 @@ async function executeTool(
     case "salvar_orcamento": {
       const month = args.month as string;
       const monthDate = `${month}-01`;
-      const categoryId = args.category_id as string;
-      const categoryName = args.category_name as string;
-      const amount = args.amount as number;
-
-      // Check if budget exists
-      const { data: existing } = await supabase
-        .from("budgets")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("category_id", categoryId)
-        .eq("month_year", monthDate)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase.from("budgets").update({ allocated_amount: amount }).eq("id", existing.id);
-        if (error) return JSON.stringify({ sucesso: false, erro: error.message });
-      } else {
-        const { error } = await supabase.from("budgets").insert({
-          user_id: userId,
-          category: categoryName,
-          category_id: categoryId,
-          month_year: monthDate,
-          allocated_amount: amount,
-        });
-        if (error) return JSON.stringify({ sucesso: false, erro: error.message });
+      const budgetsList = args.budgets as Array<{ category_id: string; category_name: string; amount: number }>;
+      
+      if (!budgetsList || budgetsList.length === 0) {
+        // Fallback: single budget (backward compat)
+        const categoryId = args.category_id as string;
+        const categoryName = args.category_name as string;
+        const amount = args.amount as number;
+        if (!categoryId || !amount) return JSON.stringify({ sucesso: false, erro: "Parâmetros inválidos" });
+        
+        const { data: existing } = await supabase.from("budgets").select("id").eq("user_id", userId).eq("category_id", categoryId).eq("month_year", monthDate).maybeSingle();
+        if (existing) {
+          await supabase.from("budgets").update({ allocated_amount: amount }).eq("id", existing.id);
+        } else {
+          await supabase.from("budgets").insert({ user_id: userId, category: categoryName, category_id: categoryId, month_year: monthDate, allocated_amount: amount });
+        }
+        return JSON.stringify({ sucesso: true, categorias_salvas: 1 });
       }
 
-      return JSON.stringify({ sucesso: true, categoria: categoryName, valor: amount, mes: month });
+      const results: string[] = [];
+      for (const b of budgetsList) {
+        const { data: existing } = await supabase.from("budgets").select("id").eq("user_id", userId).eq("category_id", b.category_id).eq("month_year", monthDate).maybeSingle();
+        if (existing) {
+          const { error } = await supabase.from("budgets").update({ allocated_amount: b.amount }).eq("id", existing.id);
+          if (error) results.push(`❌ ${b.category_name}: ${error.message}`);
+          else results.push(`✅ ${b.category_name}: R$ ${b.amount.toFixed(2)}`);
+        } else {
+          const { error } = await supabase.from("budgets").insert({ user_id: userId, category: b.category_name, category_id: b.category_id, month_year: monthDate, allocated_amount: b.amount });
+          if (error) results.push(`❌ ${b.category_name}: ${error.message}`);
+          else results.push(`✅ ${b.category_name}: R$ ${b.amount.toFixed(2)}`);
+        }
+      }
+
+      return JSON.stringify({ sucesso: true, categorias_salvas: budgetsList.length, detalhes: results });
     }
 
     default:
