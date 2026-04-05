@@ -151,30 +151,40 @@ export function useBudgetData() {
   const totalAllocated = useMemo(() => budgets.reduce((s, b) => s + b.allocated_amount, 0), [budgets]);
   const totalSpent = useMemo(() => Object.values(spentMap).reduce((s, v) => s + v, 0), [spentMap]);
 
-  const saveBudget = useCallback(async (categoryId: string, amount: number) => {
+  const saveBudget = useCallback(async (categoryId: string, amount: number, isRecurring?: boolean) => {
     if (!user) return;
     setSavingId(categoryId);
 
     const existing = budgets.find(b => b.category_id === categoryId);
-    if (existing) {
-      const { error } = await supabase.from('budgets').update({ allocated_amount: amount }).eq('id', existing.id);
+    // If this is an inherited recurring budget (from a past month), we need to insert a new one
+    const isInherited = existing && existing.month_year !== monthKey;
+    
+    if (existing && !isInherited) {
+      const updateFields: any = { allocated_amount: amount };
+      if (isRecurring !== undefined) updateFields.is_recurring = isRecurring;
+      const { error } = await supabase.from('budgets').update(updateFields).eq('id', existing.id);
       if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); }
       else {
-        setBudgets(prev => prev.map(b => b.id === existing.id ? { ...b, allocated_amount: amount } : b));
+        setBudgets(prev => prev.map(b => b.id === existing.id ? { ...b, allocated_amount: amount, ...(isRecurring !== undefined ? { is_recurring: isRecurring } : {}) } : b));
       }
     } else {
-      // Also find the category name for backward compat
       const cat = categories.find(c => c.id === categoryId);
+      const recurring = isRecurring !== undefined ? isRecurring : (existing?.is_recurring || false);
       const { data, error } = await supabase.from('budgets').insert({
         user_id: user.id,
         category: cat?.name || '',
         category_id: categoryId,
         month_year: monthKey,
         allocated_amount: amount,
+        is_recurring: recurring,
       }).select().single();
       if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); }
       else if (data) {
-        setBudgets(prev => [...prev, data as BudgetRow]);
+        setBudgets(prev => {
+          // Remove inherited entry if present
+          const filtered = isInherited ? prev.filter(b => !(b.category_id === categoryId && b.month_year !== monthKey)) : prev;
+          return [...filtered, data as BudgetRow];
+        });
       }
     }
     setSavingId(null);
