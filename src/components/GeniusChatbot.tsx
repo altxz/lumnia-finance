@@ -176,6 +176,23 @@ export function GeniusChatbot() {
             )}
           </div>
 
+          {/* Quick suggestions */}
+          {messages.length <= 1 && !isTyping && (
+            <div className="border-t px-3 pt-2 pb-1">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {QUICK_SUGGESTIONS.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setInput(s.message)}
+                    className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-border bg-secondary/50 text-secondary-foreground hover:bg-secondary transition-colors whitespace-nowrap"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <div className="border-t p-3">
             <div className="flex gap-2">
