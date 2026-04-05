@@ -351,6 +351,51 @@ export type Database = {
           },
         ]
       }
+      financial_scores: {
+        Row: {
+          budget_score: number
+          consistency_score: number
+          created_at: string
+          credit_score: number
+          debt_score: number
+          id: string
+          month_year: string
+          overall_score: number
+          savings_score: number
+          total_expense: number
+          total_income: number
+          user_id: string
+        }
+        Insert: {
+          budget_score?: number
+          consistency_score?: number
+          created_at?: string
+          credit_score?: number
+          debt_score?: number
+          id?: string
+          month_year: string
+          overall_score?: number
+          savings_score?: number
+          total_expense?: number
+          total_income?: number
+          user_id: string
+        }
+        Update: {
+          budget_score?: number
+          consistency_score?: number
+          created_at?: string
+          credit_score?: number
+          debt_score?: number
+          id?: string
+          month_year?: string
+          overall_score?: number
+          savings_score?: number
+          total_expense?: number
+          total_income?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       net_worth_history: {
         Row: {
           created_at: string

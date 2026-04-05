@@ -1,4 +1,4 @@
-import { LayoutDashboard, Settings, BarChart3, Wallet, PiggyBank, ArrowLeftRight, DollarSign, FolderKanban, Calculator } from 'lucide-react';
+import { LayoutDashboard, Settings, BarChart3, Wallet, PiggyBank, ArrowLeftRight, DollarSign, FolderKanban, Calculator, Activity } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { NavLink } from '@/components/NavLink';
 import { useUserSettings } from '@/contexts/UserSettingsContext';
@@ -27,6 +27,7 @@ export function AppSidebar() {
     { title: 'Projetos', url: '/projetos', icon: FolderKanban, visible: settings.enable_projects_module },
     { title: 'Minha Carteira', url: '/wallet', icon: Wallet, visible: true },
     { title: 'Simulador Dívidas', url: '/simulador-dividas', icon: Calculator, visible: true },
+    { title: 'Score Financeiro', url: '/score-financeiro', icon: Activity, visible: true },
     { title: 'Configurações', url: '/configuracoes', icon: Settings, visible: true },
   ];
 
