@@ -5,7 +5,7 @@ import { Sparkles, X, Send, Loader2, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import ReactMarkdown from 'react-markdown';
+
 
 interface Message {
   id: string;
@@ -108,28 +108,60 @@ export function GeniusChatbot() {
   };
 
   const renderContent = (content: string, isUser: boolean) => {
-    if (isUser) {
-      return <span>{content}</span>;
-    }
-    return (
-      <ReactMarkdown
-        components={{
-          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-          strong: ({ children }) => <strong className="font-semibold text-primary">{children}</strong>,
-          em: ({ children }) => <em className="italic text-muted-foreground">{children}</em>,
-          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-          h1: ({ children }) => <h1 className="text-base font-bold text-primary mb-1">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-sm font-bold text-primary mb-1">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-semibold text-primary mb-1">{children}</h3>,
-          hr: () => <hr className="my-2 border-border/50" />,
-          code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-primary">{children}</code>,
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    );
+    if (isUser) return <span>{content}</span>;
+
+    const lines = content.split('\n');
+    const elements: React.ReactNode[] = [];
+    let listItems: React.ReactNode[] = [];
+    let listType: 'ul' | 'ol' | null = null;
+
+    const flushList = () => {
+      if (listItems.length > 0 && listType) {
+        const cls = listType === 'ul' ? 'list-disc list-inside mb-2 space-y-0.5' : 'list-decimal list-inside mb-2 space-y-0.5';
+        elements.push(listType === 'ul'
+          ? <ul key={`list-${elements.length}`} className={cls}>{listItems}</ul>
+          : <ol key={`list-${elements.length}`} className={cls}>{listItems}</ol>);
+        listItems = [];
+        listType = null;
+      }
+    };
+
+    const formatInline = (text: string) => {
+      const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**'))
+          return <strong key={i} className="font-semibold text-primary">{part.slice(2, -2)}</strong>;
+        if (part.startsWith('*') && part.endsWith('*'))
+          return <em key={i} className="italic text-muted-foreground">{part.slice(1, -1)}</em>;
+        if (part.startsWith('`') && part.endsWith('`'))
+          return <code key={i} className="bg-muted px-1 py-0.5 rounded text-xs font-mono text-primary">{part.slice(1, -1)}</code>;
+        return <span key={i}>{part}</span>;
+      });
+    };
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (!trimmed) { flushList(); elements.push(<div key={`br-${idx}`} className="h-1.5" />); return; }
+      if (trimmed.startsWith('### ')) { flushList(); elements.push(<h3 key={idx} className="text-sm font-semibold text-primary mt-2 mb-1">{formatInline(trimmed.slice(4))}</h3>); return; }
+      if (trimmed.startsWith('## ')) { flushList(); elements.push(<h2 key={idx} className="text-sm font-bold text-primary mt-2 mb-1">{formatInline(trimmed.slice(3))}</h2>); return; }
+      if (trimmed.startsWith('# ')) { flushList(); elements.push(<h1 key={idx} className="text-base font-bold text-primary mt-2 mb-1">{formatInline(trimmed.slice(2))}</h1>); return; }
+      if (/^---+$/.test(trimmed)) { flushList(); elements.push(<hr key={idx} className="my-2 border-border/50" />); return; }
+      if (/^[-•]\s/.test(trimmed)) {
+        if (listType !== 'ul') { flushList(); listType = 'ul'; }
+        listItems.push(<li key={idx} className="leading-relaxed">{formatInline(trimmed.replace(/^[-•]\s/, ''))}</li>);
+        return;
+      }
+      if (/^\d+[.)]\s/.test(trimmed)) {
+        if (listType !== 'ol') { flushList(); listType = 'ol'; }
+        listItems.push(<li key={idx} className="leading-relaxed">{formatInline(trimmed.replace(/^\d+[.)]\s/, ''))}</li>);
+        return;
+      }
+      flushList();
+      elements.push(<p key={idx} className="mb-1.5 last:mb-0 leading-relaxed">{formatInline(trimmed)}</p>);
+    });
+    flushList();
+
+    return <div className="space-y-0">{elements}</div>;
   };
 
   return (
