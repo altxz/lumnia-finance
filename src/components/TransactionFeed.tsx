@@ -121,26 +121,50 @@ export function TransactionFeed({
     try {
       const newValue = parseFloat(payValue);
       const valueChanged = !isNaN(newValue) && newValue !== exp.value;
-      const updateFields: Record<string, unknown> = { is_paid: true };
-      if (!keepOriginalDate) {
-        const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        updateFields.date = todayStr;
-      }
-      if (valueChanged) {
-        updateFields.value = newValue;
-      }
-      const { error } = await supabase.from('expenses').update(updateFields).eq('id', exp.id);
-      if (error) throw error;
+      const finalValue = valueChanged && !isNaN(newValue) ? newValue : exp.value;
 
-      // If value changed and user chose to apply to all installments
-      if (valueChanged && payApplyScope === 'all' && exp.installment_group_id) {
-        const { error: groupErr } = await supabase
-          .from('expenses')
-          .update({ value: newValue })
-          .eq('installment_group_id', exp.installment_group_id)
-          .neq('id', exp.id);
-        if (groupErr) throw groupErr;
+      const payDate = (() => {
+        if (keepOriginalDate) return exp.date;
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      })();
+
+      // If this is a recurring template, INSERT a new paid copy instead of updating the template
+      if (exp.is_recurring) {
+        const { error } = await supabase.from('expenses').insert({
+          user_id: (exp as any).user_id,
+          description: exp.description,
+          value: finalValue,
+          final_category: exp.final_category,
+          type: exp.type,
+          date: payDate,
+          is_recurring: false,
+          is_paid: true,
+          wallet_id: exp.wallet_id || null,
+          credit_card_id: exp.credit_card_id || null,
+          payment_method: exp.payment_method || null,
+          notes: exp.notes || null,
+          tags: exp.tags || null,
+          project_id: exp.project_id || null,
+          invoice_month: exp.invoice_month || null,
+        });
+        if (error) throw error;
+      } else {
+        // Normal (non-recurring) transaction: update in place
+        const updateFields: Record<string, unknown> = { is_paid: true, date: payDate };
+        if (valueChanged) updateFields.value = newValue;
+        const { error } = await supabase.from('expenses').update(updateFields).eq('id', exp.id);
+        if (error) throw error;
+
+        // If value changed and user chose to apply to all installments
+        if (valueChanged && payApplyScope === 'all' && exp.installment_group_id) {
+          const { error: groupErr } = await supabase
+            .from('expenses')
+            .update({ value: newValue })
+            .eq('installment_group_id', exp.installment_group_id)
+            .neq('id', exp.id);
+          if (groupErr) throw groupErr;
+        }
       }
 
       toast({ title: exp.type === 'income' ? 'Recebimento confirmado!' : 'Pagamento confirmado!' });
