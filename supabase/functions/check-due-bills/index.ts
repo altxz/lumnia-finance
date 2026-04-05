@@ -23,11 +23,13 @@ Deno.serve(async (req) => {
 
     const today = new Date();
     const todayDay = today.getDate();
+    const todayDateStr = today.toISOString().slice(0, 10);
 
     const notifications: {
       user_id: string;
       title: string;
       message: string;
+      expense_id?: string;
     }[] = [];
 
     // 1. Check credit card due dates (due_day = tomorrow's day)
@@ -37,7 +39,6 @@ Deno.serve(async (req) => {
 
     if (cards && cards.length > 0) {
       for (const card of cards) {
-        // Calculate effective closing day
         let closingDay = card.closing_day;
         if (card.closing_strategy === "relative") {
           closingDay = card.due_day - card.closing_days_before_due;
@@ -97,35 +98,58 @@ Deno.serve(async (req) => {
     // 2. Check recurring expenses due tomorrow
     const { data: recurring } = await supabase
       .from("expenses")
-      .select("user_id, description, value, date")
+      .select("id, user_id, description, value, date, type")
       .eq("is_recurring", true)
       .eq("is_paid", false)
       .eq("date", tomorrowDateStr);
 
     if (recurring && recurring.length > 0) {
       for (const exp of recurring) {
+        const isIncome = exp.type === "income";
         notifications.push({
           user_id: exp.user_id,
-          title: "Assinatura a vencer",
-          message: `Lembrete: A sua assinatura ${exp.description} de R$ ${exp.value.toFixed(2).replace(".", ",")} vence amanhã.`,
+          title: isIncome ? "Receita a vencer" : "Assinatura a vencer",
+          message: `Lembrete: ${isIncome ? "Sua receita" : "Sua assinatura"} ${exp.description} de R$ ${exp.value.toFixed(2).replace(".", ",")} vence amanhã.`,
+          expense_id: exp.id,
         });
       }
     }
 
-    // 3. Also check non-recurring unpaid expenses due tomorrow
-    const { data: unpaid } = await supabase
+    // 3. Check non-recurring unpaid expenses/income due tomorrow
+    const { data: unpaidTomorrow } = await supabase
       .from("expenses")
-      .select("user_id, description, value")
+      .select("id, user_id, description, value, type")
       .eq("is_paid", false)
       .eq("is_recurring", false)
       .eq("date", tomorrowDateStr);
 
-    if (unpaid && unpaid.length > 0) {
-      for (const exp of unpaid) {
+    if (unpaidTomorrow && unpaidTomorrow.length > 0) {
+      for (const exp of unpaidTomorrow) {
+        const isIncome = exp.type === "income";
         notifications.push({
           user_id: exp.user_id,
-          title: "Conta a vencer",
-          message: `Lembrete: A sua conta ${exp.description} de R$ ${exp.value.toFixed(2).replace(".", ",")} vence amanhã.`,
+          title: isIncome ? "Receita a vencer" : "Conta a vencer",
+          message: `Lembrete: ${isIncome ? "Sua receita" : "Sua conta"} ${exp.description} de R$ ${exp.value.toFixed(2).replace(".", ",")} vence amanhã.`,
+          expense_id: exp.id,
+        });
+      }
+    }
+
+    // 4. Check unpaid expenses/income due TODAY (day of due date)
+    const { data: unpaidToday } = await supabase
+      .from("expenses")
+      .select("id, user_id, description, value, type, is_recurring")
+      .eq("is_paid", false)
+      .eq("date", todayDateStr);
+
+    if (unpaidToday && unpaidToday.length > 0) {
+      for (const exp of unpaidToday) {
+        const isIncome = exp.type === "income";
+        notifications.push({
+          user_id: exp.user_id,
+          title: isIncome ? "Receita vencendo hoje" : "Conta vencendo hoje",
+          message: `${isIncome ? "Sua receita" : "Sua conta"} ${exp.description} de R$ ${exp.value.toFixed(2).replace(".", ",")} vence hoje!`,
+          expense_id: exp.id,
         });
       }
     }
