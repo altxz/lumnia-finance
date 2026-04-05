@@ -347,6 +347,20 @@ export function TransactionFeed({
     return statusConfig[inv.status] || statusConfig.open;
   };
 
+  // Auto-scroll to today
+  const todayRef = useRef<HTMLDivElement>(null);
+  const didScrollToToday = useRef(false);
+
+  useEffect(() => {
+    if (!loading && todayRef.current && !didScrollToToday.current) {
+      didScrollToToday.current = true;
+      // Small delay to ensure layout is settled
+      requestAnimationFrame(() => {
+        todayRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [loading, grouped]);
+
   // Infinite scroll state
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -438,7 +452,7 @@ export function TransactionFeed({
           {visibleGroups.map(({ dateKey, items, invoices, endOfDayBalance }) => {
             if (items.length === 0 && invoices.length === 0) return null;
             return (
-              <div key={dateKey}>
+              <div key={dateKey} ref={dateKey === toDateKey(new Date()) ? todayRef : undefined}>
                 {/* Day header */}
                 {(() => {
                   const todayKey = toDateKey(new Date());
