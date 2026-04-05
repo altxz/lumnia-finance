@@ -363,16 +363,26 @@ const tools = [
     type: "function",
     function: {
       name: "salvar_orcamento",
-      description: "Salva/atualiza o orçamento de uma categoria para um mês específico. Usa após o utilizador confirmar os valores sugeridos.",
+      description: "Salva/atualiza orçamentos de múltiplas categorias de uma vez. Use para aplicar todas as sugestões quando o utilizador confirmar.",
       parameters: {
         type: "object",
         properties: {
-          category_id: { type: "string", description: "ID da categoria." },
-          category_name: { type: "string", description: "Nome da categoria." },
-          amount: { type: "number", description: "Valor alocado para o orçamento." },
           month: { type: "string", description: "Mês no formato YYYY-MM." },
+          budgets: {
+            type: "array",
+            description: "Lista de orçamentos a salvar.",
+            items: {
+              type: "object",
+              properties: {
+                category_id: { type: "string", description: "ID UUID da categoria." },
+                category_name: { type: "string", description: "Nome da categoria." },
+                amount: { type: "number", description: "Valor alocado." },
+              },
+              required: ["category_id", "category_name", "amount"],
+            },
+          },
         },
-        required: ["category_id", "category_name", "amount", "month"],
+        required: ["month", "budgets"],
         additionalProperties: false,
       },
     },
@@ -1283,34 +1293,39 @@ async function executeTool(
     case "salvar_orcamento": {
       const month = args.month as string;
       const monthDate = `${month}-01`;
-      const categoryId = args.category_id as string;
-      const categoryName = args.category_name as string;
-      const amount = args.amount as number;
-
-      // Check if budget exists
-      const { data: existing } = await supabase
-        .from("budgets")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("category_id", categoryId)
-        .eq("month_year", monthDate)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase.from("budgets").update({ allocated_amount: amount }).eq("id", existing.id);
-        if (error) return JSON.stringify({ sucesso: false, erro: error.message });
-      } else {
-        const { error } = await supabase.from("budgets").insert({
-          user_id: userId,
-          category: categoryName,
-          category_id: categoryId,
-          month_year: monthDate,
-          allocated_amount: amount,
-        });
-        if (error) return JSON.stringify({ sucesso: false, erro: error.message });
+      const budgetsList = args.budgets as Array<{ category_id: string; category_name: string; amount: number }>;
+      
+      if (!budgetsList || budgetsList.length === 0) {
+        // Fallback: single budget (backward compat)
+        const categoryId = args.category_id as string;
+        const categoryName = args.category_name as string;
+        const amount = args.amount as number;
+        if (!categoryId || !amount) return JSON.stringify({ sucesso: false, erro: "Parâmetros inválidos" });
+        
+        const { data: existing } = await supabase.from("budgets").select("id").eq("user_id", userId).eq("category_id", categoryId).eq("month_year", monthDate).maybeSingle();
+        if (existing) {
+          await supabase.from("budgets").update({ allocated_amount: amount }).eq("id", existing.id);
+        } else {
+          await supabase.from("budgets").insert({ user_id: userId, category: categoryName, category_id: categoryId, month_year: monthDate, allocated_amount: amount });
+        }
+        return JSON.stringify({ sucesso: true, categorias_salvas: 1 });
       }
 
-      return JSON.stringify({ sucesso: true, categoria: categoryName, valor: amount, mes: month });
+      const results: string[] = [];
+      for (const b of budgetsList) {
+        const { data: existing } = await supabase.from("budgets").select("id").eq("user_id", userId).eq("category_id", b.category_id).eq("month_year", monthDate).maybeSingle();
+        if (existing) {
+          const { error } = await supabase.from("budgets").update({ allocated_amount: b.amount }).eq("id", existing.id);
+          if (error) results.push(`❌ ${b.category_name}: ${error.message}`);
+          else results.push(`✅ ${b.category_name}: R$ ${b.amount.toFixed(2)}`);
+        } else {
+          const { error } = await supabase.from("budgets").insert({ user_id: userId, category: b.category_name, category_id: b.category_id, month_year: monthDate, allocated_amount: b.amount });
+          if (error) results.push(`❌ ${b.category_name}: ${error.message}`);
+          else results.push(`✅ ${b.category_name}: R$ ${b.amount.toFixed(2)}`);
+        }
+      }
+
+      return JSON.stringify({ sucesso: true, categorias_salvas: budgetsList.length, detalhes: results });
     }
 
     default:
@@ -1392,7 +1407,12 @@ Exemplos de comportamento PROIBIDO:
 - evolucao_gastos: Evolução nos últimos meses
 - oportunidades_economia: Análise completa de oportunidades de economia
 - preparar_orcamento: Busca dados completos para sugerir orçamento mensal
-- salvar_orcamento: Salva orçamento de uma categoria após confirmação
+- salvar_orcamento: Salva orçamentos de TODAS as categorias de uma vez (batch)
+
+## Regra de Orçamento:
+- Quando sugerir orçamentos: mostre os valores sugeridos e pergunte "Deseja que eu aplique esses valores?"
+- Quando o utilizador disser "sim", "aplique", "pode aplicar", "salve" ou qualquer confirmação → chame salvar_orcamento com TODOS os orçamentos sugeridos numa única chamada, usando o array "budgets" com category_id, category_name e amount para cada categoria.
+- NUNCA chame salvar_orcamento uma vez por categoria — use sempre o batch.
 
 ## Diretrizes adicionais:
 - Para registar despesa, extraia descrição, valor e categoria → use registrar_despesa
