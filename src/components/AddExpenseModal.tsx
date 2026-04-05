@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,6 +104,7 @@ const TYPE_STYLES = {
 } as const;
 
 export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpenseModalProps) {
+  const queryClient = useQueryClient();
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
