@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
 import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Calculator, Activity, Sparkles } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useUserSettings } from '@/contexts/UserSettingsContext';
