@@ -310,7 +310,7 @@ export default function DebtSimulatorPage() {
                           className="h-9 w-full sm:w-40"
                           placeholder="R$ 200"
                         />
-                        <InfoPopover content="Valor adicional que você pode pagar por mês além do mínimo de cada dívida. Será direcionado à dívida prioritária de acordo com o método escolhido." />
+                        <InfoPopover>Valor adicional que você pode pagar por mês além do mínimo de cada dívida. Será direcionado à dívida prioritária de acordo com o método escolhido.</InfoPopover>
                       </CardContent>
                     </Card>
 
@@ -376,7 +376,7 @@ export default function DebtSimulatorPage() {
                             <CardHeader className="pb-2">
                               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                                 Saldo Total ao Longo do Tempo
-                                <InfoPopover content="Comparação do saldo devedor total usando cada método. Avalanche prioriza juros altos; Bola de Neve prioriza saldos pequenos." />
+                                <InfoPopover>Comparação do saldo devedor total usando cada método. Avalanche prioriza juros altos; Bola de Neve prioriza saldos pequenos.</InfoPopover>
                               </CardTitle>
                             </CardHeader>
                             <CardContent className="flex-1 min-h-[300px]">
