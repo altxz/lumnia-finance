@@ -69,6 +69,9 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
   const [payingInvoice, setPayingInvoice] = useState<InvoicePeriod | null>(null);
   const [payWalletId, setPayWalletId] = useState('');
   const [paying, setPaying] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
 
   const invoices = useMemo(() => {
     return cards.map(card => {
