@@ -276,12 +276,12 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
                   </div>
                   <p className="text-sm font-bold">{formatInvoiceDate(inv.dueDate)}</p>
                 </div>
-                <div className="rounded-xl bg-accent/20 p-3 col-span-2 lg:col-span-1">
+                <div className="rounded-xl bg-primary/15 p-3 col-span-2 lg:col-span-1">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <ShoppingBag className="h-3.5 w-3.5 text-accent-foreground" />
+                    <ShoppingBag className="h-3.5 w-3.5 text-primary" />
                     <span className="text-[11px] text-muted-foreground">Melhor Dia de Compra</span>
                   </div>
-                  <p className="text-lg font-bold text-accent-foreground">Dia {bestDay}</p>
+                  <p className="text-lg font-bold text-primary">Dia {bestDay}</p>
                 </div>
               </div>
 
