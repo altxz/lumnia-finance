@@ -440,15 +440,21 @@ export function TransactionFeed({
             return (
               <div key={dateKey}>
                 {/* Day header */}
-                <div className="flex items-center justify-between px-3 py-2.5 bg-muted/60 rounded-t-xl border border-b-0 border-border">
-                  <h3 className="text-sm font-bold text-foreground capitalize">
-                    {formatGroupDate(dateKey)}
-                  </h3>
-                  <div className={`flex items-center gap-1.5 text-xs font-bold ${endOfDayBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                    <Wallet className="h-3.5 w-3.5" />
-                    <span>Saldo: {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
-                  </div>
-                </div>
+                {(() => {
+                  const todayKey = toDateKey(new Date());
+                  const isToday = dateKey === todayKey;
+                  return (
+                    <div className={`flex items-center justify-between px-3 py-2.5 rounded-t-xl border border-b-0 ${isToday ? 'bg-primary/10 border-primary/30 dark:bg-primary/15 dark:border-primary/40' : 'bg-muted/60 border-border'}`}>
+                      <h3 className={`text-sm font-bold capitalize ${isToday ? 'text-primary' : 'text-foreground'}`}>
+                        {formatGroupDate(dateKey)}
+                      </h3>
+                      <div className={`flex items-center gap-1.5 text-xs font-bold ${endOfDayBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                        <Wallet className="h-3.5 w-3.5" />
+                        <span>Saldo: {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Day content */}
                 <div className="rounded-b-xl border border-t-0 bg-card overflow-hidden divide-y divide-border">
