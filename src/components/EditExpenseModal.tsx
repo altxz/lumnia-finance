@@ -65,6 +65,7 @@ const TYPE_STYLES = {
 } as const;
 
 export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated }: EditExpenseModalProps) {
+  const queryClient = useQueryClient();
   const [date, setDate] = useState(expense.date);
   const [description, setDescription] = useState(expense.description);
   const [value, setValue] = useState(String(expense.value));
