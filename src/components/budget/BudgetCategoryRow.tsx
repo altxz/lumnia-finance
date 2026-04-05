@@ -4,14 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/constants';
-import { AlertTriangle, ChevronDown, Lightbulb } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Lightbulb, Repeat } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { CategoryBudgetNode, DbCategory, BudgetRow } from '@/hooks/useBudgetData';
 
 interface Props {
   node: CategoryBudgetNode;
-  saveBudget: (categoryId: string, amount: number) => Promise<void>;
+  saveBudget: (categoryId: string, amount: number, isRecurring?: boolean) => Promise<void>;
   savingId: string | null;
 }
 
@@ -22,6 +22,7 @@ function ProgressRow({
   spent,
   prevBudget,
   categoryId,
+  isRecurring,
   saveBudget,
   savingId,
 }: {
@@ -31,7 +32,8 @@ function ProgressRow({
   spent: number;
   prevBudget: number;
   categoryId: string;
-  saveBudget: (id: string, amount: number) => Promise<void>;
+  isRecurring: boolean;
+  saveBudget: (id: string, amount: number, isRecurring?: boolean) => Promise<void>;
   savingId: string | null;
 }) {
   const [localVal, setLocalVal] = useState<string>(allocated > 0 ? String(allocated) : '');
@@ -51,6 +53,11 @@ function ProgressRow({
     saveBudget(categoryId, prevBudget);
   };
 
+  const handleToggleRecurring = () => {
+    const currentAmount = parseFloat(localVal) || allocated;
+    saveBudget(categoryId, currentAmount, !isRecurring);
+  };
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-2">
       <div className="flex items-center gap-2 sm:w-36 shrink-0">
@@ -58,7 +65,7 @@ function ProgressRow({
         <span className="text-sm font-medium truncate">{label}</span>
       </div>
 
-      <div className="flex items-center gap-1 sm:w-44 shrink-0">
+      <div className="flex items-center gap-1 sm:w-52 shrink-0">
         <span className="text-xs text-muted-foreground whitespace-nowrap">Meta:</span>
         <Input
           type="number"
@@ -74,6 +81,24 @@ function ProgressRow({
           className="rounded-xl h-8 w-24 text-sm"
           disabled={savingId === categoryId}
         />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleToggleRecurring}
+              className={`shrink-0 p-1 rounded-md transition-colors ${
+                isRecurring
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              disabled={savingId === categoryId}
+            >
+              <Repeat className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isRecurring ? 'Repete todo mês (clique para desativar)' : 'Apenas este mês (clique para repetir todo mês)'}</p>
+          </TooltipContent>
+        </Tooltip>
         {prevBudget > 0 && allocated === 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
