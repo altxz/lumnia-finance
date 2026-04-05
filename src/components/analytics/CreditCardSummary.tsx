@@ -119,9 +119,6 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
       setDeleteMode(null);
     }
   };
-    setPayWalletId('');
-    setPayDialogOpen(true);
-  };
 
   const handlePayInvoice = async () => {
     if (!user || !payingInvoice || !payWalletId) return;
