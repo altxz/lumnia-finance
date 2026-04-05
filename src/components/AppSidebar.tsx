@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Calculator, Activity, Sparkles } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { useNavigate } from 'react-router-dom';
 import { useUserSettings } from '@/contexts/UserSettingsContext';
 import { LATEST_CHANGELOG_ID } from '@/pages/ChangelogPage';
 import {
@@ -38,6 +39,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { settings } = useUserSettings();
   const hasUnread = useChangelogUnread();
+  const navigate = useNavigate();
 
   const items = [
     { title: 'Dashboard', url: '/', icon: LayoutDashboard, visible: true, badge: false },
@@ -51,9 +53,12 @@ export function AppSidebar() {
     { title: 'Configurações', url: '/configuracoes', icon: Settings, visible: true, badge: false },
   ];
 
-  const handleNavClick = () => {
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
     if (isMobile) {
+      e.preventDefault();
       setOpenMobile(false);
+      // Navigate after sidebar closes to avoid blocking the animation
+      setTimeout(() => navigate(url), 150);
     }
   };
 
@@ -77,7 +82,7 @@ export function AppSidebar() {
                       to={item.url}
                       end={item.url === '/'}
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
-                      onClick={handleNavClick}
+                      onClick={(e) => handleNavClick(e, item.url)}
                     >
                       <div className="relative">
                         <item.icon className="h-4 w-4" />
