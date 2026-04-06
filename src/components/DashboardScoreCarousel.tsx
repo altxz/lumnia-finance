@@ -306,13 +306,13 @@ export function DashboardScoreCarousel({
             </Button>
           </div>
 
-          {/* Slide 2: Radar Chart */}
+          {/* Slide 1: Radar Chart */}
           <div
             className="absolute inset-0 flex flex-col items-center justify-center transition-all duration-400 ease-in-out"
             style={{
-              opacity: slide === 2 ? 1 : 0,
-              transform: `translateX(${slide === 2 ? 0 : -100}%)`,
-              pointerEvents: slide === 2 ? 'auto' : 'none',
+              opacity: slide === 1 ? 1 : 0,
+              transform: `translateX(${slide === 1 ? 0 : -100}%)`,
+              pointerEvents: slide === 1 ? 'auto' : 'none',
             }}
           >
             <ResponsiveContainer width="100%" height={190}>
