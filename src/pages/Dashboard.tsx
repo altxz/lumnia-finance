@@ -23,7 +23,7 @@ import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 
 // Lazy load all chart/widget components
 const CashFlowChart = lazy(() => import('@/components/CashFlowChart').then(m => ({ default: m.CashFlowChart })));
-const HealthScore = lazy(() => import('@/components/HealthScore').then(m => ({ default: m.HealthScore })));
+const DashboardScoreCarousel = lazy(() => import('@/components/DashboardScoreCarousel').then(m => ({ default: m.DashboardScoreCarousel })));
 const CalendarView = lazy(() => import('@/components/CalendarView').then(m => ({ default: m.CalendarView })));
 const IncomeVsExpenseChart = lazy(() => import('@/components/analytics/IncomeVsExpenseChart').then(m => ({ default: m.IncomeVsExpenseChart })));
 const TopExpensesList = lazy(() => import('@/components/analytics/TopExpensesList').then(m => ({ default: m.TopExpensesList })));
@@ -247,12 +247,14 @@ export default function Dashboard() {
                   pendingInStartingBalance={projected.pendingInStartingBalance}
                   healthScore={
                     <Suspense fallback={<Skeleton className="h-16 w-full rounded-xl" />}>
-                      <HealthScore
+                      <DashboardScoreCarousel
                         totalIncome={projected.totalIncome}
                         totalExpense={projected.totalExpense}
                         totalBudget={budgetTotals.totalBudget}
                         totalSpentInBudget={budgetTotals.totalSpent}
                         hasOverdueCards={hasOverdueCardsComputed}
+                        creditCards={projected.creditCards}
+                        monthExpenses={projected.monthExpenses}
                       />
                     </Suspense>
                   }
