@@ -235,7 +235,7 @@ export function DashboardScoreCarousel({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Activity className="h-4 w-4 text-muted-foreground" />
-            {slide === 0 ? 'Saúde Financeira' : slide === 1 ? 'Score Detalhado' : 'Perfil Financeiro'}
+            {slide === 0 ? 'Score Financeiro' : 'Perfil Financeiro'}
           </CardTitle>
           <div className="flex items-center gap-1">
             <button onClick={prev} className="p-1 rounded-full hover:bg-muted transition-colors">
