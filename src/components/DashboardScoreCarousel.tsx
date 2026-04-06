@@ -27,11 +27,6 @@ function getScoreColor(score: number): string {
   return 'hsl(0, 72%, 51%)';
 }
 
-function getHealthMessage(score: number) {
-  if (score < 40) return 'Cuidado! Reveja seus gastos.';
-  if (score < 70) return 'Você está no caminho certo!';
-  return 'Excelente! Finanças saudáveis!';
-}
 
 function getScoreLabel(score: number): string {
   if (score >= 90) return 'Excelente';
