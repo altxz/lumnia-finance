@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Expense } from '@/components/ExpenseTable';
+import { isInvoicePayment } from '@/lib/utils';
 // Only fetch columns needed for analytics
-const ANALYTICS_COLS = 'id, value, date, type, final_category, credit_card_id, is_recurring, is_paid, frequency, installment_group_id';
+const ANALYTICS_COLS = 'id, value, date, type, final_category, credit_card_id, is_recurring, is_paid, frequency, installment_group_id, description';
 
 export interface AnalyticsFilters {
   period: string; // '3', '6', '12', 'all'
@@ -93,6 +94,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
     expenses.forEach(e => {
       if (e.type === 'transfer') return;
+      if (isInvoicePayment(e)) return;
       const key = getAnalyticsMonthKey(e);
       if (!map[key]) {
         const [y, m] = key.split('-').map(Number);
@@ -149,6 +151,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
+      if (isInvoicePayment(e)) return;
       if (!current[e.final_category]) current[e.final_category] = { total: 0, count: 0 };
       current[e.final_category].total += e.value;
       current[e.final_category].count += 1;
@@ -156,6 +159,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
 
     previousExpenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
+      if (isInvoicePayment(e)) return;
       if (!prev[e.final_category]) prev[e.final_category] = { total: 0 };
       prev[e.final_category].total += e.value;
     });

@@ -26,6 +26,7 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
     const map: Record<string, number> = {};
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
+      if (e.description?.startsWith('Pagamento fatura')) return;
       map[e.final_category] = (map[e.final_category] || 0) + e.value;
     });
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);

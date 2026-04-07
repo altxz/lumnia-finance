@@ -38,7 +38,7 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
     // Top 5 expense categories
     const byCat: Record<string, number> = {};
     nonTransfers
-      .filter(e => e.type === 'expense' && !e.credit_card_id)
+      .filter(e => e.type === 'expense' && !e.credit_card_id && !e.description?.startsWith('Pagamento fatura'))
       .forEach(e => {
         byCat[e.final_category] = (byCat[e.final_category] || 0) + e.value;
       });

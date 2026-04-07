@@ -208,7 +208,7 @@ export default function FinancialScorePage() {
         { data: debts },
         { data: scoreHistory },
       ] = await Promise.all([
-        supabase.from('expenses').select('value, type, credit_card_id, final_category')
+        supabase.from('expenses').select('value, type, credit_card_id, final_category, description')
           .eq('user_id', user.id).gte('date', currentMonth).lt('date', nextMonthStr),
         supabase.from('expenses').select('value, type')
           .eq('user_id', user.id).gte('date', prevMonthStr).lt('date', currentMonth),
@@ -239,7 +239,7 @@ export default function FinancialScorePage() {
       setTotalBudget(bTotal);
       const spent: Record<string, number> = {};
       expenses.forEach((e: any) => {
-        if (e.type !== 'income') spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
+        if (e.type !== 'income' && !e.description?.startsWith('Pagamento fatura')) spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
       });
       const budgetSpent = (budgetData || []).reduce((s: number, b: any) => s + (spent[b.category] || 0), 0);
       setTotalSpentInBudget(budgetSpent);

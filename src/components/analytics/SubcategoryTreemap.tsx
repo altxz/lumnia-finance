@@ -29,6 +29,7 @@ export function SubcategoryTreemap({ expenses, categories }: Props) {
     const map: Record<string, number> = {};
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
+      if (e.description?.startsWith('Pagamento fatura')) return;
       map[e.final_category] = (map[e.final_category] || 0) + e.value;
     });
 

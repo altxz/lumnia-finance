@@ -136,7 +136,7 @@ export default function Dashboard() {
     if (projected.loading || budgetDataRaw.length === 0) return;
     const spent: Record<string, number> = {};
     projected.monthExpenses.forEach((e: any) => {
-      if (e.type !== 'income') spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
+      if (e.type !== 'income' && !e.description?.startsWith('Pagamento fatura')) spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
     });
     const warnings: string[] = [];
     budgetDataRaw.forEach((b: any) => {
