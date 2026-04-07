@@ -129,16 +129,17 @@ export function useProjectedTotals(): ProjectedTotals {
 
     let virtualRecurringBalance = 0;
     const realByMonthSig = new Set<string>();
-    historicalExpenses.forEach((e: any) => {
+    const realByMonthLoose = new Set<string>();
+    const addSigs = (e: any) => {
       if (e.type === 'transfer') return;
       const ym = e.date ? e.date.substring(0, 7) : '';
-      if (ym) realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
-    });
-    monthExpenses.forEach((e: any) => {
-      if (e.type === 'transfer') return;
-      const ym = e.date ? e.date.substring(0, 7) : '';
-      if (ym) realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
-    });
+      if (ym) {
+        realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
+        realByMonthLoose.add(`${ym}|${e.type}|${((e.description as string) ?? '').trim().toLowerCase()}`);
+      }
+    };
+    historicalExpenses.forEach(addSigs);
+    monthExpenses.forEach(addSigs);
 
     const selectedMonthStart = selectedYear * 12 + selectedMonth;
 
@@ -151,7 +152,8 @@ export function useProjectedTotals(): ProjectedTotals {
         const mo = m % 12;
         const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
         const sig = buildMonthRecurringSignature(monthKey, r.type, r.value, r.description);
-        if (realByMonthSig.has(sig)) continue;
+        const looseSig = `${monthKey}|${r.type}|${((r.description as string) ?? '').trim().toLowerCase()}`;
+        if (realByMonthSig.has(sig) || realByMonthLoose.has(looseSig)) continue;
         if (r.type === 'income') virtualRecurringBalance += Number(r.value);
         else virtualRecurringBalance -= Number(r.value);
       }
