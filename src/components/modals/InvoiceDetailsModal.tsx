@@ -2,23 +2,19 @@ import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CreditCard, Calendar as CalendarIcon, Lock, Clock, AlertTriangle, Receipt, CheckCircle2, Pencil, Trash2, Undo2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatCurrency, getCategoryLabel } from '@/lib/constants';
-import { getInvoicePeriod, matchExpensesToInvoice, formatInvoiceDate } from '@/lib/invoiceHelpers';
+import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
 import { EditExpenseModal } from '@/components/EditExpenseModal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+
+import { InvoiceHeader } from './invoice/InvoiceHeader';
+import { InvoiceTransactionList } from './invoice/InvoiceTransactionList';
+import { InvoicePaymentFooter } from './invoice/InvoicePaymentFooter';
+import { DeleteConfirmDialog } from './invoice/DeleteConfirmDialog';
 
 interface InvoiceDetailsModalProps {
   open: boolean;
@@ -30,13 +26,6 @@ interface InvoiceDetailsModalProps {
   onPaid?: () => void;
   refetch?: () => void;
 }
-
-const STATUS_CONFIG = {
-  open: { label: 'Fatura Aberta', icon: Clock, bg: 'bg-emerald-500/15', text: 'text-emerald-600' },
-  closed: { label: 'Fatura Fechada', icon: Lock, bg: 'bg-muted', text: 'text-muted-foreground' },
-  overdue: { label: 'Fatura Vencida', icon: AlertTriangle, bg: 'bg-destructive/15', text: 'text-destructive' },
-  paid: { label: 'Fatura Paga', icon: CheckCircle2, bg: 'bg-primary/15', text: 'text-primary' },
-} as const;
 
 function generateMonthOptions(): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
@@ -56,18 +45,14 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState(() => {
-    // Derive initial period from the invoice's monthLabel (YYYY-MM format, 1-based)
     const [y, m] = invoice.monthLabel.split('-').map(Number);
     if (!isNaN(y) && !isNaN(m)) return `${y}-${m - 1}`;
     return `${new Date().getFullYear()}-${new Date().getMonth()}`;
   });
   const [paying, setPaying] = useState(false);
-  const [selectedWalletId, setSelectedWalletId] = useState<string>(wallets[0]?.id || '');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
   const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
-  const [payDateMode, setPayDateMode] = useState<'due' | 'today' | 'custom'>('due');
-  const [payCustomDate, setPayCustomDate] = useState<Date | undefined>(undefined);
 
   const currentCard = cards.find(c => c.id === invoice.cardId);
 
@@ -78,35 +63,13 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
     return matchExpensesToInvoice(allExpenses, period);
   }, [currentCard, selectedPeriod, allExpenses, invoice]);
 
-  const statusInfo = STATUS_CONFIG[activeInvoice.status];
-  const StatusIcon = statusInfo.icon;
   const monthOptions = useMemo(() => generateMonthOptions(), []);
   const isPaid = activeInvoice.status === 'paid';
-
-  const byCategory = useMemo(() => {
-    const groups: Record<string, { label: string; total: number; items: Expense[] }> = {};
-    activeInvoice.transactions.forEach(tx => {
-      const cat = tx.final_category;
-      if (!groups[cat]) {
-        groups[cat] = { label: getCategoryLabel(cat), total: 0, items: [] };
-      }
-      groups[cat].total += tx.value;
-      groups[cat].items.push(tx);
-    });
-    return Object.entries(groups).sort((a, b) => b[1].total - a[1].total);
-  }, [activeInvoice.transactions]);
-
-  const chronological = useMemo(() => {
-    return [...activeInvoice.transactions].sort((a, b) => a.date.localeCompare(b.date));
-  }, [activeInvoice.transactions]);
 
   const handleDelete = async (expense: Expense, mode: 'single' | 'all') => {
     try {
       if (mode === 'all' && expense.installment_group_id) {
-        const { error } = await supabase
-          .from('expenses')
-          .delete()
-          .eq('installment_group_id', expense.installment_group_id);
+        const { error } = await supabase.from('expenses').delete().eq('installment_group_id', expense.installment_group_id);
         if (error) throw error;
         toast({ title: 'Parcelas excluídas', description: 'Todas as parcelas foram removidas.' });
       } else {
@@ -125,13 +88,8 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const onDeleteClick = (tx: Expense) => {
-    if (tx.installment_group_id) {
-      setDeleteTarget(tx);
-      setDeleteMode(null); // show choice dialog
-    } else {
-      setDeleteTarget(tx);
-      setDeleteMode('single'); // show simple confirm
-    }
+    setDeleteTarget(tx);
+    setDeleteMode(tx.installment_group_id ? null : 'single');
   };
 
   const handleUnpayInvoice = async () => {
@@ -159,18 +117,18 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
     }
   };
 
-  const handlePayInvoice = async () => {
-    if (!user || !selectedWalletId || activeInvoice.total <= 0) return;
+  const handlePayInvoice = async (walletId: string, dateMode: 'due' | 'today' | 'custom', customDate?: Date) => {
+    if (!user || !walletId || activeInvoice.total <= 0) return;
     setPaying(true);
 
     try {
       const dateStr = (() => {
-        if (payDateMode === 'today') {
+        if (dateMode === 'today') {
           const today = new Date();
           return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         }
-        if (payDateMode === 'custom' && payCustomDate) {
-          return `${payCustomDate.getFullYear()}-${String(payCustomDate.getMonth() + 1).padStart(2, '0')}-${String(payCustomDate.getDate()).padStart(2, '0')}`;
+        if (dateMode === 'custom' && customDate) {
+          return `${customDate.getFullYear()}-${String(customDate.getMonth() + 1).padStart(2, '0')}-${String(customDate.getDate()).padStart(2, '0')}`;
         }
         const dueDate = activeInvoice.dueDate;
         return `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`;
@@ -183,7 +141,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
         final_category: 'cartao',
         type: 'expense',
         date: dateStr,
-        wallet_id: selectedWalletId,
+        wallet_id: walletId,
         credit_card_id: activeInvoice.cardId,
         is_paid: true,
         invoice_month: activeInvoice.monthLabel,
@@ -191,7 +149,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
 
       if (insertError) throw insertError;
 
-      toast({ title: 'Fatura paga!', description: `Pagamento de ${formatCurrency(activeInvoice.total)} registrado.` });
+      toast({ title: 'Fatura paga!', description: `Pagamento de R$ ${activeInvoice.total.toFixed(2)} registrado.` });
       refetch?.();
       onPaid?.();
       onOpenChange(false);
@@ -204,250 +162,47 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
 
   const content = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 sm:px-4">
-        <div className="space-y-4 pb-4">
-          <div className="bg-primary rounded-2xl p-4 sm:p-5 mt-2 text-primary-foreground overflow-hidden shrink-0">
-            <div className="flex items-center justify-between mb-3 gap-2">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <CreditCard className="h-5 w-5 shrink-0" />
-                <span className="font-bold text-sm sm:text-base truncate">{activeInvoice.cardName}</span>
-              </div>
-              <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${statusInfo.bg} ${statusInfo.text}`}>
-                <StatusIcon className="h-3 w-3" />
-                <span className="whitespace-nowrap">{statusInfo.label}</span>
-              </div>
-            </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-5">
+        <div className="space-y-5 py-4">
+          <InvoiceHeader invoice={activeInvoice} />
 
-            <div className="text-2xl sm:text-3xl font-extrabold mb-1 break-words">{formatCurrency(activeInvoice.total)}</div>
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="rounded-xl min-h-11">
+              <SelectValue placeholder="Selecione o mês" />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs opacity-80">
-              <div className="flex items-center gap-1 min-w-0">
-                <Calendar className="h-3 w-3 shrink-0" />
-                <span className="break-words">Fecha em {formatInvoiceDate(activeInvoice.periodEnd)}</span>
-              </div>
-              <div className="flex items-center gap-1 min-w-0">
-                <Receipt className="h-3 w-3 shrink-0" />
-                <span className="break-words">Vence em {formatInvoiceDate(activeInvoice.dueDate)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Selecione o mês" />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map(o => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {chronological.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              Nenhuma transação nesta fatura
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Por categoria</h4>
-                {byCategory.map(([cat, data]) => (
-                  <div key={cat} className="flex items-center justify-between py-1.5 gap-2 w-full max-w-full overflow-hidden">
-                    <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-                      <Badge variant="secondary" className="text-xs shrink-0">{data.label}</Badge>
-                      <span className="text-xs text-muted-foreground truncate">{data.items.length} transações</span>
-                    </div>
-                    <span className="text-sm font-bold shrink-0 whitespace-nowrap">{formatCurrency(data.total)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-1 pb-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Todas as transações</h4>
-                {chronological.map(tx => (
-                  <div key={tx.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 py-3 border-b border-border last:border-0 w-full items-center">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{tx.description}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {new Date(tx.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                        {tx.installment_info && ` • ${tx.installment_info}`}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5 justify-center pl-1 shrink-0">
-                      <span className="text-sm font-bold text-destructive whitespace-nowrap">
-                        -{formatCurrency(tx.value)}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => setEditingExpense(tx)}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteClick(tx)}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <InvoiceTransactionList
+            transactions={activeInvoice.transactions}
+            onEdit={setEditingExpense}
+            onDelete={onDeleteClick}
+          />
         </div>
       </div>
 
-      <div className="border-t border-border shrink-0 bg-background px-4 py-4 pb-6 sm:pb-4">
-        {isPaid ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-center gap-2 py-2 text-primary">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-semibold">Fatura paga</span>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full min-h-11 rounded-xl gap-2 whitespace-normal text-center"
-              onClick={handleUnpayInvoice}
-            >
-              <Undo2 className="h-4 w-4 shrink-0" />
-              <span className="break-words">Desfazer pagamento da fatura</span>
-            </Button>
-          </div>
-        ) : activeInvoice.total > 0.01 && chronological.length > 0 ? (
-          <div className="space-y-3">
-            {wallets.length > 0 && (
-              <Select value={selectedWalletId} onValueChange={setSelectedWalletId}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Selecione a conta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {wallets.map(w => (
-                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+      <InvoicePaymentFooter
+        isPaid={isPaid}
+        total={activeInvoice.total}
+        hasTransactions={activeInvoice.transactions.length > 0}
+        dueDate={activeInvoice.dueDate}
+        wallets={wallets}
+        paying={paying}
+        onPay={handlePayInvoice}
+        onUnpay={handleUnpayInvoice}
+      />
 
-            {/* Date selection */}
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Data do pagamento:</p>
-              <div className="flex flex-col gap-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={payDateMode === 'due' ? 'default' : 'outline'}
-                  className="rounded-xl text-xs justify-start"
-                  onClick={() => setPayDateMode('due')}
-                >
-                  Data de vencimento ({activeInvoice.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })})
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={payDateMode === 'today' ? 'default' : 'outline'}
-                  className="rounded-xl text-xs justify-start"
-                  onClick={() => setPayDateMode('today')}
-                >
-                  Data de hoje ({new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })})
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={payDateMode === 'custom' ? 'default' : 'outline'}
-                  className="rounded-xl text-xs justify-start"
-                  onClick={() => setPayDateMode('custom')}
-                >
-                  <CalendarIcon className="h-3.5 w-3.5 mr-1" />
-                  {payDateMode === 'custom' && payCustomDate
-                    ? payCustomDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                    : 'Escolher data'}
-                </Button>
-                {payDateMode === 'custom' && (
-                  <div className="flex justify-center">
-                    <Calendar
-                      mode="single"
-                      selected={payCustomDate}
-                      onSelect={setPayCustomDate}
-                      className={cn("p-3 pointer-events-auto rounded-xl border")}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
+      <DeleteConfirmDialog
+        target={deleteTarget}
+        mode={deleteMode}
+        onClose={() => { setDeleteTarget(null); setDeleteMode(null); }}
+        onDelete={handleDelete}
+      />
 
-            <Button
-              className="w-full min-h-11 rounded-xl gap-2"
-              disabled={paying || !selectedWalletId || (payDateMode === 'custom' && !payCustomDate)}
-              onClick={handlePayInvoice}
-            >
-              <Receipt className="h-4 w-4" />
-              <span className="break-words">{paying ? 'Pagando...' : `Pagar Fatura (${formatCurrency(activeInvoice.total)})`}</span>
-            </Button>
-          </div>
-        ) : (
-          <div className="text-center py-4 text-muted-foreground text-sm font-medium">
-            Nenhum valor a pagar
-          </div>
-        )}
-      </div>
-
-      {/* Delete confirmation dialog */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteMode(null); } }}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {deleteTarget?.installment_group_id && deleteMode === null
-                ? 'Excluir parcela'
-                : 'Excluir transação?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget?.installment_group_id && deleteMode === null
-                ? `Esta é a parcela ${deleteTarget.installment_info}. O que deseja excluir?`
-                : 'Esta ação não pode ser desfeita.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className={deleteTarget?.installment_group_id && deleteMode === null ? 'flex-col gap-2 sm:flex-col' : ''}>
-            {deleteTarget?.installment_group_id && deleteMode === null ? (
-              <>
-                <Button
-                  variant="outline"
-                  className="rounded-xl"
-                  onClick={() => { if (deleteTarget) handleDelete(deleteTarget, 'single'); }}
-                >
-                  Apenas esta parcela
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="rounded-xl"
-                  onClick={() => { if (deleteTarget) handleDelete(deleteTarget, 'all'); }}
-                >
-                  Todas as parcelas do grupo
-                </Button>
-                <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-              </>
-            ) : (
-              <>
-                <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => { if (deleteTarget) handleDelete(deleteTarget, 'single'); }}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
-                >
-                  Excluir
-                </AlertDialogAction>
-              </>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Edit modal */}
       {editingExpense && (
         <EditExpenseModal
           open={!!editingExpense}
@@ -467,8 +222,8 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[85dvh] px-0 flex flex-col overflow-hidden">
-          <DrawerHeader className="pb-2 shrink-0">
-            <DrawerTitle className="text-base">Detalhes da Fatura</DrawerTitle>
+          <DrawerHeader className="pb-1 shrink-0 px-5">
+            <DrawerTitle className="text-lg font-bold">Detalhes da Fatura</DrawerTitle>
             <DrawerDescription className="sr-only">
               Visualize as transações da fatura, valores por categoria e ações de pagamento.
             </DrawerDescription>
@@ -482,8 +237,8 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85dvh] flex flex-col p-0 rounded-2xl overflow-hidden">
-        <DialogHeader className="p-4 pb-2 shrink-0">
-          <DialogTitle className="text-base">Detalhes da Fatura</DialogTitle>
+        <DialogHeader className="p-5 pb-1 shrink-0">
+          <DialogTitle className="text-lg font-bold">Detalhes da Fatura</DialogTitle>
           <DialogDescription className="sr-only">
             Visualize as transações da fatura, valores por categoria e ações de pagamento.
           </DialogDescription>
