@@ -25,6 +25,21 @@ if (isPreviewHost || isInIframe) {
     registration.addEventListener("controllerchange", () => {
       window.location.reload();
     });
+
+    // Check for SW updates every 30 seconds so mobile/PWA picks up new versions fast
+    const checkInterval = setInterval(() => {
+      registration.update().catch(() => {});
+    }, 30_000);
+
+    // Also check immediately when the tab/app becomes visible again
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        registration.update().catch(() => {});
+      }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener("unload", () => clearInterval(checkInterval));
   });
 }
 
