@@ -55,7 +55,12 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedPeriod, setSelectedPeriod] = useState(`${new Date().getFullYear()}-${new Date().getMonth()}`);
+  const [selectedPeriod, setSelectedPeriod] = useState(() => {
+    // Derive initial period from the invoice's monthLabel (YYYY-MM format, 1-based)
+    const [y, m] = invoice.monthLabel.split('-').map(Number);
+    if (!isNaN(y) && !isNaN(m)) return `${y}-${m - 1}`;
+    return `${new Date().getFullYear()}-${new Date().getMonth()}`;
+  });
   const [paying, setPaying] = useState(false);
   const [selectedWalletId, setSelectedWalletId] = useState<string>(wallets[0]?.id || '');
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
