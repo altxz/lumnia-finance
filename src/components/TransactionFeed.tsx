@@ -1,8 +1,11 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2 } from 'lucide-react';
+import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/constants';
@@ -101,6 +104,8 @@ export function TransactionFeed({
   const [payValue, setPayValue] = useState('');
   const [payValueChanged, setPayValueChanged] = useState(false);
   const [payApplyScope, setPayApplyScope] = useState<'single' | 'all' | null>(null);
+  const [payDateMode, setPayDateMode] = useState<'original' | 'today' | 'custom'>('original');
+  const [payCustomDate, setPayCustomDate] = useState<Date | undefined>(undefined);
   const [groupCards, setGroupCards] = useState(() => {
     try { const v = localStorage.getItem(STORAGE_KEY); return v === null ? true : v === 'true'; } catch { return true; }
   });
@@ -116,6 +121,8 @@ export function TransactionFeed({
     setPayValue(String(exp.value));
     setPayValueChanged(false);
     setPayApplyScope(null);
+    setPayDateMode('original');
+    setPayCustomDate(undefined);
   };
 
   const handleMarkAsUnpaid = async (exp: Expense) => {
@@ -130,14 +137,17 @@ export function TransactionFeed({
     }
   };
 
-  const handleMarkAsPaid = async (exp: Expense, keepOriginalDate: boolean) => {
+  const handleMarkAsPaid = async (exp: Expense) => {
     try {
       const newValue = parseFloat(payValue);
       const valueChanged = !isNaN(newValue) && newValue !== exp.value;
       const finalValue = valueChanged && !isNaN(newValue) ? newValue : exp.value;
 
       const payDate = (() => {
-        if (keepOriginalDate) return exp.date;
+        if (payDateMode === 'original') return exp.date;
+        if (payDateMode === 'custom' && payCustomDate) {
+          return `${payCustomDate.getFullYear()}-${String(payCustomDate.getMonth() + 1).padStart(2, '0')}-${String(payCustomDate.getDate()).padStart(2, '0')}`;
+        }
         const today = new Date();
         return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       })();
