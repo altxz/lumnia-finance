@@ -64,7 +64,7 @@ export function useBudgetData() {
       // Fetch all recurring budgets to propagate to months without explicit budgets
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('is_recurring', true).lt('month_year', startDate).order('month_year', { ascending: false }),
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('month_year', prevMonthKey),
-      supabase.from('expenses').select('final_category, value, type, credit_card_id, invoice_month, date').eq('user_id', user.id).gte('date', startDate).lt('date', endDate),
+      supabase.from('expenses').select('final_category, value, type, credit_card_id, invoice_month, date, description').eq('user_id', user.id).gte('date', startDate).lt('date', endDate),
     ]);
 
     setCategories((catData || []) as DbCategory[]);
