@@ -137,7 +137,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
         .from('expenses')
         .delete()
         .eq('user_id', user.id)
-        .ilike('description', `Pagamento fatura ${activeInvoice.cardName}`)
+        .ilike('description', `Pagamento fatura ${activeInvoice.cardName}%`)
         .eq('invoice_month', activeInvoice.monthLabel);
       if (error) throw error;
       toast({ title: 'Pagamento desfeito', description: 'A fatura voltou ao status anterior.' });
