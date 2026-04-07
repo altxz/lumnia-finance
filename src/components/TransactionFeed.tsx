@@ -508,7 +508,7 @@ export function TransactionFeed({
                             {inv.transactions.length} transação{inv.transactions.length !== 1 ? 'ões' : ''} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                           </p>
                         </div>
-                        <div className="shrink-0 flex items-center justify-end gap-2 min-w-[160px] text-right">
+                        <div className="shrink-0 flex items-center justify-end gap-2 min-w-[90px] sm:min-w-[160px] text-right">
                           {inv.status !== 'open' && (
                             <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${displayStatus.className}`}>
                               {displayStatus.label}
@@ -599,7 +599,7 @@ export function TransactionFeed({
                         </div>
 
                         {/* Value */}
-                        <div className="shrink-0 flex items-center justify-end gap-1.5 min-w-[160px] text-right">
+                        <div className="shrink-0 flex items-center justify-end gap-1.5 min-w-[90px] sm:min-w-[160px] text-right">
                           {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
                           <span className={`text-sm font-bold ${
                             isPending
@@ -615,7 +615,7 @@ export function TransactionFeed({
                         </div>
 
                         {/* Quick actions - fixed width to keep values aligned */}
-                        <div className="shrink-0 flex items-center justify-end gap-0.5 w-[88px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="shrink-0 flex items-center justify-end gap-0.5 w-auto sm:w-[88px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           {isPending && (
                             <Tooltip>
                               <TooltipTrigger asChild>
