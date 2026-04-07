@@ -599,7 +599,7 @@ export function TransactionFeed({
                         </div>
 
                         {/* Value */}
-                        <div className="shrink-0 flex items-center gap-1.5">
+                        <div className="shrink-0 flex items-center justify-end gap-1.5 min-w-[120px] text-right">
                           {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
                           <span className={`text-sm font-bold ${
                             isPending
