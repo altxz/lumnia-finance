@@ -81,8 +81,14 @@ export function useProjectedTotals(): ProjectedTotals {
 
   // Virtual recurring
   const effectiveMonthExpenses = useMemo(() => {
+    // Build two sets: exact signature (type|desc|value) and loose signature (type|desc)
+    // A real entry suppresses a recurring template if EITHER matches.
+    // This prevents duplication when user changes value during "mark as paid".
     const realSignatures = new Set(
       monthExpenses.map(e => buildRecurringSignature(e.type, e.value, e.description))
+    );
+    const realLooseSignatures = new Set(
+      monthExpenses.map(e => `${e.type}|${(e.description ?? '').trim().toLowerCase()}`)
     );
     const realIds = new Set(monthExpenses.map(e => e.id));
     const virtualEntries: Expense[] = [];
@@ -90,7 +96,8 @@ export function useProjectedTotals(): ProjectedTotals {
     recurringExpenses.forEach(r => {
       if (realIds.has(r.id)) return;
       const sig = buildRecurringSignature(r.type, r.value, r.description);
-      if (realSignatures.has(sig)) return;
+      const looseSig = `${r.type}|${(r.description ?? '').trim().toLowerCase()}`;
+      if (realSignatures.has(sig) || realLooseSignatures.has(looseSig)) return;
       if (r.type === 'transfer' || r.credit_card_id) return;
       virtualEntries.push({
         ...r,
