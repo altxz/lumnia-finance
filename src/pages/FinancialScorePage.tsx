@@ -239,7 +239,7 @@ export default function FinancialScorePage() {
       setTotalBudget(bTotal);
       const spent: Record<string, number> = {};
       expenses.forEach((e: any) => {
-        if (e.type !== 'income') spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
+        if (e.type !== 'income' && !e.description?.startsWith('Pagamento fatura')) spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
       });
       const budgetSpent = (budgetData || []).reduce((s: number, b: any) => s + (spent[b.category] || 0), 0);
       setTotalSpentInBudget(budgetSpent);
