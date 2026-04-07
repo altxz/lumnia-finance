@@ -251,12 +251,25 @@ export function TransactionFeed({
     const ensureDay = (key: string) => { if (!dayMap[key]) dayMap[key] = []; };
     const isInSelectedMonth = (dateKey: string) => dateKey >= monthStart && dateKey <= monthEnd;
 
+    // Build a set of paid invoice card names to hide their "Pagamento fatura" records
+    const paidInvoiceCardNames = new Set<string>();
+    if (groupCards) {
+      invoicePeriods.forEach(inv => {
+        if (inv.status === 'paid') paidInvoiceCardNames.add(inv.cardName.toLowerCase());
+      });
+    }
+
     // Track IDs already added to avoid duplicates
     const addedIds = new Set<string>();
 
     // 1. Add non-CC expenses from the calendar month (already filtered by HistoryPage)
     expenses.forEach(exp => {
       if (exp.credit_card_id) return; // CC expenses handled below
+      // Hide "Pagamento fatura X" when the invoice for card X is already shown as paid
+      if (groupCards && exp.description.toLowerCase().startsWith('pagamento fatura')) {
+        const cardName = exp.description.substring('pagamento fatura'.length).trim().toLowerCase();
+        if (paidInvoiceCardNames.has(cardName)) return;
+      }
       ensureDay(exp.date);
       dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
       addedIds.add(exp.id);
@@ -490,15 +503,17 @@ export function TransactionFeed({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold truncate">Fatura {inv.cardName}</p>
-                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${displayStatus.className}`}>
-                              {displayStatus.label}
-                            </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {inv.transactions.length} transação{inv.transactions.length !== 1 ? 'ões' : ''} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                           </p>
                         </div>
                         <div className="shrink-0 flex items-center gap-2">
+                          {inv.status !== 'open' && (
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${displayStatus.className}`}>
+                              {displayStatus.label}
+                            </Badge>
+                          )}
                           <span className="text-sm font-bold text-destructive">
                             {inv.total > 0 ? `-${formatCurrency(inv.total)}` : formatCurrency(0)}
                           </span>
