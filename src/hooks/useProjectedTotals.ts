@@ -81,8 +81,14 @@ export function useProjectedTotals(): ProjectedTotals {
 
   // Virtual recurring
   const effectiveMonthExpenses = useMemo(() => {
+    // Build two sets: exact signature (type|desc|value) and loose signature (type|desc)
+    // A real entry suppresses a recurring template if EITHER matches.
+    // This prevents duplication when user changes value during "mark as paid".
     const realSignatures = new Set(
       monthExpenses.map(e => buildRecurringSignature(e.type, e.value, e.description))
+    );
+    const realLooseSignatures = new Set(
+      monthExpenses.map(e => `${e.type}|${(e.description ?? '').trim().toLowerCase()}`)
     );
     const realIds = new Set(monthExpenses.map(e => e.id));
     const virtualEntries: Expense[] = [];
@@ -90,7 +96,8 @@ export function useProjectedTotals(): ProjectedTotals {
     recurringExpenses.forEach(r => {
       if (realIds.has(r.id)) return;
       const sig = buildRecurringSignature(r.type, r.value, r.description);
-      if (realSignatures.has(sig)) return;
+      const looseSig = `${r.type}|${(r.description ?? '').trim().toLowerCase()}`;
+      if (realSignatures.has(sig) || realLooseSignatures.has(looseSig)) return;
       if (r.type === 'transfer' || r.credit_card_id) return;
       virtualEntries.push({
         ...r,
@@ -122,16 +129,17 @@ export function useProjectedTotals(): ProjectedTotals {
 
     let virtualRecurringBalance = 0;
     const realByMonthSig = new Set<string>();
-    historicalExpenses.forEach((e: any) => {
+    const realByMonthLoose = new Set<string>();
+    const addSigs = (e: any) => {
       if (e.type === 'transfer') return;
       const ym = e.date ? e.date.substring(0, 7) : '';
-      if (ym) realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
-    });
-    monthExpenses.forEach((e: any) => {
-      if (e.type === 'transfer') return;
-      const ym = e.date ? e.date.substring(0, 7) : '';
-      if (ym) realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
-    });
+      if (ym) {
+        realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
+        realByMonthLoose.add(`${ym}|${e.type}|${((e.description as string) ?? '').trim().toLowerCase()}`);
+      }
+    };
+    historicalExpenses.forEach(addSigs);
+    monthExpenses.forEach(addSigs);
 
     const selectedMonthStart = selectedYear * 12 + selectedMonth;
 
@@ -144,7 +152,8 @@ export function useProjectedTotals(): ProjectedTotals {
         const mo = m % 12;
         const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
         const sig = buildMonthRecurringSignature(monthKey, r.type, r.value, r.description);
-        if (realByMonthSig.has(sig)) continue;
+        const looseSig = `${monthKey}|${r.type}|${((r.description as string) ?? '').trim().toLowerCase()}`;
+        if (realByMonthSig.has(sig) || realByMonthLoose.has(looseSig)) continue;
         if (r.type === 'income') virtualRecurringBalance += Number(r.value);
         else virtualRecurringBalance -= Number(r.value);
       }
