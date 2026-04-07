@@ -31,6 +31,7 @@ async function fetchProjectedData(userId: string, startDate: string, endDate: st
     { data: expData },
     { data: recurringData },
     { data: ccExpData },
+    { data: invoicePaymentsData },
     { data: historicalData },
     { data: cardsData },
     { data: walletsData },
@@ -41,16 +42,25 @@ async function fetchProjectedData(userId: string, startDate: string, endDate: st
       .eq('is_recurring', true).lt('date', endDate),
     supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
       .not('credit_card_id', 'is', null),
+    // Also fetch invoice payment records (no credit_card_id but have invoice_month and start with "Pagamento fatura")
+    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
+      .is('credit_card_id', null).not('invoice_month', 'is', null).like('description', 'Pagamento fatura%'),
     supabase.from('expenses').select('id, description, date, value, type, credit_card_id, is_paid, final_category')
       .eq('user_id', userId).lt('date', startDate).is('credit_card_id', null),
     supabase.from('credit_cards').select('*').eq('user_id', userId),
     supabase.from('wallets').select('id, name, initial_balance').eq('user_id', userId).order('name'),
   ]);
 
+  // Merge CC expenses + invoice payment records (deduped)
+  const ccExps = (ccExpData || []) as Expense[];
+  const paymentExps = (invoicePaymentsData || []) as Expense[];
+  const ccIds = new Set(ccExps.map(e => e.id));
+  const mergedInvoiceExpenses = [...ccExps, ...paymentExps.filter(p => !ccIds.has(p.id))];
+
   return {
     monthExpenses: (expData || []) as Expense[],
     recurringExpenses: (recurringData || []) as Expense[],
-    invoiceExpenses: (ccExpData || []) as Expense[],
+    invoiceExpenses: mergedInvoiceExpenses,
     historicalExpenses: (historicalData || []) as any[],
     creditCards: (cardsData || []) as CreditCardType[],
     wallets: (walletsData || []).map((w: any) => ({ id: w.id, name: w.name, initial_balance: w.initial_balance ?? 0 })),
