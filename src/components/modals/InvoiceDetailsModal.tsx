@@ -392,8 +392,8 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85dvh] px-0">
-          <DrawerHeader className="pb-2">
+        <DrawerContent className="max-h-[85dvh] px-0 flex flex-col overflow-hidden">
+          <DrawerHeader className="pb-2 shrink-0">
             <DrawerTitle className="text-base">Detalhes da Fatura</DrawerTitle>
             <DrawerDescription className="sr-only">
               Visualize as transações da fatura, valores por categoria e ações de pagamento.
@@ -408,7 +408,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85dvh] flex flex-col p-0 rounded-2xl overflow-hidden">
-        <DialogHeader className="p-4 pb-2">
+        <DialogHeader className="p-4 pb-2 shrink-0">
           <DialogTitle className="text-base">Detalhes da Fatura</DialogTitle>
           <DialogDescription className="sr-only">
             Visualize as transações da fatura, valores por categoria e ações de pagamento.
