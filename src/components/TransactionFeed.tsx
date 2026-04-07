@@ -106,7 +106,7 @@ export function TransactionFeed({
   });
   const [invoiceModal, setInvoiceModal] = useState<InvoicePeriod | null>(null);
   const { toast } = useToast();
-
+  const queryClient = useQueryClient();
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, String(groupCards)); } catch {}
   }, [groupCards]);
@@ -169,6 +169,7 @@ export function TransactionFeed({
       }
 
       toast({ title: exp.type === 'income' ? 'Recebimento confirmado!' : 'Pagamento confirmado!' });
+      queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
       onDeleted();
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
