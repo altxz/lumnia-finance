@@ -282,7 +282,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
       </div>
 
       {/* Footer actions */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 pb-6 border-t border-border shrink-0">
         {isPaid ? (
           <div className="space-y-3">
             <div className="flex items-center justify-center gap-2 py-2 text-primary">
@@ -396,7 +396,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[92vh]">
+        <DrawerContent className="max-h-[85dvh]">
           <DrawerHeader className="pb-0">
             <DrawerTitle className="text-base">Detalhes da Fatura</DrawerTitle>
           </DrawerHeader>
@@ -408,7 +408,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 rounded-2xl overflow-hidden">
+      <DialogContent className="max-w-lg max-h-[85dvh] flex flex-col p-0 rounded-2xl overflow-hidden">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="text-base">Detalhes da Fatura</DialogTitle>
         </DialogHeader>
