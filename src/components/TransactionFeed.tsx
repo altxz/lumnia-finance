@@ -614,8 +614,8 @@ export function TransactionFeed({
                           </span>
                         </div>
 
-                        {/* Quick actions */}
-                        <div className="shrink-0 flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        {/* Quick actions - fixed width to keep values aligned */}
+                        <div className="shrink-0 flex items-center justify-end gap-0.5 w-[88px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           {isPending && (
                             <Tooltip>
                               <TooltipTrigger asChild>
