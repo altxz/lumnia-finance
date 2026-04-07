@@ -322,6 +322,8 @@ export function TransactionFeed({
     allTxns.forEach(exp => {
       if (exp.type === 'transfer') return;
       if (exp.credit_card_id) return;
+      // Exclude invoice payment records — invoice impact is already captured via invoiceTotalByDay
+      if (exp.description?.toLowerCase().startsWith('pagamento fatura')) return;
       const key = exp.date;
       if (key < monthStart || key > monthEnd) return;
       if (!nonCcFlowByDay[key]) nonCcFlowByDay[key] = 0;
