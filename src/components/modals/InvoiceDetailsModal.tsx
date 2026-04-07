@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -177,112 +177,108 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const content = (
-    <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-      {/* Header card */}
-      <div className="bg-primary rounded-2xl p-4 sm:p-5 mx-3 sm:mx-4 mt-2 mb-4 text-primary-foreground overflow-hidden shrink-0">
-        <div className="flex items-center justify-between mb-3 gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-            <CreditCard className="h-5 w-5 shrink-0" />
-            <span className="font-bold text-sm sm:text-base truncate">{activeInvoice.cardName}</span>
-          </div>
-          <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${statusInfo.bg} ${statusInfo.text}`}>
-            <StatusIcon className="h-3 w-3" />
-            <span className="whitespace-nowrap">{statusInfo.label}</span>
-          </div>
-        </div>
-
-        <div className="text-2xl sm:text-3xl font-extrabold mb-1">{formatCurrency(activeInvoice.total)}</div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs opacity-80">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3 shrink-0" />
-            Fecha em {formatInvoiceDate(activeInvoice.periodEnd)}
-          </div>
-          <div className="flex items-center gap-1">
-            <Receipt className="h-3 w-3 shrink-0" />
-            Vence em {formatInvoiceDate(activeInvoice.dueDate)}
-          </div>
-        </div>
-      </div>
-
-      {/* Month selector */}
-      <div className="px-3 sm:px-4 mb-4">
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="rounded-xl">
-            <SelectValue placeholder="Selecione o mês" />
-          </SelectTrigger>
-          <SelectContent>
-            {monthOptions.map(o => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Transactions */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-4 pb-6 max-h-[50vh] sm:max-h-[60vh] min-h-[200px]">
-        {chronological.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">
-            Nenhuma transação nesta fatura
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* By category summary */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Por categoria</h4>
-              {byCategory.map(([cat, data]) => (
-                <div key={cat} className="flex items-center justify-between py-1.5 gap-2 w-full max-w-full overflow-hidden">
-                  <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-                    <Badge variant="secondary" className="text-xs shrink-0">{data.label}</Badge>
-                    <span className="text-xs text-muted-foreground truncate">{data.items.length} transações</span>
-                  </div>
-                  <span className="text-sm font-bold shrink-0 whitespace-nowrap">{formatCurrency(data.total)}</span>
-                </div>
-              ))}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ScrollArea className="min-h-0 flex-1 px-3 sm:px-4">
+        <div className="space-y-4 pb-4">
+          <div className="bg-primary rounded-2xl p-4 sm:p-5 mt-2 text-primary-foreground overflow-hidden shrink-0">
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <CreditCard className="h-5 w-5 shrink-0" />
+                <span className="font-bold text-sm sm:text-base truncate">{activeInvoice.cardName}</span>
+              </div>
+              <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${statusInfo.bg} ${statusInfo.text}`}>
+                <StatusIcon className="h-3 w-3" />
+                <span className="whitespace-nowrap">{statusInfo.label}</span>
+              </div>
             </div>
 
-            {/* Full list */}
-            <div className="space-y-1">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Todas as transações</h4>
-              {chronological.map(tx => (
-                <div key={tx.id} className="grid grid-cols-[1fr_auto] gap-2 py-3 border-b border-border last:border-0 w-full items-center">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{tx.description}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {new Date(tx.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                      {tx.installment_info && ` • ${tx.installment_info}`}
-                    </p>
+            <div className="text-2xl sm:text-3xl font-extrabold mb-1 break-words">{formatCurrency(activeInvoice.total)}</div>
+
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs opacity-80">
+              <div className="flex items-center gap-1 min-w-0">
+                <Calendar className="h-3 w-3 shrink-0" />
+                <span className="break-words">Fecha em {formatInvoiceDate(activeInvoice.periodEnd)}</span>
+              </div>
+              <div className="flex items-center gap-1 min-w-0">
+                <Receipt className="h-3 w-3 shrink-0" />
+                <span className="break-words">Vence em {formatInvoiceDate(activeInvoice.dueDate)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="Selecione o mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {chronological.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              Nenhuma transação nesta fatura
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Por categoria</h4>
+                {byCategory.map(([cat, data]) => (
+                  <div key={cat} className="flex items-center justify-between py-1.5 gap-2 w-full max-w-full overflow-hidden">
+                    <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                      <Badge variant="secondary" className="text-xs shrink-0">{data.label}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{data.items.length} transações</span>
+                    </div>
+                    <span className="text-sm font-bold shrink-0 whitespace-nowrap">{formatCurrency(data.total)}</span>
                   </div>
-                  <div className="flex flex-col items-end gap-1.5 justify-center pl-1">
-                    <span className="text-sm font-bold text-destructive whitespace-nowrap">
-                      -{formatCurrency(tx.value)}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setEditingExpense(tx)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteClick(tx)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                ))}
+              </div>
+
+              <div className="space-y-1 pb-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Todas as transações</h4>
+                {chronological.map(tx => (
+                  <div key={tx.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 py-3 border-b border-border last:border-0 w-full items-center">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{tx.description}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {new Date(tx.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                        {tx.installment_info && ` • ${tx.installment_info}`}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 justify-center pl-1 shrink-0">
+                      <span className="text-sm font-bold text-destructive whitespace-nowrap">
+                        -{formatCurrency(tx.value)}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => setEditingExpense(tx)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteClick(tx)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </ScrollArea>
 
-      {/* Footer actions */}
-      <div className="p-4 pb-6 border-t border-border shrink-0">
+      <div className="border-t border-border shrink-0 bg-background px-4 py-4 pb-6 sm:pb-4">
         {isPaid ? (
           <div className="space-y-3">
             <div className="flex items-center justify-center gap-2 py-2 text-primary">
@@ -291,11 +287,11 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
             </div>
             <Button
               variant="outline"
-              className="w-full rounded-xl gap-2 text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+              className="w-full min-h-11 rounded-xl gap-2 whitespace-normal text-center"
               onClick={handleUnpayInvoice}
             >
-              <Undo2 className="h-4 w-4" />
-              Desfazer pagamento da fatura
+              <Undo2 className="h-4 w-4 shrink-0" />
+              <span className="break-words">Desfazer pagamento da fatura</span>
             </Button>
           </div>
         ) : activeInvoice.total > 0.01 && chronological.length > 0 ? (
@@ -313,12 +309,12 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
               </Select>
             )}
             <Button
-              className="w-full rounded-xl gap-2 bg-primary text-primary-foreground"
+              className="w-full min-h-11 rounded-xl gap-2"
               disabled={paying || !selectedWalletId}
               onClick={handlePayInvoice}
             >
               <Receipt className="h-4 w-4" />
-              {paying ? 'Pagando...' : `Pagar Fatura (${formatCurrency(activeInvoice.total)})`}
+              <span className="break-words">{paying ? 'Pagando...' : `Pagar Fatura (${formatCurrency(activeInvoice.total)})`}</span>
             </Button>
           </div>
         ) : (
@@ -396,9 +392,12 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85dvh]">
-          <DrawerHeader className="pb-0">
+        <DrawerContent className="max-h-[85dvh] px-0">
+          <DrawerHeader className="pb-2">
             <DrawerTitle className="text-base">Detalhes da Fatura</DrawerTitle>
+            <DrawerDescription className="sr-only">
+              Visualize as transações da fatura, valores por categoria e ações de pagamento.
+            </DrawerDescription>
           </DrawerHeader>
           {content}
         </DrawerContent>
@@ -409,8 +408,11 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85dvh] flex flex-col p-0 rounded-2xl overflow-hidden">
-        <DialogHeader className="p-4 pb-0">
+        <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base">Detalhes da Fatura</DialogTitle>
+          <DialogDescription className="sr-only">
+            Visualize as transações da fatura, valores por categoria e ações de pagamento.
+          </DialogDescription>
         </DialogHeader>
         {content}
       </DialogContent>
