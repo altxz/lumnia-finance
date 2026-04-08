@@ -395,19 +395,19 @@ export default function WalletPage() {
   const handlePayInvoice = async () => {
     if (!user || !selectedCard || !payWalletId || invoiceTotal <= 0) return;
     setPayingSaving(true);
-    const [y, m] = invoiceMonth.split('-').map(Number);
-    const payDate = new Date(y, m - 1, selectedCard.due_day);
+    const payDate = new Date();
     const { error } = await supabase.from('expenses').insert({
       user_id: user.id,
       description: `Pagamento fatura ${selectedCard.name} - ${formatMonthLabel(invoiceMonth)}`,
       value: invoiceTotal,
       type: 'expense',
       final_category: 'Cartão de Crédito',
-      date: payDate.toISOString().split('T')[0],
+      date: `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, '0')}-${String(payDate.getDate()).padStart(2, '0')}`,
       wallet_id: payWalletId,
       credit_card_id: selectedCard.id,
       payment_method: 'debit',
       is_paid: true,
+      invoice_month: invoiceMonth,
       notes: `Pagamento automático da fatura do cartão ${selectedCard.name}`,
     });
     if (error) {
