@@ -360,12 +360,14 @@ export function TransactionFeed({
       else nonCcFlowByDay[key] -= exp.value;
     });
 
-    // Invoice totals hit balance on due date (only if in selected month)
+    // Invoice totals hit balance on due date (or payment date if paid)
     const invoiceTotalByDay: Record<string, number> = {};
     invoicePeriods.forEach(inv => {
-      const key = toDateKey(inv.dueDate);
-      if (!isInSelectedMonth(key)) return;
-      invoiceTotalByDay[key] = (invoiceTotalByDay[key] || 0) + inv.total;
+      const dueKey = toDateKey(inv.dueDate);
+      const paymentDate = paymentDateMap.get(inv.cardId);
+      const balanceKey = (inv.status === 'paid' && paymentDate) ? paymentDate : dueKey;
+      if (!isInSelectedMonth(balanceKey)) return;
+      invoiceTotalByDay[balanceKey] = (invoiceTotalByDay[balanceKey] || 0) + inv.total;
     });
 
     const allDayKeys = new Set<string>([
