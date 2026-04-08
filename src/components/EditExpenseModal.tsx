@@ -179,9 +179,10 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         invoice_month: creditCardId ? (invoiceMonth || null) : null,
       };
 
-      // Editing a projected recurring occurrence and choosing "only this":
-      // create a real one-off entry for this month without changing the recurring template.
-      if (scope === 'single' && isProjectedOccurrence && expense.is_recurring && !isExistingInstallment) {
+      // Editing a recurring occurrence and choosing "only this":
+      // create a real one-off entry for this specific date without changing the recurring template.
+      const isRecurringSingleEdit = scope === 'single' && expense.is_recurring && !isExistingInstallment;
+      if (isRecurringSingleEdit) {
         const oneOffRow = {
           user_id: user!.id,
           description: description.trim(),
