@@ -265,62 +265,81 @@ export function TransactionFeed({
   const monthEndDate = new Date(targetYear, targetMonth + 1, 0);
   const monthEnd = toDateKey(monthEndDate);
 
-  // Build feed items: place CC expenses on invoice due date, inject from other months
-  const grouped: DayGroup[] = useMemo(() => {
-    const dayMap: Record<string, FeedItem[]> = {};
-    const invoicesByDay: Record<string, InvoicePeriod[]> = {};
+    // Build feed items: place CC expenses on invoice due/payment date
+    const grouped: DayGroup[] = useMemo(() => {
+      const dayMap: Record<string, FeedItem[]> = {};
+      const invoicesByDay: Record<string, InvoicePeriod[]> = {};
 
-    const ensureDay = (key: string) => { if (!dayMap[key]) dayMap[key] = []; };
-    const isInSelectedMonth = (dateKey: string) => dateKey >= monthStart && dateKey <= monthEnd;
+      const ensureDay = (key: string) => { if (!dayMap[key]) dayMap[key] = []; };
+      const isInSelectedMonth = (dateKey: string) => dateKey >= monthStart && dateKey <= monthEnd;
 
-    // Build a set of paid invoice card names to hide their "Pagamento fatura" records
-    const paidInvoiceCardNames = new Set<string>();
-    if (groupCards) {
-      invoicePeriods.forEach(inv => {
-        if (inv.status === 'paid') paidInvoiceCardNames.add(inv.cardName.toLowerCase());
-      });
-    }
-
-    // Track IDs already added to avoid duplicates
-    const addedIds = new Set<string>();
-
-    // 1. Add non-CC expenses from the calendar month (already filtered by HistoryPage)
-    expenses.forEach(exp => {
-      if (exp.credit_card_id) return; // CC expenses handled below
-      // Hide "Pagamento fatura X" when the invoice for card X is already shown as paid
-      if (groupCards && exp.description.toLowerCase().startsWith('pagamento fatura')) {
-        const cardName = exp.description.substring('pagamento fatura'.length).trim().toLowerCase();
-        if (paidInvoiceCardNames.has(cardName)) return;
-      }
-      ensureDay(exp.date);
-      dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
-      addedIds.add(exp.id);
-    });
-
-    // 2. Add CC expenses from invoice periods whose due date is in the selected month
-    invoicePeriods.forEach(inv => {
-      const dueKey = toDateKey(inv.dueDate);
-      if (!isInSelectedMonth(dueKey)) return;
-
+      // For paid invoices, find the actual payment date from the payment record
+      const allTxnPool = allExpenses || expenses;
+      const paymentDateMap = new Map<string, string>(); // cardId -> payment date
       if (groupCards) {
-        // Grouped mode: show summary item only
-        ensureDay(dueKey);
-        if (!invoicesByDay[dueKey]) invoicesByDay[dueKey] = [];
-        invoicesByDay[dueKey].push(inv);
-      } else {
-        // Ungrouped: show each CC expense individually on the due date
-        inv.transactions.forEach(tx => {
-          if (addedIds.has(tx.id)) return;
-          addedIds.add(tx.id);
-          ensureDay(dueKey);
-          dayMap[dueKey].push({
-            expense: tx,
-            originalDate: tx.date,
-            isInvoiceItem: true,
-          });
+        allTxnPool.forEach(exp => {
+          if (!exp.description?.toLowerCase().startsWith('pagamento fatura')) return;
+          if (!exp.wallet_id) return;
+          const dueLabel = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+          if (exp.invoice_month !== dueLabel) return;
+          // Match by credit_card_id or legacy card name
+          if (exp.credit_card_id) {
+            paymentDateMap.set(exp.credit_card_id, exp.date);
+          }
         });
       }
-    });
+
+      // Build a set of paid invoice card names to hide their "Pagamento fatura" records
+      const paidInvoiceCardNames = new Set<string>();
+      if (groupCards) {
+        invoicePeriods.forEach(inv => {
+          if (inv.status === 'paid') paidInvoiceCardNames.add(inv.cardName.toLowerCase());
+        });
+      }
+
+      // Track IDs already added to avoid duplicates
+      const addedIds = new Set<string>();
+
+      // 1. Add non-CC expenses from the calendar month (already filtered by HistoryPage)
+      expenses.forEach(exp => {
+        if (exp.credit_card_id) return; // CC expenses handled below
+        // Hide "Pagamento fatura X" when the invoice for card X is already shown as paid
+        if (groupCards && exp.description.toLowerCase().startsWith('pagamento fatura')) {
+          const cardName = exp.description.substring('pagamento fatura'.length).trim().toLowerCase();
+          if (paidInvoiceCardNames.has(cardName)) return;
+        }
+        ensureDay(exp.date);
+        dayMap[exp.date].push({ expense: exp, isInvoiceItem: false });
+        addedIds.add(exp.id);
+      });
+
+      // 2. Add CC expenses from invoice periods
+      // For PAID invoices, use the actual payment date; otherwise use the due date
+      invoicePeriods.forEach(inv => {
+        const dueKey = toDateKey(inv.dueDate);
+        const paymentDate = paymentDateMap.get(inv.cardId);
+        const displayKey = (inv.status === 'paid' && paymentDate) ? paymentDate : dueKey;
+        if (!isInSelectedMonth(displayKey)) return;
+
+        if (groupCards) {
+          // Grouped mode: show summary item only
+          ensureDay(displayKey);
+          if (!invoicesByDay[displayKey]) invoicesByDay[displayKey] = [];
+          invoicesByDay[displayKey].push(inv);
+        } else {
+          // Ungrouped: show each CC expense individually on the display date
+          inv.transactions.forEach(tx => {
+            if (addedIds.has(tx.id)) return;
+            addedIds.add(tx.id);
+            ensureDay(displayKey);
+            dayMap[displayKey].push({
+              expense: tx,
+              originalDate: tx.date,
+              isInvoiceItem: true,
+            });
+          });
+        }
+      });
 
     // 3. Regra de ouro: NUNCA exibir compra de cartão no mês da compra.
     // Se não caiu em nenhuma fatura com vencimento no mês selecionado, fica oculta neste mês.
@@ -341,12 +360,14 @@ export function TransactionFeed({
       else nonCcFlowByDay[key] -= exp.value;
     });
 
-    // Invoice totals hit balance on due date (only if in selected month)
+    // Invoice totals hit balance on due date (or payment date if paid)
     const invoiceTotalByDay: Record<string, number> = {};
     invoicePeriods.forEach(inv => {
-      const key = toDateKey(inv.dueDate);
-      if (!isInSelectedMonth(key)) return;
-      invoiceTotalByDay[key] = (invoiceTotalByDay[key] || 0) + inv.total;
+      const dueKey = toDateKey(inv.dueDate);
+      const paymentDate = paymentDateMap.get(inv.cardId);
+      const balanceKey = (inv.status === 'paid' && paymentDate) ? paymentDate : dueKey;
+      if (!isInSelectedMonth(balanceKey)) return;
+      invoiceTotalByDay[balanceKey] = (invoiceTotalByDay[balanceKey] || 0) + inv.total;
     });
 
     const allDayKeys = new Set<string>([
