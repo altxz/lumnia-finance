@@ -130,7 +130,8 @@ export function useProjectedTotals(): ProjectedTotals {
 
     const nonTransfers = historicalExpenses.filter((e: any) => e.type !== 'transfer');
     const historicalIncome = nonTransfers.filter((e: any) => e.type === 'income').reduce((s: number, e: any) => s + e.value, 0);
-    const historicalDebit = nonTransfers.filter((e: any) => e.type !== 'income').reduce((s: number, e: any) => s + e.value, 0);
+    // Exclude "Pagamento fatura" — invoice impact is already captured by ccInvoiceTotal
+    const historicalDebit = nonTransfers.filter((e: any) => e.type !== 'income' && !e.description?.startsWith('Pagamento fatura')).reduce((s: number, e: any) => s + e.value, 0);
 
     const pendingExpenses = nonTransfers.filter((e: any) => e.type !== 'income' && !e.is_paid);
     const pendingIncome = nonTransfers.filter((e: any) => e.type === 'income' && !e.is_paid);
@@ -211,7 +212,8 @@ export function useProjectedTotals(): ProjectedTotals {
   const result = useMemo(() => {
     const nonTransfers = effectiveMonthExpenses.filter(e => e.type !== 'transfer');
     const totalIncome = nonTransfers.filter(e => e.type === 'income').reduce((s, e) => s + e.value, 0);
-    const debitExpense = nonTransfers.filter(e => e.type !== 'income' && !e.credit_card_id).reduce((s, e) => s + e.value, 0);
+    // Exclude "Pagamento fatura" — invoice impact is already captured by invoiceTotals.total
+    const debitExpense = nonTransfers.filter(e => e.type !== 'income' && !e.credit_card_id && !e.description?.startsWith('Pagamento fatura')).reduce((s, e) => s + e.value, 0);
     const totalExpense = debitExpense + invoiceTotals.total;
 
     const byCategory: Record<string, number> = { ...invoiceTotals.byCategory };
