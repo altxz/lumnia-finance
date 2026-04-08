@@ -160,6 +160,8 @@ export function matchExpensesToInvoice(
   const matched = expenses.filter(e => {
     if (e.credit_card_id !== period.cardId) return false;
     if (e.type === 'income' || e.type === 'transfer') return false;
+    // Exclude payment records — they are not actual invoice purchases
+    if (e.description?.startsWith('Pagamento fatura')) return false;
 
     // Parcelas/projeções persistidas: fonte primária
     if (e.invoice_month) {
