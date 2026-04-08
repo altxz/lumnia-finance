@@ -95,13 +95,15 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const handleUnpayInvoice = async () => {
     if (!user) return;
     try {
-      const legacyDescriptionPrefix = `Pagamento fatura ${activeInvoice.cardName}`;
+      // Only delete the PAYMENT RECORD, not regular card transactions.
+      // Payment records always have: wallet_id set, description starting with 'Pagamento fatura'
       const { data, error } = await supabase
         .from('expenses')
         .delete()
         .eq('user_id', user.id)
         .eq('invoice_month', activeInvoice.monthLabel)
-        .or(`credit_card_id.eq.${activeInvoice.cardId},description.ilike.${legacyDescriptionPrefix}%`)
+        .ilike('description', 'Pagamento fatura%')
+        .not('wallet_id', 'is', null)
         .select('id');
 
       if (error) throw error;

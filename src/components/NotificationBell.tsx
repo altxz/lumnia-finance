@@ -127,8 +127,10 @@ export function NotificationBell() {
       final_category: 'Cartão de Crédito',
       date: new Date().toISOString().split('T')[0],
       wallet_id: payWalletId,
+      credit_card_id: payCardInfo.cardId,
       payment_method: 'debit',
       is_paid: true,
+      invoice_month: payCardInfo.invoiceMonth,
     });
     if (!error) {
       await supabase.from('expenses').update({ is_paid: true })
