@@ -26,6 +26,7 @@ const ProjectsPage = lazyWithRetry(() => import("./pages/ProjectsPage"));
 const DebtSimulatorPage = lazyWithRetry(() => import("./pages/DebtSimulatorPage"));
 
 const ChangelogPage = lazyWithRetry(() => import("./pages/ChangelogPage"));
+const OAuthConsentPage = lazyWithRetry(() => import("./pages/OAuthConsentPage"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -74,6 +75,7 @@ const App = () => (
                       <Route path="/simulador-dividas" element={<DebtSimulatorPage />} />
                       
                       <Route path="/novidades" element={<ChangelogPage />} />
+                      <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AnimatedRoutes>
