@@ -36,7 +36,7 @@ export default function AuthPage() {
         variant: 'destructive',
       });
     } else if (isLogin) {
-      navigate('/');
+      navigate(safeNext ?? '/');
     } else {
       toast({
         title: 'Conta criada!',
