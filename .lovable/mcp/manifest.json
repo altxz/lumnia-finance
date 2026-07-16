@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://nvskvrgsfzaynotdgzoy.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "lumnia-mcp",
+      "version": "0.1.0",
+      "title": "Lumnia"
+    },
+    "tools": [
+      {
+        "name": "list_transactions",
+        "title": "Listar transações",
+        "description": "Lista despesas e receitas do usuário autenticado em um intervalo de datas (padrão: últimos 30 dias). Retorna id, data, descrição, valor, tipo, categoria, se está paga e forma de pagamento.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "start_date": {
+              "description": "Data inicial ISO (YYYY-MM-DD). Padrão: 30 dias atrás.",
+              "type": "string"
+            },
+            "end_date": {
+              "description": "Data final ISO (YYYY-MM-DD). Padrão: hoje.",
+              "type": "string"
+            },
+            "type": {
+              "description": "Filtrar por tipo.",
+              "type": "string",
+              "enum": [
+                "income",
+                "expense",
+                "transfer"
+              ]
+            },
+            "limit": {
+              "description": "Máximo de registros (padrão 100).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_transaction",
+        "title": "Criar transação",
+        "description": "Cria uma nova despesa ou receita para o usuário autenticado. Use tipo 'expense' para despesa e 'income' para receita.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Descrição curta da transação."
+            },
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Valor absoluto (positivo) em BRL."
+            },
+            "date": {
+              "type": "string",
+              "description": "Data ISO YYYY-MM-DD."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "expense",
+                "income"
+              ],
+              "description": "Tipo da transação."
+            },
+            "category": {
+              "description": "Nome/slug da categoria final.",
+              "type": "string"
+            },
+            "is_paid": {
+              "description": "Se já foi pago/recebido. Padrão: true.",
+              "type": "boolean"
+            },
+            "notes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "description",
+            "value",
+            "date",
+            "type"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_categories",
+        "title": "Listar categorias",
+        "description": "Lista todas as categorias e subcategorias do usuário autenticado.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "month_summary",
+        "title": "Resumo do mês",
+        "description": "Resume receitas, despesas e saldo do mês informado (YYYY-MM). Considera transações pagas e agrupa despesas por categoria.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "description": "Mês no formato YYYY-MM."
+            }
+          },
+          "required": [
+            "month"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_wallets",
+        "title": "Listar carteiras",
+        "description": "Lista carteiras e ativos do usuário com saldo atual e moeda.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_credit_cards",
+        "title": "Listar cartões de crédito",
+        "description": "Lista cartões de crédito do usuário com limite, dia de fechamento e vencimento.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
