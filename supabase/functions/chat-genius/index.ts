@@ -1629,7 +1629,7 @@ Exemplos de comportamento PROIBIDO:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3.5-flash",
         messages: conversationMessages,
         tools,
       }),
@@ -1658,7 +1658,7 @@ Exemplos de comportamento PROIBIDO:
     let assistantMessage = data.choices?.[0]?.message;
 
     let iterations = 0;
-    while (assistantMessage?.tool_calls && iterations < 8) {
+    while (assistantMessage?.tool_calls && iterations < 12) {
       iterations++;
       conversationMessages.push(assistantMessage);
 
@@ -1683,7 +1683,7 @@ Exemplos de comportamento PROIBIDO:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-3.5-flash",
           messages: conversationMessages,
           tools,
         }),
