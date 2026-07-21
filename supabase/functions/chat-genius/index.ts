@@ -527,55 +527,195 @@ async function executeTool(
     }
 
     case "projetar_saldo_final_mes": {
+      // Replica o motor de projeção da plataforma (useProjectedTotals):
+      // saldo_inicial (carteiras + histórico pago + recorrentes virtuais - faturas anteriores)
+      // + receitas do mês (pagas + pendentes + recorrentes virtuais)
+      // - despesas débito do mês (pagas + pendentes + recorrentes virtuais, excluindo pagamentos de fatura)
+      // - faturas de cartão com vencimento dentro do mês.
       const month = (args.month as string) || getCurrentMonth();
-      const { start, end } = getMonthRange(month);
+      const [yearNum, monthNum] = month.split("-").map(Number);
+      const startDate = `${month}-01`;
+      const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+      const endDate = `${month}-${String(daysInMonth).padStart(2, "0")}`;
+      const endExclusive = `${yearNum}-${String(monthNum + 1).padStart(2, "0")}-01`;
+      const selectedMonthIdx = (yearNum * 12) + (monthNum - 1);
 
-      const { data: wallets } = await supabase
-        .from("wallets")
-        .select("name, current_balance")
-        .eq("user_id", userId);
-      const saldoAtual = (wallets || []).reduce((s, w) => s + Number(w.current_balance), 0);
+      const [
+        { data: wallets },
+        { data: monthExps },
+        { data: historical },
+        { data: recurringTemplates },
+        { data: exceptions },
+        { data: cards },
+        { data: ccExpsAll },
+      ] = await Promise.all([
+        supabase.from("wallets").select("name, initial_balance").eq("user_id", userId),
+        supabase.from("expenses").select("id, description, value, date, type, credit_card_id, is_paid, is_recurring, final_category, invoice_month")
+          .eq("user_id", userId).gte("date", startDate).lte("date", endDate),
+        supabase.from("expenses").select("id, description, value, date, type, credit_card_id, is_paid, is_recurring, invoice_month")
+          .eq("user_id", userId).lt("date", startDate).is("credit_card_id", null),
+        supabase.from("expenses").select("id, description, value, date, type, credit_card_id, frequency")
+          .eq("user_id", userId).eq("is_recurring", true),
+        supabase.from("recurring_exceptions" as any).select("template_id, occurrence_date").eq("user_id", userId),
+        supabase.from("credit_cards").select("id, name, due_day, closing_day").eq("user_id", userId),
+        supabase.from("expenses").select("id, value, date, invoice_month, credit_card_id, final_category, description")
+          .eq("user_id", userId).not("credit_card_id", "is", null),
+      ]);
 
-      const { data: pendingIncome } = await supabase
-        .from("expenses")
-        .select("value, description")
-        .eq("user_id", userId)
-        .eq("type", "income")
-        .eq("is_paid", false)
-        .gte("date", start)
-        .lte("date", end);
-      const totalReceitasPendentes = (pendingIncome || []).reduce((s, e) => s + Number(e.value), 0);
+      const walletsArr = (wallets || []) as Array<{ name: string; initial_balance: number }>;
+      const walletSum = walletsArr.reduce((s, w) => s + Number(w.initial_balance || 0), 0);
 
-      const { data: pendingExpenses } = await supabase
-        .from("expenses")
-        .select("value, description")
-        .eq("user_id", userId)
-        .neq("type", "income")
-        .neq("type", "transfer")
-        .eq("is_paid", false)
-        .is("credit_card_id", null)
-        .gte("date", start)
-        .lte("date", end);
-      const totalDespesasPendentes = (pendingExpenses || []).reduce((s, e) => s + Number(e.value), 0);
+      const isCCPayment = (e: any) => {
+        const desc = String(e.description || "").toLowerCase();
+        return desc.startsWith("pagamento fatura") || (!!e.invoice_month && !e.credit_card_id && desc.includes("fatura"));
+      };
 
-      const { data: ccExpenses } = await supabase
-        .from("expenses")
-        .select("value")
-        .eq("user_id", userId)
-        .not("credit_card_id", "is", null)
-        .eq("invoice_month", month);
-      const totalFaturas = (ccExpenses || []).reduce((s, e) => s + Number(e.value), 0);
+      // Dedup materialized recurring: hide template rows if a non-template same-signature real row exists in same month.
+      const sig = (e: any) => `${e.type}|${String(e.description || "").trim().toLowerCase()}`;
+      const hideMaterialized = (rows: any[]) => {
+        const realByMonth = new Map<string, Set<string>>();
+        rows.forEach(r => {
+          if (r.is_recurring) return;
+          const ym = String(r.date || "").substring(0, 7);
+          if (!realByMonth.has(ym)) realByMonth.set(ym, new Set());
+          realByMonth.get(ym)!.add(sig(r));
+        });
+        return rows.filter(r => {
+          if (!r.is_recurring) return true;
+          const ym = String(r.date || "").substring(0, 7);
+          return !realByMonth.get(ym)?.has(sig(r));
+        });
+      };
 
-      const saldoProjetado = saldoAtual + totalReceitasPendentes - totalDespesasPendentes - totalFaturas;
+      const monthArr = hideMaterialized((monthExps || []) as any[]);
+      const historicalArr = hideMaterialized((historical || []) as any[]);
+      const templates = (recurringTemplates || []) as any[];
+      const excSet = new Set(((exceptions as any[]) || []).map(e => `${e.template_id}|${e.occurrence_date}`));
+
+      // Histórico pago (débito real, sem CC e sem pagamento de fatura, sem transferências)
+      const histIncome = historicalArr.filter(e => e.type === "income" && e.is_paid).reduce((s, e) => s + Number(e.value), 0);
+      const histDebit = historicalArr.filter(e => e.type !== "income" && e.type !== "transfer" && !isCCPayment(e) && e.is_paid).reduce((s, e) => s + Number(e.value), 0);
+
+      // Recorrentes virtuais de meses passados (sem match real)
+      const realByMonthLoose = new Set<string>();
+      [...historicalArr, ...monthArr].forEach(e => {
+        if (e.type === "transfer") return;
+        const ym = String(e.date || "").substring(0, 7);
+        if (ym) realByMonthLoose.add(`${ym}|${sig(e)}`);
+      });
+
+      let virtualPastBalance = 0;
+      const projectRecurringInMonth = (tplDate: string, yr: number, mo: number, freq: string | null) => {
+        const d = new Date(tplDate + "T12:00:00");
+        const tplIdx = d.getFullYear() * 12 + d.getMonth();
+        const targetIdx = yr * 12 + mo;
+        if (targetIdx < tplIdx) return false;
+        if (!freq || freq === "monthly") return true;
+        if (freq === "yearly") return d.getMonth() === mo;
+        if (freq === "weekly") return true;
+        return true;
+      };
+
+      templates.forEach(t => {
+        if (t.type === "transfer" || t.credit_card_id) return;
+        const d = new Date(t.date + "T12:00:00");
+        const startIdx = d.getFullYear() * 12 + d.getMonth();
+        const origDay = d.getDate();
+        for (let m = startIdx; m < selectedMonthIdx; m++) {
+          const yr = Math.floor(m / 12);
+          const mo = m % 12;
+          if (!projectRecurringInMonth(t.date, yr, mo, t.frequency)) continue;
+          const monthKey = `${yr}-${String(mo + 1).padStart(2, "0")}`;
+          if (realByMonthLoose.has(`${monthKey}|${sig(t)}`)) continue;
+          const dim = new Date(yr, mo + 1, 0).getDate();
+          const occ = `${monthKey}-${String(Math.min(origDay, dim)).padStart(2, "0")}`;
+          if (excSet.has(`${t.id}|${occ}`)) continue;
+          if (t.type === "income") virtualPastBalance += Number(t.value);
+          else virtualPastBalance -= Number(t.value);
+        }
+      });
+
+      // Faturas de cartão com vencimento < startDate (já saíram do saldo)
+      const ccArr = (cards || []) as Array<{ id: string; name: string; due_day: number; closing_day: number }>;
+      const ccExpsArr = (ccExpsAll || []) as any[];
+      const invoicesByCard = new Map<string, Map<string, { total: number; byCat: Record<string, number> }>>();
+      ccExpsArr.forEach(e => {
+        if (!e.invoice_month) return;
+        if (!invoicesByCard.has(e.credit_card_id)) invoicesByCard.set(e.credit_card_id, new Map());
+        const cardMap = invoicesByCard.get(e.credit_card_id)!;
+        if (!cardMap.has(e.invoice_month)) cardMap.set(e.invoice_month, { total: 0, byCat: {} });
+        const inv = cardMap.get(e.invoice_month)!;
+        inv.total += Number(e.value);
+        inv.byCat[e.final_category || "Outros"] = (inv.byCat[e.final_category || "Outros"] || 0) + Number(e.value);
+      });
+
+      let ccPastCash = 0;
+      const invoicesCurrentMonth: Array<{ cartao: string; valor: number; vencimento: string }> = [];
+      let invoicesCurrentTotal = 0;
+
+      ccArr.forEach(card => {
+        const cardMap = invoicesByCard.get(card.id);
+        if (!cardMap) return;
+        cardMap.forEach((inv, invMonth) => {
+          if (inv.total <= 0) return;
+          const [iy, im] = invMonth.split("-").map(Number);
+          const dueDim = new Date(iy, im, 0).getDate();
+          const dueDay = Math.min(card.due_day || 10, dueDim);
+          const dueDate = `${invMonth}-${String(dueDay).padStart(2, "0")}`;
+          if (dueDate < startDate) {
+            ccPastCash += inv.total;
+          } else if (dueDate >= startDate && dueDate <= endDate) {
+            invoicesCurrentTotal += inv.total;
+            invoicesCurrentMonth.push({ cartao: card.name, valor: inv.total, vencimento: dueDate });
+          }
+        });
+      });
+
+      const startingBalance = walletSum + histIncome - histDebit + virtualPastBalance - ccPastCash;
+
+      // Mês atual: receitas e despesas reais (pagas + pendentes)
+      const monthIncome = monthArr.filter(e => e.type === "income").reduce((s, e) => s + Number(e.value), 0);
+      const monthDebit = monthArr.filter(e => e.type !== "income" && e.type !== "transfer" && !e.credit_card_id && !isCCPayment(e)).reduce((s, e) => s + Number(e.value), 0);
+
+      // Recorrentes virtuais para o mês atual (sem match real)
+      let virtualIncomeMonth = 0;
+      let virtualDebitMonth = 0;
+      const realCurrentLoose = new Set(monthArr.map(e => sig(e)));
+      templates.forEach(t => {
+        if (t.type === "transfer" || t.credit_card_id) return;
+        if (!projectRecurringInMonth(t.date, yearNum, monthNum - 1, t.frequency)) return;
+        if (realCurrentLoose.has(sig(t))) return;
+        const d = new Date(t.date + "T12:00:00");
+        const occ = `${month}-${String(Math.min(d.getDate(), daysInMonth)).padStart(2, "0")}`;
+        if (excSet.has(`${t.id}|${occ}`)) return;
+        if (t.type === "income") virtualIncomeMonth += Number(t.value);
+        else virtualDebitMonth += Number(t.value);
+      });
+
+      const totalIncome = monthIncome + virtualIncomeMonth;
+      const totalExpense = monthDebit + virtualDebitMonth + invoicesCurrentTotal;
+      const balance = totalIncome - totalExpense;
+      const projectedBalance = startingBalance + balance;
 
       return JSON.stringify({
         month,
-        saldo_atual_carteiras: saldoAtual,
-        receitas_pendentes: totalReceitasPendentes,
-        despesas_pendentes: totalDespesasPendentes,
-        faturas_cartao: totalFaturas,
-        saldo_projetado: saldoProjetado,
-        carteiras: (wallets || []).map(w => ({ nome: w.name, saldo: w.current_balance })),
+        saldo_inicial_mes: Math.round(startingBalance * 100) / 100,
+        carteiras_iniciais: Math.round(walletSum * 100) / 100,
+        historico_pago_liquido: Math.round((histIncome - histDebit) * 100) / 100,
+        recorrentes_virtuais_passadas: Math.round(virtualPastBalance * 100) / 100,
+        faturas_ja_pagas_anteriores: Math.round(ccPastCash * 100) / 100,
+        total_receitas_mes: Math.round(totalIncome * 100) / 100,
+        total_despesas_mes: Math.round(totalExpense * 100) / 100,
+        detalhe_despesas_mes: {
+          debito_real: Math.round(monthDebit * 100) / 100,
+          recorrentes_virtuais: Math.round(virtualDebitMonth * 100) / 100,
+          faturas_cartao_mes: Math.round(invoicesCurrentTotal * 100) / 100,
+        },
+        faturas_cartao_com_vencimento_no_mes: invoicesCurrentMonth,
+        saldo_do_mes: Math.round(balance * 100) / 100,
+        saldo_projetado_final_mes: Math.round(projectedBalance * 100) / 100,
+        carteiras: walletsArr.map(w => ({ nome: w.name, saldo_inicial: w.initial_balance })),
+        observacao: "Cálculo idêntico ao motor useProjectedTotals: inclui transações pagas E pendentes, recorrentes virtuais e faturas de cartão pelo vencimento.",
       });
     }
 
@@ -1457,7 +1597,19 @@ Exemplos de comportamento PROIBIDO:
 - Categoria desconhecida → use "Outros"
 - Comparar meses sem especificar → compare o mês atual com o anterior
 - Evolução sem período → últimos 6 meses
-- Se a pergunta for vaga, consulte os dados PRIMEIRO e depois peça clarificação apenas se necessário com base nos dados.`;
+- Se a pergunta for vaga, consulte os dados PRIMEIRO e depois peça clarificação apenas se necessário com base nos dados.
+
+## Regra de projeção de saldo (CRÍTICA):
+- Ao usar projetar_saldo_final_mes, o campo "saldo_projetado_final_mes" é a fonte de verdade e bate EXATAMENTE com a página de transações (motor useProjectedTotals).
+- SEMPRE explique a composição usando os campos retornados: saldo_inicial_mes, total_receitas_mes, total_despesas_mes (débito real + recorrentes + faturas), saldo_projetado_final_mes.
+- Se o utilizador disser que o valor não bate, NÃO invente explicações — chame a ferramenta novamente e mostre a decomposição item a item (carteiras_iniciais, historico_pago_liquido, recorrentes_virtuais_passadas, faturas_ja_pagas_anteriores, detalhe_despesas_mes) para depurar.
+- NUNCA responda "R$ 0,00" sem antes inspecionar TODOS os campos retornados — se de fato tudo estiver zero, questione se existem transações no mês.
+
+## Estilo de resposta:
+- Seja analítica e específica, nunca genérica. Cite números reais com contexto ("R$ 1.200 em Alimentação, 30% acima do mês passado").
+- Prefira listas com bullets e valores em **negrito**.
+- Se o utilizador contestar um número, mostre a decomposição matemática completa em vez de repetir a resposta.
+- Quando combinar múltiplas ferramentas, sintetize numa análise coesa — não despeje resultados brutos.`;
 
     const conversationMessages: Array<{ role: string; content: string }> = [
       { role: "system", content: systemPrompt },
@@ -1477,7 +1629,7 @@ Exemplos de comportamento PROIBIDO:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3.5-flash",
         messages: conversationMessages,
         tools,
       }),
@@ -1506,7 +1658,7 @@ Exemplos de comportamento PROIBIDO:
     let assistantMessage = data.choices?.[0]?.message;
 
     let iterations = 0;
-    while (assistantMessage?.tool_calls && iterations < 8) {
+    while (assistantMessage?.tool_calls && iterations < 12) {
       iterations++;
       conversationMessages.push(assistantMessage);
 
@@ -1531,7 +1683,7 @@ Exemplos de comportamento PROIBIDO:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-3.5-flash",
           messages: conversationMessages,
           tools,
         }),
