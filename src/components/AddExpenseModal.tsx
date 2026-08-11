@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Sparkles, Loader2, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Repeat, Hash } from 'lucide-react';
 import { QuickCalculator } from '@/components/QuickCalculator';
+import { DescriptionAutocomplete } from '@/components/DescriptionAutocomplete';
+import type { DescriptionSuggestion } from '@/hooks/useDescriptionSuggestions';
 import { CATEGORIES, getCategoryInfo } from '@/lib/constants';
 import { getPaymentDate } from '@/lib/invoiceHelpers';
 import { supabase } from '@/lib/supabase';
