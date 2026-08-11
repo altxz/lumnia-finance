@@ -465,13 +465,15 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               {/* Description */}
               <div className="space-y-1.5">
                 <Label htmlFor="expense-desc" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descrição</Label>
-                <Input
+                <DescriptionAutocomplete
                   id="expense-desc"
                   placeholder="Ex: Almoço no restaurante do centro"
                   value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  className="rounded-xl h-11"
+                  onChange={setDescription}
+                  type={type}
+                  onSelectSuggestion={applySuggestion}
                 />
+
               </div>
 
               {/* Payment method (expense only) */}
