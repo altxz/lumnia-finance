@@ -4,9 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Shield, Key, Download, Trash2, Loader2 } from 'lucide-react';
+import { Shield, Key, Download, Trash2, Loader2, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { exportFinancialWorkbook } from '@/lib/exportToExcel';
+
 
 interface SecuritySectionProps {
   user: any;
