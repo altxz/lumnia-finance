@@ -175,6 +175,35 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
   const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
 
+  /** Preenche o formulário a partir de um lançamento anterior parecido. */
+  const applySuggestion = (s: DescriptionSuggestion) => {
+    setDescription(s.description);
+    if (!value.trim() && Number(s.value) > 0) {
+      setValue(String(Number(s.value)).replace('.', ','));
+    }
+    if (s.final_category) setFinalCategory(s.final_category);
+    if (s.notes && !notes.trim()) setNotes(s.notes);
+    if (s.tags?.length && tags.length === 0) setTags(s.tags);
+    if (s.project_id) setProjectId(s.project_id);
+
+    if (s.type === 'expense') {
+      if (s.payment_method === 'credit' && s.credit_card_id) {
+        setPaymentMethod('credit');
+        setCreditCardId(s.credit_card_id);
+        setWalletId('');
+      } else {
+        setPaymentMethod('debit');
+        setCreditCardId('');
+        if (s.wallet_id) setWalletId(s.wallet_id);
+      }
+    } else if (s.wallet_id) {
+      setWalletId(s.wallet_id);
+    }
+
+    toast({ title: 'Dados preenchidos', description: 'Informações copiadas de um lançamento anterior.' });
+  };
+
+
   const handleAiCategorize = async () => {
     if (!description.trim()) {
       toast({ title: 'Erro', description: 'Preencha a descrição antes de categorizar.', variant: 'destructive' });
