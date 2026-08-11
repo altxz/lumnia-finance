@@ -22,7 +22,24 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const handleExportExcel = async () => {
+    if (!user) return;
+    setExportingExcel(true);
+    try {
+      const result = await exportFinancialWorkbook(user.id);
+      toast({
+        title: 'Planilha gerada!',
+        description: `${result.transactions} transações em ${result.sheets} abas (incluindo ${result.cardTransactions} do cartão).`,
+      });
+    } catch (e: any) {
+      toast({ title: 'Erro ao exportar', description: e?.message ?? 'Tente novamente.', variant: 'destructive' });
+    }
+    setExportingExcel(false);
+  };
+
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
