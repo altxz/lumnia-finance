@@ -4,9 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Shield, Key, Download, Trash2, Loader2 } from 'lucide-react';
+import { Shield, Key, Download, Trash2, Loader2, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { exportFinancialWorkbook } from '@/lib/exportToExcel';
+
 
 interface SecuritySectionProps {
   user: any;
@@ -20,7 +22,24 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const handleExportExcel = async () => {
+    if (!user) return;
+    setExportingExcel(true);
+    try {
+      const result = await exportFinancialWorkbook(user.id);
+      toast({
+        title: 'Planilha gerada!',
+        description: `${result.transactions} transações em ${result.sheets} abas (incluindo ${result.cardTransactions} do cartão).`,
+      });
+    } catch (e: any) {
+      toast({ title: 'Erro ao exportar', description: e?.message ?? 'Tente novamente.', variant: 'destructive' });
+    }
+    setExportingExcel(false);
+  };
+
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
@@ -86,16 +105,44 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
 
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2"><Download className="h-5 w-5 text-ai" />Seus Dados (LGPD)</CardTitle>
-          <CardDescription>Exporte todos os seus dados em formato JSON</CardDescription>
+          <CardTitle className="text-lg flex items-center gap-2"><Download className="h-5 w-5 text-ai" />Exportar Dados</CardTitle>
+          <CardDescription>Baixe suas informações financeiras completas</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button onClick={handleExportData} disabled={exporting} variant="outline" className="gap-2 rounded-xl">
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {exporting ? 'Exportando...' : 'Baixar Meus Dados'}
-          </Button>
+        <CardContent className="space-y-4">
+          <div className="rounded-xl border p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <FileSpreadsheet className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Planilha Excel (.xlsx)</p>
+                <p className="text-xs text-muted-foreground">
+                  Extração completa com abas de Transações (dia a dia, categoria, débito, crédito, status),
+                  Cartões de Crédito (data da compra e da fatura), Faturas, Resumo Mensal, Por Categoria,
+                  Carteiras, Cadastro de Cartões, Categorias, Orçamentos, Dívidas e Projetos.
+                </p>
+              </div>
+            </div>
+            <Button onClick={handleExportExcel} disabled={exportingExcel} className="gap-2 rounded-xl w-full sm:w-auto">
+              {exportingExcel ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              {exportingExcel ? 'Gerando planilha...' : 'Exportar para Excel'}
+            </Button>
+          </div>
+
+          <div className="rounded-xl border p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <Download className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">Backup JSON (LGPD)</p>
+                <p className="text-xs text-muted-foreground">Arquivo bruto com suas transações, para portabilidade de dados.</p>
+              </div>
+            </div>
+            <Button onClick={handleExportData} disabled={exporting} variant="outline" className="gap-2 rounded-xl w-full sm:w-auto">
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {exporting ? 'Exportando...' : 'Baixar Meus Dados'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
 
       <Card className="rounded-2xl border-destructive/30">
         <CardHeader>
