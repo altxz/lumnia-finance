@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Sparkles, Loader2, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Repeat, Hash } from 'lucide-react';
 import { QuickCalculator } from '@/components/QuickCalculator';
+import { DescriptionAutocomplete } from '@/components/DescriptionAutocomplete';
+import type { DescriptionSuggestion } from '@/hooks/useDescriptionSuggestions';
 import { CATEGORIES, getCategoryInfo } from '@/lib/constants';
 import { getPaymentDate } from '@/lib/invoiceHelpers';
 import { supabase } from '@/lib/supabase';
@@ -172,6 +174,35 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   }, [paymentMethod, selectedCard, date]);
 
   const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
+
+  /** Preenche o formulário a partir de um lançamento anterior parecido. */
+  const applySuggestion = (s: DescriptionSuggestion) => {
+    setDescription(s.description);
+    if (!value.trim() && Number(s.value) > 0) {
+      setValue(String(Number(s.value)).replace('.', ','));
+    }
+    if (s.final_category) setFinalCategory(s.final_category);
+    if (s.notes && !notes.trim()) setNotes(s.notes);
+    if (s.tags?.length && tags.length === 0) setTags(s.tags);
+    if (s.project_id) setProjectId(s.project_id);
+
+    if (s.type === 'expense') {
+      if (s.payment_method === 'credit' && s.credit_card_id) {
+        setPaymentMethod('credit');
+        setCreditCardId(s.credit_card_id);
+        setWalletId('');
+      } else {
+        setPaymentMethod('debit');
+        setCreditCardId('');
+        if (s.wallet_id) setWalletId(s.wallet_id);
+      }
+    } else if (s.wallet_id) {
+      setWalletId(s.wallet_id);
+    }
+
+    toast({ title: 'Dados preenchidos', description: 'Informações copiadas de um lançamento anterior.' });
+  };
+
 
   const handleAiCategorize = async () => {
     if (!description.trim()) {
@@ -463,13 +494,15 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               {/* Description */}
               <div className="space-y-1.5">
                 <Label htmlFor="expense-desc" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descrição</Label>
-                <Input
+                <DescriptionAutocomplete
                   id="expense-desc"
                   placeholder="Ex: Almoço no restaurante do centro"
                   value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  className="rounded-xl h-11"
+                  onChange={setDescription}
+                  type={type}
+                  onSelectSuggestion={applySuggestion}
                 />
+
               </div>
 
               {/* Payment method (expense only) */}
