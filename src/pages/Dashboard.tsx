@@ -281,7 +281,7 @@ export default function Dashboard() {
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><WeekComparisonChart expenses={projected.monthExpenses} /></Suspense></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><BurndownChart expenses={projected.monthExpenses} totalBudget={budgetTotals.totalBudget} /></Suspense></div>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><EndOfMonthForecast creditCards={projected.creditCards} wallets={projected.wallets} /></Suspense></div>
+                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><EndOfMonthForecast /></Suspense></div>
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></div>
 
                   <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><FixedVsVariableChart expenses={projected.monthExpenses} /></Suspense></div>
