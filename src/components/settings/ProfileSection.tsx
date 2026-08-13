@@ -1,4 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { getAvatarSignedUrl } from '@/lib/avatarUrl';
+
 import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,6 +26,15 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getAvatarSignedUrl(settings.avatar_url).then(url => {
+      if (active) setPreviewUrl(url);
+    });
+    return () => { active = false; };
+  }, [settings.avatar_url]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,13 +56,14 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    onChange('avatar_url', publicUrl + '?t=' + Date.now());
+    onChange('avatar_url', path);
+    setPreviewUrl(await getAvatarSignedUrl(path));
     toast({ title: 'Avatar atualizado!' });
     setUploading(false);
   };
 
   const initials = (settings.full_name || user?.email || 'U').slice(0, 2).toUpperCase();
+
 
   return (
     <div className="space-y-6">
@@ -64,7 +76,7 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
           <div className="flex items-center gap-6">
             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               <Avatar className="h-20 w-20 border-2 border-border">
-                <AvatarImage src={settings.avatar_url || ''} />
+                <AvatarImage src={previewUrl || ''} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full bg-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
