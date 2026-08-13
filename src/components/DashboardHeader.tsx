@@ -10,6 +10,8 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/lib/supabase';
+import { getAvatarSignedUrl } from '@/lib/avatarUrl';
+
 import { useTheme } from 'next-themes';
 
 export function DashboardHeader() {
@@ -22,15 +24,19 @@ export function DashboardHeader() {
 
   useEffect(() => {
     if (!user) return;
+    let active = true;
     supabase
       .from('user_settings')
       .select('avatar_url, full_name')
       .eq('user_id', user.id)
       .maybeSingle()
-      .then(({ data }) => {
-        if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+      .then(async ({ data }) => {
+        const signed = await getAvatarSignedUrl(data?.avatar_url);
+        if (active) setAvatarUrl(signed);
       });
+    return () => { active = false; };
   }, [user]);
+
 
   const initials = displayName.charAt(0).toUpperCase();
 
