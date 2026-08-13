@@ -185,6 +185,8 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
           <div className="w-3 h-3 rounded-sm bg-destructive/90" />
           <span className="text-[10px] text-muted-foreground">Mais</span>
         </div>
+        </>
+        )}
       </CardContent>
     </Card>
   );
