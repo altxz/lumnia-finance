@@ -24,6 +24,15 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getAvatarSignedUrl(settings.avatar_url).then(url => {
+      if (active) setPreviewUrl(url);
+    });
+    return () => { active = false; };
+  }, [settings.avatar_url]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,13 +54,14 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    onChange('avatar_url', publicUrl + '?t=' + Date.now());
+    onChange('avatar_url', path);
+    setPreviewUrl(await getAvatarSignedUrl(path));
     toast({ title: 'Avatar atualizado!' });
     setUploading(false);
   };
 
   const initials = (settings.full_name || user?.email || 'U').slice(0, 2).toUpperCase();
+
 
   return (
     <div className="space-y-6">
