@@ -1,4 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { getAvatarSignedUrl } from '@/lib/avatarUrl';
+
 import { ImportTransactionsModal } from '@/components/ImportTransactionsModal';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -74,7 +76,7 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
           <div className="flex items-center gap-6">
             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               <Avatar className="h-20 w-20 border-2 border-border">
-                <AvatarImage src={settings.avatar_url || ''} />
+                <AvatarImage src={previewUrl || ''} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full bg-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
