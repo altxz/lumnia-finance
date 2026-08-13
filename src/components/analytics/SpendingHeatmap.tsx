@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/constants';
@@ -10,15 +10,22 @@ interface SpendingHeatmapProps {
   expenses: Expense[];
 }
 
+const WEEKDAY_SHORT = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const WEEKDAY_LABEL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
 export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
   const { selectedMonth, selectedYear } = useSelectedDate();
+  const [view, setView] = useState<'daily' | 'weekly'>('daily');
 
-  const { days, maxSpend } = useMemo(() => {
+  const { days, maxSpend, weekdays, maxWeekdaySpend } = useMemo(() => {
     const m = selectedMonth;
     const y = selectedYear;
     const daysInMonth = new Date(y, m + 1, 0).getDate();
 
     const byDay: Record<number, number> = {};
+    const byWeekday: number[] = Array(7).fill(0);
+    const countWeekday: number[] = Array(7).fill(0);
+
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
       if (e.credit_card_id) return;
@@ -26,8 +33,13 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
       if (d.getMonth() === m && d.getFullYear() === y) {
         const day = d.getDate();
         byDay[day] = (byDay[day] || 0) + e.value;
+        byWeekday[d.getDay()] += e.value;
       }
     });
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      countWeekday[new Date(y, m, i).getDay()] += 1;
+    }
 
     const max = Math.max(...Object.values(byDay), 1);
     const result = Array.from({ length: daysInMonth }, (_, i) => ({
@@ -35,8 +47,20 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
       spend: byDay[i + 1] || 0,
     }));
 
-    return { days: result, maxSpend: max };
+    const weekdayResult = byWeekday.map((spend, i) => ({
+      weekday: i,
+      spend,
+      average: countWeekday[i] > 0 ? spend / countWeekday[i] : 0,
+    }));
+
+    return {
+      days: result,
+      maxSpend: max,
+      weekdays: weekdayResult,
+      maxWeekdaySpend: Math.max(...byWeekday, 1),
+    };
   }, [expenses, selectedMonth, selectedYear]);
+
 
   const getIntensity = (spend: number): string => {
     if (spend === 0) return 'bg-muted/40';
