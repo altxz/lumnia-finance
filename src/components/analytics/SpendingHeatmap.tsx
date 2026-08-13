@@ -62,9 +62,9 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
   }, [expenses, selectedMonth, selectedYear]);
 
 
-  const getIntensity = (spend: number): string => {
+  const getIntensity = (spend: number, max: number): string => {
     if (spend === 0) return 'bg-muted/40';
-    const ratio = spend / maxSpend;
+    const ratio = spend / max;
     if (ratio < 0.2) return 'bg-destructive/15';
     if (ratio < 0.4) return 'bg-destructive/30';
     if (ratio < 0.6) return 'bg-destructive/50';
@@ -82,18 +82,71 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
   return (
     <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-base font-semibold">Mapa de Gastos</CardTitle>
-          <InfoPopover><p>Calendário de calor onde os dias com cores mais escuras representam maiores gastos.</p></InfoPopover>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base font-semibold">Mapa de Gastos</CardTitle>
+            <InfoPopover>
+              <p>Calendário de calor onde os dias com cores mais escuras representam maiores gastos. Use a visão semanal para ver quais dias da semana concentram mais gastos no mês.</p>
+            </InfoPopover>
+          </div>
+          <div className="flex items-center gap-1 rounded-full bg-muted/60 p-0.5">
+            {([['daily', 'Diário'], ['weekly', 'Semanal']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setView(key)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  view === key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
+        {view === 'weekly' ? (
+          <div className="space-y-2">
+            {weekdays.map(({ weekday, spend, average }) => (
+              <div key={weekday} className="flex items-center gap-2">
+                <span className="w-16 shrink-0 text-[11px] text-muted-foreground font-medium">
+                  {WEEKDAY_LABEL[weekday].slice(0, 3)}
+                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex-1 h-7 rounded-md bg-muted/40 overflow-hidden cursor-default">
+                      <div
+                        className={`h-full rounded-md transition-all ${getIntensity(spend, maxWeekdaySpend)}`}
+                        style={{ width: `${Math.max((spend / maxWeekdaySpend) * 100, spend > 0 ? 6 : 0)}%` }}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <p className="font-semibold">{WEEKDAY_LABEL[weekday]}</p>
+                    <p className={spend > 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                      {spend > 0 ? `-${formatCurrency(spend)}` : 'Sem gastos'}
+                    </p>
+                    {spend > 0 && (
+                      <p className="text-muted-foreground">Média por dia: {formatCurrency(average)}</p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+                <span className="w-20 shrink-0 text-right text-[11px] font-medium tabular-nums">
+                  {spend > 0 ? formatCurrency(spend) : '—'}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+        <>
         {/* Weekday labels */}
         <div className="grid grid-cols-7 gap-1 mb-1">
-          {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, i) => (
+          {WEEKDAY_SHORT.map((d, i) => (
             <span key={i} className="text-[10px] text-muted-foreground text-center font-medium">{d}</span>
           ))}
         </div>
+
 
         {/* Day grid */}
         <div className="grid grid-cols-7 gap-1">
