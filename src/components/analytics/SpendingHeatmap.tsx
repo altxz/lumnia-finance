@@ -159,7 +159,7 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
             <Tooltip key={day}>
               <TooltipTrigger asChild>
                 <div
-                  className={`aspect-square rounded-sm cursor-default transition-colors ${getIntensity(spend)} ${
+                  className={`aspect-square rounded-sm cursor-default transition-colors ${getIntensity(spend, maxSpend)} ${
                     day === todayDay ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''
                   }`}
                 />
