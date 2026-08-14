@@ -5,6 +5,7 @@ import listCategories from "./tools/list-categories";
 import monthSummary from "./tools/month-summary";
 import listWallets from "./tools/list-wallets";
 import listCreditCards from "./tools/list-credit-cards";
+import monthTransactions from "./tools/month-transactions";
 
 const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
@@ -13,7 +14,7 @@ export default defineMcp({
   title: "Lumnia",
   version: "0.1.0",
   instructions:
-    "Ferramentas para o app Lumnia (gestão financeira pessoal). Use list_transactions/month_summary para consultar dados, create_transaction para lançar despesas ou receitas, e list_categories/list_wallets/list_credit_cards para contexto do usuário.",
+    "Ferramentas para o app Lumnia (gestão financeira pessoal). Use list_transactions/month_summary para consultar dados, create_transaction para lançar despesas ou receitas, month_transactions para ver, dia a dia, todas as transações de um mês com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usuário.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -25,5 +26,6 @@ export default defineMcp({
     monthSummary,
     listWallets,
     listCreditCards,
+    monthTransactions,
   ],
 });

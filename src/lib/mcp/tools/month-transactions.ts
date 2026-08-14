@@ -71,7 +71,7 @@ export default defineTool({
         .is("credit_card_id", null),
       sb.from("credit_cards").select("*"),
       sb.from("wallets").select("id, name, initial_balance"),
-      sb.from("recurring_exceptions").select("template_id, occurrence_date"),
+      (sb.from as any)("recurring_exceptions").select("template_id, occurrence_date"),
       sb.from("expenses").select(EXPENSE_COLS).eq("is_recurring", true),
     ]);
 
