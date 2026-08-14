@@ -1,10 +1,10 @@
-import type { Expense } from '@/components/ExpenseTable';
+import type { Expense } from '../components/ExpenseTable';
 import {
   getInvoicePeriod,
   matchExpensesToInvoice,
   type CreditCard,
-} from '@/lib/invoiceHelpers';
-import { buildInvoiceCashEvents } from '@/lib/invoiceCashFlow';
+} from './invoiceHelpers';
+import { buildInvoiceCashEvents } from './invoiceCashFlow';
 
 interface ComputeInvoiceTotalsParams {
   creditCards: CreditCard[];

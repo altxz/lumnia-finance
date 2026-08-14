@@ -1,4 +1,4 @@
-import type { CreditCard } from '@/lib/invoiceHelpers';
+import type { CreditCard } from './invoiceHelpers';
 
 type PaymentLike = {
   credit_card_id?: string | null;

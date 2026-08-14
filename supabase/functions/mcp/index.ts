@@ -204,18 +204,375 @@ var list_credit_cards_default = defineTool6({
 // src/lib/mcp/tools/month-transactions.ts
 import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.23.0";
 import { z as z4 } from "npm:zod@^4.4.3";
-import { buildInvoiceCashEvents, sumInvoiceCashEventsBeforeDate } from "npm:@/lib/invoiceCashFlow";
-import { isTrackedCreditCardPayment } from "npm:@/lib/creditCardPayments";
-import { buildDailyBalanceMap, computeProjectedMonthResult } from "npm:@/lib/projectedBalanceMath";
-import { computeInvoiceTotalsForCashWindow } from "npm:@/lib/projectedInvoiceTotals";
-import {
-  buildMaterializedRecurringSignature,
-  buildRecurringExceptionSignature,
-  buildRecurringLooseSignature,
-  buildRecurringSignature,
-  hideMaterializedRecurringTemplates,
-  shouldProjectRecurringInMonth
-} from "npm:@/lib/recurringProjection";
+
+// src/lib/creditCardPayments.ts
+var PAYMENT_PREFIX_RE = /^pagamento(?: de)? fatura\s*/i;
+function normalize(value) {
+  return (value ?? "").trim().toLowerCase();
+}
+function getCreditCardPaymentCardId(item, creditCards = []) {
+  if (item.credit_card_id) return item.credit_card_id;
+  const description = normalize(item.description).replace(PAYMENT_PREFIX_RE, "");
+  if (!description) return null;
+  const matched = creditCards.find((card) => description.startsWith(normalize(card.name)));
+  return matched?.id ?? null;
+}
+function isTrackedCreditCardPayment(item, creditCards = []) {
+  if (item.type === "income" || item.type === "transfer") return false;
+  const description = normalize(item.description);
+  const category = normalize(item.final_category);
+  const looksLikePayment = description.includes("fatura") || category.includes("cart\xE3o") || category.includes("cartao");
+  if (!looksLikePayment) return false;
+  return !!getCreditCardPaymentCardId(item, creditCards);
+}
+function isCreditCardPaymentLabel(description) {
+  return PAYMENT_PREFIX_RE.test(description ?? "");
+}
+function getCreditCardPaymentLabelCardName(description) {
+  return normalize(description).replace(PAYMENT_PREFIX_RE, "").split(" - ")[0];
+}
+
+// src/lib/invoiceHelpers.ts
+function getClosingDay(card) {
+  if (card.closing_strategy === "relative") {
+    let cd = card.due_day - card.closing_days_before_due;
+    if (cd <= 0) cd += 30;
+    return cd;
+  }
+  return card.closing_day;
+}
+function buildClosingDate(year, month, closingDay) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const day = Math.min(closingDay, lastDay);
+  return new Date(year, month, day);
+}
+function toMonthLabel(year, month) {
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+function getPaymentDate(purchaseDate, cardSettings) {
+  const purchase = typeof purchaseDate === "string" ? /* @__PURE__ */ new Date(`${purchaseDate}T12:00:00`) : new Date(purchaseDate);
+  const isCompact = "dueDay" in cardSettings;
+  const dueDay = isCompact ? cardSettings.dueDay : cardSettings.due_day;
+  const closingDay = isCompact ? cardSettings.closingDay : getClosingDay(cardSettings);
+  const year = purchase.getFullYear();
+  const month = purchase.getMonth();
+  const day = purchase.getDate();
+  let cycleYear = year;
+  let cycleMonth = month;
+  if (day > closingDay) {
+    if (cycleMonth === 11) {
+      cycleMonth = 0;
+      cycleYear += 1;
+    } else {
+      cycleMonth += 1;
+    }
+  }
+  const dueYear = cycleMonth === 11 ? cycleYear + 1 : cycleYear;
+  const dueMonth = cycleMonth === 11 ? 0 : cycleMonth + 1;
+  const dueLastDay = new Date(dueYear, dueMonth + 1, 0).getDate();
+  return new Date(dueYear, dueMonth, Math.min(dueDay, dueLastDay));
+}
+function getInvoicePeriod(card, targetYear, targetMonth) {
+  const closingDay = getClosingDay(card);
+  const cycleMonth = targetMonth === 0 ? 11 : targetMonth - 1;
+  const cycleYear = targetMonth === 0 ? targetYear - 1 : targetYear;
+  const periodEnd = buildClosingDate(cycleYear, cycleMonth, closingDay);
+  const prevCycleMonth = cycleMonth === 0 ? 11 : cycleMonth - 1;
+  const prevCycleYear = cycleMonth === 0 ? cycleYear - 1 : cycleYear;
+  const prevClosing = buildClosingDate(prevCycleYear, prevCycleMonth, closingDay);
+  const periodStart = new Date(prevClosing);
+  periodStart.setDate(periodStart.getDate() + 1);
+  const dueLastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const dueDate = new Date(targetYear, targetMonth, Math.min(card.due_day, dueLastDay));
+  const today = /* @__PURE__ */ new Date();
+  today.setHours(23, 59, 59, 999);
+  let status = "open";
+  if (today > dueDate) {
+    status = "overdue";
+  } else if (today > periodEnd) {
+    status = "closed";
+  }
+  const monthLabel = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}`;
+  return {
+    cardId: card.id,
+    cardName: card.name,
+    closingDay,
+    dueDay: card.due_day,
+    limit: card.limit_amount,
+    periodStart,
+    periodEnd,
+    dueDate,
+    monthLabel,
+    status
+  };
+}
+function matchExpensesToInvoice(expenses, period) {
+  const dueLabel = period.monthLabel;
+  const matched = expenses.filter((e) => {
+    if (e.credit_card_id !== period.cardId) return false;
+    if (e.type === "income" || e.type === "transfer") return false;
+    if (isCreditCardPaymentLabel(e.description)) return false;
+    if (e.invoice_month) {
+      return e.invoice_month === dueLabel;
+    }
+    const paymentDate = getPaymentDate(e.date, { closingDay: period.closingDay, dueDay: period.dueDay });
+    const paymentLabel = toMonthLabel(paymentDate.getFullYear(), paymentDate.getMonth());
+    return paymentLabel === dueLabel;
+  });
+  const total = matched.reduce((s, e) => s + e.value, 0);
+  const normalizedCardName = period.cardName.trim().toLowerCase();
+  const isPaid = expenses.some((e) => {
+    if (e.type !== "expense" || !e.invoice_month || e.invoice_month !== dueLabel || !e.wallet_id) return false;
+    if (!isCreditCardPaymentLabel(e.description)) return false;
+    if (e.credit_card_id) return e.credit_card_id === period.cardId;
+    const legacyCardName = getCreditCardPaymentLabelCardName(e.description);
+    return legacyCardName === normalizedCardName;
+  });
+  let status = isPaid ? "paid" : period.status;
+  if (total <= 0 && status === "overdue") {
+    status = "closed";
+  }
+  return { ...period, status, transactions: matched, total };
+}
+
+// src/lib/invoiceCashFlow.ts
+function toMonthLabel2(year, month) {
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+function toDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function parseMonthLabel(label) {
+  const [year, month] = label.split("-").map(Number);
+  return { year, month: month - 1 };
+}
+function normalizeCardName(name) {
+  return (name ?? "").trim().toLowerCase();
+}
+function getLegacyPaymentCardName(description) {
+  return normalizeCardName(getCreditCardPaymentLabelCardName(description));
+}
+function isInvoicePaymentRecord(expense) {
+  return expense.type === "expense" && !!expense.invoice_month && !!expense.wallet_id && isCreditCardPaymentLabel(expense.description);
+}
+function resolveExpenseMonthLabel(expense, cardsById) {
+  if (expense.invoice_month) return expense.invoice_month;
+  if (!expense.credit_card_id) return null;
+  const card = cardsById.get(expense.credit_card_id);
+  if (!card) return null;
+  const paymentDate = getPaymentDate(expense.date, card);
+  return toMonthLabel2(paymentDate.getFullYear(), paymentDate.getMonth());
+}
+function findInvoicePaymentRecord(expenses, period) {
+  const normalizedCardName = normalizeCardName(period.cardName);
+  return expenses.filter((expense) => {
+    if (!isInvoicePaymentRecord(expense) || expense.invoice_month !== period.monthLabel) return false;
+    if (expense.credit_card_id) return expense.credit_card_id === period.cardId;
+    return getLegacyPaymentCardName(expense.description) === normalizedCardName;
+  }).sort((a, b) => a.date.localeCompare(b.date))[0];
+}
+function buildInvoiceCashEvents(creditCards, expenses) {
+  if (creditCards.length === 0 || expenses.length === 0) return [];
+  const cardsById = new Map(creditCards.map((card) => [card.id, card]));
+  const cardsByName = new Map(creditCards.map((card) => [normalizeCardName(card.name), card]));
+  const labelsByCard = /* @__PURE__ */ new Map();
+  const addLabel = (cardId, label) => {
+    if (!label) return;
+    if (!labelsByCard.has(cardId)) labelsByCard.set(cardId, /* @__PURE__ */ new Set());
+    labelsByCard.get(cardId).add(label);
+  };
+  expenses.forEach((expense) => {
+    if (expense.type !== "expense") return;
+    if (expense.credit_card_id && cardsById.has(expense.credit_card_id)) {
+      addLabel(expense.credit_card_id, resolveExpenseMonthLabel(expense, cardsById));
+      return;
+    }
+    if (!isInvoicePaymentRecord(expense)) return;
+    const matchedCard = cardsByName.get(getLegacyPaymentCardName(expense.description));
+    if (matchedCard) addLabel(matchedCard.id, expense.invoice_month ?? null);
+  });
+  const typedExpenses = expenses;
+  const events = [];
+  labelsByCard.forEach((labels, cardId) => {
+    const card = cardsById.get(cardId);
+    if (!card) return;
+    Array.from(labels).sort().forEach((label) => {
+      const { year, month } = parseMonthLabel(label);
+      const invoice = matchExpensesToInvoice(typedExpenses, getInvoicePeriod(card, year, month));
+      if (invoice.total <= 0) return;
+      const paymentRecord = findInvoicePaymentRecord(expenses, invoice);
+      events.push({
+        amount: invoice.total,
+        cardId,
+        date: paymentRecord?.date ?? toDateKey(invoice.dueDate),
+        monthLabel: invoice.monthLabel
+      });
+    });
+  });
+  return events.sort(
+    (a, b) => a.date.localeCompare(b.date) || a.cardId.localeCompare(b.cardId) || a.monthLabel.localeCompare(b.monthLabel)
+  );
+}
+function sumInvoiceCashEventsBeforeDate(events, cutoffDate) {
+  return events.reduce((sum, event) => event.date < cutoffDate ? sum + event.amount : sum, 0);
+}
+function groupInvoiceCashEventsByDay(events, startDate, endDate) {
+  return events.reduce((acc, event) => {
+    if (event.date < startDate || event.date > endDate) return acc;
+    acc[event.date] = (acc[event.date] || 0) + event.amount;
+    return acc;
+  }, {});
+}
+
+// src/lib/projectedBalanceMath.ts
+function buildDailyBalanceMap({
+  monthExpenses,
+  invoiceExpenses,
+  creditCards,
+  startDate,
+  endDate,
+  startingBalance,
+  isCreditCardPayment
+}) {
+  const nonCcFlowByDay = {};
+  monthExpenses.forEach((expense) => {
+    if (expense.type === "transfer") return;
+    if (expense.credit_card_id) return;
+    if (isCreditCardPayment(expense)) return;
+    if (expense.date < startDate || expense.date > endDate) return;
+    nonCcFlowByDay[expense.date] = nonCcFlowByDay[expense.date] || 0;
+    nonCcFlowByDay[expense.date] += expense.type === "income" ? expense.value : -expense.value;
+  });
+  const invoiceTotalByDay = groupInvoiceCashEventsByDay(
+    buildInvoiceCashEvents(creditCards, invoiceExpenses.length > 0 ? invoiceExpenses : monthExpenses),
+    startDate,
+    endDate
+  );
+  const allDayKeys = Array.from(
+    /* @__PURE__ */ new Set([...Object.keys(nonCcFlowByDay), ...Object.keys(invoiceTotalByDay)])
+  ).sort();
+  let runningBalance = startingBalance;
+  const balanceMap = {};
+  allDayKeys.forEach((day) => {
+    runningBalance += nonCcFlowByDay[day] || 0;
+    runningBalance -= invoiceTotalByDay[day] || 0;
+    balanceMap[day] = runningBalance;
+  });
+  return {
+    balanceMap,
+    nonCcFlowByDay,
+    invoiceTotalByDay
+  };
+}
+function computeProjectedMonthResult({
+  effectiveMonthExpenses,
+  invoiceTotal,
+  invoiceByCategory,
+  startingBalance,
+  isCreditCardPayment
+}) {
+  const nonTransfers = effectiveMonthExpenses.filter((expense) => expense.type !== "transfer");
+  const totalIncome = nonTransfers.filter((expense) => expense.type === "income").reduce((sum, expense) => sum + expense.value, 0);
+  const debitExpense = nonTransfers.filter(
+    (expense) => expense.type !== "income" && !expense.credit_card_id && !isCreditCardPayment(expense)
+  ).reduce((sum, expense) => sum + expense.value, 0);
+  const totalExpense = debitExpense + invoiceTotal;
+  const byCategory = { ...invoiceByCategory };
+  nonTransfers.filter(
+    (expense) => expense.type !== "income" && !expense.credit_card_id && !isCreditCardPayment(expense)
+  ).forEach((expense) => {
+    byCategory[expense.final_category] = (byCategory[expense.final_category] || 0) + expense.value;
+  });
+  const largest = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
+  return {
+    totalIncome,
+    totalExpense,
+    balance: totalIncome - totalExpense,
+    projectedBalance: startingBalance + totalIncome - totalExpense,
+    largestCategory: largest ? { name: largest[0], total: largest[1], categoryKey: largest[0] } : null
+  };
+}
+
+// src/lib/projectedInvoiceTotals.ts
+function parseMonthLabel2(label) {
+  const [year, month] = label.split("-").map(Number);
+  return { year, month: month - 1 };
+}
+function computeInvoiceTotalsForCashWindow({
+  creditCards,
+  expenses,
+  startDate,
+  endDate
+}) {
+  if (creditCards.length === 0 || expenses.length === 0) {
+    return { total: 0, byCategory: {} };
+  }
+  const cardsById = new Map(creditCards.map((card) => [card.id, card]));
+  const events = buildInvoiceCashEvents(creditCards, expenses).filter(
+    (event) => event.date >= startDate && event.date < endDate
+  );
+  let total = 0;
+  const byCategory = {};
+  const seenInvoices = /* @__PURE__ */ new Set();
+  events.forEach((event) => {
+    const invoiceKey = `${event.cardId}|${event.monthLabel}`;
+    if (seenInvoices.has(invoiceKey)) return;
+    seenInvoices.add(invoiceKey);
+    const card = cardsById.get(event.cardId);
+    if (!card) return;
+    const { year, month } = parseMonthLabel2(event.monthLabel);
+    const invoice = matchExpensesToInvoice(expenses, getInvoicePeriod(card, year, month));
+    if (invoice.total <= 0) return;
+    total += invoice.total;
+    invoice.transactions.forEach((tx) => {
+      byCategory[tx.final_category] = (byCategory[tx.final_category] || 0) + tx.value;
+    });
+  });
+  return { total, byCategory };
+}
+
+// src/lib/recurringProjection.ts
+function normalizeRecurringDescription(description) {
+  return (description ?? "").trim().toLowerCase();
+}
+function buildRecurringLooseSignature(type, description) {
+  return `${type}|${normalizeRecurringDescription(description)}`;
+}
+function buildRecurringSignature(type, value, description) {
+  return `${type}|${normalizeRecurringDescription(description)}|${Number(value).toFixed(2)}`;
+}
+function buildRecurringExceptionSignature(templateId, occurrenceDate) {
+  return `${templateId}|${occurrenceDate}`;
+}
+function shouldProjectRecurringInMonth(templateDate, selectedYear, selectedMonth, frequency) {
+  const template = /* @__PURE__ */ new Date(`${templateDate}T12:00:00`);
+  const templateMonthIndex = template.getFullYear() * 12 + template.getMonth();
+  const selectedMonthIndex = selectedYear * 12 + selectedMonth;
+  if (selectedMonthIndex < templateMonthIndex) return false;
+  if (frequency === "yearly") {
+    return template.getMonth() === selectedMonth;
+  }
+  return true;
+}
+function buildMaterializedRecurringSignature(item) {
+  return [
+    item.type,
+    normalizeRecurringDescription(item.description),
+    item.final_category ?? "",
+    item.wallet_id ?? "",
+    item.credit_card_id ?? "",
+    item.payment_method ?? "",
+    item.project_id ?? ""
+  ].join("|");
+}
+function hideMaterializedRecurringTemplates(items) {
+  const materializedSignatures = new Set(
+    items.filter((item) => !item.is_recurring).map((item) => buildMaterializedRecurringSignature(item))
+  );
+  return items.filter((item) => !(item.is_recurring && materializedSignatures.has(buildMaterializedRecurringSignature(item))));
+}
+
+// src/lib/mcp/tools/month-transactions.ts
 var EXPENSE_COLS = "id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at";
 function pad(value) {
   return String(value).padStart(2, "0");

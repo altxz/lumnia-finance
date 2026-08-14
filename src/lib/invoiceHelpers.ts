@@ -1,5 +1,5 @@
-import type { Expense } from '@/components/ExpenseTable';
-import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from '@/lib/creditCardPayments';
+import type { Expense } from '../components/ExpenseTable';
+import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
 
 export interface CreditCard {
   id: string;
