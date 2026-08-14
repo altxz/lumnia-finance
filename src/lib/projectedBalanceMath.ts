@@ -1,6 +1,6 @@
-import type { Expense } from '@/components/ExpenseTable';
-import { buildInvoiceCashEvents, groupInvoiceCashEventsByDay } from '@/lib/invoiceCashFlow';
-import type { CreditCard } from '@/lib/invoiceHelpers';
+import type { Expense } from '../components/ExpenseTable';
+import { buildInvoiceCashEvents, groupInvoiceCashEventsByDay } from './invoiceCashFlow';
+import type { CreditCard } from './invoiceHelpers';
 
 interface ComputeProjectedMonthResultParams {
   effectiveMonthExpenses: Expense[];

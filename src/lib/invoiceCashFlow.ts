@@ -1,12 +1,12 @@
-import type { Expense } from '@/components/ExpenseTable';
+import type { Expense } from '../components/ExpenseTable';
 import {
   getInvoicePeriod,
   getPaymentDate,
   matchExpensesToInvoice,
   type CreditCard,
   type InvoicePeriod,
-} from '@/lib/invoiceHelpers';
-import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from '@/lib/creditCardPayments';
+} from './invoiceHelpers';
+import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
 
 type InvoiceCashExpense = Pick<
   Expense,

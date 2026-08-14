@@ -1,10 +1,10 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "../supabaseClient";
-import { buildInvoiceCashEvents, sumInvoiceCashEventsBeforeDate } from "@/lib/invoiceCashFlow";
-import { isTrackedCreditCardPayment } from "@/lib/creditCardPayments";
-import { buildDailyBalanceMap, computeProjectedMonthResult } from "@/lib/projectedBalanceMath";
-import { computeInvoiceTotalsForCashWindow } from "@/lib/projectedInvoiceTotals";
+import { buildInvoiceCashEvents, sumInvoiceCashEventsBeforeDate } from "../../invoiceCashFlow";
+import { isTrackedCreditCardPayment } from "../../creditCardPayments";
+import { buildDailyBalanceMap, computeProjectedMonthResult } from "../../projectedBalanceMath";
+import { computeInvoiceTotalsForCashWindow } from "../../projectedInvoiceTotals";
 import {
   buildMaterializedRecurringSignature,
   buildRecurringExceptionSignature,
@@ -12,7 +12,7 @@ import {
   buildRecurringSignature,
   hideMaterializedRecurringTemplates,
   shouldProjectRecurringInMonth,
-} from "@/lib/recurringProjection";
+} from "../../recurringProjection";
 
 const EXPENSE_COLS =
   "id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at";
