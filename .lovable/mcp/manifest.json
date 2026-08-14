@@ -184,6 +184,30 @@
           "properties": {}
         },
         "outputSchema": null
+      },
+      {
+        "name": "month_transactions",
+        "title": "Transações do mês com saldo projetado",
+        "description": "Retorna a mesma visão da página de Transações de um mês (YYYY-MM): todas as transações do mês (incluindo recorrentes projetadas e pagamentos de fatura de cartão), agrupadas por dia, com o saldo projetado acumulado ao final de cada dia, além do saldo inicial e do saldo previsto do fim do mês.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "description": "Mês no formato YYYY-MM."
+            }
+          },
+          "required": [
+            "month"
+          ]
+        },
+        "outputSchema": null
       }
     ]
   }
