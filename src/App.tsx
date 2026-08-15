@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { queryClient, persistOptions } from "@/lib/queryClient";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -29,17 +30,6 @@ const ChangelogPage = lazyWithRetry(() => import("./pages/ChangelogPage"));
 const OAuthConsentPage = lazyWithRetry(() => import("./pages/OAuthConsentPage"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 30,        // 30 s — dados ficam frescos pouco tempo
-      gcTime: 1000 * 60 * 10,      // mantém em memória 10 min
-      refetchOnWindowFocus: true,  // ao voltar para a aba, revalida
-      refetchOnReconnect: true,    // ao reconectar internet, revalida
-      retry: 1,
-    },
-  },
-});
 
 function PageFallback() {
   return (
@@ -51,7 +41,7 @@ function PageFallback() {
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -86,7 +76,7 @@ const App = () => (
           </DateProvider>
         </AuthProvider>
       </TooltipProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   </ThemeProvider>
 );
 

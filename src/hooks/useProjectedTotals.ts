@@ -1,5 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FINANCIAL_STALE_TIME } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
@@ -87,9 +88,29 @@ export function useProjectedTotals(): ProjectedTotals {
     queryKey,
     queryFn: () => fetchProjectedData(user!.id, startDate, endDate),
     enabled: !!user,
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 10,
+    staleTime: FINANCIAL_STALE_TIME,
+    gcTime: 1000 * 60 * 30,
   });
+
+  // Prefetch dos meses vizinhos: navegar no tempo fica instantâneo.
+  useEffect(() => {
+    if (!user || isLoading) return;
+    const neighbours = [-1, 1].map(offset => {
+      const m = selectedMonth + offset;
+      const base = new Date(selectedYear, m, 1);
+      const next = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+      const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+      return { start: fmt(base), end: fmt(next) };
+    });
+
+    neighbours.forEach(({ start, end }) => {
+      queryClient.prefetchQuery({
+        queryKey: ['projected-totals', user.id, start, end],
+        queryFn: () => fetchProjectedData(user.id, start, end),
+        staleTime: FINANCIAL_STALE_TIME,
+      });
+    });
+  }, [user, isLoading, selectedMonth, selectedYear, queryClient]);
 
   const monthExpenses = data?.monthExpenses ?? [];
   const visibleMonthExpenses = useMemo(() => hideMaterializedRecurringTemplates(monthExpenses), [monthExpenses]);

@@ -62,6 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Limpa o cache persistido para não vazar dados entre contas
+    const { clearPersistedCache, queryClient } = await import('@/lib/queryClient');
+    queryClient.clear();
+    clearPersistedCache();
   };
 
   return (
