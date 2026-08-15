@@ -74,10 +74,6 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
-  
-  const [dbCategories, setDbCategories] = useState<any[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
-  const fetchCounterRef = useRef(0);
 
   // Previous month date range
   const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
@@ -87,50 +83,29 @@ export default function Dashboard() {
   const prevNextY = prevMonth === 11 ? prevYear + 1 : prevYear;
   const prevEndDate = `${prevNextY}-${String(prevNextM + 1).padStart(2, '0')}-01`;
 
-  const [prevExpenses, setPrevExpenses] = useState<any[]>([]);
   const [budgetAlerts, setBudgetAlerts] = useState<string[]>([]);
 
-  const fetchExtraData = useCallback(async () => {
-    if (!user) return;
-    const counter = ++fetchCounterRef.current;
-    setDataLoading(true);
+  // Categorias vêm do cache compartilhado (30 min)
+  const { data: dbCategories = [], isLoading: categoriesLoading } = useCategories();
 
-    try {
-      const [
-        { data: prevExpData },
-        { data: catData },
-        { data: budgetData },
-      ] = await Promise.all([
-        supabase.from('expenses').select('id, value, type, credit_card_id, final_category').eq('user_id', user.id)
+  // Mês anterior + orçamentos do mês: cacheados por chave estável
+  const { data: extra, isLoading: extraLoading } = useQuery({
+    queryKey: ['dashboard-extra', user?.id, startDate, prevStartDate],
+    queryFn: async () => {
+      const [{ data: prevExpData }, { data: budgetData }] = await Promise.all([
+        supabase.from('expenses').select('id, value, type, credit_card_id, final_category').eq('user_id', user!.id)
           .gte('date', prevStartDate).lt('date', prevEndDate),
-        supabase.from('categories').select('id, name, parent_id, icon, color')
-          .eq('user_id', user.id).order('sort_order'),
         supabase.from('budgets').select('category, allocated_amount')
-          .eq('user_id', user.id).eq('month_year', startDate),
+          .eq('user_id', user!.id).eq('month_year', startDate),
       ]);
+      return { prevExpenses: prevExpData || [], budgets: budgetData || [] };
+    },
+    enabled: !!user,
+  });
 
-      if (counter !== fetchCounterRef.current) return;
-
-      setPrevExpenses(prevExpData || []);
-      setDbCategories(catData || []);
-
-      // Budget spending computed from projected.monthExpenses in a useMemo below
-      setBudgetTotals(prev => ({
-        ...prev,
-        totalBudget: (budgetData || []).reduce((s: number, b: any) => s + (b.allocated_amount || 0), 0),
-      }));
-
-      // Store budget data for useMemo computation
-      setBudgetDataRaw(budgetData || []);
-    } finally {
-      if (counter === fetchCounterRef.current) setDataLoading(false);
-    }
-  }, [user, startDate, endDate, prevStartDate, prevEndDate]);
-
-  useEffect(() => { fetchExtraData(); }, [fetchExtraData]);
-
-
-  const [budgetDataRaw, setBudgetDataRaw] = useState<any[]>([]);
+  const prevExpenses = extra?.prevExpenses ?? [];
+  const budgetDataRaw = extra?.budgets ?? [];
+  const dataLoading = categoriesLoading || extraLoading;
 
   // Compute budget alerts and spending from projected.monthExpenses (avoid duplicate query)
   useEffect(() => {
