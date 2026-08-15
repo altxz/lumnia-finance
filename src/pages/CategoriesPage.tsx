@@ -76,21 +76,16 @@ export default function CategoriesPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { startDate, endDate, label } = useSelectedDate();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [form, setForm] = useState({ name: '', icon: 'tag', color: '#5447BC', keywords: '', parent_id: '' });
   const [saving, setSaving] = useState(false);
 
-  const fetchCategories = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-
+  const buildCategories = useCallback(async (): Promise<Category[]> => {
     const { data: allCats } = await supabase
       .from('categories')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user!.id)
       .order('sort_order');
 
     // Fetch ALL expenses with the fields needed for proper deduplication of recurring templates
@@ -98,7 +93,8 @@ export default function CategoriesPage() {
     const { data: allExpenses } = await supabase
       .from('expenses')
       .select(select)
-      .eq('user_id', user.id);
+      .eq('user_id', user!.id);
+
 
     // Apply the same deduplication used elsewhere so recurring TEMPLATES that have a real
     // materialized counterpart don't get counted twice (fixes "ghost" duplicates)
