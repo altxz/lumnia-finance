@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCategories } from '@/hooks/useStaticData';
 
 import { useUserSettings } from '@/contexts/UserSettingsContext';
 
