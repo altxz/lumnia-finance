@@ -41,7 +41,7 @@ function PageFallback() {
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -76,7 +76,7 @@ const App = () => (
           </DateProvider>
         </AuthProvider>
       </TooltipProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   </ThemeProvider>
 );
 
