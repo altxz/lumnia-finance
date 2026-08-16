@@ -11,12 +11,42 @@ import { z } from "npm:zod@^4.4.3";
 
 // src/lib/mcp/supabaseClient.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.99.1";
+
+// src/lib/mcp/env.ts
+function readEnv(name) {
+  const g = globalThis;
+  const fromDeno = g.Deno?.env?.get?.(name);
+  if (fromDeno) return fromDeno;
+  const fromProcess = g.process?.env?.[name];
+  return fromProcess || void 0;
+}
+function requireEnv(names) {
+  for (const name of names) {
+    const value = readEnv(name);
+    if (value) return value;
+  }
+  throw new Error(
+    `Configura\xE7\xE3o ausente no servidor: nenhuma das vari\xE1veis ${names.join(", ")} est\xE1 definida.`
+  );
+}
+
+// src/lib/mcp/supabaseClient.ts
 function supabaseForUser(ctx) {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY;
+  const url = requireEnv(["SUPABASE_URL"]);
+  const key = requireEnv([
+    "SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_PUBLISHABLE_KEYS"
+  ]);
+  const token = ctx.getToken();
   return createClient(url, key, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
+    global: {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${token}`
+      }
+    },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
   });
 }
 
