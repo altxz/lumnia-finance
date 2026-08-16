@@ -158,11 +158,18 @@ export default function CategoriesPage() {
       };
     });
 
-    setCategories(mapped);
-    setLoading(false);
+    return mapped;
   }, [user, startDate, endDate]);
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  const { data: categories = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['categories', 'page', user?.id, startDate, endDate],
+    queryFn: buildCategories,
+    enabled: !!user,
+    staleTime: FINANCIAL_STALE_TIME,
+  });
+
+  const fetchCategories = useCallback(() => { refetch(); }, [refetch]);
+
 
   const openCreateModal = () => {
     setEditingCategory(null);
