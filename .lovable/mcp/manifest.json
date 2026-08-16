@@ -208,6 +208,40 @@
           ]
         },
         "outputSchema": null
+      },
+      {
+        "name": "delete_transaction",
+        "title": "Excluir transação",
+        "description": "Exclui uma transação (despesa ou receita) do usuário autenticado pelo id. Para parcelamentos, use scope='group' para remover todas as parcelas do mesmo grupo. Ação irreversível: confirme com o usuário antes de chamar.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "ID da transação a excluir."
+            },
+            "scope": {
+              "description": "'single' (padrão) remove apenas esta transação; 'group' remove todas as parcelas do mesmo installment_group_id.",
+              "type": "string",
+              "enum": [
+                "single",
+                "group"
+              ]
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
       }
     ]
   }
