@@ -28,5 +28,6 @@ export default defineMcp({
     listWallets,
     listCreditCards,
     monthTransactions,
+    deleteTransaction,
   ],
 });

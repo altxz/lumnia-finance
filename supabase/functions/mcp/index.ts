@@ -49,6 +49,13 @@ function supabaseForUser(ctx) {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
   });
 }
+function toolError(prefix, error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    content: [{ type: "text", text: `${prefix}: ${message}` }],
+    isError: true
+  };
+}
 
 // src/lib/mcp/tools/list-transactions.ts
 var list_transactions_default = defineTool({
@@ -770,6 +777,60 @@ var month_transactions_default = defineTool7({
   }
 });
 
+// src/lib/mcp/tools/delete-transaction.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z5 } from "npm:zod@^4.4.3";
+var delete_transaction_default = defineTool8({
+  name: "delete_transaction",
+  title: "Excluir transa\xE7\xE3o",
+  description: "Exclui uma transa\xE7\xE3o (despesa ou receita) do usu\xE1rio autenticado pelo id. Para parcelamentos, use scope='group' para remover todas as parcelas do mesmo grupo. A\xE7\xE3o irrevers\xEDvel: confirme com o usu\xE1rio antes de chamar.",
+  inputSchema: {
+    id: z5.string().uuid().describe("ID da transa\xE7\xE3o a excluir."),
+    scope: z5.enum(["single", "group"]).optional().describe(
+      "'single' (padr\xE3o) remove apenas esta transa\xE7\xE3o; 'group' remove todas as parcelas do mesmo installment_group_id."
+    )
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  handler: async ({ id, scope }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    try {
+      const sb = supabaseForUser(ctx);
+      const userId = ctx.getUserId();
+      const { data: target, error: findError } = await sb.from("expenses").select("id,date,description,value,type,installment_group_id,is_recurring").eq("id", id).eq("user_id", userId).maybeSingle();
+      if (findError) return toolError("Falha ao localizar a transa\xE7\xE3o", findError);
+      if (!target) {
+        return {
+          content: [{ type: "text", text: "Transa\xE7\xE3o n\xE3o encontrada para este usu\xE1rio." }],
+          isError: true
+        };
+      }
+      const deleteGroup = scope === "group" && !!target.installment_group_id;
+      const query = sb.from("expenses").delete().eq("user_id", userId);
+      const { data: deleted, error: deleteError } = deleteGroup ? await query.eq("installment_group_id", target.installment_group_id).select("id") : await query.eq("id", id).select("id");
+      if (deleteError) return toolError("Falha ao excluir a transa\xE7\xE3o", deleteError);
+      const count = deleted?.length ?? 0;
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Exclu\xEDda(s) ${count} transa\xE7\xE3o(\xF5es): "${target.description}" (${target.date}).`
+          }
+        ],
+        structuredContent: {
+          deleted_count: count,
+          deleted_ids: (deleted ?? []).map((d) => d.id),
+          scope: deleteGroup ? "group" : "single",
+          transaction: target
+        }
+      };
+    } catch (error) {
+      return toolError("Erro de conex\xE3o com o banco de dados", error);
+    }
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "nvskvrgsfzaynotdgzoy";
 var mcp_default = defineMcp({
@@ -788,7 +849,8 @@ var mcp_default = defineMcp({
     month_summary_default,
     list_wallets_default,
     list_credit_cards_default,
-    month_transactions_default
+    month_transactions_default,
+    delete_transaction_default
   ]
 });
 
