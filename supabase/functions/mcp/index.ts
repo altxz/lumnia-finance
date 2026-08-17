@@ -3,7 +3,7 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { auth, defineMcp, setLogLevel } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/tools/list-transactions.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
@@ -31,14 +31,30 @@ function requireEnv(names) {
 }
 
 // src/lib/mcp/supabaseClient.ts
+function supabasePublishableKey() {
+  const direct = readEnv("SUPABASE_PUBLISHABLE_KEY")?.trim();
+  if (direct) return direct;
+  const keyset = readEnv("SUPABASE_PUBLISHABLE_KEYS");
+  if (keyset) {
+    try {
+      const parsed = JSON.parse(keyset);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const keys = parsed;
+        const key = [keys.default, ...Object.values(keys)].find(
+          (value) => typeof value === "string" && value.trim().startsWith("sb_publishable_")
+        );
+        if (key) return key.trim();
+      }
+    } catch {
+    }
+  }
+  return requireEnv(["SUPABASE_ANON_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY"]);
+}
 function supabaseForUser(ctx) {
-  const url = requireEnv(["SUPABASE_URL"]);
-  const key = requireEnv([
-    "SUPABASE_PUBLISHABLE_KEY",
-    "SUPABASE_ANON_KEY",
-    "SUPABASE_PUBLISHABLE_KEYS"
-  ]);
+  const url = requireEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]);
+  const key = supabasePublishableKey();
   const token = ctx.getToken();
+  if (!token) throw new Error("Token OAuth verificado n\xE3o dispon\xEDvel para consultar os dados.");
   return createClient(url, key, {
     global: {
       headers: {
@@ -90,7 +106,17 @@ var list_transactions_default = defineTool({
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ start_date, end_date, type, limit }, ctx) => {
+    const invocation = {
+      tool: "list_transactions",
+      arguments: { start_date, end_date, type, limit },
+      authenticated: ctx.isAuthenticated(),
+      user_identified: Boolean(ctx.getUserId()),
+      token_identified: Boolean(ctx.getToken()),
+      client_identified: Boolean(ctx.getClientId())
+    };
+    console.info("[mcp.tool.request]", JSON.stringify(invocation));
     if (!ctx.isAuthenticated()) {
+      console.warn("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, reason: "not_authenticated" }));
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
     try {
@@ -98,20 +124,28 @@ var list_transactions_default = defineTool({
       const end = end_date ?? today.toISOString().slice(0, 10);
       const start = start_date ?? new Date(today.getTime() - 30 * 864e5).toISOString().slice(0, 10);
       const userId = ctx.getUserId();
-      if (!userId) return toolError("Falha de autentica\xE7\xE3o", "Usu\xE1rio OAuth sem identificador");
+      if (!userId) {
+        console.warn("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, reason: "missing_user_id" }));
+        return toolError("Falha de autentica\xE7\xE3o", "Usu\xE1rio OAuth sem identificador");
+      }
       const sb = supabaseForUser(ctx);
       let q = sb.from("expenses").select(
         "id,date,description,value,type,final_category,is_paid,payment_method,credit_card_id,wallet_id,invoice_month,is_recurring"
       ).eq("user_id", userId).gte("date", start).lte("date", end).order("date", { ascending: false }).limit(limit ?? 100);
       if (type) q = q.eq("type", type);
       const { data, error } = await q;
-      if (error) return toolError("Falha ao consultar as transa\xE7\xF5es", error);
+      if (error) {
+        console.error("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, database_code: error.code, message: error.message }));
+        return toolError("Falha ao consultar as transa\xE7\xF5es", error);
+      }
       const payload = { transactions: data ?? [], start_date: start, end_date: end };
+      console.info("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: true, count: payload.transactions.length, start_date: start, end_date: end }));
       return {
         content: [{ type: "text", text: JSON.stringify(payload) }],
         structuredContent: payload
       };
     } catch (error) {
+      console.error("[mcp.tool.exception]", error);
       return toolError("Erro de conex\xE3o ao consultar as transa\xE7\xF5es", error);
     }
   }
@@ -947,14 +981,18 @@ var fetch_default = defineTool10({
 
 // src/lib/mcp/index.ts
 var projectRef = "nvskvrgsfzaynotdgzoy";
+setLogLevel("info");
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.2.1",
+  version: "0.2.2",
   instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal). Use search para localizar transa\xE7\xF5es por texto ou m\xEAs (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lan\xE7ar despesas ou receitas, delete_transaction para excluir uma transa\xE7\xE3o (confirme com o usu\xE1rio antes, \xE9 irrevers\xEDvel), month_transactions para ver, dia a dia, todas as transa\xE7\xF5es de um m\xEAs com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usu\xE1rio.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
-    acceptedAudiences: "authenticated"
+    acceptedAudiences: "authenticated",
+    // O ChatGPT pode concluir o OAuth com um token de sessão válido que não
+    // inclui client_id/azp. Issuer, assinatura e audience continuam obrigatórios.
+    requireOAuthClientClaim: false
   }),
   tools: [
     search_default,

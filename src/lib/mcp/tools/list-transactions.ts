@@ -37,7 +37,18 @@ export default defineTool({
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ start_date, end_date, type, limit }, ctx) => {
+    const invocation = {
+      tool: "list_transactions",
+      arguments: { start_date, end_date, type, limit },
+      authenticated: ctx.isAuthenticated(),
+      user_identified: Boolean(ctx.getUserId()),
+      token_identified: Boolean(ctx.getToken()),
+      client_identified: Boolean(ctx.getClientId()),
+    };
+    console.info("[mcp.tool.request]", JSON.stringify(invocation));
+
     if (!ctx.isAuthenticated()) {
+      console.warn("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, reason: "not_authenticated" }));
       return { content: [{ type: "text", text: "Não autenticado." }], isError: true };
     }
     try {
@@ -47,7 +58,10 @@ export default defineTool({
         start_date ??
         new Date(today.getTime() - 30 * 86400_000).toISOString().slice(0, 10);
       const userId = ctx.getUserId();
-      if (!userId) return toolError("Falha de autenticação", "Usuário OAuth sem identificador");
+      if (!userId) {
+        console.warn("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, reason: "missing_user_id" }));
+        return toolError("Falha de autenticação", "Usuário OAuth sem identificador");
+      }
 
       const sb = supabaseForUser(ctx);
       let q = sb
@@ -62,14 +76,19 @@ export default defineTool({
         .limit(limit ?? 100);
       if (type) q = q.eq("type", type);
       const { data, error } = await q;
-      if (error) return toolError("Falha ao consultar as transações", error);
+      if (error) {
+        console.error("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, database_code: error.code, message: error.message }));
+        return toolError("Falha ao consultar as transações", error);
+      }
 
       const payload = { transactions: data ?? [], start_date: start, end_date: end };
+      console.info("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: true, count: payload.transactions.length, start_date: start, end_date: end }));
       return {
         content: [{ type: "text", text: JSON.stringify(payload) }],
         structuredContent: payload,
       };
     } catch (error) {
+      console.error("[mcp.tool.exception]", error);
       return toolError("Erro de conexão ao consultar as transações", error);
     }
   },

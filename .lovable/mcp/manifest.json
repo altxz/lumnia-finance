@@ -5,6 +5,7 @@
   "auth": {
     "type": "oauth",
     "issuer": "https://nvskvrgsfzaynotdgzoy.supabase.co/auth/v1",
+    "require_oauth_client_claim": false,
     "accepted_audiences": [
       "authenticated"
     ]
@@ -12,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "lumnia-mcp",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "title": "Lumnia"
     },
     "tools": [
