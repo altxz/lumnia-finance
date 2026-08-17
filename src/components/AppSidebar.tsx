@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Calculator, Activity, Sparkles, Tag, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Tag, TrendingUp } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 
 import { useUserSettings } from '@/contexts/UserSettingsContext';
-import { LATEST_CHANGELOG_ID } from '@/pages/ChangelogPage';
 import {
   Sidebar,
   SidebarContent,
@@ -17,29 +15,10 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-function useChangelogUnread() {
-  const [hasUnread, setHasUnread] = useState(false);
-
-  const check = useCallback(() => {
-    const lastRead = localStorage.getItem('lumnia_changelog_read');
-    setHasUnread(lastRead !== LATEST_CHANGELOG_ID);
-  }, []);
-
-  useEffect(() => {
-    check();
-    window.addEventListener('changelog-read', check);
-    return () => window.removeEventListener('changelog-read', check);
-  }, [check]);
-
-  return hasUnread;
-}
-
 export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === 'collapsed';
   const { settings } = useUserSettings();
-  const hasUnread = useChangelogUnread();
-  
 
   const items = [
     { title: 'Dashboard', url: '/', icon: LayoutDashboard, visible: true, badge: false },
@@ -49,11 +28,9 @@ export function AppSidebar() {
     { title: 'Projetos', url: '/projetos', icon: FolderKanban, visible: settings.enable_projects_module, badge: false },
     { title: 'Minha Carteira', url: '/wallet', icon: Wallet, visible: true, badge: false },
     { title: 'Investimentos', url: '/investimentos', icon: TrendingUp, visible: true, badge: false },
-    { title: 'Simulador Dívidas', url: '/simulador-dividas', icon: Calculator, visible: true, badge: false },
-    
-    { title: 'Novidades', url: '/novidades', icon: Sparkles, visible: true, badge: hasUnread },
     { title: 'Configurações', url: '/configuracoes', icon: Settings, visible: true, badge: false },
   ];
+
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Remove focus immediately to avoid lingering active/focus highlight
