@@ -231,91 +231,6 @@ var list_categories_default = defineTool3({
 // src/lib/mcp/tools/month-summary.ts
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z3 } from "npm:zod@^4.4.3";
-var month_summary_default = defineTool4({
-  name: "month_summary",
-  title: "Resumo do m\xEAs",
-  description: "Resume receitas, despesas e saldo do m\xEAs informado (YYYY-MM). Considera transa\xE7\xF5es pagas e agrupa despesas por categoria.",
-  inputSchema: {
-    month: z3.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ month }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
-    }
-    const start = `${month}-01`;
-    const [y, m] = month.split("-").map(Number);
-    const endDate = new Date(Date.UTC(y, m, 0));
-    const end = endDate.toISOString().slice(0, 10);
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("expenses").select("value,type,final_category,is_paid").gte("date", start).lte("date", end);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    let income = 0;
-    let expense = 0;
-    const byCategory = {};
-    for (const r of data ?? []) {
-      if (!r.is_paid) continue;
-      if (r.type === "income") income += Number(r.value);
-      else if (r.type === "expense") {
-        expense += Number(r.value);
-        byCategory[r.final_category ?? "outros"] = (byCategory[r.final_category ?? "outros"] ?? 0) + Number(r.value);
-      }
-    }
-    const summary = { month, income, expense, balance: income - expense, byCategory };
-    return {
-      content: [{ type: "text", text: JSON.stringify(summary) }],
-      structuredContent: summary
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-wallets.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var list_wallets_default = defineTool5({
-  name: "list_wallets",
-  title: "Listar carteiras",
-  description: "Lista carteiras e ativos do usu\xE1rio com saldo atual e moeda.",
-  inputSchema: {},
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_i, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
-    }
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("wallets").select("id,name,asset_type,current_balance,initial_balance,currency");
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { wallets: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-credit-cards.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var list_credit_cards_default = defineTool6({
-  name: "list_credit_cards",
-  title: "Listar cart\xF5es de cr\xE9dito",
-  description: "Lista cart\xF5es de cr\xE9dito do usu\xE1rio com limite, dia de fechamento e vencimento.",
-  inputSchema: {},
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_i, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
-    }
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("credit_cards").select("id,name,limit_amount,closing_day,due_day,closing_strategy");
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { credit_cards: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/month-transactions.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z4 } from "npm:zod@^4.4.3";
 
 // src/lib/creditCardPayments.ts
 var PAYMENT_PREFIX_RE = /^pagamento(?: de)? fatura\s*/i;
@@ -795,7 +710,101 @@ async function computeMonthProjection(sb, month) {
   };
 }
 
+// src/lib/mcp/tools/month-summary.ts
+var month_summary_default = defineTool4({
+  name: "month_summary",
+  title: "Resumo do m\xEAs",
+  description: "Resume receitas, despesas e saldo do m\xEAs (YYYY-MM) usando exatamente o mesmo motor de proje\xE7\xE3o das p\xE1ginas do app: saldo inicial (fim do m\xEAs anterior), receitas e despesas previstas (incluindo n\xE3o pagas, recorrentes projetadas e faturas de cart\xE3o) e saldo previsto do fim do m\xEAs. Tamb\xE9m informa os valores j\xE1 realizados (pagos).",
+  inputSchema: {
+    month: z3.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ month }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    try {
+      const sb = supabaseForUser(ctx);
+      const { startingBalance, totals, invoiceTotals, effectiveMonthExpenses, daily, endDate } = await computeMonthProjection(sb, month);
+      let paidIncome = 0;
+      let paidExpense = 0;
+      for (const e of effectiveMonthExpenses) {
+        if (!e.is_paid || e.type === "transfer" || e.credit_card_id) continue;
+        if (e.type === "income") paidIncome += Number(e.value);
+        else paidExpense += Number(e.value);
+      }
+      const summary = {
+        month,
+        starting_balance: startingBalance,
+        projected_income: totals.totalIncome,
+        projected_expense: totals.totalExpense,
+        projected_month_balance: totals.balance,
+        projected_end_of_month_balance: totals.projectedBalance,
+        end_of_month_balance_check: daily.balanceMap[endDate] ?? totals.projectedBalance,
+        invoice_total: invoiceTotals.total,
+        by_category: totals.byCategory ?? {},
+        largest_category: totals.largestCategory,
+        realized_income: paidIncome,
+        realized_expense: paidExpense,
+        realized_balance: paidIncome - paidExpense
+      };
+      return {
+        content: [{ type: "text", text: JSON.stringify(summary) }],
+        structuredContent: summary
+      };
+    } catch (error) {
+      return toolError("Falha ao resumir o m\xEAs", error);
+    }
+  }
+});
+
+// src/lib/mcp/tools/list-wallets.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var list_wallets_default = defineTool5({
+  name: "list_wallets",
+  title: "Listar carteiras",
+  description: "Lista carteiras e ativos do usu\xE1rio com saldo atual e moeda.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_i, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    const sb = supabaseForUser(ctx);
+    const { data, error } = await sb.from("wallets").select("id,name,asset_type,current_balance,initial_balance,currency");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { wallets: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-credit-cards.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var list_credit_cards_default = defineTool6({
+  name: "list_credit_cards",
+  title: "Listar cart\xF5es de cr\xE9dito",
+  description: "Lista cart\xF5es de cr\xE9dito do usu\xE1rio com limite, dia de fechamento e vencimento.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_i, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    const sb = supabaseForUser(ctx);
+    const { data, error } = await sb.from("credit_cards").select("id,name,limit_amount,closing_day,due_day,closing_strategy");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { credit_cards: data ?? [] }
+    };
+  }
+});
+
 // src/lib/mcp/tools/month-transactions.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z4 } from "npm:zod@^4.4.3";
 var month_transactions_default = defineTool7({
   name: "month_transactions",
   title: "Transa\xE7\xF5es do m\xEAs com saldo projetado",

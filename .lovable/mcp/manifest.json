@@ -296,7 +296,7 @@
       {
         "name": "month_summary",
         "title": "Resumo do mês",
-        "description": "Resume receitas, despesas e saldo do mês informado (YYYY-MM). Considera transações pagas e agrupa despesas por categoria.",
+        "description": "Resume receitas, despesas e saldo do mês (YYYY-MM) usando exatamente o mesmo motor de projeção das páginas do app: saldo inicial (fim do mês anterior), receitas e despesas previstas (incluindo não pagas, recorrentes projetadas e faturas de cartão) e saldo previsto do fim do mês. Também informa os valores já realizados (pagos).",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
