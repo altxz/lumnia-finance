@@ -115,6 +115,7 @@ export default function SettingsPage() {
       bio: settings.bio,
       timezone: settings.timezone,
       currency: settings.currency,
+      default_wallet_id: settings.default_wallet_id || null,
       ai_auto_categorize: settings.ai_auto_categorize,
       ai_min_confidence: settings.ai_min_confidence,
       ai_learn_corrections: settings.ai_learn_corrections,
