@@ -98,8 +98,9 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const onDeleteClick = (tx: Expense) => {
-    setDeleteTarget(tx);
-    setDeleteMode(tx.installment_group_id ? null : 'single');
+    const real = resolveRealExpense(tx);
+    setDeleteTarget(real);
+    setDeleteMode(real.installment_group_id ? null : 'single');
   };
 
   const handleUnpayInvoice = async () => {
