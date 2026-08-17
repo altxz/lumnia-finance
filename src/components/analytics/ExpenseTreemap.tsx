@@ -1,11 +1,10 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LayoutGrid } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/constants';
 import type { CategoryStats } from '@/hooks/useAnalyticsData';
+import { useCategories } from '@/hooks/useStaticData';
 import { InfoPopover } from '@/components/ui/info-popover';
 
 interface ExpenseTreemapProps {
