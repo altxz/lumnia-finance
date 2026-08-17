@@ -27,30 +27,26 @@ export const queryClient = new QueryClient({
   },
 });
 
-/** Chaves cujos dados podem ser gravados no localStorage. */
+/**
+ * Chaves cujos dados podem ser gravados no localStorage.
+ *
+ * Apenas dados quase estáticos (categorias, carteiras, cartões, preferências).
+ * Saldos, projeções, transações e analytics NUNCA são persistidos — são sempre
+ * buscados do banco ao abrir o app, para nunca mostrar um número desatualizado.
+ */
 const PERSISTABLE_KEYS = new Set([
-  "projected-totals",
-  "expenses",
-  "analytics",
-  "analytics-data",
-  "budget-data",
-  "budgets",
   "wallets",
   "credit-cards",
   "categories",
-  "debts",
   "projects",
-  "net-worth",
-  "financial-score",
   "user-settings",
-  "dashboard-extra",
-  "category-details",
   "exchange-rates",
 ]);
 
 export const CACHE_STORAGE_KEY = "lumnia-query-cache";
 // Alterar o buster invalida todo o cache persistido (ex.: novo formato de dados).
-const CACHE_BUSTER = "v1";
+const CACHE_BUSTER = "v2";
+
 
 export const persister =
   typeof window !== "undefined"
