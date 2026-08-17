@@ -67,6 +67,14 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const monthOptions = useMemo(() => generateMonthOptions(), []);
   const isPaid = activeInvoice.status === 'paid';
 
+  // Ocorrências projetadas de recorrências fixas do cartão não existem no banco —
+  // qualquer ação deve agir sobre o registro original (template).
+  const resolveRealExpense = (tx: Expense): Expense => {
+    const templateId = resolveVirtualCardTemplateId(tx.id);
+    if (!templateId) return tx;
+    return allExpenses.find(e => e.id === templateId) ?? tx;
+  };
+
   const handleDelete = async (expense: Expense, mode: 'single' | 'all') => {
     try {
       if (mode === 'all' && expense.installment_group_id) {
