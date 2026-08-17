@@ -926,7 +926,7 @@ export default function WalletPage() {
                                 </div>
                                 <div className="space-y-1.5">
                                   <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Fatura atual</span>
+                                    <span className="text-muted-foreground">Fatura {formatMonthLabel(`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`)}</span>
                                     <span className="font-semibold">{formatCurrency(used)}</span>
                                   </div>
                                   <Progress value={pct} className="h-2.5" />
