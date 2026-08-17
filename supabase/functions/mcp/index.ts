@@ -138,7 +138,21 @@ var list_transactions_default = defineTool({
         console.error("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, database_code: error.code, message: error.message }));
         return toolError("Falha ao consultar as transa\xE7\xF5es", error);
       }
-      const payload = { transactions: data ?? [], start_date: start, end_date: end };
+      const transactions = (data ?? []).map((row) => ({
+        id: String(row.id),
+        date: String(row.date),
+        description: String(row.description),
+        value: Number(row.value),
+        type: String(row.type),
+        final_category: row.final_category == null ? null : String(row.final_category),
+        is_paid: Boolean(row.is_paid),
+        payment_method: row.payment_method == null ? null : String(row.payment_method),
+        credit_card_id: row.credit_card_id == null ? null : String(row.credit_card_id),
+        wallet_id: row.wallet_id == null ? null : String(row.wallet_id),
+        invoice_month: row.invoice_month == null ? null : String(row.invoice_month),
+        is_recurring: Boolean(row.is_recurring)
+      }));
+      const payload = { transactions, start_date: start, end_date: end };
       console.info("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: true, count: payload.transactions.length, start_date: start, end_date: end }));
       return {
         content: [{ type: "text", text: JSON.stringify(payload) }],
