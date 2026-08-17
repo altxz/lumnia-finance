@@ -491,9 +491,18 @@ function groupInvoiceCashEventsByDay(events, startDate, endDate) {
 }
 
 // src/lib/projectedBalanceMath.ts
-function computeMonthCashFlow(effectiveMonthExpenses, isCreditCardPayment) {
+function transferCashDelta(expense, investmentWalletIds) {
+  if (investmentWalletIds.size === 0) return 0;
+  const value = Number(expense.value) || 0;
+  const fromInvestment = !!expense.wallet_id && investmentWalletIds.has(expense.wallet_id);
+  const toInvestment = !!expense.destination_wallet_id && investmentWalletIds.has(expense.destination_wallet_id);
+  if (fromInvestment === toInvestment) return 0;
+  return toInvestment ? -value : value;
+}
+function computeMonthCashFlow(effectiveMonthExpenses, isCreditCardPayment, investmentWalletIds = []) {
+  const invIds = new Set(investmentWalletIds);
   return effectiveMonthExpenses.reduce((sum, expense) => {
-    if (expense.type === "transfer") return sum;
+    if (expense.type === "transfer") return sum + transferCashDelta(expense, invIds);
     if (expense.type === "income") return sum + Number(expense.value);
     if (expense.credit_card_id) return sum;
     if (isCreditCardPayment(expense)) return sum;

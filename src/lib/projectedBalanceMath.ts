@@ -8,6 +8,8 @@ interface ComputeProjectedMonthResultParams {
   invoiceByCategory: Record<string, number>;
   startingBalance: number;
   isCreditCardPayment: (expense: Expense) => boolean;
+  /** Carteiras de investimento: transferências para/de elas afetam o saldo em caixa. */
+  investmentWalletIds?: Iterable<string>;
 }
 
 interface BuildDailyBalanceMapParams {
@@ -18,6 +20,24 @@ interface BuildDailyBalanceMapParams {
   endDate: string;
   startingBalance: number;
   isCreditCardPayment: (expense: Expense) => boolean;
+  investmentWalletIds?: Iterable<string>;
+}
+
+/**
+ * Efeito de uma transferência no saldo em caixa (líquido).
+ * Transferência entre contas correntes é neutra; aporte em investimento sai do
+ * caixa (negativo) e resgate volta para o caixa (positivo).
+ */
+export function transferCashDelta(
+  expense: { value: number; wallet_id?: string | null; destination_wallet_id?: string | null },
+  investmentWalletIds: Set<string>,
+) {
+  if (investmentWalletIds.size === 0) return 0;
+  const value = Number(expense.value) || 0;
+  const fromInvestment = !!expense.wallet_id && investmentWalletIds.has(expense.wallet_id);
+  const toInvestment = !!expense.destination_wallet_id && investmentWalletIds.has(expense.destination_wallet_id);
+  if (fromInvestment === toInvestment) return 0;
+  return toInvestment ? -value : value;
 }
 
 /**
@@ -28,15 +48,18 @@ interface BuildDailyBalanceMapParams {
 export function computeMonthCashFlow(
   effectiveMonthExpenses: { type: string; value: number; credit_card_id?: string | null }[],
   isCreditCardPayment: (expense: any) => boolean,
+  investmentWalletIds: Iterable<string> = [],
 ) {
+  const invIds = new Set(investmentWalletIds);
   return effectiveMonthExpenses.reduce((sum, expense) => {
-    if (expense.type === 'transfer') return sum;
+    if (expense.type === 'transfer') return sum + transferCashDelta(expense as any, invIds);
     if (expense.type === 'income') return sum + Number(expense.value);
     if (expense.credit_card_id) return sum;
     if (isCreditCardPayment(expense)) return sum;
     return sum - Number(expense.value);
   }, 0);
 }
+
 
 export function buildDailyBalanceMap({
 
