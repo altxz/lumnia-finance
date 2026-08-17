@@ -665,6 +665,7 @@ export type Database = {
           bio: string | null
           created_at: string
           currency: string
+          default_wallet_id: string | null
           enable_budget_module: boolean
           enable_crypto_module: boolean
           enable_projects_module: boolean
@@ -692,6 +693,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           currency?: string
+          default_wallet_id?: string | null
           enable_budget_module?: boolean
           enable_crypto_module?: boolean
           enable_projects_module?: boolean
@@ -719,6 +721,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           currency?: string
+          default_wallet_id?: string | null
           enable_budget_module?: boolean
           enable_crypto_module?: boolean
           enable_projects_module?: boolean
@@ -736,7 +739,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_default_wallet_id_fkey"
+            columns: ["default_wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallets: {
         Row: {

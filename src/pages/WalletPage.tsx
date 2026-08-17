@@ -23,6 +23,12 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useExchangeRates, convertToBRL, formatForeignCurrency, type ExchangeRates } from '@/hooks/useExchangeRates';
+import { useProjectedTotals } from '@/hooks/useProjectedTotals';
+import { useSelectedDate } from '@/contexts/DateContext';
+import { buildWalletBalances } from '@/lib/walletBalances';
+import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
+import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
+import { MonthSelector } from '@/components/MonthSelector';
 
 // ─── Wallet types ───
 interface WalletRow {
@@ -64,18 +70,32 @@ const CURRENCY_OPTIONS = [
   { value: 'BTC', label: 'Bitcoin (BTC)' },
 ];
 
-const walletBalanceMap = new Map<string, number>();
+// Saldos derivados das transações (mesmo motor da página de Transações).
+const walletPaidMap = new Map<string, number>();
+const walletProjectedMap = new Map<string, number>();
 
 function getWalletValue(w: WalletRow): number {
   if (w.asset_type === 'crypto' && w.crypto_amount && w.crypto_price) {
     return w.crypto_amount * w.crypto_price;
   }
-  const txBalance = walletBalanceMap.get(w.id) || 0;
-  return w.initial_balance + txBalance;
+  return walletPaidMap.has(w.id) ? walletPaidMap.get(w.id)! : w.initial_balance;
+}
+
+function getWalletProjectedValue(w: WalletRow): number {
+  if (w.asset_type === 'crypto' && w.crypto_amount && w.crypto_price) {
+    return w.crypto_amount * w.crypto_price;
+  }
+  return walletProjectedMap.has(w.id) ? walletProjectedMap.get(w.id)! : w.initial_balance;
 }
 
 function getWalletValueBRL(w: WalletRow, rates: ExchangeRates | undefined): number {
   const val = getWalletValue(w);
+  const converted = convertToBRL(val, w.currency, rates);
+  return converted ?? val;
+}
+
+function getWalletProjectedBRL(w: WalletRow, rates: ExchangeRates | undefined): number {
+  const val = getWalletProjectedValue(w);
   const converted = convertToBRL(val, w.currency, rates);
   return converted ?? val;
 }
@@ -97,6 +117,11 @@ export default function WalletPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { data: rates } = useExchangeRates();
+  const { startDate, endDate } = useSelectedDate();
+  const projected = useProjectedTotals();
+  const { data: settingsRow } = useUserSettingsRow();
+  const { patch: patchSettings } = useInvalidateUserSettings();
+  const defaultWalletId: string | null = settingsRow?.default_wallet_id ?? null;
 
   // ─── Wallets state ───
   const [wallets, setWallets] = useState<WalletRow[]>([]);
@@ -134,20 +159,8 @@ export default function WalletPage() {
   const fetchWallets = useCallback(async () => {
     if (!user) return;
     setWalletsLoading(true);
-    const [{ data: walletsData }, { data: txData }] = await Promise.all([
-      supabase.from('wallets').select('*').eq('user_id', user.id).order('asset_type'),
-      supabase.from('expenses').select('wallet_id, destination_wallet_id, value, type').eq('user_id', user.id)
-        .or('wallet_id.not.is.null,destination_wallet_id.not.is.null'),
-    ]);
-    walletBalanceMap.clear();
-    const addToWallet = (id: string, delta: number) => {
-      walletBalanceMap.set(id, (walletBalanceMap.get(id) || 0) + delta);
-    };
-    (txData || []).forEach((tx: any) => {
-      if (tx.wallet_id) addToWallet(tx.wallet_id, tx.type === 'income' ? tx.value : -tx.value);
-      // Transferências creditam a conta de destino (ex: aporte em investimento)
-      if (tx.type === 'transfer' && tx.destination_wallet_id) addToWallet(tx.destination_wallet_id, tx.value);
-    });
+    const { data: walletsData } = await supabase
+      .from('wallets').select('*').eq('user_id', user.id).order('asset_type');
     setWallets((walletsData || []) as WalletRow[]);
     setWalletsLoading(false);
   }, [user]);
@@ -430,24 +443,65 @@ export default function WalletPage() {
     setPayingSaving(false);
   };
 
+  // ─── Saldos derivados das transações (mesmo motor da página de Transações) ───
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  const walletBalances = useMemo(() => buildWalletBalances({
+    wallets: wallets.map(w => ({ id: w.id, initial_balance: w.initial_balance ?? 0 })),
+    historicalExpenses: projected.effectiveHistoricalExpenses,
+    monthExpenses: projected.monthExpenses,
+    invoiceExpenses: projected.invoiceExpenses,
+    creditCards: projected.creditCards,
+    defaultWalletId,
+    today,
+    startDate,
+    endDate,
+    isCreditCardPayment: (e: any) => isTrackedCreditCardPayment(e, projected.creditCards),
+  }), [wallets, projected.effectiveHistoricalExpenses, projected.monthExpenses, projected.invoiceExpenses, projected.creditCards, defaultWalletId, today, startDate, endDate]);
+
+  walletPaidMap.clear();
+  walletProjectedMap.clear();
+  walletBalances.forEach(b => {
+    walletPaidMap.set(b.walletId, b.paidBalanceToday);
+    walletProjectedMap.set(b.walletId, b.projectedEndOfMonth);
+  });
+
+  const handleDefaultWalletChange = async (walletId: string) => {
+    if (!user) return;
+    patchSettings({ default_wallet_id: walletId });
+    const { error } = await supabase.from('user_settings')
+      .update({ default_wallet_id: walletId, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id);
+    if (error) {
+      toast({ title: 'Erro ao definir carteira padrão', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Carteira padrão atualizada' });
+  };
+
   // ─── Computed data ───
-  const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValueBRL(w, rates), 0), [wallets, rates]);
+  const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValueBRL(w, rates), 0), [wallets, rates, walletBalances]);
 
   const liquidBalance = useMemo(
     () => wallets.filter(w => w.asset_type !== 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
-    [wallets, rates],
+    [wallets, rates, walletBalances],
   );
 
   const investedBalance = useMemo(
     () => wallets.filter(w => w.asset_type === 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
-    [wallets, rates],
+    [wallets, rates, walletBalances],
+  );
+
+  const projectedTotalWealth = useMemo(
+    () => wallets.reduce((s, w) => s + getWalletProjectedBRL(w, rates), 0),
+    [wallets, rates, walletBalances],
   );
 
   const byType = useMemo(() => {
     const map: Record<string, number> = {};
     wallets.forEach(w => { map[w.asset_type] = (map[w.asset_type] || 0) + getWalletValueBRL(w, rates); });
     return Object.entries(map).map(([type, value]) => ({ name: ASSET_LABELS[type] || type, value }));
-  }, [wallets, rates]);
+  }, [wallets, rates, walletBalances]);
 
   const grouped = useMemo(() => {
     const g: Record<string, WalletRow[]> = {};
@@ -484,7 +538,27 @@ export default function WalletPage() {
 
               {/* ════════ TAB: Minhas Contas ════════ */}
               <TabsContent value="accounts" className="space-y-6">
-                <div className="flex justify-end">
+                <MonthSelector />
+
+                <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:justify-between">
+                  <div className="w-full sm:max-w-xs space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Carteira padrão</Label>
+                    <Select value={defaultWalletId ?? ''} onValueChange={handleDefaultWalletChange}>
+                      <SelectTrigger className="rounded-xl h-11">
+                        <SelectValue placeholder="Definir carteira padrão" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {wallets.filter(w => w.asset_type !== 'crypto').map(w => (
+                          <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">
+                      {defaultWalletId
+                        ? 'Transações sem carteira definida entram nesta conta.'
+                        : 'Defina uma carteira para receber as transações sem carteira definida.'}
+                    </p>
+                  </div>
                   <Button onClick={() => setWalletModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
                     <PlusCircle className="h-5 w-5" />
                     Novo Ativo
@@ -500,7 +574,9 @@ export default function WalletPage() {
                     <div className="min-w-0">
                       <p className="text-xs sm:text-sm font-medium opacity-80">Património Líquido Total</p>
                       <p className="text-xl sm:text-3xl font-bold tracking-tight">{formatCurrency(totalWealth)}</p>
-                      <p className="text-[10px] sm:text-xs opacity-60 mt-0.5">{wallets.length} ativo{wallets.length !== 1 ? 's' : ''}</p>
+                      <p className="text-[10px] sm:text-xs opacity-60 mt-0.5">
+                        {wallets.length} ativo{wallets.length !== 1 ? 's' : ''} · previsto no fim do mês {formatCurrency(projectedTotalWealth)}
+                      </p>
                     </div>
                   </CardContent>
                   <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 grid grid-cols-2 gap-3">
@@ -584,6 +660,7 @@ export default function WalletPage() {
                           {items.map(w => {
                             const val = getWalletValue(w);
                             const valBRL = getWalletValueBRL(w, rates);
+                            const projectedVal = getWalletProjectedValue(w);
                             const isForeign = w.currency !== 'BRL';
                             return (
                               <Card key={w.id} className="rounded-2xl hover:shadow-md transition-shadow">
@@ -625,6 +702,13 @@ export default function WalletPage() {
                                     </div>
                                   ) : (
                                     <p className="text-2xl font-bold mt-3">{formatCurrency(val)}</p>
+                                  )}
+                                  {w.asset_type !== 'crypto' && (
+                                    <p className="text-[11px] text-muted-foreground mt-1">
+                                      Previsto fim do mês: <span className={projectedVal < 0 ? 'text-destructive font-semibold' : 'font-semibold'}>
+                                        {isForeign ? formatForeignCurrency(projectedVal, w.currency) : formatCurrency(projectedVal)}
+                                      </span>
+                                    </p>
                                   )}
                                   {totalWealth > 0 && (
                                     <div className="mt-2 space-y-1">
