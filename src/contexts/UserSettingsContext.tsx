@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 
 interface UserSettings {
   enable_budget_module: boolean;
@@ -30,31 +31,19 @@ const UserSettingsContext = createContext<UserSettingsContextType>({
 
 export function UserSettingsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [settings, setSettings] = useState<UserSettings>(defaults);
-  const [loading, setLoading] = useState(true);
+  // Linha `user_settings` vem do cache partilhado — nenhuma requisição extra.
+  const { data: row, isLoading } = useUserSettingsRow();
+  const { invalidate, patch } = useInvalidateUserSettings();
 
-  const fetch = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
-    const { data } = await supabase
-      .from('user_settings')
-      .select('enable_budget_module, enable_projects_module, enable_crypto_module')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (data) {
-      setSettings({
-        enable_budget_module: data.enable_budget_module ?? true,
-        enable_projects_module: data.enable_projects_module ?? true,
-        enable_crypto_module: data.enable_crypto_module ?? true,
-      });
-    }
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => { fetch(); }, [fetch]);
+  const settings = useMemo<UserSettings>(() => ({
+    enable_budget_module: row?.enable_budget_module ?? true,
+    enable_projects_module: row?.enable_projects_module ?? true,
+    enable_crypto_module: row?.enable_crypto_module ?? true,
+  }), [row]);
 
   const updateSetting = async (key: keyof UserSettings, value: boolean) => {
     if (!user) return;
-    setSettings(prev => ({ ...prev, [key]: value }));
+    patch({ [key]: value });
     await supabase
       .from('user_settings')
       .update({ [key]: value, updated_at: new Date().toISOString() })
@@ -62,7 +51,9 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
   };
 
   return (
-    <UserSettingsContext.Provider value={{ settings, loading, updateSetting, refetch: fetch }}>
+    <UserSettingsContext.Provider
+      value={{ settings, loading: !!user && isLoading, updateSetting, refetch: invalidate }}
+    >
       {children}
     </UserSettingsContext.Provider>
   );
