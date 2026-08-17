@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS = {
   bio: '',
   timezone: 'America/Sao_Paulo',
   currency: 'BRL',
+  default_wallet_id: null as string | null,
   ai_auto_categorize: true,
   ai_min_confidence: 70,
   ai_learn_corrections: true,
