@@ -129,7 +129,11 @@ export default function SettingsPage() {
     }).eq('user_id', user.id);
 
     if (error) toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Configurações salvas!' }); setDirty(false); }
+    else {
+      toast({ title: 'Configurações salvas!' });
+      setDirty(false);
+      invalidateSettings(); // mantém o cache partilhado atualizado (avatar, módulos…)
+    }
     setSaving(false);
   };
 
