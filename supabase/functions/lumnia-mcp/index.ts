@@ -297,49 +297,6 @@ function getCreditCardPaymentLabelCardName(description) {
   return normalize(description).replace(PAYMENT_PREFIX_RE, "").split(" - ")[0];
 }
 
-// src/lib/recurringCardProjection.ts
-var VIRTUAL_CARD_RECURRING_PREFIX = "virtual-card-rec:";
-function isVirtualCardRecurring(id) {
-  return !!id && id.startsWith(VIRTUAL_CARD_RECURRING_PREFIX);
-}
-function normalizeDesc(description) {
-  return (description ?? "").trim().toLowerCase();
-}
-function monthLabelFromDate(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-function addMonthsToLabel(label, months) {
-  const [year, month] = label.split("-").map(Number);
-  const index = year * 12 + (month - 1) + months;
-  return `${Math.floor(index / 12)}-${String(index % 12 + 1).padStart(2, "0")}`;
-}
-function monthsBetweenLabels(from, to) {
-  const [fy, fm] = from.split("-").map(Number);
-  const [ty, tm] = to.split("-").map(Number);
-  return ty * 12 + (tm - 1) - (fy * 12 + (fm - 1));
-}
-function shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel) {
-  const diff = monthsBetweenLabels(baseLabel, dueLabel);
-  if (diff <= 0) return false;
-  const frequency = template.frequency === "annual" ? "yearly" : template.frequency ?? "monthly";
-  if (frequency === "yearly") return diff % 12 === 0;
-  return true;
-}
-function getCardRecurringTemplates(expenses, cardId) {
-  return expenses.filter(
-    (e) => e.credit_card_id === cardId && e.is_recurring && e.type === "expense" && !isVirtualCardRecurring(e.id) && !isCreditCardPaymentLabel(e.description)
-  );
-}
-function buildVirtualCardOccurrence(template, dueLabel) {
-  return {
-    ...template,
-    id: `${VIRTUAL_CARD_RECURRING_PREFIX}${template.id}:${dueLabel}`,
-    invoice_month: dueLabel,
-    is_recurring: false,
-    is_paid: false
-  };
-}
-
 // src/lib/invoiceHelpers.ts
 function getClosingDay(card) {
   if (card.closing_strategy === "relative") {
@@ -427,15 +384,7 @@ function matchExpensesToInvoice(expenses, period) {
     if (isCreditCardPaymentLabel(e.description)) return false;
     return resolveLabel(e) === dueLabel;
   });
-  const virtualOccurrences = getCardRecurringTemplates(expenses, period.cardId).filter((template) => {
-    const baseLabel = resolveLabel(template);
-    if (!shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel)) return false;
-    const alreadyExists = matched.some(
-      (e) => normalizeDesc(e.description) === normalizeDesc(template.description)
-    );
-    return !alreadyExists;
-  }).map((template) => buildVirtualCardOccurrence(template, dueLabel));
-  const transactions = [...matched, ...virtualOccurrences];
+  const transactions = matched;
   const total = transactions.reduce((s, e) => s + e.value, 0);
   const normalizedCardName = period.cardName.trim().toLowerCase();
   const isPaid = expenses.some((e) => {
@@ -453,7 +402,6 @@ function matchExpensesToInvoice(expenses, period) {
 }
 
 // src/lib/invoiceCashFlow.ts
-var CARD_RECURRING_HORIZON_MONTHS = 24;
 function toMonthLabel2(year, month) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
@@ -510,18 +458,6 @@ function buildInvoiceCashEvents(creditCards, expenses) {
     if (matchedCard) addLabel(matchedCard.id, expense.invoice_month ?? null);
   });
   const typedExpenses = expenses;
-  const horizonLabel = addMonthsToLabel(monthLabelFromDate(/* @__PURE__ */ new Date()), CARD_RECURRING_HORIZON_MONTHS);
-  cardsById.forEach((card, cardId) => {
-    getCardRecurringTemplates(typedExpenses, cardId).forEach((template) => {
-      const baseLabel = resolveExpenseMonthLabel(template, cardsById);
-      if (!baseLabel) return;
-      let label = addMonthsToLabel(baseLabel, 1);
-      while (label <= horizonLabel) {
-        if (shouldProjectCardRecurringInLabel(template, baseLabel, label)) addLabel(cardId, label);
-        label = addMonthsToLabel(label, 1);
-      }
-    });
-  });
   const events = [];
   labelsByCard.forEach((labels, cardId) => {
     const card = cardsById.get(cardId);
@@ -742,7 +678,7 @@ function buildEffectiveMonthExpenses({
 }
 
 // src/lib/mcp/monthProjection.ts
-var ENGINE_VERSION = "2026-08-17.1";
+var ENGINE_VERSION = "2026-08-17.2";
 var EXPENSE_COLS = "id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at";
 function pad(value) {
   return String(value).padStart(2, "0");

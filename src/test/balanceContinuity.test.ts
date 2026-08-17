@@ -168,6 +168,31 @@ function computeMonthClose({
 }
 
 describe('Invoice cash events — single source of truth', () => {
+  it('does not invent future invoices from a recurring card transaction', () => {
+    const gamePass = makeExpense({
+      id: 'game-pass-template',
+      description: 'Game Pass',
+      value: 76.90,
+      date: '2026-08-01',
+      credit_card_id: CARD.id,
+      invoice_month: '2026-09',
+      is_recurring: true,
+      frequency: 'monthly',
+    });
+
+    const october = computeInvoiceTotalsForCashWindow({
+      creditCards: [CARD],
+      expenses: [gamePass],
+      startDate: '2026-10-01',
+      endDate: '2026-11-01',
+    });
+    const events = buildInvoiceCashEvents([CARD], [gamePass]);
+
+    expect(october.total).toBe(0);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ monthLabel: '2026-09', amount: 76.90 });
+  });
+
   it('uses the actual payment date when the invoice has a payment record', () => {
     const purchase = makeExpense({
       id: 'p1',
