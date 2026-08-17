@@ -831,18 +831,107 @@ var delete_transaction_default = defineTool8({
   }
 });
 
+// src/lib/mcp/tools/search.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z6 } from "npm:zod@^4.4.3";
+var search_default = defineTool9({
+  name: "search",
+  title: "Buscar transa\xE7\xF5es",
+  description: "Busca transa\xE7\xF5es (despesas e receitas) do usu\xE1rio autenticado por texto livre na descri\xE7\xE3o, categoria ou m\xEAs (YYYY-MM). Retorna uma lista de resultados com id, t\xEDtulo e resumo para depois usar a ferramenta fetch.",
+  inputSchema: {
+    query: z6.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ query }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    const sb = supabaseForUser(ctx);
+    const monthMatch = query.match(/(\d{4})-(\d{2})/);
+    let q = sb.from("expenses").select("id,date,description,value,type,final_category,is_paid,payment_method").order("date", { ascending: false }).limit(50);
+    if (monthMatch) {
+      const [, ys, ms] = monthMatch;
+      const y = Number(ys);
+      const m = Number(ms);
+      const start = `${ys}-${ms}-01`;
+      const end = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+      q = q.gte("date", start).lte("date", end);
+    } else {
+      const term = `%${query}%`;
+      q = q.or(`description.ilike.${term},final_category.ilike.${term}`);
+    }
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const results = (data ?? []).map((r) => ({
+      id: r.id,
+      title: `${r.date} \u2014 ${r.description} (${r.type === "income" ? "receita" : "despesa"} R$ ${Number(r.value).toFixed(2)})`,
+      text: `Categoria: ${r.final_category ?? "sem categoria"}. ${r.is_paid ? "Pago/recebido" : "Pendente"}. Forma: ${r.payment_method ?? "n/d"}.`,
+      url: null
+    }));
+    return {
+      content: [{ type: "text", text: JSON.stringify({ results }) }],
+      structuredContent: { results }
+    };
+  }
+});
+
+// src/lib/mcp/tools/fetch.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z7 } from "npm:zod@^4.4.3";
+var fetch_default = defineTool10({
+  name: "fetch",
+  title: "Abrir transa\xE7\xE3o",
+  description: "Retorna todos os detalhes de uma transa\xE7\xE3o do usu\xE1rio autenticado a partir do id devolvido pela ferramenta search.",
+  inputSchema: {
+    id: z7.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ id }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    const sb = supabaseForUser(ctx);
+    const { data, error } = await sb.from("expenses").select("*").eq("id", id).maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) {
+      return {
+        content: [{ type: "text", text: `Transa\xE7\xE3o ${id} n\xE3o encontrada para este usu\xE1rio.` }],
+        isError: true
+      };
+    }
+    const document = {
+      id: data.id,
+      title: `${data.date} \u2014 ${data.description}`,
+      text: JSON.stringify(data),
+      url: null,
+      metadata: {
+        type: data.type,
+        value: Number(data.value),
+        category: data.final_category ?? null,
+        is_paid: Boolean(data.is_paid)
+      }
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(document) }],
+      structuredContent: document
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "nvskvrgsfzaynotdgzoy";
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.1.0",
-  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal). Use list_transactions/month_summary para consultar dados, create_transaction para lan\xE7ar despesas ou receitas, delete_transaction para excluir uma transa\xE7\xE3o (confirme com o usu\xE1rio antes, \xE9 irrevers\xEDvel), month_transactions para ver, dia a dia, todas as transa\xE7\xF5es de um m\xEAs com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usu\xE1rio.",
+  version: "0.2.0",
+  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal). Use search para localizar transa\xE7\xF5es por texto ou m\xEAs (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lan\xE7ar despesas ou receitas, delete_transaction para excluir uma transa\xE7\xE3o (confirme com o usu\xE1rio antes, \xE9 irrevers\xEDvel), month_transactions para ver, dia a dia, todas as transa\xE7\xF5es de um m\xEAs com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usu\xE1rio.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
   tools: [
+    search_default,
+    fetch_default,
     list_transactions_default,
     create_transaction_default,
     list_categories_default,

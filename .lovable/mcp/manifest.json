@@ -12,10 +12,60 @@
   "mcp": {
     "server": {
       "name": "lumnia-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "Lumnia"
     },
     "tools": [
+      {
+        "name": "search",
+        "title": "Buscar transações",
+        "description": "Busca transações (despesas e receitas) do usuário autenticado por texto livre na descrição, categoria ou mês (YYYY-MM). Retorna uma lista de resultados com id, título e resumo para depois usar a ferramenta fetch.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Termo de busca: descrição, categoria ou mês no formato YYYY-MM."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "fetch",
+        "title": "Abrir transação",
+        "description": "Retorna todos os detalhes de uma transação do usuário autenticado a partir do id devolvido pela ferramenta search.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "ID da transação (uuid)."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      },
       {
         "name": "list_transactions",
         "title": "Listar transações",
