@@ -17,7 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
-import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft, Pencil } from 'lucide-react';
+import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft, Pencil, PiggyBank } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
@@ -29,7 +29,7 @@ interface WalletRow {
   id: string;
   user_id: string;
   name: string;
-  asset_type: 'checking_account' | 'savings' | 'stocks' | 'crypto';
+  asset_type: 'checking_account' | 'savings' | 'stocks' | 'crypto' | 'investment';
   currency: string;
   current_balance: number;
   initial_balance: number;
@@ -44,6 +44,7 @@ const ASSET_LABELS: Record<string, string> = {
   savings: 'Poupança',
   stocks: 'Investimentos',
   crypto: 'Criptomoedas',
+  investment: 'Aplicações / Caixinhas',
 };
 
 const ASSET_ICONS: Record<string, typeof Wallet> = {
@@ -51,6 +52,7 @@ const ASSET_ICONS: Record<string, typeof Wallet> = {
   savings: Landmark,
   stocks: TrendingUp,
   crypto: Bitcoin,
+  investment: PiggyBank,
 };
 
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--ai))', '#F59E0B'];
@@ -134,13 +136,17 @@ export default function WalletPage() {
     setWalletsLoading(true);
     const [{ data: walletsData }, { data: txData }] = await Promise.all([
       supabase.from('wallets').select('*').eq('user_id', user.id).order('asset_type'),
-      supabase.from('expenses').select('wallet_id, value, type').eq('user_id', user.id).not('wallet_id', 'is', null),
+      supabase.from('expenses').select('wallet_id, destination_wallet_id, value, type').eq('user_id', user.id)
+        .or('wallet_id.not.is.null,destination_wallet_id.not.is.null'),
     ]);
     walletBalanceMap.clear();
+    const addToWallet = (id: string, delta: number) => {
+      walletBalanceMap.set(id, (walletBalanceMap.get(id) || 0) + delta);
+    };
     (txData || []).forEach((tx: any) => {
-      if (!tx.wallet_id) return;
-      const prev = walletBalanceMap.get(tx.wallet_id) || 0;
-      walletBalanceMap.set(tx.wallet_id, prev + (tx.type === 'income' ? tx.value : -tx.value));
+      if (tx.wallet_id) addToWallet(tx.wallet_id, tx.type === 'income' ? tx.value : -tx.value);
+      // Transferências creditam a conta de destino (ex: aporte em investimento)
+      if (tx.type === 'transfer' && tx.destination_wallet_id) addToWallet(tx.destination_wallet_id, tx.value);
     });
     setWallets((walletsData || []) as WalletRow[]);
     setWalletsLoading(false);
@@ -427,6 +433,16 @@ export default function WalletPage() {
   // ─── Computed data ───
   const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValueBRL(w, rates), 0), [wallets, rates]);
 
+  const liquidBalance = useMemo(
+    () => wallets.filter(w => w.asset_type !== 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
+    [wallets, rates],
+  );
+
+  const investedBalance = useMemo(
+    () => wallets.filter(w => w.asset_type === 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
+    [wallets, rates],
+  );
+
   const byType = useMemo(() => {
     const map: Record<string, number> = {};
     wallets.forEach(w => { map[w.asset_type] = (map[w.asset_type] || 0) + getWalletValueBRL(w, rates); });
@@ -485,6 +501,16 @@ export default function WalletPage() {
                       <p className="text-xs sm:text-sm font-medium opacity-80">Património Líquido Total</p>
                       <p className="text-xl sm:text-3xl font-bold tracking-tight">{formatCurrency(totalWealth)}</p>
                       <p className="text-[10px] sm:text-xs opacity-60 mt-0.5">{wallets.length} ativo{wallets.length !== 1 ? 's' : ''}</p>
+                    </div>
+                  </CardContent>
+                  <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-primary-foreground/10 p-3">
+                      <p className="text-[10px] sm:text-xs font-medium opacity-80">Saldo atual</p>
+                      <p className="text-base sm:text-xl font-bold tracking-tight">{formatCurrency(liquidBalance)}</p>
+                    </div>
+                    <div className="rounded-xl bg-primary-foreground/10 p-3">
+                      <p className="text-[10px] sm:text-xs font-medium opacity-80">Saldo em investimentos</p>
+                      <p className="text-base sm:text-xl font-bold tracking-tight">{formatCurrency(investedBalance)}</p>
                     </div>
                   </CardContent>
                 </Card>

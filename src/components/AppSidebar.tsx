@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Calculator, Activity, Sparkles, Tag } from 'lucide-react';
+import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Calculator, Activity, Sparkles, Tag, TrendingUp } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 
 import { useUserSettings } from '@/contexts/UserSettingsContext';
@@ -48,6 +48,7 @@ export function AppSidebar() {
     { title: 'Orçamento', url: '/orcamento', icon: PiggyBank, visible: settings.enable_budget_module, badge: false },
     { title: 'Projetos', url: '/projetos', icon: FolderKanban, visible: settings.enable_projects_module, badge: false },
     { title: 'Minha Carteira', url: '/wallet', icon: Wallet, visible: true, badge: false },
+    { title: 'Investimentos', url: '/investimentos', icon: TrendingUp, visible: true, badge: false },
     { title: 'Simulador Dívidas', url: '/simulador-dividas', icon: Calculator, visible: true, badge: false },
     
     { title: 'Novidades', url: '/novidades', icon: Sparkles, visible: true, badge: hasUnread },
