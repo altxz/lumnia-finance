@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { showFriendlyError } from '@/lib/errorHandler';
+import { resolveVirtualCardTemplateId } from '@/lib/recurringCardProjection';
 
 import { InvoiceHeader } from './invoice/InvoiceHeader';
 import { InvoiceTransactionList } from './invoice/InvoiceTransactionList';
@@ -67,6 +68,14 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const monthOptions = useMemo(() => generateMonthOptions(), []);
   const isPaid = activeInvoice.status === 'paid';
 
+  // Ocorrências projetadas de recorrências fixas do cartão não existem no banco —
+  // qualquer ação deve agir sobre o registro original (template).
+  const resolveRealExpense = (tx: Expense): Expense => {
+    const templateId = resolveVirtualCardTemplateId(tx.id);
+    if (!templateId) return tx;
+    return allExpenses.find(e => e.id === templateId) ?? tx;
+  };
+
   const handleDelete = async (expense: Expense, mode: 'single' | 'all') => {
     try {
       if (mode === 'all' && expense.installment_group_id) {
@@ -89,8 +98,9 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const onDeleteClick = (tx: Expense) => {
-    setDeleteTarget(tx);
-    setDeleteMode(tx.installment_group_id ? null : 'single');
+    const real = resolveRealExpense(tx);
+    setDeleteTarget(real);
+    setDeleteMode(real.installment_group_id ? null : 'single');
   };
 
   const handleUnpayInvoice = async () => {
@@ -182,7 +192,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
 
           <InvoiceTransactionList
             transactions={activeInvoice.transactions}
-            onEdit={setEditingExpense}
+            onEdit={(tx) => setEditingExpense(resolveRealExpense(tx))}
             onDelete={onDeleteClick}
           />
         </div>
