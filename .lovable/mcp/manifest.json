@@ -295,6 +295,76 @@
           ]
         },
         "outputSchema": null
+      },
+      {
+        "name": "list_budgets",
+        "title": "Listar orçamentos",
+        "description": "Lista os orçamentos (metas por categoria) do mês informado, com o valor planejado, o valor já gasto e o saldo restante. Inclui orçamentos recorrentes herdados de meses anteriores quando o mês não tem meta própria.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "description": "Mês no formato YYYY-MM."
+            }
+          },
+          "required": [
+            "month"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upsert_budget",
+        "title": "Criar ou editar orçamento",
+        "description": "Cria ou atualiza a meta de orçamento de uma categoria em um mês. Informe category_id (preferencial) ou o nome da categoria — use list_categories/list_budgets antes para descobrir os identificadores.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "description": "Mês no formato YYYY-MM."
+            },
+            "allocated_amount": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Valor planejado em BRL."
+            },
+            "category_id": {
+              "description": "ID da categoria (preferencial).",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "category": {
+              "description": "Nome da categoria, usado se category_id não for informado.",
+              "type": "string"
+            },
+            "is_recurring": {
+              "description": "Se a meta deve se repetir nos meses seguintes.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "month",
+            "allocated_amount"
+          ]
+        },
+        "outputSchema": null
       }
     ]
   }

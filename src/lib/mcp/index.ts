@@ -41,5 +41,7 @@ export default defineMcp({
     listCreditCards,
     monthTransactions,
     deleteTransaction,
+    listBudgets,
+    upsertBudget,
   ],
 });

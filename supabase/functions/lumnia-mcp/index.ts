@@ -1047,15 +1047,188 @@ var delete_transaction_default = defineTool8({
   })
 });
 
-// src/lib/mcp/tools/search.ts
+// src/lib/mcp/tools/list-budgets.ts
 import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z6 } from "npm:zod@^4.4.3";
-var search_default = defineTool9({
+function monthBounds(month) {
+  const [y, m] = month.split("-").map(Number);
+  const start = `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-01`;
+  const nextY = m === 12 ? y + 1 : y;
+  const nextM = m === 12 ? 1 : m + 1;
+  const end = `${String(nextY).padStart(4, "0")}-${String(nextM).padStart(2, "0")}-01`;
+  return { start, end };
+}
+var list_budgets_default = defineTool9({
+  name: "list_budgets",
+  title: "Listar or\xE7amentos",
+  description: "Lista os or\xE7amentos (metas por categoria) do m\xEAs informado, com o valor planejado, o valor j\xE1 gasto e o saldo restante. Inclui or\xE7amentos recorrentes herdados de meses anteriores quando o m\xEAs n\xE3o tem meta pr\xF3pria.",
+  inputSchema: {
+    month: z6.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: safeHandler("list_budgets", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const { start, end } = monthBounds(input.month);
+    const [{ data: current, error: e1 }, { data: recurring, error: e2 }, { data: expenses, error: e3 }, { data: categories, error: e4 }] = await Promise.all([
+      sb.from("budgets").select("*").eq("month_year", start),
+      sb.from("budgets").select("*").eq("is_recurring", true).lt("month_year", start).order("month_year", { ascending: false }),
+      sb.from("expenses").select("final_category,value,type,description").gte("date", start).lt("date", end),
+      sb.from("categories").select("id,name,parent_id")
+    ]);
+    const error = e1 || e2 || e3 || e4;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const rows = [...current ?? []];
+    const seen = new Set(rows.map((b) => b.category_id));
+    for (const rb of recurring ?? []) {
+      if (rb.category_id && !seen.has(rb.category_id)) {
+        seen.add(rb.category_id);
+        rows.push({ ...rb, month_year: start, inherited: true });
+      }
+    }
+    const spentByName = {};
+    for (const e of expenses ?? []) {
+      if (e.type === "income" || e.type === "transfer") continue;
+      if (typeof e.description === "string" && e.description.startsWith("Pagamento fatura")) continue;
+      spentByName[e.final_category] = (spentByName[e.final_category] || 0) + Number(e.value || 0);
+    }
+    const cats = categories ?? [];
+    const childrenOf = {};
+    for (const c of cats) if (c.parent_id) (childrenOf[c.parent_id] ||= []).push(c);
+    const budgets = rows.map((b) => {
+      const cat = cats.find((c) => c.id === b.category_id);
+      const name = cat?.name ?? b.category;
+      let spent = spentByName[name] || 0;
+      if (cat && !cat.parent_id) {
+        for (const ch of childrenOf[cat.id] ?? []) spent += spentByName[ch.name] || 0;
+      }
+      const allocated = Number(b.allocated_amount || 0);
+      return {
+        id: b.id,
+        category: name,
+        category_id: b.category_id,
+        month: input.month,
+        allocated_amount: allocated,
+        spent,
+        remaining: allocated - spent,
+        percent_used: allocated > 0 ? Math.round(spent / allocated * 100) : null,
+        is_recurring: !!b.is_recurring,
+        inherited: !!b.inherited
+      };
+    });
+    const totals = budgets.reduce(
+      (acc, b) => ({ allocated: acc.allocated + b.allocated_amount, spent: acc.spent + b.spent }),
+      { allocated: 0, spent: 0 }
+    );
+    return {
+      content: [{ type: "text", text: JSON.stringify({ month: input.month, totals, budgets }) }],
+      structuredContent: { month: input.month, totals, budgets }
+    };
+  })
+});
+
+// src/lib/mcp/tools/upsert-budget.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z7 } from "npm:zod@^4.4.3";
+var upsert_budget_default = defineTool10({
+  name: "upsert_budget",
+  title: "Criar ou editar or\xE7amento",
+  description: "Cria ou atualiza a meta de or\xE7amento de uma categoria em um m\xEAs. Informe category_id (preferencial) ou o nome da categoria \u2014 use list_categories/list_budgets antes para descobrir os identificadores.",
+  inputSchema: {
+    month: z7.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM."),
+    allocated_amount: z7.number().min(0).describe("Valor planejado em BRL."),
+    category_id: z7.string().uuid().optional().describe("ID da categoria (preferencial)."),
+    category: z7.string().optional().describe("Nome da categoria, usado se category_id n\xE3o for informado."),
+    is_recurring: z7.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("upsert_budget", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const monthStart = `${input.month}-01`;
+    let categoryId = input.category_id ?? null;
+    let categoryName = input.category ?? null;
+    const { data: categories, error: catError } = await sb.from("categories").select("id,name,active");
+    if (catError) return { content: [{ type: "text", text: catError.message }], isError: true };
+    const cats = categories ?? [];
+    if (categoryId) {
+      const found = cats.find((c) => c.id === categoryId);
+      if (!found)
+        return { content: [{ type: "text", text: "Categoria n\xE3o encontrada para este usu\xE1rio." }], isError: true };
+      categoryName = found.name;
+    } else if (categoryName) {
+      const target = categoryName.trim().toLowerCase();
+      const matches = cats.filter((c) => String(c.name).trim().toLowerCase() === target);
+      if (matches.length === 0)
+        return {
+          content: [
+            { type: "text", text: `Nenhuma categoria chamada "${categoryName}". Use list_categories para ver as op\xE7\xF5es.` }
+          ],
+          isError: true
+        };
+      if (matches.length > 1)
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Existe mais de uma categoria "${categoryName}". Informe category_id: ${matches.map((m) => m.id).join(", ")}`
+            }
+          ],
+          isError: true
+        };
+      categoryId = matches[0].id;
+      categoryName = matches[0].name;
+    } else {
+      return {
+        content: [{ type: "text", text: "Informe category_id ou category." }],
+        isError: true
+      };
+    }
+    const { data: existing, error: findError } = await sb.from("budgets").select("*").eq("month_year", monthStart).eq("category_id", categoryId).maybeSingle();
+    if (findError) return { content: [{ type: "text", text: findError.message }], isError: true };
+    if (existing) {
+      const patch = { allocated_amount: input.allocated_amount };
+      if (input.is_recurring !== void 0) patch.is_recurring = input.is_recurring;
+      const { data: data2, error: error2 } = await sb.from("budgets").update(patch).eq("id", existing.id).select().single();
+      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Or\xE7amento atualizado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+          }
+        ],
+        structuredContent: { budget: data2, action: "updated" }
+      };
+    }
+    const { data, error } = await sb.from("budgets").insert({
+      user_id: ctx.getUserId(),
+      category: categoryName ?? "",
+      category_id: categoryId,
+      month_year: monthStart,
+      allocated_amount: input.allocated_amount,
+      is_recurring: input.is_recurring ?? false
+    }).select().single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Or\xE7amento criado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+        }
+      ],
+      structuredContent: { budget: data, action: "created" }
+    };
+  })
+});
+
+// src/lib/mcp/tools/search.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z8 } from "npm:zod@^4.4.3";
+var search_default = defineTool11({
   name: "search",
   title: "Buscar transa\xE7\xF5es",
   description: "Busca transa\xE7\xF5es (despesas e receitas) do usu\xE1rio autenticado por texto livre na descri\xE7\xE3o, categoria ou m\xEAs (YYYY-MM). Retorna uma lista de resultados com id, t\xEDtulo e resumo para depois usar a ferramenta fetch.",
   inputSchema: {
-    query: z6.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
+    query: z8.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("search", async ({ query }, ctx) => {
@@ -1092,14 +1265,14 @@ var search_default = defineTool9({
 });
 
 // src/lib/mcp/tools/fetch.ts
-import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z7 } from "npm:zod@^4.4.3";
-var fetch_default = defineTool10({
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z9 } from "npm:zod@^4.4.3";
+var fetch_default = defineTool12({
   name: "fetch",
   title: "Abrir transa\xE7\xE3o",
   description: "Retorna todos os detalhes de uma transa\xE7\xE3o do usu\xE1rio autenticado a partir do id devolvido pela ferramenta search.",
   inputSchema: {
-    id: z7.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
+    id: z9.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("fetch", async ({ id }, ctx) => {
@@ -1159,7 +1332,9 @@ var mcp_default = defineMcp({
     list_wallets_default,
     list_credit_cards_default,
     month_transactions_default,
-    delete_transaction_default
+    delete_transaction_default,
+    list_budgets_default,
+    upsert_budget_default
   ]
 });
 
