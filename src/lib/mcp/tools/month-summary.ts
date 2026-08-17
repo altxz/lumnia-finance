@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { safeHandler } from "../safeHandler";
 import { z } from "zod";
 import { supabaseForUser, toolError } from "../supabaseClient";
-import { computeMonthProjection } from "../monthProjection";
+import { computeMonthProjection, ENGINE_VERSION } from "../monthProjection";
 
 export default defineTool({
   name: "month_summary",
