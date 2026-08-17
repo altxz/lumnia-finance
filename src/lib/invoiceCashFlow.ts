@@ -110,6 +110,22 @@ export function buildInvoiceCashEvents(
   });
 
   const typedExpenses = expenses as Expense[];
+
+  // Recorrências fixas de cartão existem como um único template. Garantimos que
+  // as faturas futuras onde elas serão projetadas também entrem no fluxo de caixa.
+  const horizonLabel = addMonthsToLabel(monthLabelFromDate(new Date()), CARD_RECURRING_HORIZON_MONTHS);
+  cardsById.forEach((card, cardId) => {
+    getCardRecurringTemplates(typedExpenses, cardId).forEach((template) => {
+      const baseLabel = resolveExpenseMonthLabel(template, cardsById);
+      if (!baseLabel) return;
+
+      let label = addMonthsToLabel(baseLabel, 1);
+      while (label <= horizonLabel) {
+        if (shouldProjectCardRecurringInLabel(template, baseLabel, label)) addLabel(cardId, label);
+        label = addMonthsToLabel(label, 1);
+      }
+    });
+  });
   const events: InvoiceCashEvent[] = [];
 
   labelsByCard.forEach((labels, cardId) => {

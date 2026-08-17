@@ -310,14 +310,14 @@ function monthsBetweenLabels(from, to) {
   const [ty, tm] = to.split("-").map(Number);
   return ty * 12 + (tm - 1) - (fy * 12 + (fm - 1));
 }
-function shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel) {
+function shouldProjectCardRecurringInLabel2(template, baseLabel, dueLabel) {
   const diff = monthsBetweenLabels(baseLabel, dueLabel);
   if (diff <= 0) return false;
   const frequency = template.frequency === "annual" ? "yearly" : template.frequency ?? "monthly";
   if (frequency === "yearly") return diff % 12 === 0;
   return true;
 }
-function getCardRecurringTemplates(expenses, cardId) {
+function getCardRecurringTemplates2(expenses, cardId) {
   return expenses.filter(
     (e) => e.credit_card_id === cardId && e.is_recurring && e.type === "expense" && !isVirtualCardRecurring(e.id) && !isCreditCardPaymentLabel(e.description)
   );
@@ -419,9 +419,9 @@ function matchExpensesToInvoice(expenses, period) {
     if (isCreditCardPaymentLabel(e.description)) return false;
     return resolveLabel(e) === dueLabel;
   });
-  const virtualOccurrences = getCardRecurringTemplates(expenses, period.cardId).filter((template) => {
+  const virtualOccurrences = getCardRecurringTemplates2(expenses, period.cardId).filter((template) => {
     const baseLabel = resolveLabel(template);
-    if (!shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel)) return false;
+    if (!shouldProjectCardRecurringInLabel2(template, baseLabel, dueLabel)) return false;
     const alreadyExists = matched.some(
       (e) => normalizeDesc(e.description) === normalizeDesc(template.description)
     );
@@ -501,6 +501,18 @@ function buildInvoiceCashEvents(creditCards, expenses) {
     if (matchedCard) addLabel(matchedCard.id, expense.invoice_month ?? null);
   });
   const typedExpenses = expenses;
+  const horizonLabel = addMonthsToLabel(monthLabelFromDate(/* @__PURE__ */ new Date()), CARD_RECURRING_HORIZON_MONTHS);
+  cardsById.forEach((card, cardId) => {
+    getCardRecurringTemplates(typedExpenses, cardId).forEach((template) => {
+      const baseLabel = resolveExpenseMonthLabel(template, cardsById);
+      if (!baseLabel) return;
+      let label = addMonthsToLabel(baseLabel, 1);
+      while (label <= horizonLabel) {
+        if (shouldProjectCardRecurringInLabel(template, baseLabel, label)) addLabel(cardId, label);
+        label = addMonthsToLabel(label, 1);
+      }
+    });
+  });
   const events = [];
   labelsByCard.forEach((labels, cardId) => {
     const card = cardsById.get(cardId);
