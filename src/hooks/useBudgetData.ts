@@ -39,7 +39,12 @@ export function useBudgetData() {
   const { user } = useAuth();
   const { startDate, endDate, monthKey } = useSelectedDate();
   const { toast } = useToast();
-  const [categories, setCategories] = useState<DbCategory[]>([]);
+  // Categorias vêm do cache partilhado (30 min) — sem busca própria.
+  const { data: allCategories = [], isLoading: categoriesLoading } = useCategories();
+  const categories = useMemo(
+    () => allCategories.filter(c => c.active !== false) as unknown as DbCategory[],
+    [allCategories],
+  );
   const [budgets, setBudgets] = useState<BudgetRow[]>([]);
   const [prevBudgets, setPrevBudgets] = useState<BudgetRow[]>([]);
   const [spentMap, setSpentMap] = useState<Record<string, number>>({});
