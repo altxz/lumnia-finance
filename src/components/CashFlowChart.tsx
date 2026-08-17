@@ -11,6 +11,7 @@ import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
 import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
 import { buildMonthRecurringSignature, buildRecurringSignature } from '@/lib/recurringProjection';
+import { transferCashDelta } from '@/lib/projectedBalanceMath';
 import { addDays, format, startOfDay, eachDayOfInterval, isBefore, isAfter, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { InfoPopover } from '@/components/ui/info-popover';
