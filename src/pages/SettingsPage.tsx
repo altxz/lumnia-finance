@@ -67,7 +67,7 @@ export default function SettingsPage() {
         .insert({ user_id: user.id, full_name: user.user_metadata?.full_name || '' })
         .then(() => invalidateSettings());
     }
-  }, [settingsRow, settingsRowLoading, user, invalidateSettings]);
+  }, [settingsRow, settingsRowLoading, user, dirty, invalidateSettings]);
 
   const fetchSettings = useCallback(async () => {
     if (!user) return;
