@@ -20,7 +20,7 @@ import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceH
 import type { Expense } from '@/components/ExpenseTable';
 import { deleteSingleRecurringOccurrence } from '@/lib/recurringExceptions';
 import { getCreditCardPaymentCardId, isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
-import { buildDailyBalanceMap } from '@/lib/projectedBalanceMath';
+import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceMath';
 
 const CATEGORY_ICONS: Record<string, { icon: typeof Utensils; bg: string; text: string }> = {
   alimentacao: { icon: Utensils, bg: 'bg-accent/30', text: 'text-accent-foreground' },
@@ -46,7 +46,8 @@ interface TransactionFeedProps {
   onDeleted: () => void;
   filters: { category: string };
   onFilterChange: (key: string, value: string) => void;
-  wallets?: { id: string; name: string }[];
+  wallets?: { id: string; name: string; asset_type?: string }[];
+  investmentWalletIds?: string[];
   startingMonthBalance?: number;
   creditCards?: CreditCardType[];
   currentMonth?: string;
@@ -97,6 +98,7 @@ export function TransactionFeed({
   loading,
   onDeleted,
   wallets = [],
+  investmentWalletIds = [],
   startingMonthBalance = 0,
   creditCards = [],
   currentMonth,
@@ -318,6 +320,8 @@ export function TransactionFeed({
 
 
 
+  const investmentWalletSet = useMemo(() => new Set(investmentWalletIds), [investmentWalletIds]);
+
   const walletMap = useMemo(() => {
     const m: Record<string, string> = {};
     wallets.forEach(w => { m[w.id] = w.name; });
@@ -414,6 +418,7 @@ export function TransactionFeed({
       endDate: monthEnd,
       startingBalance: startingMonthBalance,
       isCreditCardPayment: (expense) => isTrackedCreditCardPayment(expense, creditCards),
+      investmentWalletIds,
     });
 
     const allDayKeys = new Set<string>([
@@ -430,7 +435,7 @@ export function TransactionFeed({
       invoices: invoicesByDay[dateKey] || [],
       endOfDayBalance: balanceMap[dateKey] ?? startingMonthBalance,
     }));
-  }, [expenses, allExpenses, invoiceExpenses, startingMonthBalance, groupCards, invoicePeriods, monthStart, monthEnd, creditCards]);
+  }, [expenses, allExpenses, invoiceExpenses, startingMonthBalance, groupCards, invoicePeriods, monthStart, monthEnd, creditCards, investmentWalletIds]);
 
   const statusConfig: Record<string, { label: string; className: string }> = {
     open: { label: 'Aberta', className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
@@ -621,9 +626,16 @@ export function TransactionFeed({
                     const isTransfer = exp.type === 'transfer';
                     const isPending = !exp.is_paid;
                     const walletName = exp.wallet_id ? walletMap[exp.wallet_id] : null;
+                    const destWalletName = (exp as any).destination_wallet_id ? walletMap[(exp as any).destination_wallet_id] : null;
+                    const transferDelta = isTransfer ? transferCashDelta(exp as any, investmentWalletSet) : 0;
+                    const transferSign = transferDelta > 0 ? '+' : transferDelta < 0 ? '-' : '';
 
                     const accentColor = isTransfer
-                      ? 'bg-border'
+                      ? transferDelta > 0
+                        ? 'bg-emerald-500'
+                        : transferDelta < 0
+                          ? 'bg-destructive'
+                          : 'bg-border'
                       : isIncome
                         ? 'bg-emerald-500'
                         : 'bg-destructive';
@@ -677,7 +689,26 @@ export function TransactionFeed({
                             {isInvoiceItem && originalDate && (walletName || exp.credit_card_id) && (
                               <span className="text-[11px] text-muted-foreground">•</span>
                             )}
-                            {(walletName || exp.credit_card_id) && (
+                            {isTransfer ? (
+                              <>
+                                <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {walletName || 'Origem'} → {destWalletName || 'Destino'}
+                                </span>
+                                {transferDelta !== 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[9px] px-1 py-0 shrink-0 ${
+                                      transferDelta > 0
+                                        ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30'
+                                        : 'bg-destructive/15 text-destructive border-destructive/30'
+                                    }`}
+                                  >
+                                    {transferDelta > 0 ? 'Entrada no caixa' : 'Saída do caixa'}
+                                  </Badge>
+                                )}
+                              </>
+                            ) : (walletName || exp.credit_card_id) ? (
                               <>
                                 <Wallet className="h-3 w-3 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground truncate">
@@ -686,7 +717,7 @@ export function TransactionFeed({
                                   {exp.credit_card_id ? 'Cartão de crédito' : !walletName ? '' : ' | Débito em conta'}
                                 </span>
                               </>
-                            )}
+                            ) : null}
                           </div>
                         </div>
 
@@ -695,12 +726,16 @@ export function TransactionFeed({
                           {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
                           <span className={`text-sm font-bold ${
                             isTransfer
-                              ? 'text-foreground'
+                              ? transferDelta > 0
+                                ? 'text-emerald-600'
+                                : transferDelta < 0
+                                  ? 'text-destructive'
+                                  : 'text-foreground'
                               : isIncome
                                 ? isPending ? 'text-emerald-600/70' : 'text-emerald-600'
                                 : isPending ? 'text-destructive/70' : 'text-destructive'
                           }`}>
-                            {isIncome ? '+' : isTransfer ? '' : '-'}{formatCurrency(exp.value)}
+                            {isIncome ? '+' : isTransfer ? transferSign : '-'}{formatCurrency(exp.value)}
                           </span>
                         </div>
 

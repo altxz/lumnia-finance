@@ -64,6 +64,31 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
     setSaving(true);
     try {
       const isDeposit = mode === 'deposit';
+
+      // Garante que existe a carteira que guarda o saldo investido (caixinha).
+      let investmentWalletId = investment.investment_wallet_id;
+      if (!investmentWalletId) {
+        const { data: newWallet, error: wErr } = await supabase
+          .from('wallets')
+          .insert({
+            user_id: user!.id,
+            name: `Investimento: ${investment.name}`,
+            asset_type: 'investment',
+            currency: 'BRL',
+            current_balance: 0,
+            initial_balance: 0,
+          })
+          .select('id')
+          .single();
+        if (wErr) throw wErr;
+        investmentWalletId = newWallet!.id;
+        const { error: linkErr } = await supabase
+          .from('investments')
+          .update({ investment_wallet_id: investmentWalletId })
+          .eq('id', investment.id);
+        if (linkErr) throw linkErr;
+      }
+
       const { data: exp, error: eErr } = await supabase
         .from('expenses')
         .insert({
@@ -73,8 +98,8 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
           value,
           type: 'transfer',
           final_category: 'investimentos',
-          wallet_id: isDeposit ? walletId : investment.investment_wallet_id,
-          destination_wallet_id: isDeposit ? investment.investment_wallet_id : walletId,
+          wallet_id: isDeposit ? walletId : investmentWalletId,
+          destination_wallet_id: isDeposit ? investmentWalletId : walletId,
           is_paid: true,
           installments: 1,
           is_recurring: false,
@@ -91,7 +116,11 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
         date,
         expense_id: exp!.id,
       });
-      if (mErr) throw mErr;
+      if (mErr) {
+        await supabase.from('expenses').delete().eq('id', exp!.id);
+        throw mErr;
+      }
+
 
       if (!isDeposit && closeInvestment) {
         const { error: uErr } = await supabase.from('investments').update({ status: 'redeemed' }).eq('id', investment.id);

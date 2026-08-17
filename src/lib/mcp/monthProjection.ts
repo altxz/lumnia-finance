@@ -51,7 +51,7 @@ export async function computeMonthProjection(sb: any, month: string) {
         .like("description", "Pagamento fatura%"),
       sb.from("expenses").select(EXPENSE_COLS).lt("date", startDate).is("credit_card_id", null),
       sb.from("credit_cards").select("*"),
-      sb.from("wallets").select("id, name, initial_balance"),
+      sb.from("wallets").select("id, name, initial_balance, asset_type"),
       sb.from("recurring_exceptions").select("template_id, occurrence_date"),
       sb.from("expenses").select(EXPENSE_COLS).eq("is_recurring", true),
     ]);
@@ -88,6 +88,7 @@ export async function computeMonthProjection(sb: any, month: string) {
 
   // Saldo inicial: acumula mês a mês o MESMO fluxo que gera o saldo previsto,
   // garantindo que "Saldo Anterior" do mês N = "Saldo Previsto" do mês N-1.
+  const investmentWalletIds = wallets.filter((w: any) => w.asset_type === "investment").map((w: any) => w.id);
   const walletSum = wallets.reduce((s: number, w: any) => s + Number(w.initial_balance ?? 0), 0);
   const selectedMonthIndex = year * 12 + monthIndex;
 
@@ -120,7 +121,7 @@ export async function computeMonthProjection(sb: any, month: string) {
         month: index % 12,
         exceptionSet,
       });
-      historicalFlow += computeMonthCashFlow(effective as any[], isCCPayment);
+      historicalFlow += computeMonthCashFlow(effective as any[], isCCPayment, investmentWalletIds);
     });
 
   const invoiceCashEvents = buildInvoiceCashEvents(creditCards, invoiceExpenses as any[]);
@@ -140,6 +141,7 @@ export async function computeMonthProjection(sb: any, month: string) {
     invoiceByCategory: invoiceTotals.byCategory,
     startingBalance,
     isCreditCardPayment: isCCPayment,
+    investmentWalletIds,
   });
 
   const daily = buildDailyBalanceMap({
@@ -150,6 +152,7 @@ export async function computeMonthProjection(sb: any, month: string) {
     endDate,
     startingBalance,
     isCreditCardPayment: isCCPayment,
+    investmentWalletIds,
   });
 
   return {

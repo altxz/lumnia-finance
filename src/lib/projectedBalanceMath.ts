@@ -8,6 +8,8 @@ interface ComputeProjectedMonthResultParams {
   invoiceByCategory: Record<string, number>;
   startingBalance: number;
   isCreditCardPayment: (expense: Expense) => boolean;
+  /** Carteiras de investimento: transferências para/de elas afetam o saldo em caixa. */
+  investmentWalletIds?: Iterable<string>;
 }
 
 interface BuildDailyBalanceMapParams {
@@ -18,6 +20,24 @@ interface BuildDailyBalanceMapParams {
   endDate: string;
   startingBalance: number;
   isCreditCardPayment: (expense: Expense) => boolean;
+  investmentWalletIds?: Iterable<string>;
+}
+
+/**
+ * Efeito de uma transferência no saldo em caixa (líquido).
+ * Transferência entre contas correntes é neutra; aporte em investimento sai do
+ * caixa (negativo) e resgate volta para o caixa (positivo).
+ */
+export function transferCashDelta(
+  expense: { value: number; wallet_id?: string | null; destination_wallet_id?: string | null },
+  investmentWalletIds: Set<string>,
+) {
+  if (investmentWalletIds.size === 0) return 0;
+  const value = Number(expense.value) || 0;
+  const fromInvestment = !!expense.wallet_id && investmentWalletIds.has(expense.wallet_id);
+  const toInvestment = !!expense.destination_wallet_id && investmentWalletIds.has(expense.destination_wallet_id);
+  if (fromInvestment === toInvestment) return 0;
+  return toInvestment ? -value : value;
 }
 
 /**
@@ -28,15 +48,18 @@ interface BuildDailyBalanceMapParams {
 export function computeMonthCashFlow(
   effectiveMonthExpenses: { type: string; value: number; credit_card_id?: string | null }[],
   isCreditCardPayment: (expense: any) => boolean,
+  investmentWalletIds: Iterable<string> = [],
 ) {
+  const invIds = new Set(investmentWalletIds);
   return effectiveMonthExpenses.reduce((sum, expense) => {
-    if (expense.type === 'transfer') return sum;
+    if (expense.type === 'transfer') return sum + transferCashDelta(expense as any, invIds);
     if (expense.type === 'income') return sum + Number(expense.value);
     if (expense.credit_card_id) return sum;
     if (isCreditCardPayment(expense)) return sum;
     return sum - Number(expense.value);
   }, 0);
 }
+
 
 export function buildDailyBalanceMap({
 
@@ -47,14 +70,23 @@ export function buildDailyBalanceMap({
   endDate,
   startingBalance,
   isCreditCardPayment,
+  investmentWalletIds = [],
 }: BuildDailyBalanceMapParams) {
   const nonCcFlowByDay: Record<string, number> = {};
+  const invIds = new Set(investmentWalletIds);
 
   monthExpenses.forEach((expense) => {
-    if (expense.type === 'transfer') return;
     if (expense.credit_card_id) return;
-    if (isCreditCardPayment(expense)) return;
     if (expense.date < startDate || expense.date > endDate) return;
+
+    if (expense.type === 'transfer') {
+      const delta = transferCashDelta(expense as any, invIds);
+      if (!delta) return;
+      nonCcFlowByDay[expense.date] = (nonCcFlowByDay[expense.date] || 0) + delta;
+      return;
+    }
+
+    if (isCreditCardPayment(expense)) return;
 
     nonCcFlowByDay[expense.date] = nonCcFlowByDay[expense.date] || 0;
     nonCcFlowByDay[expense.date] += expense.type === 'income' ? expense.value : -expense.value;
@@ -92,12 +124,21 @@ export function computeProjectedMonthResult({
   invoiceByCategory,
   startingBalance,
   isCreditCardPayment,
+  investmentWalletIds = [],
 }: ComputeProjectedMonthResultParams) {
+  const invIds = new Set(investmentWalletIds);
   const nonTransfers = effectiveMonthExpenses.filter((expense) => expense.type !== 'transfer');
+  const investmentTransfers = effectiveMonthExpenses
+    .filter((expense) => expense.type === 'transfer')
+    .map((expense) => transferCashDelta(expense as any, invIds))
+    .filter((delta) => delta !== 0);
+
+  const investmentInflow = investmentTransfers.filter(d => d > 0).reduce((s, d) => s + d, 0);
+  const investmentOutflow = investmentTransfers.filter(d => d < 0).reduce((s, d) => s - d, 0);
 
   const totalIncome = nonTransfers
     .filter((expense) => expense.type === 'income')
-    .reduce((sum, expense) => sum + expense.value, 0);
+    .reduce((sum, expense) => sum + expense.value, 0) + investmentInflow;
 
   const debitExpense = nonTransfers
     .filter(
@@ -106,11 +147,14 @@ export function computeProjectedMonthResult({
         !expense.credit_card_id &&
         !isCreditCardPayment(expense),
     )
-    .reduce((sum, expense) => sum + expense.value, 0);
+    .reduce((sum, expense) => sum + expense.value, 0) + investmentOutflow;
 
   const totalExpense = debitExpense + invoiceTotal;
 
   const byCategory: Record<string, number> = { ...invoiceByCategory };
+  if (investmentOutflow > 0) {
+    byCategory.investimentos = (byCategory.investimentos || 0) + investmentOutflow;
+  }
   nonTransfers
     .filter(
       (expense) =>
@@ -121,6 +165,7 @@ export function computeProjectedMonthResult({
     .forEach((expense) => {
       byCategory[expense.final_category] = (byCategory[expense.final_category] || 0) + expense.value;
     });
+
 
   const largest = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
 
