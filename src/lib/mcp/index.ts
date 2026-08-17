@@ -7,6 +7,8 @@ import listWallets from "./tools/list-wallets";
 import listCreditCards from "./tools/list-credit-cards";
 import monthTransactions from "./tools/month-transactions";
 import deleteTransaction from "./tools/delete-transaction";
+import listBudgets from "./tools/list-budgets";
+import upsertBudget from "./tools/upsert-budget";
 import searchTool from "./tools/search";
 import fetchTool from "./tools/fetch";
 
