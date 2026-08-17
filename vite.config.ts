@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mcpPlugin(),
+    mcpPlugin({ functionName: "lumnia-mcp" }),
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
