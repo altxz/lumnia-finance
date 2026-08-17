@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { z } from "zod";
 import { supabaseForUser, toolError } from "../supabaseClient";
 import { computeMonthProjection, pad } from "../monthProjection";
@@ -12,7 +13,7 @@ export default defineTool({
     month: z.string().describe("Mês no formato YYYY-MM."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ month }, ctx) => {
+  handler: safeHandler("month_transactions", async ({ month }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Não autenticado." }], isError: true };
     }
@@ -78,5 +79,5 @@ export default defineTool({
     } catch (error) {
       return toolError("Falha ao projetar o mês", error);
     }
-  },
+  }),
 });

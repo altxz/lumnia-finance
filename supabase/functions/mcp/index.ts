@@ -7,6 +7,48 @@ import { auth, defineMcp, setLogLevel } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/tools/list-transactions.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
+
+// src/lib/mcp/safeHandler.ts
+function describeError(error) {
+  if (error instanceof Error) return error.message || error.name;
+  if (error && typeof error === "object") {
+    const e = error;
+    const parts = [e.message, e.details, e.hint, e.code].filter(Boolean).map(String);
+    if (parts.length) return parts.join(" | ");
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "erro desconhecido";
+    }
+  }
+  return String(error ?? "erro desconhecido");
+}
+function errorResult(text) {
+  return { content: [{ type: "text", text }], isError: true };
+}
+function safeHandler(toolName, fn) {
+  return async (input, ctx) => {
+    try {
+      if (!ctx.isAuthenticated() || !ctx.getUserId()) {
+        console.warn(`[mcp.tool.${toolName}] n\xE3o autenticado`);
+        return errorResult(
+          "N\xE3o foi poss\xEDvel identificar sua conta nesta chamada. Reconecte o app Lumnia e tente novamente."
+        );
+      }
+      const result = await fn(input, ctx);
+      if (!result || !Array.isArray(result.content) || result.content.length === 0) {
+        return errorResult(`A ferramenta ${toolName} n\xE3o retornou conte\xFAdo utiliz\xE1vel.`);
+      }
+      return result;
+    } catch (error) {
+      const message = describeError(error);
+      console.error(`[mcp.tool.${toolName}] falha`, message);
+      return errorResult(`Falha ao executar ${toolName}: ${message}`);
+    }
+  };
+}
+
+// src/lib/mcp/tools/list-transactions.ts
 import { z } from "npm:zod@^4.4.3";
 
 // src/lib/mcp/supabaseClient.ts
@@ -83,20 +125,6 @@ function toolError(prefix, error) {
 
 // src/lib/mcp/tools/list-transactions.ts
 var dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-var transactionSchema = z.object({
-  id: z.string(),
-  date: dateSchema,
-  description: z.string(),
-  value: z.number(),
-  type: z.string(),
-  final_category: z.string().nullable(),
-  is_paid: z.boolean(),
-  payment_method: z.string().nullable(),
-  credit_card_id: z.string().nullable(),
-  wallet_id: z.string().nullable(),
-  invoice_month: z.string().nullable(),
-  is_recurring: z.boolean()
-});
 var list_transactions_default = defineTool({
   name: "list_transactions",
   title: "Listar transa\xE7\xF5es",
@@ -107,13 +135,10 @@ var list_transactions_default = defineTool({
     type: z.enum(["income", "expense", "transfer"]).optional().describe("Filtrar por tipo."),
     limit: z.number().int().min(1).max(500).optional().describe("M\xE1ximo de registros (padr\xE3o 100).")
   },
-  outputSchema: {
-    transactions: z.array(transactionSchema),
-    start_date: dateSchema,
-    end_date: dateSchema
-  },
+  // Sem outputSchema: uma falha de consulta devolve apenas texto de erro e o
+  // cliente MCP continua com a ferramenta habilitada.
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ start_date, end_date, type, limit }, ctx) => {
+  handler: safeHandler("list_transactions", async ({ start_date, end_date, type, limit }, ctx) => {
     const invocation = {
       tool: "list_transactions",
       arguments: { start_date, end_date, type, limit },
@@ -175,7 +200,7 @@ var list_transactions_default = defineTool({
       console.error("[mcp.tool.exception]", error);
       return toolError("Erro de conex\xE3o ao consultar as transa\xE7\xF5es", error);
     }
-  }
+  })
 });
 
 // src/lib/mcp/tools/create-transaction.ts
@@ -195,7 +220,7 @@ var create_transaction_default = defineTool2({
     notes: z2.string().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-  handler: async (input, ctx) => {
+  handler: safeHandler("create_transaction", async (input, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -216,7 +241,7 @@ var create_transaction_default = defineTool2({
       content: [{ type: "text", text: `Criada: ${data.id}` }],
       structuredContent: { transaction: data }
     };
-  }
+  })
 });
 
 // src/lib/mcp/tools/list-categories.ts
@@ -227,7 +252,7 @@ var list_categories_default = defineTool3({
   description: "Lista todas as categorias e subcategorias do usu\xE1rio autenticado.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_input, ctx) => {
+  handler: safeHandler("list_categories", async (_input, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -238,7 +263,7 @@ var list_categories_default = defineTool3({
       content: [{ type: "text", text: JSON.stringify(data) }],
       structuredContent: { categories: data ?? [] }
     };
-  }
+  })
 });
 
 // src/lib/mcp/tools/month-summary.ts
@@ -732,7 +757,7 @@ var month_summary_default = defineTool4({
     month: z3.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ month }, ctx) => {
+  handler: safeHandler("month_summary", async ({ month }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -767,7 +792,7 @@ var month_summary_default = defineTool4({
     } catch (error) {
       return toolError("Falha ao resumir o m\xEAs", error);
     }
-  }
+  })
 });
 
 // src/lib/mcp/tools/list-wallets.ts
@@ -778,7 +803,7 @@ var list_wallets_default = defineTool5({
   description: "Lista carteiras e ativos do usu\xE1rio com saldo atual e moeda.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_i, ctx) => {
+  handler: safeHandler("list_wallets", async (_i, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -789,7 +814,7 @@ var list_wallets_default = defineTool5({
       content: [{ type: "text", text: JSON.stringify(data) }],
       structuredContent: { wallets: data ?? [] }
     };
-  }
+  })
 });
 
 // src/lib/mcp/tools/list-credit-cards.ts
@@ -800,7 +825,7 @@ var list_credit_cards_default = defineTool6({
   description: "Lista cart\xF5es de cr\xE9dito do usu\xE1rio com limite, dia de fechamento e vencimento.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_i, ctx) => {
+  handler: safeHandler("list_credit_cards", async (_i, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -811,7 +836,7 @@ var list_credit_cards_default = defineTool6({
       content: [{ type: "text", text: JSON.stringify(data) }],
       structuredContent: { credit_cards: data ?? [] }
     };
-  }
+  })
 });
 
 // src/lib/mcp/tools/month-transactions.ts
@@ -825,7 +850,7 @@ var month_transactions_default = defineTool7({
     month: z4.string().describe("M\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ month }, ctx) => {
+  handler: safeHandler("month_transactions", async ({ month }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -886,7 +911,7 @@ var month_transactions_default = defineTool7({
     } catch (error) {
       return toolError("Falha ao projetar o m\xEAs", error);
     }
-  }
+  })
 });
 
 // src/lib/mcp/tools/delete-transaction.ts
@@ -903,7 +928,7 @@ var delete_transaction_default = defineTool8({
     )
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-  handler: async ({ id, scope }, ctx) => {
+  handler: safeHandler("delete_transaction", async ({ id, scope }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -940,7 +965,7 @@ var delete_transaction_default = defineTool8({
     } catch (error) {
       return toolError("Erro de conex\xE3o com o banco de dados", error);
     }
-  }
+  })
 });
 
 // src/lib/mcp/tools/search.ts
@@ -954,7 +979,7 @@ var search_default = defineTool9({
     query: z6.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ query }, ctx) => {
+  handler: safeHandler("search", async ({ query }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -984,7 +1009,7 @@ var search_default = defineTool9({
       content: [{ type: "text", text: JSON.stringify({ results }) }],
       structuredContent: { results }
     };
-  }
+  })
 });
 
 // src/lib/mcp/tools/fetch.ts
@@ -998,7 +1023,7 @@ var fetch_default = defineTool10({
     id: z7.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ id }, ctx) => {
+  handler: safeHandler("fetch", async ({ id }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
@@ -1027,7 +1052,7 @@ var fetch_default = defineTool10({
       content: [{ type: "text", text: JSON.stringify(document) }],
       structuredContent: document
     };
-  }
+  })
 });
 
 // src/lib/mcp/index.ts
@@ -1036,7 +1061,7 @@ setLogLevel("info");
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.2.3",
+  version: "0.2.4",
   instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal). Use search para localizar transa\xE7\xF5es por texto ou m\xEAs (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lan\xE7ar despesas ou receitas, delete_transaction para excluir uma transa\xE7\xE3o (confirme com o usu\xE1rio antes, \xE9 irrevers\xEDvel), month_transactions para ver, dia a dia, todas as transa\xE7\xF5es de um m\xEAs com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usu\xE1rio.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,

@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { supabaseForUser } from "../supabaseClient";
 
 export default defineTool({
@@ -7,7 +8,7 @@ export default defineTool({
   description: "Lista todas as categorias e subcategorias do usuário autenticado.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_input, ctx) => {
+  handler: safeHandler("list_categories", async (_input, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Não autenticado." }], isError: true };
     }
@@ -21,5 +22,5 @@ export default defineTool({
       content: [{ type: "text", text: JSON.stringify(data) }],
       structuredContent: { categories: data ?? [] },
     };
-  },
+  }),
 });

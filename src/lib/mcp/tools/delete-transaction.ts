@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { z } from "zod";
 import { supabaseForUser, toolError } from "../supabaseClient";
 
@@ -17,7 +18,7 @@ export default defineTool({
       ),
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-  handler: async ({ id, scope }, ctx) => {
+  handler: safeHandler("delete_transaction", async ({ id, scope }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Não autenticado." }], isError: true };
     }
@@ -68,5 +69,5 @@ export default defineTool({
     } catch (error) {
       return toolError("Erro de conexão com o banco de dados", error);
     }
-  },
+  }),
 });

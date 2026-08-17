@@ -1,23 +1,10 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { z } from "zod";
 import { supabaseForUser, toolError } from "../supabaseClient";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-const transactionSchema = z.object({
-  id: z.string(),
-  date: dateSchema,
-  description: z.string(),
-  value: z.number(),
-  type: z.string(),
-  final_category: z.string().nullable(),
-  is_paid: z.boolean(),
-  payment_method: z.string().nullable(),
-  credit_card_id: z.string().nullable(),
-  wallet_id: z.string().nullable(),
-  invoice_month: z.string().nullable(),
-  is_recurring: z.boolean(),
-});
 
 export default defineTool({
   name: "list_transactions",
@@ -30,13 +17,11 @@ export default defineTool({
     type: z.enum(["income", "expense", "transfer"]).optional().describe("Filtrar por tipo."),
     limit: z.number().int().min(1).max(500).optional().describe("Máximo de registros (padrão 100)."),
   },
-  outputSchema: {
-    transactions: z.array(transactionSchema),
-    start_date: dateSchema,
-    end_date: dateSchema,
-  },
+  // Sem outputSchema: uma falha de consulta devolve apenas texto de erro e o
+  // cliente MCP continua com a ferramenta habilitada.
+
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ start_date, end_date, type, limit }, ctx) => {
+  handler: safeHandler("list_transactions", async ({ start_date, end_date, type, limit }, ctx) => {
     const invocation = {
       tool: "list_transactions",
       arguments: { start_date, end_date, type, limit },
@@ -114,5 +99,5 @@ export default defineTool({
       console.error("[mcp.tool.exception]", error);
       return toolError("Erro de conexão ao consultar as transações", error);
     }
-  },
+  }),
 });

@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { supabaseForUser } from "../supabaseClient";
 
 export default defineTool({
@@ -7,7 +8,7 @@ export default defineTool({
   description: "Lista cartões de crédito do usuário com limite, dia de fechamento e vencimento.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_i, ctx) => {
+  handler: safeHandler("list_credit_cards", async (_i, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Não autenticado." }], isError: true };
     }
@@ -20,5 +21,5 @@ export default defineTool({
       content: [{ type: "text", text: JSON.stringify(data) }],
       structuredContent: { credit_cards: data ?? [] },
     };
-  },
+  }),
 });
