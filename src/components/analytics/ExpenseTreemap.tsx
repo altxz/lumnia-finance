@@ -38,15 +38,9 @@ const CustomContent = (props: any) => {
 };
 
 export function ExpenseTreemap({ categoryStats }: ExpenseTreemapProps) {
-  const { user } = useAuth();
-  const [categoryColors, setCategoryColors] = useState<CategoryColor[]>([]);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from('categories').select('name, color').eq('user_id', user.id).then(({ data }) => {
-      setCategoryColors((data || []) as CategoryColor[]);
-    });
-  }, [user]);
+  // Cores vêm do cache partilhado de categorias (30 min).
+  const { data: categories = [] } = useCategories();
+  const categoryColors: CategoryColor[] = categories.map(c => ({ name: c.name, color: c.color }));
 
   const treemapData = useMemo(() => {
     const colorMap: Record<string, string> = {};
