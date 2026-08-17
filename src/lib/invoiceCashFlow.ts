@@ -7,6 +7,14 @@ import {
   type InvoicePeriod,
 } from './invoiceHelpers';
 import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
+import {
+  addMonthsToLabel,
+  getCardRecurringTemplates,
+  monthLabelFromDate,
+  shouldProjectCardRecurringInLabel,
+} from './recurringCardProjection';
+
+const CARD_RECURRING_HORIZON_MONTHS = 24;
 
 type InvoiceCashExpense = Pick<
   Expense,

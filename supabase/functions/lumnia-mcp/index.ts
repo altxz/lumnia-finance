@@ -305,19 +305,27 @@ function isVirtualCardRecurring(id) {
 function normalizeDesc(description) {
   return (description ?? "").trim().toLowerCase();
 }
+function monthLabelFromDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+function addMonthsToLabel(label, months) {
+  const [year, month] = label.split("-").map(Number);
+  const index = year * 12 + (month - 1) + months;
+  return `${Math.floor(index / 12)}-${String(index % 12 + 1).padStart(2, "0")}`;
+}
 function monthsBetweenLabels(from, to) {
   const [fy, fm] = from.split("-").map(Number);
   const [ty, tm] = to.split("-").map(Number);
   return ty * 12 + (tm - 1) - (fy * 12 + (fm - 1));
 }
-function shouldProjectCardRecurringInLabel2(template, baseLabel, dueLabel) {
+function shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel) {
   const diff = monthsBetweenLabels(baseLabel, dueLabel);
   if (diff <= 0) return false;
   const frequency = template.frequency === "annual" ? "yearly" : template.frequency ?? "monthly";
   if (frequency === "yearly") return diff % 12 === 0;
   return true;
 }
-function getCardRecurringTemplates2(expenses, cardId) {
+function getCardRecurringTemplates(expenses, cardId) {
   return expenses.filter(
     (e) => e.credit_card_id === cardId && e.is_recurring && e.type === "expense" && !isVirtualCardRecurring(e.id) && !isCreditCardPaymentLabel(e.description)
   );
@@ -419,9 +427,9 @@ function matchExpensesToInvoice(expenses, period) {
     if (isCreditCardPaymentLabel(e.description)) return false;
     return resolveLabel(e) === dueLabel;
   });
-  const virtualOccurrences = getCardRecurringTemplates2(expenses, period.cardId).filter((template) => {
+  const virtualOccurrences = getCardRecurringTemplates(expenses, period.cardId).filter((template) => {
     const baseLabel = resolveLabel(template);
-    if (!shouldProjectCardRecurringInLabel2(template, baseLabel, dueLabel)) return false;
+    if (!shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel)) return false;
     const alreadyExists = matched.some(
       (e) => normalizeDesc(e.description) === normalizeDesc(template.description)
     );
@@ -445,6 +453,7 @@ function matchExpensesToInvoice(expenses, period) {
 }
 
 // src/lib/invoiceCashFlow.ts
+var CARD_RECURRING_HORIZON_MONTHS = 24;
 function toMonthLabel2(year, month) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
