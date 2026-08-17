@@ -28,7 +28,7 @@ interface DayData {
 
 interface CashFlowChartProps {
   creditCards: any[];
-  wallets: { id: string; name: string; initial_balance: number }[];
+  wallets: { id: string; name: string; initial_balance: number; asset_type?: string }[];
 }
 
 export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: CashFlowChartProps) {
@@ -65,7 +65,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     queryFn: async () => {
       const [expensesRes, recurringRes, unpaidRes] = await Promise.all([
         // Spec: ALL expenses ordered by date, with invoice_month included
-        supabase.from('expenses').select('value, type, credit_card_id, date, invoice_month, is_paid, is_recurring, description')
+        supabase.from('expenses').select('value, type, credit_card_id, date, invoice_month, is_paid, is_recurring, description, wallet_id, destination_wallet_id')
           .eq('user_id', user!.id).order('date'),
         supabase.from('expenses').select('description, value, type, date, credit_card_id, invoice_month')
           .eq('user_id', user!.id).eq('is_recurring', true),
@@ -89,6 +89,9 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
   const chartData = useMemo(() => {
     // 1) Base balance from wallets
     const walletsBase = propWallets.reduce((s, w) => s + Number(w.initial_balance || 0), 0);
+    const investmentWalletSet = new Set(
+      propWallets.filter(w => (w as any).asset_type === 'investment').map(w => w.id),
+    );
 
     // 2) Compute running balance up to rangeStart from all real transactions
     // Uses projected logic: ignores is_paid, assumes everything scheduled happened
@@ -96,7 +99,11 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     const rangeYm = format(rangeStart, 'yyyy-MM');
 
       allExpenses.forEach(e => {
-      if (e.type === 'transfer') return;
+      if (e.type === 'transfer') {
+        const delta = transferCashDelta(e as any, investmentWalletSet);
+        if (delta && e.date < rangeStartStr) preRangeBalance += delta;
+        return;
+      }
       const dStr = e.date;
 
       if (e.credit_card_id && e.type === 'expense') {
@@ -141,8 +148,16 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
     // 3) Build in-range transactions by date (all, regardless of is_paid)
     const txByDate: Record<string, { income: number; expense: number }> = {};
       allExpenses.forEach(e => {
-      if (e.type === 'transfer') return;
       const dStr = e.date;
+      if (e.type === 'transfer') {
+        const delta = transferCashDelta(e as any, investmentWalletSet);
+        if (delta && dStr >= rangeStartStr && dStr <= rangeEndStr) {
+          if (!txByDate[dStr]) txByDate[dStr] = { income: 0, expense: 0 };
+          if (delta > 0) txByDate[dStr].income += delta;
+          else txByDate[dStr].expense += -delta;
+        }
+        return;
+      }
       if (dStr >= rangeStartStr && dStr <= rangeEndStr) {
         if (!txByDate[dStr]) txByDate[dStr] = { income: 0, expense: 0 };
         if (e.type === 'income') txByDate[dStr].income += Number(e.value);

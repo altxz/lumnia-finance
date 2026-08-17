@@ -724,7 +724,7 @@ async function computeMonthProjection(sb, month) {
     sb.from("expenses").select(EXPENSE_COLS).is("credit_card_id", null).not("invoice_month", "is", null).like("description", "Pagamento fatura%"),
     sb.from("expenses").select(EXPENSE_COLS).lt("date", startDate).is("credit_card_id", null),
     sb.from("credit_cards").select("*"),
-    sb.from("wallets").select("id, name, initial_balance"),
+    sb.from("wallets").select("id, name, initial_balance, asset_type"),
     sb.from("recurring_exceptions").select("template_id, occurrence_date"),
     sb.from("expenses").select(EXPENSE_COLS).eq("is_recurring", true)
   ]);
@@ -752,6 +752,7 @@ async function computeMonthProjection(sb, month) {
     month: monthIndex,
     exceptionSet
   });
+  const investmentWalletIds = wallets.filter((w) => w.asset_type === "investment").map((w) => w.id);
   const walletSum = wallets.reduce((s, w) => s + Number(w.initial_balance ?? 0), 0);
   const selectedMonthIndex = year * 12 + monthIndex;
   const byMonth = /* @__PURE__ */ new Map();
@@ -779,7 +780,7 @@ async function computeMonthProjection(sb, month) {
       month: index % 12,
       exceptionSet
     });
-    historicalFlow += computeMonthCashFlow(effective, isCCPayment);
+    historicalFlow += computeMonthCashFlow(effective, isCCPayment, investmentWalletIds);
   });
   const invoiceCashEvents = buildInvoiceCashEvents(creditCards, invoiceExpenses);
   const invoicesBefore = sumInvoiceCashEventsBeforeDate(invoiceCashEvents, startDate);
@@ -795,7 +796,8 @@ async function computeMonthProjection(sb, month) {
     invoiceTotal: invoiceTotals.total,
     invoiceByCategory: invoiceTotals.byCategory,
     startingBalance,
-    isCreditCardPayment: isCCPayment
+    isCreditCardPayment: isCCPayment,
+    investmentWalletIds
   });
   const daily = buildDailyBalanceMap({
     monthExpenses: effectiveMonthExpenses,
@@ -804,7 +806,8 @@ async function computeMonthProjection(sb, month) {
     startDate,
     endDate,
     startingBalance,
-    isCreditCardPayment: isCCPayment
+    isCreditCardPayment: isCCPayment,
+    investmentWalletIds
   });
   return {
     month,
