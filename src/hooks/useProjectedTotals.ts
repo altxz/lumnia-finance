@@ -27,7 +27,8 @@ export interface ProjectedTotals {
   monthExpenses: Expense[];
   invoiceExpenses: Expense[];
   creditCards: CreditCardType[];
-  wallets: { id: string; name: string; initial_balance: number }[];
+  wallets: { id: string; name: string; initial_balance: number; asset_type?: string }[];
+  investmentWalletIds: string[];
   effectiveHistoricalExpenses: Expense[];
 }
 
@@ -55,7 +56,7 @@ async function fetchProjectedData(userId: string, startDate: string, endDate: st
     supabase.from('expenses').select('id, description, date, value, type, credit_card_id, is_paid, final_category, is_recurring, wallet_id, destination_wallet_id, invoice_month, payment_method, project_id')
       .eq('user_id', userId).lt('date', startDate).is('credit_card_id', null),
     supabase.from('credit_cards').select('*').eq('user_id', userId),
-    supabase.from('wallets').select('id, name, initial_balance').eq('user_id', userId).order('name'),
+    supabase.from('wallets').select('id, name, initial_balance, asset_type').eq('user_id', userId).order('name'),
     (supabase.from as any)('recurring_exceptions').select('template_id, occurrence_date').eq('user_id', userId),
     supabase.from('expenses').select('*').eq('user_id', userId).eq('is_recurring', true),
   ]);
@@ -72,7 +73,7 @@ async function fetchProjectedData(userId: string, startDate: string, endDate: st
     invoiceExpenses: mergedInvoiceExpenses,
     historicalExpenses: (historicalData || []) as any[],
     creditCards: (cardsData || []) as CreditCardType[],
-    wallets: (walletsData || []).map((w: any) => ({ id: w.id, name: w.name, initial_balance: w.initial_balance ?? 0 })),
+    wallets: (walletsData || []).map((w: any) => ({ id: w.id, name: w.name, initial_balance: w.initial_balance ?? 0, asset_type: w.asset_type })),
     recurringExceptions: ((exceptionsData as any[]) || []) as { template_id: string; occurrence_date: string }[],
     recurringTemplates: (recurringTemplatesData || []) as Expense[],
   };
@@ -129,6 +130,10 @@ export function useProjectedTotals(): ProjectedTotals {
   const exceptionSet = useMemo(
     () => new Set(recurringExceptions.map(e => buildRecurringExceptionSignature(e.template_id, e.occurrence_date))),
     [recurringExceptions]
+  );
+  const investmentWalletIds = useMemo(
+    () => wallets.filter(w => w.asset_type === 'investment').map(w => w.id),
+    [wallets],
   );
   const isCCPayment = useCallback((e: any) => isTrackedCreditCardPayment(e, creditCards), [creditCards]);
 
@@ -191,7 +196,7 @@ export function useProjectedTotals(): ProjectedTotals {
           exceptionSet,
         });
         effectiveHistorical.push(...(effective as Expense[]));
-        historicalFlow += computeMonthCashFlow(effective as any[], isCCPayment);
+        historicalFlow += computeMonthCashFlow(effective as any[], isCCPayment, investmentWalletIds);
       });
 
     const invoiceCashEvents = buildInvoiceCashEvents(creditCards, invoiceExpenses);
@@ -203,7 +208,7 @@ export function useProjectedTotals(): ProjectedTotals {
       pendingInStartingBalance: pendingAmount,
       effectiveHistoricalExpenses: effectiveHistorical,
     };
-  }, [wallets, historicalExpenses, recurringTemplates, creditCards, invoiceExpenses, startDate, selectedMonth, selectedYear, exceptionSet, isCCPayment]);
+  }, [wallets, historicalExpenses, recurringTemplates, creditCards, invoiceExpenses, startDate, selectedMonth, selectedYear, exceptionSet, isCCPayment, investmentWalletIds]);
 
 
   // Invoice totals
@@ -224,8 +229,9 @@ export function useProjectedTotals(): ProjectedTotals {
       invoiceByCategory: invoiceTotals.byCategory,
       startingBalance,
       isCreditCardPayment: isCCPayment,
+      investmentWalletIds,
     });
-  }, [effectiveMonthExpenses, invoiceTotals, startingBalance, isCCPayment]);
+  }, [effectiveMonthExpenses, invoiceTotals, startingBalance, isCCPayment, investmentWalletIds]);
 
   const refetch = () => {
     queryClient.invalidateQueries({ queryKey });
@@ -241,6 +247,7 @@ export function useProjectedTotals(): ProjectedTotals {
     invoiceExpenses,
     creditCards,
     wallets,
+    investmentWalletIds,
     effectiveHistoricalExpenses,
   };
 }
