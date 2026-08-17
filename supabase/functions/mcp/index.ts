@@ -58,35 +58,62 @@ function toolError(prefix, error) {
 }
 
 // src/lib/mcp/tools/list-transactions.ts
+var dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+var transactionSchema = z.object({
+  id: z.string(),
+  date: dateSchema,
+  description: z.string(),
+  value: z.number(),
+  type: z.string(),
+  final_category: z.string().nullable(),
+  is_paid: z.boolean(),
+  payment_method: z.string().nullable(),
+  credit_card_id: z.string().nullable(),
+  wallet_id: z.string().nullable(),
+  invoice_month: z.string().nullable(),
+  is_recurring: z.boolean()
+});
 var list_transactions_default = defineTool({
   name: "list_transactions",
   title: "Listar transa\xE7\xF5es",
   description: "Lista despesas e receitas do usu\xE1rio autenticado em um intervalo de datas (padr\xE3o: \xFAltimos 30 dias). Retorna id, data, descri\xE7\xE3o, valor, tipo, categoria, se est\xE1 paga e forma de pagamento.",
   inputSchema: {
-    start_date: z.string().optional().describe("Data inicial ISO (YYYY-MM-DD). Padr\xE3o: 30 dias atr\xE1s."),
-    end_date: z.string().optional().describe("Data final ISO (YYYY-MM-DD). Padr\xE3o: hoje."),
+    start_date: dateSchema.optional().describe("Data inicial ISO (YYYY-MM-DD). Padr\xE3o: 30 dias atr\xE1s."),
+    end_date: dateSchema.optional().describe("Data final ISO (YYYY-MM-DD). Padr\xE3o: hoje."),
     type: z.enum(["income", "expense", "transfer"]).optional().describe("Filtrar por tipo."),
     limit: z.number().int().min(1).max(500).optional().describe("M\xE1ximo de registros (padr\xE3o 100).")
+  },
+  outputSchema: {
+    transactions: z.array(transactionSchema),
+    start_date: dateSchema,
+    end_date: dateSchema
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ start_date, end_date, type, limit }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
     }
-    const today = /* @__PURE__ */ new Date();
-    const end = end_date ?? today.toISOString().slice(0, 10);
-    const start = start_date ?? new Date(today.getTime() - 30 * 864e5).toISOString().slice(0, 10);
-    const sb = supabaseForUser(ctx);
-    let q = sb.from("expenses").select(
-      "id,date,description,value,type,final_category,is_paid,payment_method,credit_card_id,wallet_id,invoice_month,is_recurring"
-    ).gte("date", start).lte("date", end).order("date", { ascending: false }).limit(limit ?? 100);
-    if (type) q = q.eq("type", type);
-    const { data, error } = await q;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { transactions: data ?? [], start_date: start, end_date: end }
-    };
+    try {
+      const today = /* @__PURE__ */ new Date();
+      const end = end_date ?? today.toISOString().slice(0, 10);
+      const start = start_date ?? new Date(today.getTime() - 30 * 864e5).toISOString().slice(0, 10);
+      const userId = ctx.getUserId();
+      if (!userId) return toolError("Falha de autentica\xE7\xE3o", "Usu\xE1rio OAuth sem identificador");
+      const sb = supabaseForUser(ctx);
+      let q = sb.from("expenses").select(
+        "id,date,description,value,type,final_category,is_paid,payment_method,credit_card_id,wallet_id,invoice_month,is_recurring"
+      ).eq("user_id", userId).gte("date", start).lte("date", end).order("date", { ascending: false }).limit(limit ?? 100);
+      if (type) q = q.eq("type", type);
+      const { data, error } = await q;
+      if (error) return toolError("Falha ao consultar as transa\xE7\xF5es", error);
+      const payload = { transactions: data ?? [], start_date: start, end_date: end };
+      return {
+        content: [{ type: "text", text: JSON.stringify(payload) }],
+        structuredContent: payload
+      };
+    } catch (error) {
+      return toolError("Erro de conex\xE3o ao consultar as transa\xE7\xF5es", error);
+    }
   }
 });
 
@@ -923,7 +950,7 @@ var projectRef = "nvskvrgsfzaynotdgzoy";
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.2.0",
+  version: "0.2.1",
   instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal). Use search para localizar transa\xE7\xF5es por texto ou m\xEAs (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lan\xE7ar despesas ou receitas, delete_transaction para excluir uma transa\xE7\xE3o (confirme com o usu\xE1rio antes, \xE9 irrevers\xEDvel), month_transactions para ver, dia a dia, todas as transa\xE7\xF5es de um m\xEAs com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usu\xE1rio.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
