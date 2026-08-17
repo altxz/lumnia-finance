@@ -65,3 +65,10 @@ export function buildVirtualCardOccurrence(template: Expense, dueLabel: string):
     is_paid: false,
   };
 }
+
+/** Devolve o id do template original a partir de uma ocorrência virtual. */
+export function resolveVirtualCardTemplateId(id?: string | null) {
+  if (!isVirtualCardRecurring(id)) return null;
+  const rest = id!.slice(VIRTUAL_CARD_RECURRING_PREFIX.length);
+  return rest.slice(0, rest.lastIndexOf(':')) || null;
+}
