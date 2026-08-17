@@ -57,6 +57,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (settingsRowLoading || !user) return;
+    if (dirty) return; // não sobrescreve edições ainda não salvas
     if (settingsRow) {
       setSettings({ ...DEFAULT_SETTINGS, ...settingsRow });
     } else {
