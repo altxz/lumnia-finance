@@ -33,10 +33,6 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
   const { user } = useAuth();
   const { startDate: ctxStart, endDate: ctxEnd, selectedMonth, selectedYear } = useSelectedDate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
-  const [allExpenses, setAllExpenses] = useState<any[]>([]);
-  const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
-  const [unpaidCreditExpenses, setUnpaidCreditExpenses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const today = startOfDay(new Date());
 
@@ -60,29 +56,33 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
   const rangeStartStr = format(rangeStart, 'yyyy-MM-dd');
   const rangeEndStr = format(rangeEnd, 'yyyy-MM-dd');
 
-  useEffect(() => {
-    if (!user) return;
-    setLoading(true);
-
-    const fetchAll = async () => {
+  // Dados em cache (chave estável por utilizador): o gráfico não depende do
+  // mês selecionado, logo trocar de mês não refaz as consultas.
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['expenses', 'cash-flow-chart', user?.id],
+    queryFn: async () => {
       const [expensesRes, recurringRes, unpaidRes] = await Promise.all([
         // Spec: ALL expenses ordered by date, with invoice_month included
         supabase.from('expenses').select('value, type, credit_card_id, date, invoice_month, is_paid, is_recurring, description')
-          .eq('user_id', user.id).order('date'),
+          .eq('user_id', user!.id).order('date'),
         supabase.from('expenses').select('description, value, type, date, credit_card_id, invoice_month')
-          .eq('user_id', user.id).eq('is_recurring', true),
+          .eq('user_id', user!.id).eq('is_recurring', true),
         supabase.from('expenses').select('value, credit_card_id, invoice_month')
-          .eq('user_id', user.id).eq('is_paid', false).not('credit_card_id', 'is', null),
+          .eq('user_id', user!.id).eq('is_paid', false).not('credit_card_id', 'is', null),
       ]);
+      return {
+        allExpenses: expensesRes.data || [],
+        recurringExpenses: recurringRes.data || [],
+        unpaidCreditExpenses: unpaidRes.data || [],
+      };
+    },
+    enabled: !!user,
+    staleTime: FINANCIAL_STALE_TIME,
+  });
 
-      setAllExpenses(expensesRes.data || []);
-      setRecurringExpenses(recurringRes.data || []);
-      setUnpaidCreditExpenses(unpaidRes.data || []);
-      setLoading(false);
-    };
-
-    fetchAll();
-  }, [user]);
+  const allExpenses = data?.allExpenses ?? [];
+  const recurringExpenses = data?.recurringExpenses ?? [];
+  const unpaidCreditExpenses = data?.unpaidCreditExpenses ?? [];
 
   const chartData = useMemo(() => {
     // 1) Base balance from wallets
