@@ -159,7 +159,10 @@ export function InvestmentFormModal({ open, onOpenChange, wallets, investment, o
           .insert({ ...payload, user_id: user!.id, principal: value, investment_wallet_id: invWallet!.id })
           .select('id')
           .single();
-        if (iErr) throw iErr;
+        if (iErr) {
+          await supabase.from('wallets').delete().eq('id', invWallet!.id);
+          throw iErr;
+        }
 
         // 3. Transferência da carteira para o investimento
         const { data: exp, error: eErr } = await supabase
@@ -180,7 +183,12 @@ export function InvestmentFormModal({ open, onOpenChange, wallets, investment, o
           })
           .select('id')
           .single();
-        if (eErr) throw eErr;
+        if (eErr) {
+          // Não deixa investimento órfão sem a transferência que tira o dinheiro da carteira.
+          await supabase.from('investments').delete().eq('id', inv!.id);
+          await supabase.from('wallets').delete().eq('id', invWallet!.id);
+          throw eErr;
+        }
 
         // 4. Movimentação
         const { error: mErr } = await supabase.from('investment_movements').insert({
@@ -191,7 +199,12 @@ export function InvestmentFormModal({ open, onOpenChange, wallets, investment, o
           date: startDate,
           expense_id: exp!.id,
         });
-        if (mErr) throw mErr;
+        if (mErr) {
+          await supabase.from('expenses').delete().eq('id', exp!.id);
+          await supabase.from('investments').delete().eq('id', inv!.id);
+          await supabase.from('wallets').delete().eq('id', invWallet!.id);
+          throw mErr;
+        }
 
         toast({ title: 'Investimento criado!', description: 'O valor foi transferido da sua carteira.' });
       }
