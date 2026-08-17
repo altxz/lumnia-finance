@@ -433,6 +433,16 @@ export default function WalletPage() {
   // ─── Computed data ───
   const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValueBRL(w, rates), 0), [wallets, rates]);
 
+  const liquidBalance = useMemo(
+    () => wallets.filter(w => w.asset_type !== 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
+    [wallets, rates],
+  );
+
+  const investedBalance = useMemo(
+    () => wallets.filter(w => w.asset_type === 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
+    [wallets, rates],
+  );
+
   const byType = useMemo(() => {
     const map: Record<string, number> = {};
     wallets.forEach(w => { map[w.asset_type] = (map[w.asset_type] || 0) + getWalletValueBRL(w, rates); });
