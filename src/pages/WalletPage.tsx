@@ -503,6 +503,16 @@ export default function WalletPage() {
                       <p className="text-[10px] sm:text-xs opacity-60 mt-0.5">{wallets.length} ativo{wallets.length !== 1 ? 's' : ''}</p>
                     </div>
                   </CardContent>
+                  <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-primary-foreground/10 p-3">
+                      <p className="text-[10px] sm:text-xs font-medium opacity-80">Saldo atual</p>
+                      <p className="text-base sm:text-xl font-bold tracking-tight">{formatCurrency(liquidBalance)}</p>
+                    </div>
+                    <div className="rounded-xl bg-primary-foreground/10 p-3">
+                      <p className="text-[10px] sm:text-xs font-medium opacity-80">Saldo em investimentos</p>
+                      <p className="text-base sm:text-xl font-bold tracking-tight">{formatCurrency(investedBalance)}</p>
+                    </div>
+                  </CardContent>
                 </Card>
 
                 {/* Charts */}
