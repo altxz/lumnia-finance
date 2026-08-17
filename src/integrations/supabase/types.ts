@@ -399,6 +399,126 @@ export type Database = {
         }
         Relationships: []
       }
+      investment_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          expense_id: string | null
+          id: string
+          investment_id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date?: string
+          expense_id?: string | null
+          id?: string
+          investment_id: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          expense_id?: string | null
+          id?: string
+          investment_id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_movements_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investment_movements_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investments: {
+        Row: {
+          created_at: string
+          id: string
+          index_value: number
+          investment_type: string
+          investment_wallet_id: string | null
+          maturity_date: string | null
+          name: string
+          notes: string | null
+          principal: number
+          rate_kind: string
+          rate_value: number
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+          wallet_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          index_value?: number
+          investment_type?: string
+          investment_wallet_id?: string | null
+          maturity_date?: string | null
+          name: string
+          notes?: string | null
+          principal?: number
+          rate_kind?: string
+          rate_value?: number
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          wallet_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          index_value?: number
+          investment_type?: string
+          investment_wallet_id?: string | null
+          maturity_date?: string | null
+          name?: string
+          notes?: string | null
+          principal?: number
+          rate_kind?: string
+          rate_value?: number
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investments_investment_wallet_id_fkey"
+            columns: ["investment_wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investments_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       net_worth_history: {
         Row: {
           created_at: string
