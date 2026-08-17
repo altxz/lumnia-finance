@@ -49,21 +49,27 @@ export default function SettingsPage() {
   const [rules, setRules] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalExpenses: 0, mostActiveMonth: '', favoriteCategory: '' });
 
+  // A linha `user_settings` vem do cache partilhado (mesma chave do cabeçalho,
+  // do tour e do contexto de módulos) — sem requisição duplicada.
+  const { data: settingsRow, isLoading: settingsRowLoading } = useUserSettingsRow();
+  const { invalidate: invalidateSettings } = useInvalidateUserSettings();
+
+  useEffect(() => {
+    if (settingsRowLoading || !user) return;
+    if (settingsRow) {
+      setSettings({ ...DEFAULT_SETTINGS, ...settingsRow });
+    } else {
+      // Cria o registo padrão na primeira visita
+      supabase
+        .from('user_settings')
+        .insert({ user_id: user.id, full_name: user.user_metadata?.full_name || '' })
+        .then(() => invalidateSettings());
+    }
+  }, [settingsRow, settingsRowLoading, user, invalidateSettings]);
+
   const fetchSettings = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-
-    // Fetch or create settings
-    const { data } = await supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle();
-    if (data) {
-      setSettings({ ...DEFAULT_SETTINGS, ...data });
-    } else {
-      // Create default settings
-      await supabase.from('user_settings').insert({
-        user_id: user.id,
-        full_name: user.user_metadata?.full_name || '',
-      });
-    }
 
     // Fetch rules
     const { data: rulesData } = await supabase.from('automation_rules').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
