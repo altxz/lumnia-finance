@@ -64,6 +64,7 @@ const App = () => (
                       <Route path="/orcamento" element={<BudgetPage />} />
                       <Route path="/projetos" element={<ProjectsPage />} />
                       <Route path="/simulador-dividas" element={<DebtSimulatorPage />} />
+                      <Route path="/investimentos" element={<InvestmentsPage />} />
                       
                       <Route path="/novidades" element={<ChangelogPage />} />
                       <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
