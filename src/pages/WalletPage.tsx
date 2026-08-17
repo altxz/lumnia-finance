@@ -29,7 +29,7 @@ interface WalletRow {
   id: string;
   user_id: string;
   name: string;
-  asset_type: 'checking_account' | 'savings' | 'stocks' | 'crypto';
+  asset_type: 'checking_account' | 'savings' | 'stocks' | 'crypto' | 'investment';
   currency: string;
   current_balance: number;
   initial_balance: number;
@@ -44,6 +44,7 @@ const ASSET_LABELS: Record<string, string> = {
   savings: 'Poupança',
   stocks: 'Investimentos',
   crypto: 'Criptomoedas',
+  investment: 'Aplicações / Caixinhas',
 };
 
 const ASSET_ICONS: Record<string, typeof Wallet> = {
@@ -51,6 +52,7 @@ const ASSET_ICONS: Record<string, typeof Wallet> = {
   savings: Landmark,
   stocks: TrendingUp,
   crypto: Bitcoin,
+  investment: PiggyBank,
 };
 
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--ai))', '#F59E0B'];
