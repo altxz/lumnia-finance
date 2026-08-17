@@ -92,14 +92,23 @@ export default function OAuthConsentPage() {
 
   async function decide(approve: boolean) {
     setBusy(true);
-    const { data, error } = approve
-      ? await authOauth().approveAuthorization(authorizationId)
-      : await authOauth().denyAuthorization(authorizationId);
+    const call = () =>
+      approve
+        ? authOauth().approveAuthorization(authorizationId)
+        : authOauth().denyAuthorization(authorizationId);
+    let { data, error } = await call();
+    if (error && /expired|invalid jwt|invalid claims|signature/i.test(error.message)) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      if (refreshed.session) {
+        ({ data, error } = await call());
+      }
+    }
     if (error) {
       setBusy(false);
       setError(error.message);
       return;
     }
+
     const target = data?.redirect_url ?? data?.redirect_to;
     if (!target) {
       setBusy(false);
