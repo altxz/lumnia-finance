@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { z } from "zod";
 import { supabaseForUser, toolError } from "../supabaseClient";
 
@@ -36,7 +37,7 @@ export default defineTool({
     end_date: dateSchema,
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ start_date, end_date, type, limit }, ctx) => {
+  handler: safeHandler("list_transactions", async ({ start_date, end_date, type, limit }, ctx) => {
     const invocation = {
       tool: "list_transactions",
       arguments: { start_date, end_date, type, limit },
@@ -114,5 +115,5 @@ export default defineTool({
       console.error("[mcp.tool.exception]", error);
       return toolError("Erro de conexão ao consultar as transações", error);
     }
-  },
+  }),
 });

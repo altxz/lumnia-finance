@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { z } from "zod";
 import { supabaseForUser } from "../supabaseClient";
 
@@ -17,7 +18,7 @@ export default defineTool({
     notes: z.string().optional(),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-  handler: async (input, ctx) => {
+  handler: safeHandler("create_transaction", async (input, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Não autenticado." }], isError: true };
     }
@@ -42,5 +43,5 @@ export default defineTool({
       content: [{ type: "text", text: `Criada: ${data.id}` }],
       structuredContent: { transaction: data },
     };
-  },
+  }),
 });

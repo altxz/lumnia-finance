@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { safeHandler } from "../safeHandler";
 import { z } from "zod";
 import { supabaseForUser } from "../supabaseClient";
 
@@ -19,7 +20,7 @@ export default defineTool({
       .describe("Termo de busca: descrição, categoria ou mês no formato YYYY-MM."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ query }, ctx) => {
+  handler: safeHandler("search", async ({ query }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Não autenticado." }], isError: true };
     }
@@ -58,5 +59,5 @@ export default defineTool({
       content: [{ type: "text", text: JSON.stringify({ results }) }],
       structuredContent: { results },
     };
-  },
+  }),
 });
