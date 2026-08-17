@@ -35,6 +35,7 @@ export function useInvestments() {
     queryClient.invalidateQueries({ queryKey: ['investments', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['wallets', user?.id] });
     queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
+    queryClient.invalidateQueries({ queryKey: ['expenses'] });
   };
 
   return { ...query, invalidate };
