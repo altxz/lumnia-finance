@@ -14,6 +14,8 @@ import { Camera, User, Calendar, BarChart3, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/constants';
+import { useQuery } from '@tanstack/react-query';
+import { STATIC_STALE_TIME } from '@/lib/queryClient';
 
 interface ProfileSectionProps {
   settings: any;
@@ -27,6 +29,18 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Carteiras para escolher a carteira padrão (transações sem carteira definida)
+  const { data: walletOptions = [] } = useQuery({
+    queryKey: ['wallet-options', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('wallets')
+        .select('id, name, asset_type').eq('user_id', user!.id).order('name');
+      return (data || []).filter((w: any) => w.asset_type !== 'crypto') as { id: string; name: string }[];
+    },
+    enabled: !!user,
+    staleTime: STATIC_STALE_TIME,
+  });
 
   useEffect(() => {
     let active = true;
@@ -130,6 +144,16 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
                   <SelectItem value="EUR">€ Euro</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Carteira Padrão</Label>
+              <Select value={settings.default_wallet_id || ''} onValueChange={v => onChange('default_wallet_id', v)}>
+                <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecionar carteira" /></SelectTrigger>
+                <SelectContent>
+                  {walletOptions.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Transações sem carteira definida entram nesta conta.</p>
             </div>
           </div>
           <div className="space-y-2">
