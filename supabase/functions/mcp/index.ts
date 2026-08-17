@@ -129,8 +129,13 @@ var list_transactions_default = defineTool({
     }
     try {
       const today = /* @__PURE__ */ new Date();
-      const end = end_date ?? today.toISOString().slice(0, 10);
-      const start = start_date ?? new Date(today.getTime() - 30 * 864e5).toISOString().slice(0, 10);
+      const clampDate = (value) => {
+        const [y, m, d] = value.split("-").map(Number);
+        const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+        return `${y}-${String(m).padStart(2, "0")}-${String(Math.min(d, lastDay)).padStart(2, "0")}`;
+      };
+      const end = end_date ? clampDate(end_date) : today.toISOString().slice(0, 10);
+      const start = start_date ? clampDate(start_date) : new Date(today.getTime() - 30 * 864e5).toISOString().slice(0, 10);
       const userId = ctx.getUserId();
       if (!userId) {
         console.warn("[mcp.tool.response]", JSON.stringify({ tool: invocation.tool, ok: false, reason: "missing_user_id" }));
