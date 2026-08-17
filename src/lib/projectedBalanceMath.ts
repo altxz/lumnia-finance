@@ -20,7 +20,26 @@ interface BuildDailyBalanceMapParams {
   isCreditCardPayment: (expense: Expense) => boolean;
 }
 
+/**
+ * Fluxo de caixa (receitas - despesas em débito) de um conjunto de lançamentos
+ * já "efetivos" (reais + recorrências projetadas) de um mês. Faturas de cartão
+ * entram separadamente pelos eventos de caixa da fatura.
+ */
+export function computeMonthCashFlow(
+  effectiveMonthExpenses: { type: string; value: number; credit_card_id?: string | null }[],
+  isCreditCardPayment: (expense: any) => boolean,
+) {
+  return effectiveMonthExpenses.reduce((sum, expense) => {
+    if (expense.type === 'transfer') return sum;
+    if (expense.type === 'income') return sum + Number(expense.value);
+    if (expense.credit_card_id) return sum;
+    if (isCreditCardPayment(expense)) return sum;
+    return sum - Number(expense.value);
+  }, 0);
+}
+
 export function buildDailyBalanceMap({
+
   monthExpenses,
   invoiceExpenses,
   creditCards,
