@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileSection } from '@/components/settings/ProfileSection';
 import { AiSection } from '@/components/settings/AiSection';
