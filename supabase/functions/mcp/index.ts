@@ -149,11 +149,8 @@ var list_transactions_default = defineTool({
     type: z.enum(["income", "expense", "transfer"]).optional().describe("Filtrar por tipo."),
     limit: z.number().int().min(1).max(500).optional().describe("M\xE1ximo de registros (padr\xE3o 100).")
   },
-  outputSchema: {
-    transactions: z.array(transactionSchema),
-    start_date: dateSchema,
-    end_date: dateSchema
-  },
+  // Sem outputSchema: uma falha de consulta devolve apenas texto de erro e o
+  // cliente MCP continua com a ferramenta habilitada.
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("list_transactions", async ({ start_date, end_date, type, limit }, ctx) => {
     const invocation = {
