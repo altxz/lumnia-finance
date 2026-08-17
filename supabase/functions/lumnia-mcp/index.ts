@@ -373,18 +373,27 @@ function getInvoicePeriod(card, targetYear, targetMonth) {
 }
 function matchExpensesToInvoice(expenses, period) {
   const dueLabel = period.monthLabel;
+  const resolveLabel = (e) => {
+    if (e.invoice_month) return e.invoice_month;
+    const paymentDate = getPaymentDate(e.date, { closingDay: period.closingDay, dueDay: period.dueDay });
+    return toMonthLabel(paymentDate.getFullYear(), paymentDate.getMonth());
+  };
   const matched = expenses.filter((e) => {
     if (e.credit_card_id !== period.cardId) return false;
     if (e.type === "income" || e.type === "transfer") return false;
     if (isCreditCardPaymentLabel(e.description)) return false;
-    if (e.invoice_month) {
-      return e.invoice_month === dueLabel;
-    }
-    const paymentDate = getPaymentDate(e.date, { closingDay: period.closingDay, dueDay: period.dueDay });
-    const paymentLabel = toMonthLabel(paymentDate.getFullYear(), paymentDate.getMonth());
-    return paymentLabel === dueLabel;
+    return resolveLabel(e) === dueLabel;
   });
-  const total = matched.reduce((s, e) => s + e.value, 0);
+  const virtualOccurrences = getCardRecurringTemplates(expenses, period.cardId).filter((template) => {
+    const baseLabel = resolveLabel(template);
+    if (!shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel)) return false;
+    const alreadyExists = matched.some(
+      (e) => normalizeDesc(e.description) === normalizeDesc(template.description)
+    );
+    return !alreadyExists;
+  }).map((template) => buildVirtualCardOccurrence(template, dueLabel));
+  const transactions = [...matched, ...virtualOccurrences];
+  const total = transactions.reduce((s, e) => s + e.value, 0);
   const normalizedCardName = period.cardName.trim().toLowerCase();
   const isPaid = expenses.some((e) => {
     if (e.type !== "expense" || !e.invoice_month || e.invoice_month !== dueLabel || !e.wallet_id) return false;

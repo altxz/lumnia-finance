@@ -158,24 +158,38 @@ export function matchExpensesToInvoice(
   // monthLabel is now the due month label (e.g. "2026-04")
   const dueLabel = period.monthLabel;
 
+  const resolveLabel = (e: Expense) => {
+    if (e.invoice_month) return e.invoice_month;
+    const paymentDate = getPaymentDate(e.date, { closingDay: period.closingDay, dueDay: period.dueDay });
+    return toMonthLabel(paymentDate.getFullYear(), paymentDate.getMonth());
+  };
+
   const matched = expenses.filter(e => {
     if (e.credit_card_id !== period.cardId) return false;
     if (e.type === 'income' || e.type === 'transfer') return false;
     // Exclude payment records — they are not actual invoice purchases
     if (isCreditCardPaymentLabel(e.description)) return false;
 
-    // Parcelas/projeções persistidas: fonte primária
-    if (e.invoice_month) {
-      return e.invoice_month === dueLabel;
-    }
-
-    // Fallback: calcula mês efetivo de saída do caixa pela regra do cartão
-    const paymentDate = getPaymentDate(e.date, { closingDay: period.closingDay, dueDay: period.dueDay });
-    const paymentLabel = toMonthLabel(paymentDate.getFullYear(), paymentDate.getMonth());
-    return paymentLabel === dueLabel;
+    return resolveLabel(e) === dueLabel;
   });
 
-  const total = matched.reduce((s, e) => s + e.value, 0);
+  // Recorrências fixas do cartão vivem como um único registro (template).
+  // Projetamos ocorrências virtuais nas faturas futuras, evitando duplicar
+  // quando já existe um lançamento real com a mesma descrição naquela fatura.
+  const virtualOccurrences = getCardRecurringTemplates(expenses, period.cardId)
+    .filter(template => {
+      const baseLabel = resolveLabel(template);
+      if (!shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel)) return false;
+
+      const alreadyExists = matched.some(
+        e => normalizeDesc(e.description) === normalizeDesc(template.description),
+      );
+      return !alreadyExists;
+    })
+    .map(template => buildVirtualCardOccurrence(template, dueLabel));
+
+  const transactions = [...matched, ...virtualOccurrences];
+  const total = transactions.reduce((s, e) => s + e.value, 0);
 
   // Check if there's a payment record for this specific card + invoice
   const normalizedCardName = period.cardName.trim().toLowerCase();
