@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Calculator, Activity, Sparkles, Tag } from 'lucide-react';
+import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Calculator, Activity, Sparkles, Tag, TrendingUp } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 
 import { useUserSettings } from '@/contexts/UserSettingsContext';
