@@ -7,6 +7,8 @@ import listWallets from "./tools/list-wallets";
 import listCreditCards from "./tools/list-credit-cards";
 import monthTransactions from "./tools/month-transactions";
 import deleteTransaction from "./tools/delete-transaction";
+import searchTool from "./tools/search";
+import fetchTool from "./tools/fetch";
 
 const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
