@@ -45,7 +45,16 @@ export function supabaseForUser(ctx: ToolContext) {
 
 /** Normaliza erros de rede/configuração em mensagens úteis para o cliente MCP. */
 export function toolError(prefix: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
+  let message: string;
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (error && typeof error === "object") {
+    const e = error as Record<string, unknown>;
+    message =
+      [e.message, e.details, e.hint, e.code].filter(Boolean).join(" | ") || JSON.stringify(error);
+  } else {
+    message = String(error);
+  }
   return {
     content: [{ type: "text" as const, text: `${prefix}: ${message}` }],
     isError: true,

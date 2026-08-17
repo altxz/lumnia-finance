@@ -66,7 +66,15 @@ function supabaseForUser(ctx) {
   });
 }
 function toolError(prefix, error) {
-  const message = error instanceof Error ? error.message : String(error);
+  let message;
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (error && typeof error === "object") {
+    const e = error;
+    message = [e.message, e.details, e.hint, e.code].filter(Boolean).join(" | ") || JSON.stringify(error);
+  } else {
+    message = String(error);
+  }
   return {
     content: [{ type: "text", text: `${prefix}: ${message}` }],
     isError: true
