@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/Logo';
+import { lovable } from '@/integrations/lovable/index';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
