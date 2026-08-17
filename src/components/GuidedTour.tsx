@@ -4,6 +4,7 @@ import { Wallet, CreditCard, Receipt, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 import { useNavigate } from 'react-router-dom';
 
 interface TourStep {
