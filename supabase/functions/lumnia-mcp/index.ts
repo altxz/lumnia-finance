@@ -662,44 +662,8 @@ function computeInvoiceTotalsForCashWindow({
 }
 
 // src/lib/recurringProjection.ts
-function normalizeRecurringDescription(description) {
-  return (description ?? "").trim().toLowerCase();
-}
-function buildRecurringLooseSignature(type, description) {
-  return `${type}|${normalizeRecurringDescription(description)}`;
-}
-function buildRecurringSignature(type, value, description) {
-  return `${type}|${normalizeRecurringDescription(description)}|${Number(value).toFixed(2)}`;
-}
 function buildRecurringExceptionSignature(templateId, occurrenceDate) {
   return `${templateId}|${occurrenceDate}`;
-}
-function shouldProjectRecurringInMonth(templateDate, selectedYear, selectedMonth, frequency) {
-  const template = /* @__PURE__ */ new Date(`${templateDate}T12:00:00`);
-  const templateMonthIndex = template.getFullYear() * 12 + template.getMonth();
-  const selectedMonthIndex = selectedYear * 12 + selectedMonth;
-  if (selectedMonthIndex < templateMonthIndex) return false;
-  if (frequency === "yearly") {
-    return template.getMonth() === selectedMonth;
-  }
-  return true;
-}
-function buildMaterializedRecurringSignature(item) {
-  return [
-    item.type,
-    normalizeRecurringDescription(item.description),
-    item.final_category ?? "",
-    item.wallet_id ?? "",
-    item.credit_card_id ?? "",
-    item.payment_method ?? "",
-    item.project_id ?? ""
-  ].join("|");
-}
-function hideMaterializedRecurringTemplates(items) {
-  const materializedSignatures = new Set(
-    items.filter((item) => !item.is_recurring).map((item) => buildMaterializedRecurringSignature(item))
-  );
-  return items.filter((item) => !(item.is_recurring && materializedSignatures.has(buildMaterializedRecurringSignature(item))));
 }
 
 // src/lib/mcp/monthProjection.ts
@@ -742,39 +706,48 @@ async function computeMonthProjection(sb, month) {
   const exceptionSet = new Set(
     (exceptionsRes.data ?? []).map((e) => buildRecurringExceptionSignature(e.template_id, e.occurrence_date))
   );
-  const visibleMonthExpenses = hideMaterializedRecurringTemplates(monthRes.data ?? []);
-  const visibleHistorical = hideMaterializedRecurringTemplates(historicalRes.data ?? []);
+  const monthRows = monthRes.data ?? [];
+  const historicalRows = historicalRes.data ?? [];
   const isCCPayment = (e) => isTrackedCreditCardPayment(e, creditCards);
-  const realSignatures = new Set(
-    visibleMonthExpenses.map((e) => buildRecurringSignature(e.type, e.value, e.description))
-  );
-  const realLooseSignatures = new Set(
-    visibleMonthExpenses.map((e) => buildRecurringLooseSignature(e.type, e.description))
-  );
-  const materializedSignatures = new Set(
-    visibleMonthExpenses.filter((e) => !e.is_recurring).map((e) => buildMaterializedRecurringSignature(e))
-  );
-  const realIds = new Set(visibleMonthExpenses.map((e) => e.id));
-  const virtualEntries = [];
-  recurringTemplates.forEach((r) => {
-    if (realIds.has(r.id)) return;
-    if (!shouldProjectRecurringInMonth(r.date, year, monthIndex, r.frequency)) return;
-    if (r.type === "transfer" || r.credit_card_id) return;
-    if (realSignatures.has(buildRecurringSignature(r.type, r.value, r.description)) || realLooseSignatures.has(buildRecurringLooseSignature(r.type, r.description)) || materializedSignatures.has(buildMaterializedRecurringSignature(r)))
-      return;
-    const origDay = (/* @__PURE__ */ new Date(`${r.date}T12:00:00`)).getDate();
-    const occurrenceDate = `${month}-${pad(Math.min(origDay, daysInMonth))}`;
-    if (exceptionSet.has(buildRecurringExceptionSignature(r.id, occurrenceDate))) return;
-    virtualEntries.push({ ...r, date: occurrenceDate, is_paid: false, is_projected: true });
+  const effectiveMonthExpenses = buildEffectiveMonthExpenses({
+    monthExpenses: monthRows,
+    recurringTemplates,
+    year,
+    month: monthIndex,
+    exceptionSet
   });
-  const effectiveMonthExpenses = [...visibleMonthExpenses, ...virtualEntries];
   const walletSum = wallets.reduce((s, w) => s + Number(w.initial_balance ?? 0), 0);
-  const historicalNonTransfers = visibleHistorical.filter((e) => e.type !== "transfer");
-  const historicalIncome = historicalNonTransfers.filter((e) => e.type === "income").reduce((s, e) => s + Number(e.value), 0);
-  const historicalDebit = historicalNonTransfers.filter((e) => e.type !== "income" && !isCCPayment(e)).reduce((s, e) => s + Number(e.value), 0);
+  const selectedMonthIndex = year * 12 + monthIndex;
+  const byMonth = /* @__PURE__ */ new Map();
+  historicalRows.forEach((e) => {
+    if (!e.date) return;
+    const [y, m] = e.date.split("-").map(Number);
+    const index = y * 12 + (m - 1);
+    if (index >= selectedMonthIndex) return;
+    if (!byMonth.has(index)) byMonth.set(index, []);
+    byMonth.get(index).push(e);
+  });
+  const monthIndexes = new Set(byMonth.keys());
+  recurringTemplates.forEach((r) => {
+    if (r.type === "transfer" || r.credit_card_id || !r.date) return;
+    const d = /* @__PURE__ */ new Date(`${r.date}T12:00:00`);
+    const start = d.getFullYear() * 12 + d.getMonth();
+    for (let m = start; m < selectedMonthIndex; m++) monthIndexes.add(m);
+  });
+  let historicalFlow = 0;
+  Array.from(monthIndexes).sort((a, b) => a - b).forEach((index) => {
+    const effective = buildEffectiveMonthExpenses({
+      monthExpenses: byMonth.get(index) ?? [],
+      recurringTemplates,
+      year: Math.floor(index / 12),
+      month: index % 12,
+      exceptionSet
+    });
+    historicalFlow += computeMonthCashFlow(effective, isCCPayment);
+  });
   const invoiceCashEvents = buildInvoiceCashEvents(creditCards, invoiceExpenses);
   const invoicesBefore = sumInvoiceCashEventsBeforeDate(invoiceCashEvents, startDate);
-  const startingBalance = walletSum + historicalIncome - historicalDebit - invoicesBefore;
+  const startingBalance = walletSum + historicalFlow - invoicesBefore;
   const invoiceTotals = computeInvoiceTotalsForCashWindow({
     creditCards,
     expenses: invoiceExpenses.length > 0 ? invoiceExpenses : effectiveMonthExpenses,
