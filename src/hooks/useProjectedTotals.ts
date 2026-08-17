@@ -131,110 +131,73 @@ export function useProjectedTotals(): ProjectedTotals {
   );
   const isCCPayment = useCallback((e: any) => isTrackedCreditCardPayment(e, creditCards), [creditCards]);
 
-  // Virtual recurring
-  const effectiveMonthExpenses = useMemo(() => {
-    // Build two sets: exact signature (type|desc|value) and loose signature (type|desc)
-    // A real entry suppresses a recurring template if EITHER matches.
-    // This prevents duplication when user changes value during "mark as paid".
-    const realSignatures = new Set(
-      visibleMonthExpenses.map(e => buildRecurringSignature(e.type, e.value, e.description))
-    );
-    const realLooseSignatures = new Set(visibleMonthExpenses.map(e => buildRecurringLooseSignature(e.type, e.description)));
-    const materializedRecurringSignatures = new Set(
-      visibleMonthExpenses
-        .filter(e => !e.is_recurring)
-        .map(e => buildMaterializedRecurringSignature(e))
-    );
-    const realIds = new Set(visibleMonthExpenses.map(e => e.id));
-    const virtualEntries: Expense[] = [];
+  // Virtual recurring (mês selecionado) — mesmo motor usado nos meses passados
+  const effectiveMonthExpenses = useMemo(
+    () =>
+      buildEffectiveMonthExpenses({
+        monthExpenses: monthExpenses as any[],
+        recurringTemplates: recurringTemplates as any[],
+        year: selectedYear,
+        month: selectedMonth,
+        exceptionSet,
+      }) as Expense[],
+    [monthExpenses, recurringTemplates, selectedMonth, selectedYear, exceptionSet],
+  );
 
-    recurringTemplates.forEach(r => {
-      if (realIds.has(r.id)) return;
-      // Respect frequency + don't backfill into months before the template start
-      if (!shouldProjectRecurringInMonth(r.date, selectedYear, selectedMonth, r.frequency)) return;
-      const sig = buildRecurringSignature(r.type, r.value, r.description);
-      const looseSig = buildRecurringLooseSignature(r.type, r.description);
-      if (
-        realSignatures.has(sig) ||
-        realLooseSignatures.has(looseSig) ||
-        materializedRecurringSignatures.has(buildMaterializedRecurringSignature(r))
-      ) return;
-      if (r.type === 'transfer' || r.credit_card_id) return;
-      const occurrenceDate = (() => {
-        const origDay = new Date(r.date + 'T12:00:00').getDate();
-        const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-        const day = Math.min(origDay, daysInMonth);
-        return `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      })();
-      // Skip if user explicitly excluded this single occurrence
-      if (exceptionSet.has(buildRecurringExceptionSignature(r.id, occurrenceDate))) return;
-      virtualEntries.push({
-        ...r,
-        date: occurrenceDate,
-        is_paid: false,
-      });
-    });
-
-    return [...visibleMonthExpenses, ...virtualEntries];
-  }, [visibleMonthExpenses, recurringTemplates, selectedMonth, selectedYear, exceptionSet]);
-
-  // Starting balance
+  // Starting balance: acumula mês a mês o MESMO fluxo que gera o saldo previsto,
+  // garantindo que "Saldo Anterior" do mês N = "Saldo Previsto" do mês N-1.
   const { startingBalance, pendingInStartingBalance } = useMemo(() => {
     const walletSum = wallets.reduce((s, w) => s + w.initial_balance, 0);
 
-    const nonTransfers = visibleHistoricalExpenses.filter((e: any) => e.type !== 'transfer');
-    const historicalIncome = nonTransfers.filter((e: any) => e.type === 'income').reduce((s: number, e: any) => s + e.value, 0);
-    const historicalDebit = nonTransfers.filter((e: any) => e.type !== 'income' && !isCCPayment(e)).reduce((s: number, e: any) => s + e.value, 0);
-
+    const nonTransfers = historicalExpenses.filter((e: any) => e.type !== 'transfer');
     const pendingExpenses = nonTransfers.filter((e: any) => e.type !== 'income' && !e.is_paid);
     const pendingIncome = nonTransfers.filter((e: any) => e.type === 'income' && !e.is_paid);
     const pendingAmount = pendingExpenses.reduce((s: number, e: any) => s + e.value, 0)
       - pendingIncome.reduce((s: number, e: any) => s + e.value, 0);
 
-    let virtualRecurringBalance = 0;
-    const realByMonthSig = new Set<string>();
-    const realByMonthLoose = new Set<string>();
-    const addSigs = (e: any) => {
-      if (e.type === 'transfer') return;
-      const ym = e.date ? e.date.substring(0, 7) : '';
-      if (ym) {
-        realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
-        realByMonthLoose.add(`${ym}|${buildRecurringLooseSignature(e.type, e.description)}`);
-      }
-    };
-    visibleHistoricalExpenses.forEach(addSigs);
-    visibleMonthExpenses.forEach(addSigs);
+    const selectedMonthIndex = selectedYear * 12 + selectedMonth;
 
-    const selectedMonthStart = selectedYear * 12 + selectedMonth;
-
-    recurringTemplates.forEach(r => {
-      if (r.type === 'transfer' || r.credit_card_id) return;
-      const rDate = new Date(r.date + 'T12:00:00');
-      const rStartMonth = rDate.getFullYear() * 12 + rDate.getMonth();
-      const origDay = rDate.getDate();
-      for (let m = rStartMonth; m < selectedMonthStart; m++) {
-        const yr = Math.floor(m / 12);
-        const mo = m % 12;
-        // Respect frequency (yearly only matches its own month)
-        if (!shouldProjectRecurringInMonth(r.date, yr, mo, r.frequency)) continue;
-        const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
-        const sig = buildMonthRecurringSignature(monthKey, r.type, r.value, r.description);
-        const looseSig = `${monthKey}|${buildRecurringLooseSignature(r.type, r.description)}`;
-        if (realByMonthSig.has(sig) || realByMonthLoose.has(looseSig)) continue;
-        const daysInMonth = new Date(yr, mo + 1, 0).getDate();
-        const occDate = `${monthKey}-${String(Math.min(origDay, daysInMonth)).padStart(2, '0')}`;
-        if (exceptionSet.has(buildRecurringExceptionSignature(r.id, occDate))) continue;
-        if (r.type === 'income') virtualRecurringBalance += Number(r.value);
-        else virtualRecurringBalance -= Number(r.value);
-      }
+    // Agrupa o histórico real por mês (a deduplicação de recorrências deve ser
+    // feita dentro de cada mês, nunca no histórico inteiro).
+    const byMonth = new Map<number, any[]>();
+    historicalExpenses.forEach((e: any) => {
+      if (!e.date) return;
+      const [year, month] = e.date.split('-').map(Number);
+      const index = year * 12 + (month - 1);
+      if (index >= selectedMonthIndex) return;
+      if (!byMonth.has(index)) byMonth.set(index, []);
+      byMonth.get(index)!.push(e);
     });
+
+    const monthIndexes = new Set<number>(byMonth.keys());
+    recurringTemplates.forEach((r: any) => {
+      if (r.type === 'transfer' || r.credit_card_id || !r.date) return;
+      const date = new Date(`${r.date}T12:00:00`);
+      const start = date.getFullYear() * 12 + date.getMonth();
+      for (let m = start; m < selectedMonthIndex; m++) monthIndexes.add(m);
+    });
+
+    let historicalFlow = 0;
+    Array.from(monthIndexes)
+      .sort((a, b) => a - b)
+      .forEach(index => {
+        const effective = buildEffectiveMonthExpenses({
+          monthExpenses: (byMonth.get(index) ?? []) as any[],
+          recurringTemplates: recurringTemplates as any[],
+          year: Math.floor(index / 12),
+          month: index % 12,
+          exceptionSet,
+        });
+        historicalFlow += computeMonthCashFlow(effective as any[], isCCPayment);
+      });
 
     const invoiceCashEvents = buildInvoiceCashEvents(creditCards, invoiceExpenses);
     const ccInvoiceTotal = sumInvoiceCashEventsBeforeDate(invoiceCashEvents, startDate);
 
-    const balance = walletSum + historicalIncome - historicalDebit + virtualRecurringBalance - ccInvoiceTotal;
+    const balance = walletSum + historicalFlow - ccInvoiceTotal;
     return { startingBalance: balance, pendingInStartingBalance: pendingAmount };
-  }, [wallets, visibleHistoricalExpenses, visibleMonthExpenses, recurringTemplates, creditCards, invoiceExpenses, startDate, exceptionSet, isCCPayment]);
+  }, [wallets, historicalExpenses, recurringTemplates, creditCards, invoiceExpenses, startDate, selectedMonth, selectedYear, exceptionSet, isCCPayment]);
+
 
   // Invoice totals
   const invoiceTotals = useMemo(() => {
