@@ -48,6 +48,7 @@ export function AppSidebar() {
     { title: 'Orçamento', url: '/orcamento', icon: PiggyBank, visible: settings.enable_budget_module, badge: false },
     { title: 'Projetos', url: '/projetos', icon: FolderKanban, visible: settings.enable_projects_module, badge: false },
     { title: 'Minha Carteira', url: '/wallet', icon: Wallet, visible: true, badge: false },
+    { title: 'Investimentos', url: '/investimentos', icon: TrendingUp, visible: true, badge: false },
     { title: 'Simulador Dívidas', url: '/simulador-dividas', icon: Calculator, visible: true, badge: false },
     
     { title: 'Novidades', url: '/novidades', icon: Sparkles, visible: true, badge: hasUnread },
