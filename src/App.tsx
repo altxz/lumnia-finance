@@ -24,10 +24,8 @@ const AnalyticsPage = lazyWithRetry(() => import("./pages/AnalyticsPage"));
 const WalletPage = lazyWithRetry(() => import("./pages/WalletPage"));
 const BudgetPage = lazyWithRetry(() => import("./pages/BudgetPage"));
 const ProjectsPage = lazyWithRetry(() => import("./pages/ProjectsPage"));
-const DebtSimulatorPage = lazyWithRetry(() => import("./pages/DebtSimulatorPage"));
 const InvestmentsPage = lazyWithRetry(() => import("./pages/InvestmentsPage"));
 
-const ChangelogPage = lazyWithRetry(() => import("./pages/ChangelogPage"));
 const OAuthConsentPage = lazyWithRetry(() => import("./pages/OAuthConsentPage"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
@@ -63,10 +61,8 @@ const App = () => (
                       <Route path="/wallet" element={<WalletPage />} />
                       <Route path="/orcamento" element={<BudgetPage />} />
                       <Route path="/projetos" element={<ProjectsPage />} />
-                      <Route path="/simulador-dividas" element={<DebtSimulatorPage />} />
                       <Route path="/investimentos" element={<InvestmentsPage />} />
                       
-                      <Route path="/novidades" element={<ChangelogPage />} />
                       <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
