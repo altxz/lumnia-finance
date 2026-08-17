@@ -3,10 +3,10 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.2";
 
 // src/lib/mcp/tools/list-transactions.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z } from "npm:zod@^4.4.3";
 
 // src/lib/mcp/supabaseClient.ts
@@ -91,7 +91,7 @@ var list_transactions_default = defineTool({
 });
 
 // src/lib/mcp/tools/create-transaction.ts
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z2 } from "npm:zod@^4.4.3";
 var create_transaction_default = defineTool2({
   name: "create_transaction",
@@ -132,7 +132,7 @@ var create_transaction_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-categories.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
 var list_categories_default = defineTool3({
   name: "list_categories",
   title: "Listar categorias",
@@ -154,7 +154,7 @@ var list_categories_default = defineTool3({
 });
 
 // src/lib/mcp/tools/month-summary.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z3 } from "npm:zod@^4.4.3";
 var month_summary_default = defineTool4({
   name: "month_summary",
@@ -195,7 +195,7 @@ var month_summary_default = defineTool4({
 });
 
 // src/lib/mcp/tools/list-wallets.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
 var list_wallets_default = defineTool5({
   name: "list_wallets",
   title: "Listar carteiras",
@@ -217,7 +217,7 @@ var list_wallets_default = defineTool5({
 });
 
 // src/lib/mcp/tools/list-credit-cards.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
 var list_credit_cards_default = defineTool6({
   name: "list_credit_cards",
   title: "Listar cart\xF5es de cr\xE9dito",
@@ -239,7 +239,7 @@ var list_credit_cards_default = defineTool6({
 });
 
 // src/lib/mcp/tools/month-transactions.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z4 } from "npm:zod@^4.4.3";
 
 // src/lib/creditCardPayments.ts
@@ -778,7 +778,7 @@ var month_transactions_default = defineTool7({
 });
 
 // src/lib/mcp/tools/delete-transaction.ts
-import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z5 } from "npm:zod@^4.4.3";
 var delete_transaction_default = defineTool8({
   name: "delete_transaction",
@@ -855,5 +855,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.23.0/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.2/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
