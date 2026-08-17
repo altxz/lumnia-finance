@@ -196,5 +196,5 @@ export function useBudgetData() {
     setSavingId(null);
   }, [user, budgets, categories, monthKey, toast]);
 
-  return { tree, totalAllocated, totalSpent, totalIncome, loading, savingId, saveBudget, budgets, spentMap };
+  return { tree, totalAllocated, totalSpent, totalIncome, loading: loading || categoriesLoading, savingId, saveBudget, budgets, spentMap };
 }
