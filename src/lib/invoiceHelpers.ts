@@ -219,7 +219,7 @@ export function matchExpensesToInvoice(
     status = 'closed';
   }
 
-  return { ...period, status, transactions: matched, total };
+  return { ...period, status, transactions, total };
 }
 
 /**

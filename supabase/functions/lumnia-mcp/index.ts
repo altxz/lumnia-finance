@@ -441,7 +441,7 @@ function matchExpensesToInvoice(expenses, period) {
   if (total <= 0 && status === "overdue") {
     status = "closed";
   }
-  return { ...period, status, transactions: matched, total };
+  return { ...period, status, transactions, total };
 }
 
 // src/lib/invoiceCashFlow.ts
