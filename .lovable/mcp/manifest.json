@@ -1,7 +1,7 @@
 {
   "version": 1,
   "sdk_version": "0.26.2",
-  "path": "/functions/v1/mcp",
+  "path": "/functions/v1/lumnia-mcp",
   "auth": {
     "type": "oauth",
     "issuer": "https://nvskvrgsfzaynotdgzoy.supabase.co/auth/v1",
@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "lumnia-mcp",
-      "version": "0.2.4",
+      "version": "0.3.0",
       "title": "Lumnia"
     },
     "tools": [
