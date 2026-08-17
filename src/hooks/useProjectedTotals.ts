@@ -28,6 +28,7 @@ export interface ProjectedTotals {
   invoiceExpenses: Expense[];
   creditCards: CreditCardType[];
   wallets: { id: string; name: string; initial_balance: number }[];
+  effectiveHistoricalExpenses: Expense[];
 }
 
 async function fetchProjectedData(userId: string, startDate: string, endDate: string) {
@@ -51,7 +52,7 @@ async function fetchProjectedData(userId: string, startDate: string, endDate: st
     // Also fetch invoice payment records (no credit_card_id but have invoice_month and start with "Pagamento fatura")
     supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
       .is('credit_card_id', null).not('invoice_month', 'is', null).like('description', 'Pagamento fatura%'),
-    supabase.from('expenses').select('id, description, date, value, type, credit_card_id, is_paid, final_category, is_recurring, wallet_id, payment_method, project_id')
+    supabase.from('expenses').select('id, description, date, value, type, credit_card_id, is_paid, final_category, is_recurring, wallet_id, destination_wallet_id, invoice_month, payment_method, project_id')
       .eq('user_id', userId).lt('date', startDate).is('credit_card_id', null),
     supabase.from('credit_cards').select('*').eq('user_id', userId),
     supabase.from('wallets').select('id, name, initial_balance').eq('user_id', userId).order('name'),
@@ -146,7 +147,7 @@ export function useProjectedTotals(): ProjectedTotals {
 
   // Starting balance: acumula mês a mês o MESMO fluxo que gera o saldo previsto,
   // garantindo que "Saldo Anterior" do mês N = "Saldo Previsto" do mês N-1.
-  const { startingBalance, pendingInStartingBalance } = useMemo(() => {
+  const { startingBalance, pendingInStartingBalance, effectiveHistoricalExpenses } = useMemo(() => {
     const walletSum = wallets.reduce((s, w) => s + w.initial_balance, 0);
 
     const nonTransfers = historicalExpenses.filter((e: any) => e.type !== 'transfer');
@@ -178,6 +179,7 @@ export function useProjectedTotals(): ProjectedTotals {
     });
 
     let historicalFlow = 0;
+    const effectiveHistorical: Expense[] = [];
     Array.from(monthIndexes)
       .sort((a, b) => a - b)
       .forEach(index => {
@@ -188,6 +190,7 @@ export function useProjectedTotals(): ProjectedTotals {
           month: index % 12,
           exceptionSet,
         });
+        effectiveHistorical.push(...(effective as Expense[]));
         historicalFlow += computeMonthCashFlow(effective as any[], isCCPayment);
       });
 
@@ -195,7 +198,11 @@ export function useProjectedTotals(): ProjectedTotals {
     const ccInvoiceTotal = sumInvoiceCashEventsBeforeDate(invoiceCashEvents, startDate);
 
     const balance = walletSum + historicalFlow - ccInvoiceTotal;
-    return { startingBalance: balance, pendingInStartingBalance: pendingAmount };
+    return {
+      startingBalance: balance,
+      pendingInStartingBalance: pendingAmount,
+      effectiveHistoricalExpenses: effectiveHistorical,
+    };
   }, [wallets, historicalExpenses, recurringTemplates, creditCards, invoiceExpenses, startDate, selectedMonth, selectedYear, exceptionSet, isCCPayment]);
 
 
@@ -234,5 +241,6 @@ export function useProjectedTotals(): ProjectedTotals {
     invoiceExpenses,
     creditCards,
     wallets,
+    effectiveHistoricalExpenses,
   };
 }
