@@ -1,0 +1,2 @@
+ALTER TABLE public.expenses DROP CONSTRAINT IF EXISTS expenses_type_check;
+ALTER TABLE public.expenses ADD CONSTRAINT expenses_type_check CHECK (type = ANY (ARRAY['income'::text, 'expense'::text, 'transfer'::text]));
