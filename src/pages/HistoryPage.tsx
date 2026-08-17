@@ -164,6 +164,7 @@ export default function HistoryPage() {
                   filters={{ category: filters.category }}
                   onFilterChange={() => {}}
                   wallets={projected.wallets}
+                  investmentWalletIds={projected.investmentWalletIds}
                   startingMonthBalance={projected.startingBalance}
                   creditCards={projected.creditCards}
                   currentMonth={startDate}
