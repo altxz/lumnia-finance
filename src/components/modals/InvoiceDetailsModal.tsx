@@ -192,7 +192,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
 
           <InvoiceTransactionList
             transactions={activeInvoice.transactions}
-            onEdit={setEditingExpense}
+            onEdit={(tx) => setEditingExpense(resolveRealExpense(tx))}
             onDelete={onDeleteClick}
           />
         </div>
