@@ -136,13 +136,17 @@ export default function WalletPage() {
     setWalletsLoading(true);
     const [{ data: walletsData }, { data: txData }] = await Promise.all([
       supabase.from('wallets').select('*').eq('user_id', user.id).order('asset_type'),
-      supabase.from('expenses').select('wallet_id, value, type').eq('user_id', user.id).not('wallet_id', 'is', null),
+      supabase.from('expenses').select('wallet_id, destination_wallet_id, value, type').eq('user_id', user.id)
+        .or('wallet_id.not.is.null,destination_wallet_id.not.is.null'),
     ]);
     walletBalanceMap.clear();
+    const addToWallet = (id: string, delta: number) => {
+      walletBalanceMap.set(id, (walletBalanceMap.get(id) || 0) + delta);
+    };
     (txData || []).forEach((tx: any) => {
-      if (!tx.wallet_id) return;
-      const prev = walletBalanceMap.get(tx.wallet_id) || 0;
-      walletBalanceMap.set(tx.wallet_id, prev + (tx.type === 'income' ? tx.value : -tx.value));
+      if (tx.wallet_id) addToWallet(tx.wallet_id, tx.type === 'income' ? tx.value : -tx.value);
+      // Transferências creditam a conta de destino (ex: aporte em investimento)
+      if (tx.type === 'transfer' && tx.destination_wallet_id) addToWallet(tx.destination_wallet_id, tx.value);
     });
     setWallets((walletsData || []) as WalletRow[]);
     setWalletsLoading(false);
