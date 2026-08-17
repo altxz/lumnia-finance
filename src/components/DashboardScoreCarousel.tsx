@@ -156,28 +156,34 @@ export function DashboardScoreCarousel({
 }: DashboardScoreCarouselProps) {
   const { user } = useAuth();
   const [slide, setSlide] = useState(0);
-  const [debtCount, setDebtCount] = useState(0);
-  const [prevExpense, setPrevExpense] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  // Fetch extra data for score calculation
-  useEffect(() => {
-    if (!user) return;
-    const now = new Date();
-    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  // Dados extra do score vêm do cache (revalidados em segundo plano).
+  const { data: scoreExtras } = useQuery({
+    queryKey: ['dashboard-score-extras', user?.id],
+    queryFn: async () => {
+      const now = new Date();
+      const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-    Promise.all([
-      supabase.from('debts').select('id').eq('user_id', user.id).eq('type', 'i_owe'),
-      supabase.from('expenses').select('value, type').eq('user_id', user.id)
-        .gte('date', prevMonthStr).lt('date', currentMonth),
-    ]).then(([{ data: debts }, { data: prevExp }]) => {
-      setDebtCount((debts || []).length);
+      const [{ data: debts }, { data: prevExp }] = await Promise.all([
+        supabase.from('debts').select('id').eq('user_id', user!.id).eq('type', 'i_owe'),
+        supabase.from('expenses').select('value, type').eq('user_id', user!.id)
+          .gte('date', prevMonthStr).lt('date', currentMonth),
+      ]);
       const filtered = (prevExp || []).filter((e: any) => e.type !== 'transfer' && e.type !== 'income');
-      setPrevExpense(filtered.reduce((s: number, e: any) => s + e.value, 0));
-    });
-  }, [user]);
+      return {
+        debtCount: (debts || []).length,
+        prevExpense: filtered.reduce((s: number, e: any) => s + e.value, 0),
+      };
+    },
+    enabled: !!user,
+    staleTime: FINANCIAL_STALE_TIME,
+  });
+
+  const debtCount = scoreExtras?.debtCount ?? 0;
+  const prevExpense = scoreExtras?.prevExpense ?? 0;
 
   const ccUsageRatio = useMemo(() => {
     const totalLimit = creditCards.reduce((s, c) => s + (c.limit_amount || 0), 0);
