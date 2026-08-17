@@ -9,8 +9,8 @@ const AddExpenseModal = lazyNamedWithRetry(() => import('@/components/AddExpense
 import { NotificationBell } from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { supabase } from '@/lib/supabase';
 import { getAvatarSignedUrl } from '@/lib/avatarUrl';
+import { useUserSettingsRow } from '@/hooks/useUserSettingsRow';
 
 import { useTheme } from 'next-themes';
 
@@ -21,21 +21,16 @@ export function DashboardHeader() {
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Avatar vem da linha `user_settings` em cache — sem requisição própria.
+  const { data: settingsRow } = useUserSettingsRow();
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
-    supabase
-      .from('user_settings')
-      .select('avatar_url, full_name')
-      .eq('user_id', user.id)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        const signed = await getAvatarSignedUrl(data?.avatar_url);
-        if (active) setAvatarUrl(signed);
-      });
+    getAvatarSignedUrl(settingsRow?.avatar_url).then(signed => {
+      if (active) setAvatarUrl(signed);
+    });
     return () => { active = false; };
-  }, [user]);
+  }, [settingsRow?.avatar_url]);
 
 
   const initials = displayName.charAt(0).toUpperCase();

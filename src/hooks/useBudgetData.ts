@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { useToast } from '@/hooks/use-toast';
+import { useCategories } from '@/hooks/useStaticData';
 
 export interface DbCategory {
   id: string;
@@ -39,7 +40,12 @@ export function useBudgetData() {
   const { user } = useAuth();
   const { startDate, endDate, monthKey } = useSelectedDate();
   const { toast } = useToast();
-  const [categories, setCategories] = useState<DbCategory[]>([]);
+  // Categorias vêm do cache partilhado (30 min) — sem busca própria.
+  const { data: allCategories = [], isLoading: categoriesLoading } = useCategories();
+  const categories = useMemo(
+    () => allCategories.filter(c => c.active !== false) as unknown as DbCategory[],
+    [allCategories],
+  );
   const [budgets, setBudgets] = useState<BudgetRow[]>([]);
   const [prevBudgets, setPrevBudgets] = useState<BudgetRow[]>([]);
   const [spentMap, setSpentMap] = useState<Record<string, number>>({});
@@ -58,8 +64,7 @@ export function useBudgetData() {
     if (!user) return;
     setLoading(true);
 
-    const [{ data: catData }, { data: budgetData }, { data: recurringData }, { data: prevBudgetData }, { data: expenseData }] = await Promise.all([
-      supabase.from('categories').select('*').eq('user_id', user.id).eq('active', true).order('sort_order'),
+    const [{ data: budgetData }, { data: recurringData }, { data: prevBudgetData }, { data: expenseData }] = await Promise.all([
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('month_year', startDate),
       // Fetch all recurring budgets to propagate to months without explicit budgets
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('is_recurring', true).lt('month_year', startDate).order('month_year', { ascending: false }),
@@ -67,7 +72,7 @@ export function useBudgetData() {
       supabase.from('expenses').select('final_category, value, type, credit_card_id, invoice_month, date, description').eq('user_id', user.id).gte('date', startDate).lt('date', endDate),
     ]);
 
-    setCategories((catData || []) as DbCategory[]);
+    
     
     // Merge: for categories without a budget this month, use the latest recurring budget
     const currentBudgets = (budgetData || []) as BudgetRow[];
@@ -191,5 +196,5 @@ export function useBudgetData() {
     setSavingId(null);
   }, [user, budgets, categories, monthKey, toast]);
 
-  return { tree, totalAllocated, totalSpent, totalIncome, loading, savingId, saveBudget, budgets, spentMap };
+  return { tree, totalAllocated, totalSpent, totalIncome, loading: loading || categoriesLoading, savingId, saveBudget, budgets, spentMap };
 }

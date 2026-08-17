@@ -1,11 +1,10 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LayoutGrid } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/constants';
 import type { CategoryStats } from '@/hooks/useAnalyticsData';
+import { useCategories } from '@/hooks/useStaticData';
 import { InfoPopover } from '@/components/ui/info-popover';
 
 interface ExpenseTreemapProps {
@@ -39,15 +38,9 @@ const CustomContent = (props: any) => {
 };
 
 export function ExpenseTreemap({ categoryStats }: ExpenseTreemapProps) {
-  const { user } = useAuth();
-  const [categoryColors, setCategoryColors] = useState<CategoryColor[]>([]);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from('categories').select('name, color').eq('user_id', user.id).then(({ data }) => {
-      setCategoryColors((data || []) as CategoryColor[]);
-    });
-  }, [user]);
+  // Cores vêm do cache partilhado de categorias (30 min).
+  const { data: categories = [] } = useCategories();
+  const categoryColors: CategoryColor[] = categories.map(c => ({ name: c.name, color: c.color }));
 
   const treemapData = useMemo(() => {
     const colorMap: Record<string, string> = {};
