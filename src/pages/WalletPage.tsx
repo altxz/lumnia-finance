@@ -118,7 +118,7 @@ export default function WalletPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { data: rates } = useExchangeRates();
-  const { startDate, endDate } = useSelectedDate();
+  const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
   const projected = useProjectedTotals();
   const { data: settingsRow } = useUserSettingsRow();
   const { patch: patchSettings } = useInvalidateUserSettings();
@@ -358,7 +358,7 @@ export default function WalletPage() {
     setCardModalOpen(false);
     setRecalcDialogOpen(false);
     fetchCards();
-    fetchInvoiceTransactions();
+    projected.refetch();
     setCardSaving(false);
   };
 
