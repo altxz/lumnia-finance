@@ -58,8 +58,7 @@ export function useBudgetData() {
     if (!user) return;
     setLoading(true);
 
-    const [{ data: catData }, { data: budgetData }, { data: recurringData }, { data: prevBudgetData }, { data: expenseData }] = await Promise.all([
-      supabase.from('categories').select('*').eq('user_id', user.id).eq('active', true).order('sort_order'),
+    const [{ data: budgetData }, { data: recurringData }, { data: prevBudgetData }, { data: expenseData }] = await Promise.all([
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('month_year', startDate),
       // Fetch all recurring budgets to propagate to months without explicit budgets
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('is_recurring', true).lt('month_year', startDate).order('month_year', { ascending: false }),
@@ -67,7 +66,7 @@ export function useBudgetData() {
       supabase.from('expenses').select('final_category, value, type, credit_card_id, invoice_month, date, description').eq('user_id', user.id).gte('date', startDate).lt('date', endDate),
     ]);
 
-    setCategories((catData || []) as DbCategory[]);
+    
     
     // Merge: for categories without a budget this month, use the latest recurring budget
     const currentBudgets = (budgetData || []) as BudgetRow[];
