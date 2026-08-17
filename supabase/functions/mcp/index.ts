@@ -742,7 +742,6 @@ var month_summary_default = defineTool4({
         projected_end_of_month_balance: totals.projectedBalance,
         end_of_month_balance_check: daily.balanceMap[endDate] ?? totals.projectedBalance,
         invoice_total: invoiceTotals.total,
-        by_category: totals.byCategory ?? {},
         largest_category: totals.largestCategory,
         realized_income: paidIncome,
         realized_expense: paidExpense,
