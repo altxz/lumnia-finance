@@ -6,9 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { buildInvoiceCashEvents, sumInvoiceCashEventsBeforeDate } from '@/lib/invoiceCashFlow';
 import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
-import { computeProjectedMonthResult } from '@/lib/projectedBalanceMath';
+import { computeMonthCashFlow, computeProjectedMonthResult } from '@/lib/projectedBalanceMath';
 import { computeInvoiceTotalsForCashWindow } from '@/lib/projectedInvoiceTotals';
-import { buildMaterializedRecurringSignature, buildMonthRecurringSignature, buildRecurringExceptionSignature, buildRecurringLooseSignature, buildRecurringSignature, hideMaterializedRecurringTemplates, shouldProjectRecurringInMonth } from '@/lib/recurringProjection';
+import { buildEffectiveMonthExpenses, buildRecurringExceptionSignature, hideMaterializedRecurringTemplates } from '@/lib/recurringProjection';
 import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
 
