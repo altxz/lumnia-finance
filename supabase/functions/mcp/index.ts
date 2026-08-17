@@ -684,11 +684,118 @@ function hideMaterializedRecurringTemplates(items) {
   return items.filter((item) => !(item.is_recurring && materializedSignatures.has(buildMaterializedRecurringSignature(item))));
 }
 
-// src/lib/mcp/tools/month-transactions.ts
+// src/lib/mcp/monthProjection.ts
 var EXPENSE_COLS = "id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at";
 function pad(value) {
   return String(value).padStart(2, "0");
 }
+function daysInMonthOf(month) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return new Date(year, monthNumber, 0).getDate();
+}
+async function computeMonthProjection(sb, month) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const monthIndex = monthNumber - 1;
+  const daysInMonth = daysInMonthOf(month);
+  const startDate = `${month}-01`;
+  const endDate = `${month}-${pad(daysInMonth)}`;
+  const endExclusive = `${monthNumber === 12 ? year + 1 : year}-${pad(monthNumber === 12 ? 1 : monthNumber + 1)}-01`;
+  const [monthRes, ccRes, invoicePaymentsRes, historicalRes, cardsRes, walletsRes, exceptionsRes, templatesRes] = await Promise.all([
+    sb.from("expenses").select(EXPENSE_COLS).gte("date", startDate).lt("date", endExclusive).order("date"),
+    sb.from("expenses").select(EXPENSE_COLS).not("credit_card_id", "is", null),
+    sb.from("expenses").select(EXPENSE_COLS).is("credit_card_id", null).not("invoice_month", "is", null).like("description", "Pagamento fatura%"),
+    sb.from("expenses").select(EXPENSE_COLS).lt("date", startDate).is("credit_card_id", null),
+    sb.from("credit_cards").select("*"),
+    sb.from("wallets").select("id, name, initial_balance"),
+    sb.from("recurring_exceptions").select("template_id, occurrence_date"),
+    sb.from("expenses").select(EXPENSE_COLS).eq("is_recurring", true)
+  ]);
+  const firstError = [monthRes, ccRes, invoicePaymentsRes, historicalRes, cardsRes, walletsRes, templatesRes].find(
+    (r) => r.error
+  );
+  if (firstError?.error) throw new Error(firstError.error.message ?? JSON.stringify(firstError.error));
+  const ccExpenses = ccRes.data ?? [];
+  const paymentExpenses = invoicePaymentsRes.data ?? [];
+  const ccIds = new Set(ccExpenses.map((e) => e.id));
+  const invoiceExpenses = [...ccExpenses, ...paymentExpenses.filter((p) => !ccIds.has(p.id))];
+  const creditCards = cardsRes.data ?? [];
+  const wallets = walletsRes.data ?? [];
+  const recurringTemplates = templatesRes.data ?? [];
+  const exceptionSet = new Set(
+    (exceptionsRes.data ?? []).map((e) => buildRecurringExceptionSignature(e.template_id, e.occurrence_date))
+  );
+  const visibleMonthExpenses = hideMaterializedRecurringTemplates(monthRes.data ?? []);
+  const visibleHistorical = hideMaterializedRecurringTemplates(historicalRes.data ?? []);
+  const isCCPayment = (e) => isTrackedCreditCardPayment(e, creditCards);
+  const realSignatures = new Set(
+    visibleMonthExpenses.map((e) => buildRecurringSignature(e.type, e.value, e.description))
+  );
+  const realLooseSignatures = new Set(
+    visibleMonthExpenses.map((e) => buildRecurringLooseSignature(e.type, e.description))
+  );
+  const materializedSignatures = new Set(
+    visibleMonthExpenses.filter((e) => !e.is_recurring).map((e) => buildMaterializedRecurringSignature(e))
+  );
+  const realIds = new Set(visibleMonthExpenses.map((e) => e.id));
+  const virtualEntries = [];
+  recurringTemplates.forEach((r) => {
+    if (realIds.has(r.id)) return;
+    if (!shouldProjectRecurringInMonth(r.date, year, monthIndex, r.frequency)) return;
+    if (r.type === "transfer" || r.credit_card_id) return;
+    if (realSignatures.has(buildRecurringSignature(r.type, r.value, r.description)) || realLooseSignatures.has(buildRecurringLooseSignature(r.type, r.description)) || materializedSignatures.has(buildMaterializedRecurringSignature(r)))
+      return;
+    const origDay = (/* @__PURE__ */ new Date(`${r.date}T12:00:00`)).getDate();
+    const occurrenceDate = `${month}-${pad(Math.min(origDay, daysInMonth))}`;
+    if (exceptionSet.has(buildRecurringExceptionSignature(r.id, occurrenceDate))) return;
+    virtualEntries.push({ ...r, date: occurrenceDate, is_paid: false, is_projected: true });
+  });
+  const effectiveMonthExpenses = [...visibleMonthExpenses, ...virtualEntries];
+  const walletSum = wallets.reduce((s, w) => s + Number(w.initial_balance ?? 0), 0);
+  const historicalNonTransfers = visibleHistorical.filter((e) => e.type !== "transfer");
+  const historicalIncome = historicalNonTransfers.filter((e) => e.type === "income").reduce((s, e) => s + Number(e.value), 0);
+  const historicalDebit = historicalNonTransfers.filter((e) => e.type !== "income" && !isCCPayment(e)).reduce((s, e) => s + Number(e.value), 0);
+  const invoiceCashEvents = buildInvoiceCashEvents(creditCards, invoiceExpenses);
+  const invoicesBefore = sumInvoiceCashEventsBeforeDate(invoiceCashEvents, startDate);
+  const startingBalance = walletSum + historicalIncome - historicalDebit - invoicesBefore;
+  const invoiceTotals = computeInvoiceTotalsForCashWindow({
+    creditCards,
+    expenses: invoiceExpenses.length > 0 ? invoiceExpenses : effectiveMonthExpenses,
+    startDate,
+    endDate: endExclusive
+  });
+  const totals = computeProjectedMonthResult({
+    effectiveMonthExpenses,
+    invoiceTotal: invoiceTotals.total,
+    invoiceByCategory: invoiceTotals.byCategory,
+    startingBalance,
+    isCreditCardPayment: isCCPayment
+  });
+  const daily = buildDailyBalanceMap({
+    monthExpenses: effectiveMonthExpenses,
+    invoiceExpenses,
+    creditCards,
+    startDate,
+    endDate,
+    startingBalance,
+    isCreditCardPayment: isCCPayment
+  });
+  return {
+    month,
+    year,
+    monthNumber,
+    daysInMonth,
+    startDate,
+    endDate,
+    startingBalance,
+    effectiveMonthExpenses,
+    invoiceTotals,
+    totals,
+    daily,
+    creditCards
+  };
+}
+
+// src/lib/mcp/tools/month-transactions.ts
 var month_transactions_default = defineTool7({
   name: "month_transactions",
   title: "Transa\xE7\xF5es do m\xEAs com saldo projetado",
@@ -704,151 +811,60 @@ var month_transactions_default = defineTool7({
     if (!/^\d{4}-\d{2}$/.test(month)) {
       return { content: [{ type: "text", text: "Formato inv\xE1lido. Use YYYY-MM." }], isError: true };
     }
-    const [year, monthNumber] = month.split("-").map(Number);
-    const monthIndex = monthNumber - 1;
-    const daysInMonth = new Date(year, monthNumber, 0).getDate();
-    const startDate = `${month}-01`;
-    const endDate = `${month}-${pad(daysInMonth)}`;
-    const endExclusive = `${monthNumber === 12 ? year + 1 : year}-${pad(monthNumber === 12 ? 1 : monthNumber + 1)}-01`;
-    const sb = supabaseForUser(ctx);
-    const [
-      monthRes,
-      ccRes,
-      invoicePaymentsRes,
-      historicalRes,
-      cardsRes,
-      walletsRes,
-      exceptionsRes,
-      templatesRes
-    ] = await Promise.all([
-      sb.from("expenses").select(EXPENSE_COLS).gte("date", startDate).lt("date", endExclusive).order("date"),
-      sb.from("expenses").select(EXPENSE_COLS).not("credit_card_id", "is", null),
-      sb.from("expenses").select(EXPENSE_COLS).is("credit_card_id", null).not("invoice_month", "is", null).like("description", "Pagamento fatura%"),
-      sb.from("expenses").select(EXPENSE_COLS).lt("date", startDate).is("credit_card_id", null),
-      sb.from("credit_cards").select("*"),
-      sb.from("wallets").select("id, name, initial_balance"),
-      sb.from("recurring_exceptions").select("template_id, occurrence_date"),
-      sb.from("expenses").select(EXPENSE_COLS).eq("is_recurring", true)
-    ]);
-    const firstError = [monthRes, ccRes, invoicePaymentsRes, historicalRes, cardsRes, walletsRes, templatesRes].find(
-      (r) => r.error
-    );
-    if (firstError?.error) {
-      return { content: [{ type: "text", text: firstError.error.message }], isError: true };
-    }
-    const ccExpenses = ccRes.data ?? [];
-    const paymentExpenses = invoicePaymentsRes.data ?? [];
-    const ccIds = new Set(ccExpenses.map((e) => e.id));
-    const invoiceExpenses = [...ccExpenses, ...paymentExpenses.filter((p) => !ccIds.has(p.id))];
-    const creditCards = cardsRes.data ?? [];
-    const wallets = walletsRes.data ?? [];
-    const recurringTemplates = templatesRes.data ?? [];
-    const exceptionSet = new Set(
-      (exceptionsRes.data ?? []).map(
-        (e) => buildRecurringExceptionSignature(e.template_id, e.occurrence_date)
-      )
-    );
-    const visibleMonthExpenses = hideMaterializedRecurringTemplates(monthRes.data ?? []);
-    const visibleHistorical = hideMaterializedRecurringTemplates(historicalRes.data ?? []);
-    const isCCPayment = (e) => isTrackedCreditCardPayment(e, creditCards);
-    const realSignatures = new Set(
-      visibleMonthExpenses.map((e) => buildRecurringSignature(e.type, e.value, e.description))
-    );
-    const realLooseSignatures = new Set(
-      visibleMonthExpenses.map((e) => buildRecurringLooseSignature(e.type, e.description))
-    );
-    const materializedSignatures = new Set(
-      visibleMonthExpenses.filter((e) => !e.is_recurring).map((e) => buildMaterializedRecurringSignature(e))
-    );
-    const realIds = new Set(visibleMonthExpenses.map((e) => e.id));
-    const virtualEntries = [];
-    recurringTemplates.forEach((r) => {
-      if (realIds.has(r.id)) return;
-      if (!shouldProjectRecurringInMonth(r.date, year, monthIndex, r.frequency)) return;
-      if (r.type === "transfer" || r.credit_card_id) return;
-      if (realSignatures.has(buildRecurringSignature(r.type, r.value, r.description)) || realLooseSignatures.has(buildRecurringLooseSignature(r.type, r.description)) || materializedSignatures.has(buildMaterializedRecurringSignature(r)))
-        return;
-      const origDay = (/* @__PURE__ */ new Date(`${r.date}T12:00:00`)).getDate();
-      const occurrenceDate = `${month}-${pad(Math.min(origDay, daysInMonth))}`;
-      if (exceptionSet.has(buildRecurringExceptionSignature(r.id, occurrenceDate))) return;
-      virtualEntries.push({ ...r, date: occurrenceDate, is_paid: false, is_projected: true });
-    });
-    const effectiveMonthExpenses = [...visibleMonthExpenses, ...virtualEntries];
-    const walletSum = wallets.reduce((s, w) => s + Number(w.initial_balance ?? 0), 0);
-    const historicalNonTransfers = visibleHistorical.filter((e) => e.type !== "transfer");
-    const historicalIncome = historicalNonTransfers.filter((e) => e.type === "income").reduce((s, e) => s + Number(e.value), 0);
-    const historicalDebit = historicalNonTransfers.filter((e) => e.type !== "income" && !isCCPayment(e)).reduce((s, e) => s + Number(e.value), 0);
-    const invoiceCashEvents = buildInvoiceCashEvents(creditCards, invoiceExpenses);
-    const invoicesBefore = sumInvoiceCashEventsBeforeDate(invoiceCashEvents, startDate);
-    const startingBalance = walletSum + historicalIncome - historicalDebit - invoicesBefore;
-    const invoiceTotals = computeInvoiceTotalsForCashWindow({
-      creditCards,
-      expenses: invoiceExpenses.length > 0 ? invoiceExpenses : effectiveMonthExpenses,
-      startDate,
-      endDate: endExclusive
-    });
-    const totals = computeProjectedMonthResult({
-      effectiveMonthExpenses,
-      invoiceTotal: invoiceTotals.total,
-      invoiceByCategory: invoiceTotals.byCategory,
-      startingBalance,
-      isCreditCardPayment: isCCPayment
-    });
-    const { balanceMap, nonCcFlowByDay, invoiceTotalByDay } = buildDailyBalanceMap({
-      monthExpenses: effectiveMonthExpenses,
-      invoiceExpenses,
-      creditCards,
-      startDate,
-      endDate,
-      startingBalance,
-      isCreditCardPayment: isCCPayment
-    });
-    const byDay = /* @__PURE__ */ new Map();
-    effectiveMonthExpenses.forEach((e) => {
-      if (!byDay.has(e.date)) byDay.set(e.date, []);
-      byDay.get(e.date).push({
-        id: e.id,
-        description: e.description,
-        value: Number(e.value),
-        type: e.type,
-        category: e.final_category,
-        is_paid: !!e.is_paid,
-        payment_method: e.payment_method,
-        credit_card_id: e.credit_card_id ?? null,
-        invoice_month: e.invoice_month ?? null,
-        is_recurring: !!e.is_recurring,
-        is_projected: !!e.is_projected,
-        notes: e.notes ?? null
+    try {
+      const sb = supabaseForUser(ctx);
+      const projection = await computeMonthProjection(sb, month);
+      const { daysInMonth, startingBalance, effectiveMonthExpenses, invoiceTotals, totals, daily } = projection;
+      const { balanceMap, nonCcFlowByDay, invoiceTotalByDay } = daily;
+      const byDay = /* @__PURE__ */ new Map();
+      effectiveMonthExpenses.forEach((e) => {
+        if (!byDay.has(e.date)) byDay.set(e.date, []);
+        byDay.get(e.date).push({
+          id: e.id,
+          description: e.description,
+          value: Number(e.value),
+          type: e.type,
+          category: e.final_category,
+          is_paid: !!e.is_paid,
+          payment_method: e.payment_method,
+          credit_card_id: e.credit_card_id ?? null,
+          invoice_month: e.invoice_month ?? null,
+          is_recurring: !!e.is_recurring,
+          is_projected: !!e.is_projected,
+          notes: e.notes ?? null
+        });
       });
-    });
-    let running = startingBalance;
-    const days = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateKey = `${month}-${pad(d)}`;
-      if (dateKey in balanceMap) running = balanceMap[dateKey];
-      days.push({
-        date: dateKey,
-        transactions: byDay.get(dateKey) ?? [],
-        cash_flow: nonCcFlowByDay[dateKey] ?? 0,
-        invoice_payments: invoiceTotalByDay[dateKey] ?? 0,
-        projected_balance_end_of_day: running
-      });
+      let running = startingBalance;
+      const days = [];
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateKey = `${month}-${pad(d)}`;
+        if (dateKey in balanceMap) running = balanceMap[dateKey];
+        days.push({
+          date: dateKey,
+          transactions: byDay.get(dateKey) ?? [],
+          cash_flow: nonCcFlowByDay[dateKey] ?? 0,
+          invoice_payments: invoiceTotalByDay[dateKey] ?? 0,
+          projected_balance_end_of_day: running
+        });
+      }
+      const payload = {
+        month,
+        starting_balance: startingBalance,
+        total_income: totals.totalIncome,
+        total_expense: totals.totalExpense,
+        month_balance: totals.balance,
+        projected_end_of_month_balance: totals.projectedBalance,
+        invoice_total: invoiceTotals.total,
+        largest_category: totals.largestCategory,
+        days
+      };
+      return {
+        content: [{ type: "text", text: JSON.stringify(payload) }],
+        structuredContent: payload
+      };
+    } catch (error) {
+      return toolError("Falha ao projetar o m\xEAs", error);
     }
-    const payload = {
-      month,
-      starting_balance: startingBalance,
-      total_income: totals.totalIncome,
-      total_expense: totals.totalExpense,
-      month_balance: totals.balance,
-      projected_end_of_month_balance: totals.projectedBalance,
-      invoice_total: invoiceTotals.total,
-      largest_category: totals.largestCategory,
-      days
-    };
-    return {
-      content: [{ type: "text", text: JSON.stringify(payload) }],
-      structuredContent: payload
-    };
   }
 });
 
