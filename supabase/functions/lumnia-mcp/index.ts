@@ -297,6 +297,41 @@ function getCreditCardPaymentLabelCardName(description) {
   return normalize(description).replace(PAYMENT_PREFIX_RE, "").split(" - ")[0];
 }
 
+// src/lib/recurringCardProjection.ts
+var VIRTUAL_CARD_RECURRING_PREFIX = "virtual-card-rec:";
+function isVirtualCardRecurring(id) {
+  return !!id && id.startsWith(VIRTUAL_CARD_RECURRING_PREFIX);
+}
+function normalizeDesc(description) {
+  return (description ?? "").trim().toLowerCase();
+}
+function monthsBetweenLabels(from, to) {
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = to.split("-").map(Number);
+  return ty * 12 + (tm - 1) - (fy * 12 + (fm - 1));
+}
+function shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel) {
+  const diff = monthsBetweenLabels(baseLabel, dueLabel);
+  if (diff <= 0) return false;
+  const frequency = template.frequency === "annual" ? "yearly" : template.frequency ?? "monthly";
+  if (frequency === "yearly") return diff % 12 === 0;
+  return true;
+}
+function getCardRecurringTemplates(expenses, cardId) {
+  return expenses.filter(
+    (e) => e.credit_card_id === cardId && e.is_recurring && e.type === "expense" && !isVirtualCardRecurring(e.id) && !isCreditCardPaymentLabel(e.description)
+  );
+}
+function buildVirtualCardOccurrence(template, dueLabel) {
+  return {
+    ...template,
+    id: `${VIRTUAL_CARD_RECURRING_PREFIX}${template.id}:${dueLabel}`,
+    invoice_month: dueLabel,
+    is_recurring: false,
+    is_paid: false
+  };
+}
+
 // src/lib/invoiceHelpers.ts
 function getClosingDay(card) {
   if (card.closing_strategy === "relative") {

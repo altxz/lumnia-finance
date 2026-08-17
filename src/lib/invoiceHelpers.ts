@@ -1,5 +1,11 @@
 import type { Expense } from '../components/ExpenseTable';
 import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
+import {
+  buildVirtualCardOccurrence,
+  getCardRecurringTemplates,
+  normalizeDesc,
+  shouldProjectCardRecurringInLabel,
+} from './recurringCardProjection';
 
 export interface CreditCard {
   id: string;
