@@ -21,6 +21,14 @@ export default function OAuthConsentPage() {
 
   useEffect(() => {
     let active = true;
+    const goToLogin = () => {
+      const next = window.location.pathname + window.location.search;
+      window.location.href = "/auth?next=" + encodeURIComponent(next);
+    };
+    const isExpiredSession = (message?: string) =>
+      !!message &&
+      /expired|invalid jwt|unable to parse or verify signature|invalid claims|jwt/i.test(message);
+
     (async () => {
       if (!authorizationId) {
         setError("Parâmetro authorization_id ausente.");
@@ -28,13 +36,44 @@ export default function OAuthConsentPage() {
       }
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
-        const next = window.location.pathname + window.location.search;
-        window.location.href = "/auth?next=" + encodeURIComponent(next);
+        goToLogin();
         return;
       }
+      // Garante um access token válido antes de falar com o servidor de autorização.
+      const expiresAt = sess.session.expires_at ? sess.session.expires_at * 1000 : 0;
+      if (!expiresAt || expiresAt - Date.now() < 60_000) {
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshed.session) {
+          await supabase.auth.signOut();
+          goToLogin();
+          return;
+        }
+      }
+
       const { data, error } = await authOauth().getAuthorizationDetails(authorizationId);
       if (!active) return;
       if (error) {
+        if (isExpiredSession(error.message)) {
+          const { data: retrySession } = await supabase.auth.refreshSession();
+          if (!retrySession.session) {
+            await supabase.auth.signOut();
+            goToLogin();
+            return;
+          }
+          const retry = await authOauth().getAuthorizationDetails(authorizationId);
+          if (!active) return;
+          if (retry.error) {
+            setError(retry.error.message);
+            return;
+          }
+          const immediateRetry = retry.data?.redirect_url ?? retry.data?.redirect_to;
+          if (immediateRetry && !retry.data?.client) {
+            window.location.href = immediateRetry;
+            return;
+          }
+          setDetails(retry.data);
+          return;
+        }
         setError(error.message);
         return;
       }
@@ -50,16 +89,26 @@ export default function OAuthConsentPage() {
     };
   }, [authorizationId]);
 
+
   async function decide(approve: boolean) {
     setBusy(true);
-    const { data, error } = approve
-      ? await authOauth().approveAuthorization(authorizationId)
-      : await authOauth().denyAuthorization(authorizationId);
+    const call = () =>
+      approve
+        ? authOauth().approveAuthorization(authorizationId)
+        : authOauth().denyAuthorization(authorizationId);
+    let { data, error } = await call();
+    if (error && /expired|invalid jwt|invalid claims|signature/i.test(error.message)) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      if (refreshed.session) {
+        ({ data, error } = await call());
+      }
+    }
     if (error) {
       setBusy(false);
       setError(error.message);
       return;
     }
+
     const target = data?.redirect_url ?? data?.redirect_to;
     if (!target) {
       setBusy(false);
