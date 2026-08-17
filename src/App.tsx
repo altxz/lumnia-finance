@@ -25,6 +25,7 @@ const WalletPage = lazyWithRetry(() => import("./pages/WalletPage"));
 const BudgetPage = lazyWithRetry(() => import("./pages/BudgetPage"));
 const ProjectsPage = lazyWithRetry(() => import("./pages/ProjectsPage"));
 const DebtSimulatorPage = lazyWithRetry(() => import("./pages/DebtSimulatorPage"));
+const InvestmentsPage = lazyWithRetry(() => import("./pages/InvestmentsPage"));
 
 const ChangelogPage = lazyWithRetry(() => import("./pages/ChangelogPage"));
 const OAuthConsentPage = lazyWithRetry(() => import("./pages/OAuthConsentPage"));
