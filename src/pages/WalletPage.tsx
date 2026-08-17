@@ -27,6 +27,7 @@ import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { buildWalletBalances } from '@/lib/walletBalances';
 import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
+import { getInvoicePeriod, matchExpensesToInvoice, type InvoicePeriod } from '@/lib/invoiceHelpers';
 import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 import { MonthSelector } from '@/components/MonthSelector';
 
@@ -135,7 +136,6 @@ export default function WalletPage() {
 
   // ─── Credit Cards state ───
   const [cards, setCards] = useState<CreditCardRow[]>([]);
-  const [cardExpenses, setCardExpenses] = useState<{ credit_card_id: string; value: number }[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
   const [cardModalOpen, setCardModalOpen] = useState(false);
   const [cardSaving, setCardSaving] = useState(false);
@@ -146,12 +146,9 @@ export default function WalletPage() {
 
   // ─── Invoice View state ───
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [invoiceMonth, setInvoiceMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [invoiceTransactions, setInvoiceTransactions] = useState<any[]>([]);
-  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [invoiceMonth, setInvoiceMonth] = useState(
+    () => `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`,
+  );
   const [payInvoiceOpen, setPayInvoiceOpen] = useState(false);
   const [payWalletId, setPayWalletId] = useState('');
   const [payingSaving, setPayingSaving] = useState(false);
@@ -169,55 +166,49 @@ export default function WalletPage() {
   const fetchCards = useCallback(async () => {
     if (!user) return;
     setCardsLoading(true);
-    const now = new Date();
-    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const [{ data: cardsData }, { data: expData }] = await Promise.all([
-      supabase.from('credit_cards').select('*').eq('user_id', user.id).order('name'),
-      supabase.from('expenses').select('credit_card_id, value').eq('user_id', user.id).eq('type', 'expense').not('credit_card_id', 'is', null).gte('date', firstOfMonth),
-    ]);
+    const { data: cardsData } = await supabase
+      .from('credit_cards').select('*').eq('user_id', user.id).order('name');
     setCards((cardsData || []) as CreditCardRow[]);
-    setCardExpenses((expData || []) as { credit_card_id: string; value: number }[]);
     setCardsLoading(false);
   }, [user]);
 
-  // ─── Fetch invoice transactions ───
-  const fetchInvoiceTransactions = useCallback(async () => {
-    if (!user || !selectedCardId || !invoiceMonth) return;
-    setInvoiceLoading(true);
-    const { data } = await supabase
-      .from('expenses')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('credit_card_id', selectedCardId)
-      .eq('invoice_month', invoiceMonth)
-      .order('date', { ascending: false });
-    setInvoiceTransactions(data || []);
-    setInvoiceLoading(false);
-  }, [user, selectedCardId, invoiceMonth]);
-
   useEffect(() => { fetchWallets(); }, [fetchWallets]);
   useEffect(() => { fetchCards(); }, [fetchCards]);
-  useEffect(() => { fetchInvoiceTransactions(); }, [fetchInvoiceTransactions]);
+
+  // A fatura exibida acompanha o mês selecionado no seletor global.
+  useEffect(() => {
+    setInvoiceMonth(`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`);
+  }, [selectedMonth, selectedYear]);
 
   const selectedCard = useMemo(() => cards.find(c => c.id === selectedCardId), [cards, selectedCardId]);
 
-  const invoiceTotal = useMemo(() => invoiceTransactions.reduce((s, t) => s + t.value, 0), [invoiceTransactions]);
+  const invoiceLoading = projected.loading;
 
-  const getInvoiceStatus = useCallback((card: CreditCardRow, month: string): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
-    const now = new Date();
-    const [y, m] = month.split('-').map(Number);
-    const closingDay = card.closing_strategy === 'relative'
-      ? Math.max(card.due_day - card.closing_days_before_due, 1)
-      : card.closing_day;
-    const closingDate = new Date(y, m - 1, closingDay);
-    const dueDate = new Date(y, m - 1, card.due_day);
-    // If due date is before closing date, due is next month
-    const effectiveDue = dueDate <= closingDate ? new Date(y, m, card.due_day) : dueDate;
+  /**
+   * Faturas montadas pelo motor único da plataforma (mesmo usado em Análises):
+   * exclui os registros de "Pagamento fatura", ignora receitas/transferências
+   * e resolve o mês de vencimento pelo ciclo do cartão.
+   */
+  const buildInvoice = useCallback((card: CreditCardRow, monthLabel: string): InvoicePeriod => {
+    const [y, m] = monthLabel.split('-').map(Number);
+    const period = getInvoicePeriod(card as any, y, m - 1);
+    return matchExpensesToInvoice(projected.invoiceExpenses, period);
+  }, [projected.invoiceExpenses]);
 
-    if (now < closingDate) return { label: 'Aberta', variant: 'default' };
-    if (now < effectiveDue) return { label: 'Fechada', variant: 'secondary' };
-    return { label: 'Vencida', variant: 'destructive' };
-  }, []);
+  const selectedInvoice = useMemo(
+    () => (selectedCard ? buildInvoice(selectedCard, invoiceMonth) : null),
+    [selectedCard, invoiceMonth, buildInvoice],
+  );
+
+  const invoiceTransactions = selectedInvoice?.transactions ?? [];
+  const invoiceTotal = selectedInvoice?.total ?? 0;
+
+  const INVOICE_STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+    open: { label: 'Aberta', variant: 'default' },
+    closed: { label: 'Fechada', variant: 'secondary' },
+    overdue: { label: 'Vencida', variant: 'destructive' },
+    paid: { label: 'Paga', variant: 'outline' },
+  };
 
   const navigateInvoiceMonth = (direction: -1 | 1) => {
     const [y, m] = invoiceMonth.split('-').map(Number);
@@ -437,7 +428,7 @@ export default function WalletPage() {
       toast({ title: 'Fatura paga!', description: `${formatCurrency(invoiceTotal)} debitado da conta.` });
       setPayInvoiceOpen(false);
       setPayWalletId('');
-      fetchInvoiceTransactions();
+      projected.refetch();
       fetchWallets();
     }
     setPayingSaving(false);
@@ -509,11 +500,13 @@ export default function WalletPage() {
     return g;
   }, [wallets]);
 
+  // Uso do limite = total da fatura do mês selecionado (sem pagamentos de fatura).
   const usageByCard = useMemo(() => {
+    const monthLabel = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
     const map: Record<string, number> = {};
-    cardExpenses.forEach(e => { if (e.credit_card_id) map[e.credit_card_id] = (map[e.credit_card_id] || 0) + e.value; });
+    cards.forEach(card => { map[card.id] = buildInvoice(card, monthLabel).total; });
     return map;
-  }, [cardExpenses]);
+  }, [cards, buildInvoice, selectedMonth, selectedYear]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground">Carregando...</span></div>;
   if (!user) return <Navigate to="/auth" replace />;
@@ -794,7 +787,7 @@ export default function WalletPage() {
                         <CardContent className="p-5 text-center">
                           <p className="text-sm text-muted-foreground mb-1">Status</p>
                           {(() => {
-                            const status = getInvoiceStatus(selectedCard, invoiceMonth);
+                            const status = INVOICE_STATUS_LABELS[selectedInvoice?.status ?? 'open'];
                             return <Badge variant={status.variant} className="text-base px-4 py-1">{status.label}</Badge>;
                           })()}
                         </CardContent>
@@ -802,7 +795,7 @@ export default function WalletPage() {
                     </div>
 
                     {/* Pay Invoice Button */}
-                    {invoiceTotal > 0 && (
+                    {invoiceTotal > 0 && selectedInvoice?.status !== 'paid' && (
                       <div className="flex justify-center">
                         <Button onClick={() => setPayInvoiceOpen(true)} className="gap-2 rounded-xl h-12 px-8 bg-success text-success-foreground hover:bg-success/90 font-semibold text-base">
                           <Wallet className="h-5 w-5" />
