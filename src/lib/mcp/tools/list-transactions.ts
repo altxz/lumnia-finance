@@ -5,20 +5,6 @@ import { supabaseForUser, toolError } from "../supabaseClient";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-const transactionSchema = z.object({
-  id: z.string(),
-  date: dateSchema,
-  description: z.string(),
-  value: z.number(),
-  type: z.string(),
-  final_category: z.string().nullable(),
-  is_paid: z.boolean(),
-  payment_method: z.string().nullable(),
-  credit_card_id: z.string().nullable(),
-  wallet_id: z.string().nullable(),
-  invoice_month: z.string().nullable(),
-  is_recurring: z.boolean(),
-});
 
 export default defineTool({
   name: "list_transactions",

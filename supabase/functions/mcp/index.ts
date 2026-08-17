@@ -125,20 +125,6 @@ function toolError(prefix, error) {
 
 // src/lib/mcp/tools/list-transactions.ts
 var dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-var transactionSchema = z.object({
-  id: z.string(),
-  date: dateSchema,
-  description: z.string(),
-  value: z.number(),
-  type: z.string(),
-  final_category: z.string().nullable(),
-  is_paid: z.boolean(),
-  payment_method: z.string().nullable(),
-  credit_card_id: z.string().nullable(),
-  wallet_id: z.string().nullable(),
-  invoice_month: z.string().nullable(),
-  is_recurring: z.boolean()
-});
 var list_transactions_default = defineTool({
   name: "list_transactions",
   title: "Listar transa\xE7\xF5es",
@@ -1075,7 +1061,7 @@ setLogLevel("info");
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.2.3",
+  version: "0.2.4",
   instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal). Use search para localizar transa\xE7\xF5es por texto ou m\xEAs (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lan\xE7ar despesas ou receitas, delete_transaction para excluir uma transa\xE7\xE3o (confirme com o usu\xE1rio antes, \xE9 irrevers\xEDvel), month_transactions para ver, dia a dia, todas as transa\xE7\xF5es de um m\xEAs com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usu\xE1rio.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
