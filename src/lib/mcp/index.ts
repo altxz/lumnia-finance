@@ -20,9 +20,9 @@ setLogLevel("info");
 export default defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.3.0",
+  version: "0.4.0",
   instructions:
-    "Ferramentas para o app Lumnia (gestão financeira pessoal). Use search para localizar transações por texto ou mês (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lançar despesas ou receitas, delete_transaction para excluir uma transação (confirme com o usuário antes, é irreversível), month_transactions para ver, dia a dia, todas as transações de um mês com o saldo projetado ao final de cada dia, e list_categories/list_wallets/list_credit_cards para contexto do usuário.",
+    "Ferramentas para o app Lumnia (gestão financeira pessoal). Use search para localizar transações por texto ou mês (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lançar despesas ou receitas, delete_transaction para excluir uma transação (confirme com o usuário antes, é irreversível), month_transactions para ver, dia a dia, todas as transações de um mês com o saldo projetado ao final de cada dia, list_budgets para ler os orçamentos do mês (planejado, gasto e restante) e upsert_budget para criar ou editar a meta de uma categoria, e list_categories/list_wallets/list_credit_cards para contexto do usuário.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
