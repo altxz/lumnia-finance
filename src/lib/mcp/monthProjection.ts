@@ -1,14 +1,10 @@
 import { buildInvoiceCashEvents, sumInvoiceCashEventsBeforeDate } from "../invoiceCashFlow";
 import { isTrackedCreditCardPayment } from "../creditCardPayments";
-import { buildDailyBalanceMap, computeProjectedMonthResult } from "../projectedBalanceMath";
+import { buildDailyBalanceMap, computeMonthCashFlow, computeProjectedMonthResult } from "../projectedBalanceMath";
 import { computeInvoiceTotalsForCashWindow } from "../projectedInvoiceTotals";
 import {
-  buildMaterializedRecurringSignature,
+  buildEffectiveMonthExpenses,
   buildRecurringExceptionSignature,
-  buildRecurringLooseSignature,
-  buildRecurringSignature,
-  hideMaterializedRecurringTemplates,
-  shouldProjectRecurringInMonth,
 } from "../recurringProjection";
 
 export const EXPENSE_COLS =

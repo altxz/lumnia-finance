@@ -555,6 +555,15 @@ function groupInvoiceCashEventsByDay(events, startDate, endDate) {
 }
 
 // src/lib/projectedBalanceMath.ts
+function computeMonthCashFlow(effectiveMonthExpenses, isCreditCardPayment) {
+  return effectiveMonthExpenses.reduce((sum, expense) => {
+    if (expense.type === "transfer") return sum;
+    if (expense.type === "income") return sum + Number(expense.value);
+    if (expense.credit_card_id) return sum;
+    if (isCreditCardPayment(expense)) return sum;
+    return sum - Number(expense.value);
+  }, 0);
+}
 function buildDailyBalanceMap({
   monthExpenses,
   invoiceExpenses,
@@ -662,8 +671,74 @@ function computeInvoiceTotalsForCashWindow({
 }
 
 // src/lib/recurringProjection.ts
+function normalizeRecurringDescription(description) {
+  return (description ?? "").trim().toLowerCase();
+}
+function buildRecurringLooseSignature(type, description) {
+  return `${type}|${normalizeRecurringDescription(description)}`;
+}
+function buildRecurringSignature(type, value, description) {
+  return `${type}|${normalizeRecurringDescription(description)}|${Number(value).toFixed(2)}`;
+}
 function buildRecurringExceptionSignature(templateId, occurrenceDate) {
   return `${templateId}|${occurrenceDate}`;
+}
+function shouldProjectRecurringInMonth(templateDate, selectedYear, selectedMonth, frequency) {
+  const template = /* @__PURE__ */ new Date(`${templateDate}T12:00:00`);
+  const templateMonthIndex = template.getFullYear() * 12 + template.getMonth();
+  const selectedMonthIndex = selectedYear * 12 + selectedMonth;
+  if (selectedMonthIndex < templateMonthIndex) return false;
+  if (frequency === "yearly") {
+    return template.getMonth() === selectedMonth;
+  }
+  return true;
+}
+function buildMaterializedRecurringSignature(item) {
+  return [
+    item.type,
+    normalizeRecurringDescription(item.description),
+    item.final_category ?? "",
+    item.wallet_id ?? "",
+    item.credit_card_id ?? "",
+    item.payment_method ?? "",
+    item.project_id ?? ""
+  ].join("|");
+}
+function hideMaterializedRecurringTemplates(items) {
+  const materializedSignatures = new Set(
+    items.filter((item) => !item.is_recurring).map((item) => buildMaterializedRecurringSignature(item))
+  );
+  return items.filter((item) => !(item.is_recurring && materializedSignatures.has(buildMaterializedRecurringSignature(item))));
+}
+function buildEffectiveMonthExpenses({
+  monthExpenses,
+  recurringTemplates,
+  year,
+  month,
+  exceptionSet
+}) {
+  const visible = hideMaterializedRecurringTemplates(monthExpenses);
+  const realSignatures = new Set(visible.map((e) => buildRecurringSignature(e.type, e.value, e.description)));
+  const realLooseSignatures = new Set(visible.map((e) => buildRecurringLooseSignature(e.type, e.description)));
+  const materializedSignatures = new Set(
+    visible.filter((e) => !e.is_recurring).map((e) => buildMaterializedRecurringSignature(e))
+  );
+  const realIds = new Set(visible.map((e) => e.id));
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const virtualEntries = [];
+  recurringTemplates.forEach((template) => {
+    if (template.id && realIds.has(template.id)) return;
+    if (template.type === "transfer" || template.credit_card_id) return;
+    if (!shouldProjectRecurringInMonth(template.date, year, month, template.frequency)) return;
+    if (realSignatures.has(buildRecurringSignature(template.type, template.value, template.description)) || realLooseSignatures.has(buildRecurringLooseSignature(template.type, template.description)) || materializedSignatures.has(buildMaterializedRecurringSignature(template)))
+      return;
+    const originalDay = (/* @__PURE__ */ new Date(`${template.date}T12:00:00`)).getDate();
+    const day = Math.min(originalDay, daysInMonth);
+    const occurrenceDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (exceptionSet.has(buildRecurringExceptionSignature(template.id ?? "", occurrenceDate))) return;
+    virtualEntries.push({ ...template, date: occurrenceDate, is_paid: false });
+  });
+  return [...visible, ...virtualEntries];
 }
 
 // src/lib/mcp/monthProjection.ts
