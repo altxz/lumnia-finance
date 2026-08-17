@@ -886,6 +886,8 @@ var month_summary_default = defineTool4({
       }
       const summary = {
         month,
+        engine_version: ENGINE_VERSION,
+        generated_at: (/* @__PURE__ */ new Date()).toISOString(),
         starting_balance: startingBalance,
         projected_income: totals.totalIncome,
         projected_expense: totals.totalExpense,

@@ -33,6 +33,8 @@ export default defineTool({
 
       const summary = {
         month,
+        engine_version: ENGINE_VERSION,
+        generated_at: new Date().toISOString(),
         starting_balance: startingBalance,
         projected_income: totals.totalIncome,
         projected_expense: totals.totalExpense,
