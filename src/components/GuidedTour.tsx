@@ -40,27 +40,21 @@ export function GuidedTour() {
   const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  // Estado de onboarding vem da linha `user_settings` em cache.
+  const { data: settingsRow, isLoading: settingsLoading } = useUserSettingsRow();
+  const { patch } = useInvalidateUserSettings();
 
   useEffect(() => {
-    if (!user) return;
-    const checkOnboarding = async () => {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('onboarding_completed')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      // Show tour if no settings record exists OR if onboarding not completed
-      if (!data || !data.onboarding_completed) {
-        setShow(true);
-      }
-    };
-    checkOnboarding();
-  }, [user]);
+    if (!user || settingsLoading) return;
+    // Mostra o tour se não existe registo OU se o onboarding não foi concluído
+    if (!settingsRow || !settingsRow.onboarding_completed) setShow(true);
+  }, [user, settingsLoading, settingsRow]);
 
   const completeTour = async () => {
     // Esconde imediatamente para feedback visual e evita reabrir
     setShow(false);
     if (!user) return;
+    patch({ onboarding_completed: true });
     try {
       const { error } = await supabase
         .from('user_settings')
