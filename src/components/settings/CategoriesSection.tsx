@@ -71,8 +71,6 @@ function LucideIcon({ name, className }: { name: string; className?: string }) {
 export function CategoriesSection() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [form, setForm] = useState({
@@ -85,19 +83,13 @@ export function CategoriesSection() {
   });
   const [saving, setSaving] = useState(false);
 
-  const fetchCategories = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    const { data } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('sort_order');
-    setCategories(data || []);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  // Categorias vêm do cache partilhado (30 min) — sem busca própria.
+  const { data: cachedCategories = [], isLoading: loading } = useCategories();
+  const categories = cachedCategories as unknown as Category[];
+  const queryClient = useQueryClient();
+  const fetchCategories = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['categories', user?.id] });
+  }, [queryClient, user?.id]);
 
   const parents = categories.filter(c => !c.parent_id);
   const getChildren = (parentId: string) => categories.filter(c => c.parent_id === parentId);
