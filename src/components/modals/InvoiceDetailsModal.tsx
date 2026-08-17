@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { showFriendlyError } from '@/lib/errorHandler';
+import { resolveVirtualCardTemplateId } from '@/lib/recurringCardProjection';
 
 import { InvoiceHeader } from './invoice/InvoiceHeader';
 import { InvoiceTransactionList } from './invoice/InvoiceTransactionList';
