@@ -742,6 +742,7 @@ function buildEffectiveMonthExpenses({
 }
 
 // src/lib/mcp/monthProjection.ts
+var ENGINE_VERSION = "2026-08-17.1";
 var EXPENSE_COLS = "id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at";
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -886,6 +887,8 @@ var month_summary_default = defineTool4({
       }
       const summary = {
         month,
+        engine_version: ENGINE_VERSION,
+        generated_at: (/* @__PURE__ */ new Date()).toISOString(),
         starting_balance: startingBalance,
         projected_income: totals.totalIncome,
         projected_expense: totals.totalExpense,
