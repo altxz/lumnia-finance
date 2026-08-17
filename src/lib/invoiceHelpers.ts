@@ -1,11 +1,5 @@
 import type { Expense } from '../components/ExpenseTable';
 import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
-import {
-  buildVirtualCardOccurrence,
-  getCardRecurringTemplates,
-  normalizeDesc,
-  shouldProjectCardRecurringInLabel,
-} from './recurringCardProjection';
 
 export interface CreditCard {
   id: string;
@@ -179,22 +173,10 @@ export function matchExpensesToInvoice(
     return resolveLabel(e) === dueLabel;
   });
 
-  // Recorrências fixas do cartão vivem como um único registro (template).
-  // Projetamos ocorrências virtuais nas faturas futuras, evitando duplicar
-  // quando já existe um lançamento real com a mesma descrição naquela fatura.
-  const virtualOccurrences = getCardRecurringTemplates(expenses, period.cardId)
-    .filter(template => {
-      const baseLabel = resolveLabel(template);
-      if (!shouldProjectCardRecurringInLabel(template, baseLabel, dueLabel)) return false;
-
-      const alreadyExists = matched.some(
-        e => normalizeDesc(e.description) === normalizeDesc(template.description),
-      );
-      return !alreadyExists;
-    })
-    .map(template => buildVirtualCardOccurrence(template, dueLabel));
-
-  const transactions = [...matched, ...virtualOccurrences];
+  // A fatura contém apenas lançamentos efetivamente gravados para o período.
+  // Um registro recorrente de cartão é a ocorrência da sua própria fatura, não
+  // uma autorização para criar cobranças virtuais nos meses seguintes.
+  const transactions = matched;
   const total = transactions.reduce((s, e) => s + e.value, 0);
 
   // Check if there's a payment record for this specific card + invoice

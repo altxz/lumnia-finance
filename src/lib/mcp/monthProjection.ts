@@ -12,7 +12,7 @@ import {
  * se o valor devolvido pelo MCP não bater com a web, este campo mostra qual
  * versão do motor está de facto publicada na função.
  */
-export const ENGINE_VERSION = "2026-08-17.1";
+export const ENGINE_VERSION = "2026-08-17.2";
 
 export const EXPENSE_COLS =
   "id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at";
