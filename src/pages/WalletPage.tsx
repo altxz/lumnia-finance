@@ -597,7 +597,7 @@ export default function WalletPage() {
                             <Pie data={byType} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                               {byType.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                             </Pie>
-                            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                            <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
                           </PieChart>
                         </ResponsiveContainer>
                       </CardContent>
@@ -612,7 +612,7 @@ export default function WalletPage() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                             <YAxis tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
-                            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                            <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
                             <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                               {byType.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                             </Bar>

@@ -56,7 +56,7 @@ export function WeekComparisonChart({ expenses }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={v => `R$${v}`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={45} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+            <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="atual" name="Esta semana" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             <Bar dataKey="anterior" name="Semana passada" fill="hsl(var(--muted-foreground))" opacity={0.5} radius={[4, 4, 0, 0]} />

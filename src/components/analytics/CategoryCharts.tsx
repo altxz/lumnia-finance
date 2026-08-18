@@ -93,7 +93,7 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
               <BarChart data={barData} layout="vertical" margin={{ left: 10 }}>
                 <XAxis type="number" tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`} tick={{ fontSize: 9 }} />
                 <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
                 <Bar dataKey="orcamento" fill="hsl(var(--muted))" radius={[0, 6, 6, 0]} barSize={16} name="Orçamento" />
                 <Bar dataKey="atual" fill="hsl(245, 45%, 51%)" radius={[0, 6, 6, 0]} barSize={16} name="Gasto" />
                 {compare && <Bar dataKey="anterior" fill="hsl(245, 45%, 51%, 0.3)" radius={[0, 6, 6, 0]} barSize={16} name="Anterior" />}

@@ -483,6 +483,7 @@ export default function FinancialScorePage() {
                           <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                           <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                           <Tooltip
+                            cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
                             contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12 }}
                             formatter={(v: number, name: string) => {
                               const labels: Record<string, string> = { score: 'Geral', savings: 'Poupança', budget: 'Orçamento', debt: 'Dívidas', consistency: 'Consistência', credit: 'Crédito' };

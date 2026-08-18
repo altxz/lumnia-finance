@@ -63,6 +63,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
               tickLine={false}
             />
             <Tooltip
+              cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 return (

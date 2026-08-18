@@ -76,6 +76,7 @@ export function NetWorthChart() {
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
             <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
             <Tooltip
+              cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
               formatter={(value: number, name: string) => [
                 formatCurrency(value),
                 name === 'assets' ? 'Ativos' : name === 'liabilities' ? 'Passivos' : 'Patrimônio Líquido',
