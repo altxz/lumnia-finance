@@ -4,6 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCategories } from '@/hooks/useStaticData';
+import {
+  buildEffectiveMonthExpenses,
+  buildMaterializedRecurringSignature,
+  buildRecurringExceptionSignature,
+  buildRecurringLooseSignature,
+  buildRecurringSignature,
+  hideMaterializedRecurringTemplates,
+  shouldProjectRecurringInMonth,
+} from '@/lib/recurringProjection';
+import { isCreditCardPaymentLabel } from '@/lib/creditCardPayments';
+
 
 export interface DbCategory {
   id: string;
