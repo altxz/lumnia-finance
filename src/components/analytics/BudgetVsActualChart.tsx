@@ -96,6 +96,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
                 axisLine={false}
               />
               <Tooltip
+                cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const row = payload[0].payload as typeof rows[number];
@@ -112,7 +113,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
                   );
                 }}
               />
-              <Bar dataKey="planejado" name="Planejado" fill="hsl(var(--muted))" radius={[0, 4, 4, 0]} barSize={10} />
+              <Bar dataKey="planejado" name="Planejado" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[0, 4, 4, 0]} barSize={10} />
               <Bar dataKey="realizado" name="Realizado" radius={[0, 4, 4, 0]} barSize={10}>
                 {rows.map((r, i) => (
                   <Cell key={i} fill={r.realizado > r.planejado ? 'hsl(var(--destructive))' : 'hsl(var(--chart-2))'} />
