@@ -95,13 +95,27 @@ export default function Dashboard() {
   const { data: extra, isLoading: extraLoading } = useQuery({
     queryKey: ['dashboard-extra', user?.id, startDate, prevStartDate],
     queryFn: async () => {
-      const [{ data: prevExpData }, { data: budgetData }] = await Promise.all([
+      const [{ data: prevExpData }, { data: budgetData }, { data: recurringBudgetData }] = await Promise.all([
         supabase.from('expenses').select('id, value, type, credit_card_id, final_category').eq('user_id', user!.id)
           .gte('date', prevStartDate).lt('date', prevEndDate),
-        supabase.from('budgets').select('category, allocated_amount')
+        supabase.from('budgets').select('category, category_id, allocated_amount')
           .eq('user_id', user!.id).eq('month_year', startDate),
+        // Orçamentos recorrentes de meses anteriores (herdados quando não há orçamento no mês)
+        supabase.from('budgets').select('category, category_id, allocated_amount, month_year')
+          .eq('user_id', user!.id).eq('is_recurring', true).lt('month_year', startDate)
+          .order('month_year', { ascending: false }),
       ]);
-      return { prevExpenses: prevExpData || [], budgets: budgetData || [] };
+      const current = budgetData || [];
+      const existing = new Set(current.map((b: any) => b.category_id ?? b.category));
+      const inherited: any[] = [];
+      const seen = new Set<string>();
+      (recurringBudgetData || []).forEach((b: any) => {
+        const key = b.category_id ?? b.category;
+        if (!key || existing.has(key) || seen.has(key)) return;
+        seen.add(key);
+        inherited.push({ category: b.category, category_id: b.category_id, allocated_amount: b.allocated_amount });
+      });
+      return { prevExpenses: prevExpData || [], budgets: [...current, ...inherited] };
     },
     enabled: !!user,
   });
