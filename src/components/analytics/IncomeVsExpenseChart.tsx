@@ -49,7 +49,7 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={34} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="receitas" name="Receitas" fill="url(#gradIncome)" radius={[10, 10, 0, 0]} />
             <Bar dataKey="despesas" name="Despesas" fill="url(#gradExpense)" radius={[10, 10, 0, 0]} />

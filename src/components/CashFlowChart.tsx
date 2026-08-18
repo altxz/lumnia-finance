@@ -210,6 +210,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
               domain={['auto', 'auto']}
             />
             <Tooltip
+              cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
                 const point = payload[0]?.payload as DayData;
