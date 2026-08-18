@@ -4,6 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCategories } from '@/hooks/useStaticData';
+import {
+  buildEffectiveMonthExpenses,
+  buildMaterializedRecurringSignature,
+  buildRecurringExceptionSignature,
+  buildRecurringLooseSignature,
+  buildRecurringSignature,
+  hideMaterializedRecurringTemplates,
+  shouldProjectRecurringInMonth,
+} from '@/lib/recurringProjection';
+import { isCreditCardPaymentLabel } from '@/lib/creditCardPayments';
+
 
 export interface DbCategory {
   id: string;
@@ -64,12 +75,24 @@ export function useBudgetData() {
     if (!user) return;
     setLoading(true);
 
-    const [{ data: budgetData }, { data: recurringData }, { data: prevBudgetData }, { data: expenseData }] = await Promise.all([
+    const EXPENSE_COLS =
+      'id, description, value, date, type, final_category, credit_card_id, wallet_id, payment_method, project_id, invoice_month, is_recurring, is_paid, frequency';
+
+    const [
+      { data: budgetData },
+      { data: recurringData },
+      { data: prevBudgetData },
+      { data: expenseData },
+      { data: templatesData },
+      { data: exceptionsData },
+    ] = await Promise.all([
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('month_year', startDate),
       // Fetch all recurring budgets to propagate to months without explicit budgets
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('is_recurring', true).lt('month_year', startDate).order('month_year', { ascending: false }),
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('month_year', prevMonthKey),
-      supabase.from('expenses').select('final_category, value, type, credit_card_id, invoice_month, date, description').eq('user_id', user.id).gte('date', startDate).lt('date', endDate),
+      supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id).gte('date', startDate).lt('date', endDate),
+      supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', user.id).eq('is_recurring', true),
+      supabase.from('recurring_exceptions').select('template_id, occurrence_date').eq('user_id', user.id),
     ]);
 
     
@@ -88,18 +111,68 @@ export function useBudgetData() {
     setBudgets([...currentBudgets, ...inheritedBudgets]);
     setPrevBudgets((prevBudgetData || []) as BudgetRow[]);
 
+    // Regime de competência: considera as despesas reais do mês (inclusive as do
+    // cartão de crédito, pela data da compra) MAIS as ocorrências virtuais das
+    // recorrências fixas que ainda não foram materializadas neste mês.
+    const [yearNum, monthNum] = startDate.split('-').map(Number);
+    const monthIndex = monthNum - 1;
+    const templates = (templatesData || []) as any[];
+    const exceptionSet = new Set(
+      ((exceptionsData || []) as any[]).map(e => buildRecurringExceptionSignature(e.template_id, e.occurrence_date)),
+    );
+
+    const monthRows = (expenseData || []) as any[];
+    const effective = buildEffectiveMonthExpenses({
+      monthExpenses: monthRows,
+      recurringTemplates: templates,
+      year: yearNum,
+      month: monthIndex,
+      exceptionSet,
+    }) as any[];
+
+    // Recorrências fixas no cartão são ignoradas pelo motor acima (fluxo de caixa
+    // usa a fatura). Para o orçamento elas precisam entrar pela data da compra.
+    const visible = hideMaterializedRecurringTemplates(monthRows) as any[];
+    const realSignatures = new Set(visible.map(e => buildRecurringSignature(e.type, e.value, e.description)));
+    const realLooseSignatures = new Set(visible.map(e => buildRecurringLooseSignature(e.type, e.description)));
+    const materializedSignatures = new Set(
+      visible.filter(e => !e.is_recurring).map(e => buildMaterializedRecurringSignature(e)),
+    );
+    const realIds = new Set(visible.map(e => e.id));
+    const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
+
+    const virtualCardRows: any[] = [];
+    templates.forEach(t => {
+      if (!t.credit_card_id || t.type !== 'expense') return;
+      if (isCreditCardPaymentLabel(t.description)) return;
+      if (realIds.has(t.id)) return;
+      if (!shouldProjectRecurringInMonth(t.date, yearNum, monthIndex, t.frequency)) return;
+      if (
+        realSignatures.has(buildRecurringSignature(t.type, t.value, t.description)) ||
+        realLooseSignatures.has(buildRecurringLooseSignature(t.type, t.description)) ||
+        materializedSignatures.has(buildMaterializedRecurringSignature(t))
+      )
+        return;
+      const originalDay = new Date(`${t.date}T12:00:00`).getDate();
+      const day = Math.min(originalDay, daysInMonth);
+      const occurrenceDate = `${yearNum}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      if (exceptionSet.has(buildRecurringExceptionSignature(t.id ?? '', occurrenceDate))) return;
+      virtualCardRows.push({ ...t, date: occurrenceDate, is_recurring: false, is_paid: false });
+    });
+
     // Build spent map by final_category (name-based)
     const spent: Record<string, number> = {};
     let income = 0;
-    (expenseData || []).forEach((e: any) => {
-      if (e.type === 'income') { income += e.value; return; }
+    [...effective, ...virtualCardRows].forEach((e: any) => {
+      if (e.type === 'income') { income += Number(e.value || 0); return; }
       if (e.type === 'transfer') return;
-      if (e.description?.startsWith('Pagamento fatura')) return;
-      spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
+      if (isCreditCardPaymentLabel(e.description) || e.description?.startsWith('Pagamento fatura')) return;
+      spent[e.final_category] = (spent[e.final_category] || 0) + Number(e.value || 0);
     });
     setSpentMap(spent);
     setTotalIncome(income);
     setLoading(false);
+
   }, [user, startDate, endDate, prevMonthKey]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
