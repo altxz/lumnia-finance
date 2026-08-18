@@ -45,12 +45,12 @@ export function FixedVsVariableChart({ expenses }: Props) {
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
+          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <Pie data={data} cx="50%" cy="50%" innerRadius="52%" outerRadius="80%" paddingAngle={4} dataKey="value">
               {data.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
             </Pie>
             <Tooltip formatter={(v: number) => formatCurrency(v)} />
-            <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+            <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

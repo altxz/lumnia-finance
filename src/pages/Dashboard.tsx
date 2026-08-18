@@ -43,9 +43,10 @@ const WaterfallChart = lazyNamedWithRetry(() => import('@/components/analytics/W
 const SpendingHeatmap = lazyNamedWithRetry(() => import('@/components/analytics/SpendingHeatmap'), m => m.SpendingHeatmap);
 const BurndownChart = lazyNamedWithRetry(() => import('@/components/analytics/BurndownChart'), m => m.BurndownChart);
 const NetWorthChart = lazyNamedWithRetry(() => import('@/components/analytics/NetWorthChart'), m => m.NetWorthChart);
+import { TileGrid, Tile } from '@/components/analytics/TileGrid';
 
 function ChartFallback() {
-  return <Skeleton className="h-full w-full min-h-[280px] rounded-2xl" />;
+  return <Skeleton className="h-full w-full rounded-2xl" />;
 }
 
 function DashboardSkeleton() {
@@ -241,34 +242,33 @@ export default function Dashboard() {
                 {/* Painel de Gráficos */}
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>
 
-                <Suspense fallback={<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6"><ChartFallback /><ChartFallback /><ChartFallback /><ChartFallback /></div>}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><CreditCardSummary cards={projected.creditCards} allExpenses={projected.invoiceExpenses} wallets={projected.wallets} refetch={projected.refetch} /></Suspense></div>
-                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><CashFlowChart creditCards={projected.creditCards} wallets={projected.wallets} /></Suspense></div>
+                <Suspense fallback={<TileGrid><Tile size="wide"><ChartFallback /></Tile><Tile size="medium"><ChartFallback /></Tile><Tile size="medium"><ChartFallback /></Tile></TileGrid>}>
+                <TileGrid>
+                  <Tile size="wide"><Suspense fallback={<ChartFallback />}><CreditCardSummary cards={projected.creditCards} allExpenses={projected.invoiceExpenses} wallets={projected.wallets} refetch={projected.refetch} /></Suspense></Tile>
+                  <Tile size="wide"><Suspense fallback={<ChartFallback />}><CashFlowChart creditCards={projected.creditCards} wallets={projected.wallets} /></Suspense></Tile>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><TopExpensesList expenses={projected.monthExpenses} /></Suspense></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><SubcategoryTreemap expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></div>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><TopExpensesList expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><SubcategoryTreemap expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><IncomeVsExpenseChart totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></Suspense></div>
+                  <Tile size="small"><Suspense fallback={<ChartFallback />}><FixedVsVariableChart expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="small"><Suspense fallback={<ChartFallback />}><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
+                  <Tile size="small"><Suspense fallback={<ChartFallback />}><IncomeVsExpenseChart totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
+                  <Tile size="small"><Suspense fallback={<ChartFallback />}><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><DailySpendingChart expenses={projected.monthExpenses} /></Suspense></div>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><DailySpendingChart expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></Suspense></Tile>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><WeekComparisonChart expenses={projected.monthExpenses} /></Suspense></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><BurndownChart expenses={projected.monthExpenses} totalBudget={budgetTotals.totalBudget} /></Suspense></div>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><WeekComparisonChart expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><BurndownChart expenses={projected.monthExpenses} totalBudget={budgetTotals.totalBudget} /></Suspense></Tile>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><EndOfMonthForecast /></Suspense></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></div>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><EndOfMonthForecast /></Suspense></Tile>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></Tile>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><FixedVsVariableChart expenses={projected.monthExpenses} /></Suspense></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><SpendingHeatmap expenses={projected.monthExpenses} /></Suspense></div>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><SpendingHeatmap expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><CreditUsageChart cards={cardsForUsage} unpaidExpenses={unpaidCCExpenses} /></Suspense></Tile>
 
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><CreditUsageChart cards={cardsForUsage} unpaidExpenses={unpaidCCExpenses} /></Suspense></div>
-                  <div className="flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></div>
-
-                  <div className="lg:col-span-2 flex flex-col min-h-[280px] sm:min-h-[350px]"><Suspense fallback={<ChartFallback />}><NetWorthChart /></Suspense></div>
-                </div>
+                  <Tile size="wide"><Suspense fallback={<ChartFallback />}><NetWorthChart /></Suspense></Tile>
+                </TileGrid>
                 </Suspense>
               </>
             )}

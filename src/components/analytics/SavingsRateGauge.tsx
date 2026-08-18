@@ -30,7 +30,7 @@ export function SavingsRateGauge({ totalIncome, totalExpense }: Props) {
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 flex flex-col items-center justify-center pt-2 pb-4">
-        <svg width={180} height={120} viewBox="0 0 180 120">
+        <svg viewBox="0 0 180 120" className="w-full max-w-[200px] h-auto">
           <defs>
             <linearGradient id="savingsArcGrad" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor={ratingColor} stopOpacity={0.6} />
