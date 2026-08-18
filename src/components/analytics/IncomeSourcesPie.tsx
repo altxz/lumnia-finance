@@ -46,8 +46,8 @@ export function IncomeSourcesPie({ expenses, categories }: Props) {
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={75} paddingAngle={3} dataKey="value">
+          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <Pie data={data} cx="50%" cy="50%" innerRadius="48%" outerRadius="80%" paddingAngle={3} dataKey="value">
               {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
             </Pie>
             <Tooltip formatter={(v: number) => formatCurrency(v)} />

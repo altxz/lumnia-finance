@@ -46,7 +46,7 @@ const NetWorthChart = lazyNamedWithRetry(() => import('@/components/analytics/Ne
 import { TileGrid, Tile } from '@/components/analytics/TileGrid';
 
 function ChartFallback() {
-  return <Skeleton className="h-full w-full min-h-[280px] rounded-2xl" />;
+  return <Skeleton className="h-full w-full rounded-2xl" />;
 }
 
 function DashboardSkeleton() {

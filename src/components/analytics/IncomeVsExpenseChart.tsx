@@ -35,7 +35,7 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barGap={12} barSize={80}>
+          <BarChart data={data} barGap={6} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(160, 84%, 39%)" />
@@ -48,7 +48,7 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={40} />
+            <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={34} />
             <Tooltip content={<CustomTooltip />} />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="receitas" name="Receitas" fill="url(#gradIncome)" radius={[10, 10, 0, 0]} />
