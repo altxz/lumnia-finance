@@ -41,7 +41,7 @@ const WeekComparisonChart = lazyNamedWithRetry(() => import('@/components/analyt
 const IncomeSourcesPie = lazyNamedWithRetry(() => import('@/components/analytics/IncomeSourcesPie'), m => m.IncomeSourcesPie);
 const WaterfallChart = lazyNamedWithRetry(() => import('@/components/analytics/WaterfallChart'), m => m.WaterfallChart);
 const SpendingHeatmap = lazyNamedWithRetry(() => import('@/components/analytics/SpendingHeatmap'), m => m.SpendingHeatmap);
-const BurndownChart = lazyNamedWithRetry(() => import('@/components/analytics/BurndownChart'), m => m.BurndownChart);
+const BudgetVsActualChart = lazyNamedWithRetry(() => import('@/components/analytics/BudgetVsActualChart'), m => m.BudgetVsActualChart);
 const NetWorthChart = lazyNamedWithRetry(() => import('@/components/analytics/NetWorthChart'), m => m.NetWorthChart);
 import { TileGrid, Tile } from '@/components/analytics/TileGrid';
 
