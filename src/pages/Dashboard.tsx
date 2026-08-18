@@ -43,6 +43,7 @@ const WaterfallChart = lazyNamedWithRetry(() => import('@/components/analytics/W
 const SpendingHeatmap = lazyNamedWithRetry(() => import('@/components/analytics/SpendingHeatmap'), m => m.SpendingHeatmap);
 const BurndownChart = lazyNamedWithRetry(() => import('@/components/analytics/BurndownChart'), m => m.BurndownChart);
 const NetWorthChart = lazyNamedWithRetry(() => import('@/components/analytics/NetWorthChart'), m => m.NetWorthChart);
+import { TileGrid, Tile } from '@/components/analytics/TileGrid';
 
 function ChartFallback() {
   return <Skeleton className="h-full w-full min-h-[280px] rounded-2xl" />;
