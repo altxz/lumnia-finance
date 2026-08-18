@@ -1,22 +1,17 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { FINANCIAL_STALE_TIME } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
-import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
-import { supabase } from '@/lib/supabase';
 import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
-import { buildMonthRecurringSignature, buildRecurringSignature } from '@/lib/recurringProjection';
-import { transferCashDelta } from '@/lib/projectedBalanceMath';
-import { addDays, format, startOfDay, eachDayOfInterval, isBefore, isAfter, parseISO } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceMath';
+import { useProjectedTotals } from '@/hooks/useProjectedTotals';
+import { format, startOfDay } from 'date-fns';
 import { InfoPopover } from '@/components/ui/info-popover';
 
-type TimeFilter = 'month' | '7days' | '30days';
+type TimeFilter = 'month' | 'past15' | 'next15';
 
 interface DayData {
   label: string;
@@ -28,263 +23,105 @@ interface DayData {
 }
 
 interface CashFlowChartProps {
-  creditCards: any[];
-  wallets: { id: string; name: string; initial_balance: number; asset_type?: string }[];
+  creditCards?: any[];
+  wallets?: { id: string; name: string; initial_balance: number; asset_type?: string }[];
 }
 
-export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: CashFlowChartProps) {
-  const { user } = useAuth();
-  const { startDate: ctxStart, endDate: ctxEnd, selectedMonth, selectedYear } = useSelectedDate();
+export function CashFlowChart(_props: CashFlowChartProps = {}) {
+  const { selectedMonth, selectedYear, startDate, isCurrentMonth } = useSelectedDate();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
 
+  const {
+    monthExpenses,
+    invoiceExpenses,
+    creditCards,
+    startingBalance,
+    projectedBalance,
+    investmentWalletIds,
+    loading,
+  } = useProjectedTotals();
+
   const today = startOfDay(new Date());
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+  const lastDay = `${monthKey}-${String(daysInMonth).padStart(2, '0')}`;
 
-  // Compute date range based on filter
-  const { rangeStart, rangeEnd } = useMemo(() => {
-    if (timeFilter === '7days') {
-      const now = new Date();
-      return { rangeStart: addDays(now, -7), rangeEnd: addDays(now, 7) };
+  // Curva do mês inteiro, com o MESMO motor da página de Transações.
+  const fullMonthData = useMemo(() => {
+    const invIds = new Set(investmentWalletIds);
+
+    const { balanceMap, invoiceTotalByDay } = buildDailyBalanceMap({
+      monthExpenses,
+      invoiceExpenses,
+      creditCards,
+      startDate,
+      endDate: lastDay,
+      startingBalance,
+      isCreditCardPayment: (expense) => isTrackedCreditCardPayment(expense, creditCards),
+      investmentWalletIds,
+    });
+
+    // Barras: entradas e saídas por dia, seguindo as mesmas regras de caixa.
+    const incomeByDay: Record<string, number> = {};
+    const expenseByDay: Record<string, number> = {};
+
+    monthExpenses.forEach((e: any) => {
+      if (e.credit_card_id) return;
+      if (!e.date || e.date < startDate || e.date > lastDay) return;
+
+      if (e.type === 'transfer') {
+        const delta = transferCashDelta(e, invIds);
+        if (!delta) return;
+        if (delta > 0) incomeByDay[e.date] = (incomeByDay[e.date] || 0) + delta;
+        else expenseByDay[e.date] = (expenseByDay[e.date] || 0) - delta;
+        return;
+      }
+
+      if (isTrackedCreditCardPayment(e, creditCards)) return;
+
+      const value = Number(e.value) || 0;
+      if (e.type === 'income') incomeByDay[e.date] = (incomeByDay[e.date] || 0) + value;
+      else expenseByDay[e.date] = (expenseByDay[e.date] || 0) + value;
+    });
+
+    // Pagamento da fatura entra como saída no dia do vencimento.
+    Object.entries(invoiceTotalByDay).forEach(([day, total]) => {
+      if (!total) return;
+      expenseByDay[day] = (expenseByDay[day] || 0) + total;
+    });
+
+    const points: DayData[] = [];
+    let running = startingBalance;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${monthKey}-${String(d).padStart(2, '0')}`;
+      if (balanceMap[dateStr] !== undefined) running = balanceMap[dateStr];
+      points.push({
+        label: `${String(d).padStart(2, '0')}/${String(selectedMonth + 1).padStart(2, '0')}`,
+        dateStr,
+        receitas: Math.round((incomeByDay[dateStr] || 0) * 100) / 100,
+        despesas: Math.round((expenseByDay[dateStr] || 0) * 100) / 100,
+        saldo: Math.round(running * 100) / 100,
+        projected: dateStr > todayStr,
+      });
     }
-    if (timeFilter === '30days') {
-      const now = new Date();
-      return { rangeStart: now, rangeEnd: addDays(now, 30) };
-    }
-    // 'month' — selected calendar month from context
-    return {
-      rangeStart: new Date(selectedYear, selectedMonth, 1),
-      rangeEnd: new Date(selectedYear, selectedMonth + 1, 0),
-    };
-  }, [timeFilter, selectedMonth, selectedYear]);
-
-  const rangeStartStr = format(rangeStart, 'yyyy-MM-dd');
-  const rangeEndStr = format(rangeEnd, 'yyyy-MM-dd');
-
-  // Dados em cache (chave estável por utilizador): o gráfico não depende do
-  // mês selecionado, logo trocar de mês não refaz as consultas.
-  const { data, isLoading: loading } = useQuery({
-    queryKey: ['expenses', 'cash-flow-chart', user?.id],
-    queryFn: async () => {
-      const [expensesRes, recurringRes, unpaidRes] = await Promise.all([
-        // Spec: ALL expenses ordered by date, with invoice_month included
-        supabase.from('expenses').select('value, type, credit_card_id, date, invoice_month, is_paid, is_recurring, description, wallet_id, destination_wallet_id')
-          .eq('user_id', user!.id).order('date'),
-        supabase.from('expenses').select('description, value, type, date, credit_card_id, invoice_month')
-          .eq('user_id', user!.id).eq('is_recurring', true),
-        supabase.from('expenses').select('value, credit_card_id, invoice_month')
-          .eq('user_id', user!.id).eq('is_paid', false).not('credit_card_id', 'is', null),
-      ]);
-      return {
-        allExpenses: expensesRes.data || [],
-        recurringExpenses: recurringRes.data || [],
-        unpaidCreditExpenses: unpaidRes.data || [],
-      };
-    },
-    enabled: !!user,
-    staleTime: FINANCIAL_STALE_TIME,
-  });
-
-  const allExpenses = data?.allExpenses ?? [];
-  const recurringExpenses = data?.recurringExpenses ?? [];
-  const unpaidCreditExpenses = data?.unpaidCreditExpenses ?? [];
+    return points;
+  }, [monthExpenses, invoiceExpenses, creditCards, startingBalance, startDate, lastDay, monthKey, daysInMonth, selectedMonth, investmentWalletIds, todayStr]);
 
   const chartData = useMemo(() => {
-    // 1) Base balance from wallets
-    const walletsBase = propWallets.reduce((s, w) => s + Number(w.initial_balance || 0), 0);
-    const investmentWalletSet = new Set(
-      propWallets.filter(w => (w as any).asset_type === 'investment').map(w => w.id),
-    );
-
-    // 2) Compute running balance up to rangeStart from all real transactions
-    // Uses projected logic: ignores is_paid, assumes everything scheduled happened
-    let preRangeBalance = walletsBase;
-    const rangeYm = format(rangeStart, 'yyyy-MM');
-
-      allExpenses.forEach(e => {
-      if (e.type === 'transfer') {
-        const delta = transferCashDelta(e as any, investmentWalletSet);
-        if (delta && e.date < rangeStartStr) preRangeBalance += delta;
-        return;
-      }
-      const dStr = e.date;
-
-      if (e.credit_card_id && e.type === 'expense') {
-        // Credit card: subtract based on invoice_month, not date
-        if (e.invoice_month && e.invoice_month < rangeYm) {
-          preRangeBalance -= Number(e.value);
-        }
-        } else if (dStr < rangeStartStr) {
-        // Non-CC: accumulate by date (ignore is_paid)
-        if (e.type === 'income') preRangeBalance += Number(e.value);
-          else if (e.type === 'expense' && !isTrackedCreditCardPayment(e, propCards)) preRangeBalance -= Number(e.value);
-      }
-    });
-
-    // Virtual recurring contributions to preRangeBalance:
-    // For each recurring tx, count how many months between its start and rangeStart
-    // it would have contributed, minus real entries already counted above
-    // Build a lookup of real entries by month signature for fast duplicate detection
-    const realByMonthSig = new Set<string>();
-    allExpenses.forEach(e => {
-      if (e.type === 'transfer') return;
-      const ym = e.date.substring(0, 7); // 'YYYY-MM'
-      realByMonthSig.add(buildMonthRecurringSignature(ym, e.type, e.value, e.description));
-    });
-
-    recurringExpenses.forEach(r => {
-      if (r.type === 'transfer' || r.credit_card_id) return;
-      const rDate = new Date(r.date + 'T12:00:00');
-      const rStartMonth = rDate.getFullYear() * 12 + rDate.getMonth();
-      const rangeMonth = rangeStart.getFullYear() * 12 + rangeStart.getMonth();
-      for (let m = rStartMonth; m < rangeMonth; m++) {
-        const yr = Math.floor(m / 12);
-        const mo = m % 12;
-        const monthKey = `${yr}-${String(mo + 1).padStart(2, '0')}`;
-        const sig = buildMonthRecurringSignature(monthKey, r.type, r.value, r.description);
-        if (realByMonthSig.has(sig)) continue;
-        if (r.type === 'income') preRangeBalance += Number(r.value);
-        else preRangeBalance -= Number(r.value);
-      }
-    });
-
-    // 3) Build in-range transactions by date (all, regardless of is_paid)
-    const txByDate: Record<string, { income: number; expense: number }> = {};
-      allExpenses.forEach(e => {
-      const dStr = e.date;
-      if (e.type === 'transfer') {
-        const delta = transferCashDelta(e as any, investmentWalletSet);
-        if (delta && dStr >= rangeStartStr && dStr <= rangeEndStr) {
-          if (!txByDate[dStr]) txByDate[dStr] = { income: 0, expense: 0 };
-          if (delta > 0) txByDate[dStr].income += delta;
-          else txByDate[dStr].expense += -delta;
-        }
-        return;
-      }
-      if (dStr >= rangeStartStr && dStr <= rangeEndStr) {
-        if (!txByDate[dStr]) txByDate[dStr] = { income: 0, expense: 0 };
-        if (e.type === 'income') txByDate[dStr].income += Number(e.value);
-          else if (!e.credit_card_id && !isTrackedCreditCardPayment(e, propCards)) txByDate[dStr].expense += Number(e.value);
-      }
-    });
-
-    // Credit card expenses within range month (by invoice_month)
-    allExpenses.forEach(e => {
-      if (e.type !== 'expense' || !e.credit_card_id) return;
-      if (e.invoice_month !== rangeYm) return;
-      // Find due day from card
-      const card = propCards.find(c => c.id === e.credit_card_id);
-      if (!card) return;
-      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-      const dueDay = Math.min(card.due_day || 10, daysInMonth);
-      const dueDateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
-      if (dueDateStr >= rangeStartStr && dueDateStr <= rangeEndStr) {
-        if (!txByDate[dueDateStr]) txByDate[dueDateStr] = { income: 0, expense: 0 };
-        txByDate[dueDateStr].expense += Number(e.value);
-      }
-    });
-
-    // 4) Build projected data for future days (recurring)
-    const projByDate: Record<string, { income: number; expense: number }> = {};
-    const todayStr = format(today, 'yyyy-MM-dd');
-
-    // Recurring projections — project into ALL days in range (not just future)
-    // To avoid double-counting, check if a real transaction already exists for this
-    // recurring item in the same month
-    // Build signature set for real expenses in range to detect duplicates
-    const realInRangeSignatures = new Set<string>();
-    allExpenses.forEach(e => {
-      if (e.date >= rangeStartStr && e.date <= rangeEndStr) {
-        realInRangeSignatures.add(buildRecurringSignature(e.type, e.value, e.description));
-      }
-    });
-
-    recurringExpenses.forEach(r => {
-      if (r.type === 'transfer') return;
-      if (r.credit_card_id) return; // CC recurring handled by invoice logic
-      // Check if a matching real entry already exists in this month's range
-      const rSig = buildRecurringSignature(r.type, r.value, r.description);
-      if (realInRangeSignatures.has(rSig)) return;
-      const origDay = parseISO(r.date).getDate();
-      const recurringStartStr = r.date; // original start date
-      // Project into each month in range
-      const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
-      const monthsSeen = new Set<string>();
-      days.forEach(d => {
-        const mk = format(d, 'yyyy-MM');
-        if (monthsSeen.has(mk)) return;
-        monthsSeen.add(mk);
-        const daysInM = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        const clampedDay = Math.min(origDay, daysInM);
-        const projDate = new Date(d.getFullYear(), d.getMonth(), clampedDay);
-        const projStr = format(projDate, 'yyyy-MM-dd');
-        if (projStr < rangeStartStr || projStr > rangeEndStr) return;
-        // Only project if the recurring tx started on or before this projected date
-        if (recurringStartStr > projStr) return;
-        if (!projByDate[projStr]) projByDate[projStr] = { income: 0, expense: 0 };
-        if (r.type === 'income') projByDate[projStr].income += Number(r.value);
-        else projByDate[projStr].expense += Number(r.value);
-      });
-    });
-
-    // Credit card bill projections
-    const billByCard: Record<string, number> = {};
-    unpaidCreditExpenses.forEach(e => {
-      if (e.credit_card_id) {
-        billByCard[e.credit_card_id] = (billByCard[e.credit_card_id] || 0) + Number(e.value);
-      }
-    });
-    propCards.forEach(card => {
-      const bill = billByCard[card.id];
-      if (!bill || bill <= 0) return;
-      const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
-      const monthsSeen = new Set<string>();
-      days.forEach(d => {
-        const mk = format(d, 'yyyy-MM');
-        if (monthsSeen.has(mk)) return;
-        monthsSeen.add(mk);
-        const daysInM = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        const dueDay = Math.min(card.due_day || 10, daysInM);
-        const dueDate = new Date(d.getFullYear(), d.getMonth(), dueDay);
-        const dueStr = format(dueDate, 'yyyy-MM-dd');
-        if (dueStr <= todayStr || dueStr < rangeStartStr || dueStr > rangeEndStr) return;
-        if (!projByDate[dueStr]) projByDate[dueStr] = { income: 0, expense: 0 };
-        projByDate[dueStr].expense += bill;
-      });
-    });
-
-    // 5) Build day-by-day chart
-    const daysList = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
-    let runningBalance = preRangeBalance;
-    const result: DayData[] = [];
-
-    daysList.forEach(d => {
-      const dStr = format(d, 'yyyy-MM-dd');
-      const isFuture = isAfter(d, today);
-      const real = txByDate[dStr] || { income: 0, expense: 0 };
-      const proj = projByDate[dStr] || { income: 0, expense: 0 };
-
-      const dayIncome = real.income + proj.income;
-      const dayExpense = real.expense + proj.expense;
-      runningBalance += dayIncome - dayExpense;
-
-      result.push({
-        label: format(d, 'dd/MM'),
-        dateStr: dStr,
-        receitas: dayIncome,
-        despesas: dayExpense,
-        saldo: runningBalance,
-        projected: isFuture,
-      });
-    });
-
-    return result;
-  }, [propWallets, allExpenses, recurringExpenses, unpaidCreditExpenses, propCards, rangeStartStr, rangeEndStr, today, rangeStart, rangeEnd, selectedMonth, selectedYear]);
+    if (timeFilter === 'month' || !isCurrentMonth) return fullMonthData;
+    const todayIndex = fullMonthData.findIndex(p => p.dateStr === todayStr);
+    if (todayIndex < 0) return fullMonthData;
+    if (timeFilter === 'past15') return fullMonthData.slice(Math.max(0, todayIndex - 14), todayIndex + 1);
+    return fullMonthData.slice(todayIndex, Math.min(fullMonthData.length, todayIndex + 15));
+  }, [fullMonthData, timeFilter, isCurrentMonth, todayStr]);
 
   const lastPoint = chartData[chartData.length - 1];
   const firstPoint = chartData[0];
-  const endBalance = lastPoint?.saldo || 0;
-  const startBalance = firstPoint?.saldo || 0;
-  const balanceChange = endBalance - startBalance;
-  const todayStr = format(today, 'dd/MM');
+  const endBalance = timeFilter === 'month' ? projectedBalance : (lastPoint?.saldo ?? 0);
+  const baseBalance = timeFilter === 'month' ? startingBalance : (firstPoint?.saldo ?? 0);
+  const balanceChange = endBalance - baseBalance;
+  const todayLabel = format(today, 'dd/MM');
 
   const tickInterval = Math.max(1, Math.floor(chartData.length / 8));
 
@@ -304,7 +141,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Fluxo de Caixa</CardTitle>
-            <InfoPopover><p>Mostra o saldo real da sua conta ao longo do tempo, somando entradas e subtraindo saídas dia a dia.</p></InfoPopover>
+            <InfoPopover><p>Saldo dia a dia do mês selecionado com o mesmo cálculo da página de Transações: receitas, despesas em débito (pagas e pendentes), recorrências projetadas e o pagamento das faturas no vencimento.</p></InfoPopover>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Select value={timeFilter} onValueChange={v => setTimeFilter(v as TimeFilter)}>
@@ -312,9 +149,9 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="month">Este Mês</SelectItem>
-                <SelectItem value="7days">7 dias (±7)</SelectItem>
-                <SelectItem value="30days">Próximos 30 dias</SelectItem>
+                <SelectItem value="month">Mês completo</SelectItem>
+                <SelectItem value="past15">Últimos 15 dias</SelectItem>
+                <SelectItem value="next15">Próximos 15 dias</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1.5">
@@ -329,7 +166,7 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
             </div>
           </div>
         </div>
-        <div className="flex gap-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Receitas
           </span>
@@ -339,44 +176,39 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-primary" /> Saldo
           </span>
+          <span>Saldo previsto: <strong className={endBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}>{formatCurrency(endBalance)}</strong></span>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-             <XAxis
-               dataKey="label"
-               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-               axisLine={false}
-               tickLine={false}
-               interval={tickInterval}
-             />
-             <YAxis
-               yAxisId="bars"
-               tickFormatter={(v) => {
-                 if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
-                 return `R$${v.toFixed(0)}`;
-               }}
-               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-               axisLine={false}
-               tickLine={false}
-               width={40}
-               orientation="left"
-             />
-             <YAxis
-               yAxisId="line"
-               tickFormatter={(v) => {
-                 if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
-                 return `R$${v.toFixed(0)}`;
-               }}
-               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-               axisLine={false}
-               tickLine={false}
-               width={40}
-               orientation="right"
-               domain={['auto', 'auto']}
-             />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+              interval={tickInterval}
+            />
+            <YAxis
+              yAxisId="bars"
+              tickFormatter={(v) => (Math.abs(v) >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v.toFixed(0)}`)}
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+              width={40}
+              orientation="left"
+            />
+            <YAxis
+              yAxisId="line"
+              tickFormatter={(v) => (Math.abs(v) >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v.toFixed(0)}`)}
+              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+              width={40}
+              orientation="right"
+              domain={['auto', 'auto']}
+            />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
@@ -396,14 +228,16 @@ export function CashFlowChart({ creditCards: propCards, wallets: propWallets }: 
                 );
               }}
             />
-            <ReferenceLine
-              yAxisId="bars"
-              x={todayStr}
-              stroke="hsl(var(--muted-foreground))"
-              strokeDasharray="4 4"
-              strokeOpacity={0.6}
-              label={{ value: 'Hoje', position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-            />
+            {isCurrentMonth && (
+              <ReferenceLine
+                yAxisId="bars"
+                x={todayLabel}
+                stroke="hsl(var(--muted-foreground))"
+                strokeDasharray="4 4"
+                strokeOpacity={0.6}
+                label={{ value: 'Hoje', position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              />
+            )}
             <Bar yAxisId="bars" dataKey="receitas" fill="hsl(142, 71%, 45%)" radius={[3, 3, 0, 0]} barSize={8} opacity={0.85} />
             <Bar yAxisId="bars" dataKey="despesas" fill="hsl(var(--destructive))" radius={[3, 3, 0, 0]} barSize={8} opacity={0.85} />
             <Line
