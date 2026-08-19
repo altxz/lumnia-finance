@@ -206,69 +206,86 @@ var list_transactions_default = defineTool({
 // src/lib/mcp/tools/create-transaction.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z2 } from "npm:zod@^4.4.3";
-var create_transaction_default = defineTool2({
-  name: "create_transaction",
-  title: "Criar transa\xE7\xE3o",
-  description: "Cria uma nova despesa ou receita para o usu\xE1rio autenticado. Use tipo 'expense' para despesa e 'income' para receita.",
-  inputSchema: {
-    description: z2.string().min(1).describe("Descri\xE7\xE3o curta da transa\xE7\xE3o."),
-    value: z2.number().positive().describe("Valor absoluto (positivo) em BRL."),
-    date: z2.string().describe("Data ISO YYYY-MM-DD."),
-    type: z2.enum(["expense", "income"]).describe("Tipo da transa\xE7\xE3o."),
-    category: z2.string().optional().describe("Nome/slug da categoria final."),
-    is_paid: z2.boolean().optional().describe("Se j\xE1 foi pago/recebido. Padr\xE3o: true."),
-    notes: z2.string().optional()
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-  handler: safeHandler("create_transaction", async (input, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
-    }
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("expenses").insert({
-      user_id: ctx.getUserId(),
-      description: input.description,
-      value: input.value,
-      date: input.date,
-      type: input.type,
-      final_category: input.category ?? "outros",
-      category_ai: input.category ?? "outros",
-      is_paid: input.is_paid ?? true,
-      notes: input.notes ?? null
-    }).select().single();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Criada: ${data.id}` }],
-      structuredContent: { transaction: data }
-    };
-  })
-});
 
-// src/lib/mcp/tools/list-categories.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var list_categories_default = defineTool3({
-  name: "list_categories",
-  title: "Listar categorias",
-  description: "Lista todas as categorias e subcategorias do usu\xE1rio autenticado.",
-  inputSchema: {},
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: safeHandler("list_categories", async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
-    }
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("categories").select("id,name,icon,color,parent_id,active,sort_order").order("sort_order");
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { categories: data ?? [] }
-    };
-  })
-});
-
-// src/lib/mcp/tools/month-summary.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z3 } from "npm:zod@^4.4.3";
+// src/lib/mcp/resolve.ts
+var ResolveError = class extends Error {
+};
+function norm(value) {
+  return value.trim().toLowerCase();
+}
+async function resolveByName(sb, table, label, name, select = "id,name") {
+  const { data, error } = await sb.from(table).select(select);
+  if (error) throw new ResolveError(error.message);
+  const rows = data ?? [];
+  const target = norm(name);
+  let matches = rows.filter((r) => norm(String(r.name)) === target);
+  if (matches.length === 0) matches = rows.filter((r) => norm(String(r.name)).includes(target));
+  if (matches.length === 0)
+    throw new ResolveError(
+      `N\xE3o encontrei ${label} chamada "${name}". Op\xE7\xF5es: ${rows.map((r) => r.name).join(", ") || "nenhuma"}.`
+    );
+  if (matches.length > 1)
+    throw new ResolveError(
+      `Existe mais de ${label} com o nome "${name}". Informe o id: ${matches.map((m) => `${m.name} (${m.id})`).join(", ")}.`
+    );
+  return matches[0];
+}
+async function resolveWallet(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("wallets").select("id,name,asset_type,currency").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Carteira n\xE3o encontrada para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "wallets", "carteira", opts.name, "id,name,asset_type,currency");
+  return null;
+}
+async function resolveCreditCard(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("credit_cards").select("*").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Cart\xE3o de cr\xE9dito n\xE3o encontrado para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "credit_cards", "cart\xE3o", opts.name, "*");
+  return null;
+}
+async function resolveProject(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("projects").select("id,name").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Projeto n\xE3o encontrado para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "projects", "projeto", opts.name);
+  return null;
+}
+async function resolveCategory(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("categories").select("id,name,parent_id,active").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Categoria n\xE3o encontrada para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "categories", "categoria", opts.name, "id,name,parent_id,active");
+  return null;
+}
+async function defaultWalletId(sb) {
+  const { data } = await sb.from("user_settings").select("default_wallet_id").maybeSingle();
+  if (data?.default_wallet_id) return data.default_wallet_id;
+  const { data: wallets } = await sb.from("wallets").select("id,asset_type,created_at").order("created_at", { ascending: true });
+  const first = (wallets ?? []).find((w) => w.asset_type !== "investment");
+  return first?.id ?? null;
+}
+function ok(text, structured) {
+  return {
+    content: [{ type: "text", text }],
+    ...structured ? { structuredContent: structured } : {}
+  };
+}
+function fail(text) {
+  return { content: [{ type: "text", text }], isError: true };
+}
 
 // src/lib/creditCardPayments.ts
 var PAYMENT_PREFIX_RE = /^pagamento(?: de)? fatura\s*/i;
@@ -400,6 +417,493 @@ function matchExpensesToInvoice(expenses, period) {
   }
   return { ...period, status, transactions, total };
 }
+
+// src/lib/mcp/tools/create-transaction.ts
+var dateSchema2 = z2.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato YYYY-MM-DD.");
+var create_transaction_default = defineTool2({
+  name: "create_transaction",
+  title: "Criar transa\xE7\xE3o",
+  description: "Cria uma despesa ou receita. Aceita conta/carteira (nome ou id), cart\xE3o de cr\xE9dito, forma de pagamento, recorr\xEAncia fixa mensal/anual, parcelamento, projeto, tags e observa\xE7\xE3o. Sem carteira informada, usa a carteira padr\xE3o do usu\xE1rio. Para despesas no cart\xE3o, o m\xEAs da fatura \xE9 calculado automaticamente pelo fechamento do cart\xE3o.",
+  inputSchema: {
+    description: z2.string().min(1).describe("Descri\xE7\xE3o curta da transa\xE7\xE3o."),
+    value: z2.number().positive().describe("Valor absoluto (positivo) em BRL. Em parcelamentos, \xE9 o valor total."),
+    date: dateSchema2.describe("Data ISO YYYY-MM-DD."),
+    type: z2.enum(["expense", "income"]).describe("expense = despesa, income = receita."),
+    category: z2.string().optional().describe("Nome da categoria."),
+    category_id: z2.string().uuid().optional().describe("ID da categoria (preferencial)."),
+    wallet: z2.string().optional().describe("Nome da conta/carteira."),
+    wallet_id: z2.string().uuid().optional().describe("ID da conta/carteira."),
+    credit_card: z2.string().optional().describe("Nome do cart\xE3o de cr\xE9dito (para compras no cr\xE9dito)."),
+    credit_card_id: z2.string().uuid().optional().describe("ID do cart\xE3o de cr\xE9dito."),
+    invoice_month: z2.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs da fatura (YYYY-MM). Se omitido, \xE9 calculado pelo fechamento do cart\xE3o."),
+    payment_method: z2.string().optional().describe("Forma de pagamento (ex: pix, debito, credito, dinheiro)."),
+    is_paid: z2.boolean().optional().describe("Se j\xE1 foi pago/recebido. Padr\xE3o: true."),
+    is_recurring: z2.boolean().optional().describe("Despesa/receita fixa que se repete."),
+    frequency: z2.enum(["monthly", "yearly"]).optional().describe("Frequ\xEAncia da recorr\xEAncia. Padr\xE3o: monthly."),
+    installments: z2.number().int().min(1).max(360).optional().describe("N\xFAmero de parcelas. Acima de 1, cria uma parcela por m\xEAs dividindo o valor total."),
+    project: z2.string().optional().describe("Nome do projeto/centro de custo."),
+    project_id: z2.string().uuid().optional().describe("ID do projeto."),
+    tags: z2.array(z2.string()).optional().describe("Etiquetas livres."),
+    notes: z2.string().optional().describe("Observa\xE7\xF5es.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler("create_transaction", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    try {
+      const card = await resolveCreditCard(sb, { id: input.credit_card_id, name: input.credit_card });
+      const project = await resolveProject(sb, { id: input.project_id, name: input.project });
+      const category = await resolveCategory(sb, { id: input.category_id, name: input.category });
+      let wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      let walletId = wallet?.id ?? null;
+      if (!card && !walletId) walletId = await defaultWalletId(sb);
+      const categoryName = category?.name ?? input.category ?? "outros";
+      const installments = input.installments ?? 1;
+      const frequency = input.is_recurring ? input.frequency ?? "monthly" : null;
+      let invoiceMonth = input.invoice_month ?? null;
+      if (card && !invoiceMonth) {
+        const due = getPaymentDate(input.date, card);
+        invoiceMonth = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}`;
+      }
+      const base = {
+        user_id: userId,
+        description: input.description,
+        type: input.type,
+        final_category: categoryName,
+        category_ai: categoryName,
+        wallet_id: card ? walletId : walletId,
+        credit_card_id: card?.id ?? null,
+        invoice_month: invoiceMonth,
+        payment_method: input.payment_method ?? (card ? "credito" : null),
+        is_paid: input.is_paid ?? true,
+        is_recurring: !!input.is_recurring,
+        frequency,
+        project_id: project?.id ?? null,
+        tags: input.tags ?? null,
+        notes: input.notes ?? null
+      };
+      if (installments > 1) {
+        const groupId = crypto.randomUUID();
+        const perInstallment = Math.round(input.value / installments * 100) / 100;
+        const start = /* @__PURE__ */ new Date(`${input.date}T12:00:00`);
+        const rows = Array.from({ length: installments }, (_, i) => {
+          const d = new Date(start);
+          d.setMonth(d.getMonth() + i);
+          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          let rowInvoice = invoiceMonth;
+          if (card) {
+            const due = getPaymentDate(iso, card);
+            rowInvoice = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}`;
+          }
+          return {
+            ...base,
+            date: iso,
+            value: perInstallment,
+            installments,
+            installment_group_id: groupId,
+            installment_info: `${i + 1}/${installments}`,
+            invoice_month: rowInvoice,
+            is_paid: i === 0 ? base.is_paid : false,
+            is_recurring: false,
+            frequency: null
+          };
+        });
+        const { data: data2, error: error2 } = await sb.from("expenses").insert(rows).select("id,date,value");
+        if (error2) return fail(error2.message);
+        return ok(
+          `Criadas ${installments} parcelas de R$ ${perInstallment.toFixed(2)} para "${input.description}".`,
+          { installments: data2, installment_group_id: groupId }
+        );
+      }
+      const { data, error } = await sb.from("expenses").insert({ ...base, date: input.date, value: input.value, installments: 1 }).select().single();
+      if (error) return fail(error.message);
+      return ok(
+        `Criada: ${input.description} \u2014 R$ ${input.value.toFixed(2)} em ${input.date}${card ? ` (cart\xE3o ${card.name}, fatura ${invoiceMonth})` : ""}. ID ${data.id}`,
+        { transaction: data }
+      );
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/update-transaction.ts
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z3 } from "npm:zod@^4.4.3";
+
+// src/lib/recurringProjection.ts
+function normalizeRecurringDescription(description) {
+  return (description ?? "").trim().toLowerCase();
+}
+function buildRecurringLooseSignature(type, description) {
+  return `${type}|${normalizeRecurringDescription(description)}`;
+}
+function buildRecurringSignature(type, value, description) {
+  return `${type}|${normalizeRecurringDescription(description)}|${Number(value).toFixed(2)}`;
+}
+function buildRecurringExceptionSignature(templateId, occurrenceDate) {
+  return `${templateId}|${occurrenceDate}`;
+}
+function shouldProjectRecurringInMonth(templateDate, selectedYear, selectedMonth, frequency) {
+  const template = /* @__PURE__ */ new Date(`${templateDate}T12:00:00`);
+  const templateMonthIndex = template.getFullYear() * 12 + template.getMonth();
+  const selectedMonthIndex = selectedYear * 12 + selectedMonth;
+  if (selectedMonthIndex < templateMonthIndex) return false;
+  if (frequency === "yearly") {
+    return template.getMonth() === selectedMonth;
+  }
+  return true;
+}
+function buildFutureRecurringExceptionDates(templateDate, fromDate, frequency, yearsAhead = 10) {
+  const normalizedFrequency = frequency === "annual" ? "yearly" : frequency ?? "monthly";
+  const template = /* @__PURE__ */ new Date(`${templateDate}T12:00:00`);
+  const effective = /* @__PURE__ */ new Date(`${fromDate}T12:00:00`);
+  const dates = [];
+  if (normalizedFrequency === "yearly") {
+    for (let year = effective.getFullYear(); year <= effective.getFullYear() + yearsAhead; year++) {
+      const month = template.getMonth();
+      const day = Math.min(template.getDate(), new Date(year, month + 1, 0).getDate());
+      dates.push(`${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+    }
+    return dates;
+  }
+  if (normalizedFrequency === "weekly") {
+    const cursor = /* @__PURE__ */ new Date(`${templateDate}T12:00:00`);
+    while (cursor < effective) {
+      cursor.setDate(cursor.getDate() + 7);
+    }
+    const end = /* @__PURE__ */ new Date(`${fromDate}T12:00:00`);
+    end.setFullYear(end.getFullYear() + yearsAhead);
+    while (cursor <= end) {
+      dates.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`);
+      cursor.setDate(cursor.getDate() + 7);
+    }
+    return dates;
+  }
+  let monthIndex = effective.getFullYear() * 12 + effective.getMonth();
+  const lastMonthIndex = (effective.getFullYear() + yearsAhead) * 12 + effective.getMonth();
+  while (monthIndex <= lastMonthIndex) {
+    const year = Math.floor(monthIndex / 12);
+    const month = monthIndex % 12;
+    const day = Math.min(template.getDate(), new Date(year, month + 1, 0).getDate());
+    dates.push(`${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+    monthIndex += 1;
+  }
+  return dates;
+}
+function buildMaterializedRecurringSignature(item) {
+  return [
+    item.type,
+    normalizeRecurringDescription(item.description),
+    item.final_category ?? "",
+    item.wallet_id ?? "",
+    item.credit_card_id ?? "",
+    item.payment_method ?? "",
+    item.project_id ?? ""
+  ].join("|");
+}
+function hideMaterializedRecurringTemplates(items) {
+  const materializedSignatures = new Set(
+    items.filter((item) => !item.is_recurring).map((item) => buildMaterializedRecurringSignature(item))
+  );
+  return items.filter((item) => !(item.is_recurring && materializedSignatures.has(buildMaterializedRecurringSignature(item))));
+}
+function buildEffectiveMonthExpenses({
+  monthExpenses,
+  recurringTemplates,
+  year,
+  month,
+  exceptionSet
+}) {
+  const visible = hideMaterializedRecurringTemplates(monthExpenses);
+  const realSignatures = new Set(visible.map((e) => buildRecurringSignature(e.type, e.value, e.description)));
+  const realLooseSignatures = new Set(visible.map((e) => buildRecurringLooseSignature(e.type, e.description)));
+  const materializedSignatures = new Set(
+    visible.filter((e) => !e.is_recurring).map((e) => buildMaterializedRecurringSignature(e))
+  );
+  const realIds = new Set(visible.map((e) => e.id));
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const virtualEntries = [];
+  recurringTemplates.forEach((template) => {
+    if (template.id && realIds.has(template.id)) return;
+    if (template.type === "transfer" || template.credit_card_id) return;
+    if (!shouldProjectRecurringInMonth(template.date, year, month, template.frequency)) return;
+    if (realSignatures.has(buildRecurringSignature(template.type, template.value, template.description)) || realLooseSignatures.has(buildRecurringLooseSignature(template.type, template.description)) || materializedSignatures.has(buildMaterializedRecurringSignature(template)))
+      return;
+    const originalDay = (/* @__PURE__ */ new Date(`${template.date}T12:00:00`)).getDate();
+    const day = Math.min(originalDay, daysInMonth);
+    const occurrenceDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (exceptionSet.has(buildRecurringExceptionSignature(template.id ?? "", occurrenceDate))) return;
+    virtualEntries.push({ ...template, date: occurrenceDate, is_paid: false });
+  });
+  return [...visible, ...virtualEntries];
+}
+
+// src/lib/mcp/tools/update-transaction.ts
+var dateSchema3 = z3.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato YYYY-MM-DD.");
+var update_transaction_default = defineTool3({
+  name: "update_transaction",
+  title: "Editar transa\xE7\xE3o",
+  description: "Edita uma transa\xE7\xE3o existente pelo id: descri\xE7\xE3o, valor, data, categoria, conta/carteira, cart\xE3o, pago/n\xE3o pago, recorr\xEAncia, projeto, tags e observa\xE7\xE3o. Em s\xE9ries recorrentes ou parceladas use scope: 'single' (apenas esta ocorr\xEAncia), 'future' (esta e as pr\xF3ximas, preservando o hist\xF3rico) ou 'all' (toda a s\xE9rie). Confirme com o usu\xE1rio antes de aplicar em s\xE9rie.",
+  inputSchema: {
+    id: z3.string().uuid().describe("ID da transa\xE7\xE3o (use search/list_transactions para descobrir)."),
+    scope: z3.enum(["single", "future", "all"]).optional().describe("Escopo em s\xE9ries recorrentes/parceladas. Padr\xE3o: single."),
+    description: z3.string().min(1).optional(),
+    value: z3.number().positive().optional(),
+    date: dateSchema3.optional(),
+    type: z3.enum(["expense", "income"]).optional(),
+    category: z3.string().optional(),
+    category_id: z3.string().uuid().optional(),
+    wallet: z3.string().optional().describe("Nome da conta/carteira."),
+    wallet_id: z3.string().uuid().optional(),
+    credit_card: z3.string().optional(),
+    credit_card_id: z3.string().uuid().optional(),
+    remove_credit_card: z3.boolean().optional().describe("true para transformar em despesa no d\xE9bito."),
+    invoice_month: z3.string().regex(/^\d{4}-\d{2}$/).optional(),
+    payment_method: z3.string().optional(),
+    is_paid: z3.boolean().optional(),
+    is_recurring: z3.boolean().optional().describe("Ativa/desativa recorr\xEAncia fixa."),
+    frequency: z3.enum(["monthly", "yearly"]).optional(),
+    project: z3.string().optional(),
+    project_id: z3.string().uuid().optional(),
+    tags: z3.array(z3.string()).optional(),
+    notes: z3.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  handler: safeHandler("update_transaction", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    const scope = input.scope ?? "single";
+    const { data: row, error: rowError } = await sb.from("expenses").select("*").eq("id", input.id).maybeSingle();
+    if (rowError) return fail(rowError.message);
+    if (!row) return fail("Transa\xE7\xE3o n\xE3o encontrada para esta conta.");
+    try {
+      const card = input.remove_credit_card ? null : await resolveCreditCard(sb, { id: input.credit_card_id, name: input.credit_card });
+      const wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      const project = await resolveProject(sb, { id: input.project_id, name: input.project });
+      const category = await resolveCategory(sb, { id: input.category_id, name: input.category });
+      const patch = {};
+      if (input.description !== void 0) patch.description = input.description;
+      if (input.value !== void 0) patch.value = input.value;
+      if (input.date !== void 0) patch.date = input.date;
+      if (input.type !== void 0) patch.type = input.type;
+      if (category) {
+        patch.final_category = category.name;
+      } else if (input.category !== void 0) {
+        patch.final_category = input.category;
+      }
+      if (wallet) patch.wallet_id = wallet.id;
+      if (card) patch.credit_card_id = card.id;
+      if (input.remove_credit_card) {
+        patch.credit_card_id = null;
+        patch.invoice_month = null;
+      }
+      if (input.payment_method !== void 0) patch.payment_method = input.payment_method;
+      if (input.is_paid !== void 0) patch.is_paid = input.is_paid;
+      if (input.project !== void 0 || input.project_id !== void 0) patch.project_id = project?.id ?? null;
+      if (input.tags !== void 0) patch.tags = input.tags.length ? input.tags : null;
+      if (input.notes !== void 0) patch.notes = input.notes || null;
+      if (input.is_recurring !== void 0) {
+        patch.is_recurring = input.is_recurring;
+        patch.frequency = input.is_recurring ? input.frequency ?? row.frequency ?? "monthly" : null;
+      } else if (input.frequency !== void 0) {
+        patch.frequency = input.frequency;
+      }
+      const finalCardId = patch.credit_card_id ?? row.credit_card_id;
+      if (input.invoice_month !== void 0) {
+        patch.invoice_month = input.invoice_month;
+      } else if (finalCardId && (input.date !== void 0 || card)) {
+        const cardData = card ?? await resolveCreditCard(sb, { id: finalCardId });
+        const due = getPaymentDate(patch.date ?? row.date, cardData);
+        patch.invoice_month = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}`;
+      }
+      if (Object.keys(patch).length === 0) return fail("Nenhum campo para atualizar foi informado.");
+      const isInstallment = !!row.installment_group_id;
+      if (isInstallment && scope !== "single") {
+        const shared = { ...patch };
+        delete shared.date;
+        delete shared.invoice_month;
+        const { data: data2, error: error2 } = await sb.from("expenses").update(shared).eq("installment_group_id", row.installment_group_id).select("id");
+        if (error2) return fail(error2.message);
+        return ok(`Atualizadas ${data2?.length ?? 0} parcelas do grupo.`, { updated: data2 });
+      }
+      if (row.is_recurring && scope === "single") {
+        const occurrence = row.date;
+        const { error: excError } = await sb.from("recurring_exceptions").insert({ user_id: userId, template_id: row.id, occurrence_date: occurrence });
+        if (excError && !`${excError.message}`.toLowerCase().includes("duplicate")) return fail(excError.message);
+        const { data: data2, error: error2 } = await sb.from("expenses").insert({
+          ...row,
+          ...patch,
+          id: void 0,
+          created_at: void 0,
+          is_recurring: false,
+          frequency: null,
+          date: patch.date ?? occurrence
+        }).select().single();
+        if (error2) return fail(error2.message);
+        return ok("Altera\xE7\xE3o aplicada apenas nesta ocorr\xEAncia.", { transaction: data2 });
+      }
+      if (row.is_recurring && scope !== "single") {
+        const newDate = patch.date ?? row.date;
+        const cutoff = row.date < newDate ? row.date : newDate;
+        const frequency = patch.frequency ?? row.frequency ?? "monthly";
+        const exceptionDates = buildFutureRecurringExceptionDates(row.date, cutoff, frequency);
+        if (exceptionDates.length > 0) {
+          const { error: excError } = await sb.from("recurring_exceptions").upsert(
+            exceptionDates.map((occurrence_date) => ({
+              user_id: userId,
+              template_id: row.id,
+              occurrence_date
+            })),
+            { onConflict: "template_id,occurrence_date", ignoreDuplicates: true }
+          );
+          if (excError && !`${excError.message}`.toLowerCase().includes("duplicate")) return fail(excError.message);
+        }
+        const { error: deactivateError } = await sb.from("expenses").update({ is_recurring: false, frequency: null }).eq("id", row.id);
+        if (deactivateError) return fail(deactivateError.message);
+        const { error: cleanupError } = await sb.from("expenses").delete().eq("description", row.description).eq("type", row.type).eq("is_recurring", false).eq("is_paid", false).gte("date", cutoff);
+        if (cleanupError) return fail(cleanupError.message);
+        const { data: data2, error: error2 } = await sb.from("expenses").insert({
+          ...row,
+          ...patch,
+          id: void 0,
+          created_at: void 0,
+          date: newDate,
+          is_paid: false,
+          is_recurring: true,
+          frequency
+        }).select().single();
+        if (error2) return fail(error2.message);
+        return ok("Recorr\xEAncia atualizada a partir desta ocorr\xEAncia (meses anteriores preservados).", {
+          transaction: data2
+        });
+      }
+      const { data, error } = await sb.from("expenses").update(patch).eq("id", row.id).select().single();
+      if (error) return fail(error.message);
+      return ok(`Transa\xE7\xE3o atualizada: ${data.description} \u2014 R$ ${Number(data.value).toFixed(2)} em ${data.date}.`, {
+        transaction: data
+      });
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/create-transfer.ts
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z4 } from "npm:zod@^4.4.3";
+var create_transfer_default = defineTool4({
+  name: "create_transfer",
+  title: "Transferir entre carteiras",
+  description: "Registra uma transfer\xEAncia de dinheiro entre duas contas/carteiras do usu\xE1rio (sai de uma e entra na outra). Use list_wallets para ver os nomes dispon\xEDveis.",
+  inputSchema: {
+    from_wallet: z4.string().optional().describe("Nome da carteira de origem."),
+    from_wallet_id: z4.string().uuid().optional().describe("ID da carteira de origem."),
+    to_wallet: z4.string().optional().describe("Nome da carteira de destino."),
+    to_wallet_id: z4.string().uuid().optional().describe("ID da carteira de destino."),
+    value: z4.number().positive().describe("Valor transferido em BRL."),
+    date: z4.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Data ISO YYYY-MM-DD."),
+    description: z4.string().optional().describe("Descri\xE7\xE3o. Padr\xE3o: 'Transfer\xEAncia <origem> \u2192 <destino>'."),
+    notes: z4.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler("create_transfer", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    try {
+      const from = await resolveWallet(sb, { id: input.from_wallet_id, name: input.from_wallet });
+      const to = await resolveWallet(sb, { id: input.to_wallet_id, name: input.to_wallet });
+      if (!from || !to) return fail("Informe a carteira de origem e a de destino.");
+      if (from.id === to.id) return fail("Origem e destino precisam ser carteiras diferentes.");
+      const { data, error } = await sb.from("expenses").insert({
+        user_id: ctx.getUserId(),
+        date: input.date,
+        description: input.description ?? `Transfer\xEAncia ${from.name} \u2192 ${to.name}`,
+        value: input.value,
+        type: "transfer",
+        final_category: "transferencia",
+        category_ai: "transferencia",
+        wallet_id: from.id,
+        destination_wallet_id: to.id,
+        is_paid: true,
+        is_recurring: false,
+        installments: 1,
+        notes: input.notes ?? null
+      }).select().single();
+      if (error) return fail(error.message);
+      return ok(
+        `Transfer\xEAncia registrada: R$ ${input.value.toFixed(2)} de ${from.name} para ${to.name} em ${input.date}.`,
+        { transfer: data }
+      );
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/set-transaction-paid.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z5 } from "npm:zod@^4.4.3";
+var set_transaction_paid_default = defineTool5({
+  name: "set_transaction_paid",
+  title: "Marcar como pago / desfazer",
+  description: "Marca uma transa\xE7\xE3o como paga/recebida ou reverte o pagamento. Opcionalmente ajusta a data efetiva e a conta/carteira usada no pagamento.",
+  inputSchema: {
+    id: z5.string().uuid().describe("ID da transa\xE7\xE3o."),
+    is_paid: z5.boolean().describe("true = pago/recebido, false = desfazer o pagamento."),
+    date: z5.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data efetiva do pagamento (opcional)."),
+    wallet: z5.string().optional().describe("Nome da conta/carteira usada."),
+    wallet_id: z5.string().uuid().optional().describe("ID da conta/carteira usada.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("set_transaction_paid", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    try {
+      const wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      const patch = { is_paid: input.is_paid };
+      if (input.date) patch.date = input.date;
+      if (wallet) patch.wallet_id = wallet.id;
+      const { data, error } = await sb.from("expenses").update(patch).eq("id", input.id).select().maybeSingle();
+      if (error) return fail(error.message);
+      if (!data) return fail("Transa\xE7\xE3o n\xE3o encontrada para esta conta.");
+      return ok(
+        `${data.description}: ${input.is_paid ? "marcada como paga/recebida" : "pagamento desfeito"} (${data.date}).`,
+        { transaction: data }
+      );
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-categories.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var list_categories_default = defineTool6({
+  name: "list_categories",
+  title: "Listar categorias",
+  description: "Lista todas as categorias e subcategorias do usu\xE1rio autenticado.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: safeHandler("list_categories", async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    const sb = supabaseForUser(ctx);
+    const { data, error } = await sb.from("categories").select("id,name,icon,color,parent_id,active,sort_order").order("sort_order");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { categories: data ?? [] }
+    };
+  })
+});
+
+// src/lib/mcp/tools/month-summary.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z6 } from "npm:zod@^4.4.3";
 
 // src/lib/invoiceCashFlow.ts
 function toMonthLabel2(year, month) {
@@ -630,77 +1134,6 @@ function computeInvoiceTotalsForCashWindow({
   return { total, byCategory };
 }
 
-// src/lib/recurringProjection.ts
-function normalizeRecurringDescription(description) {
-  return (description ?? "").trim().toLowerCase();
-}
-function buildRecurringLooseSignature(type, description) {
-  return `${type}|${normalizeRecurringDescription(description)}`;
-}
-function buildRecurringSignature(type, value, description) {
-  return `${type}|${normalizeRecurringDescription(description)}|${Number(value).toFixed(2)}`;
-}
-function buildRecurringExceptionSignature(templateId, occurrenceDate) {
-  return `${templateId}|${occurrenceDate}`;
-}
-function shouldProjectRecurringInMonth(templateDate, selectedYear, selectedMonth, frequency) {
-  const template = /* @__PURE__ */ new Date(`${templateDate}T12:00:00`);
-  const templateMonthIndex = template.getFullYear() * 12 + template.getMonth();
-  const selectedMonthIndex = selectedYear * 12 + selectedMonth;
-  if (selectedMonthIndex < templateMonthIndex) return false;
-  if (frequency === "yearly") {
-    return template.getMonth() === selectedMonth;
-  }
-  return true;
-}
-function buildMaterializedRecurringSignature(item) {
-  return [
-    item.type,
-    normalizeRecurringDescription(item.description),
-    item.final_category ?? "",
-    item.wallet_id ?? "",
-    item.credit_card_id ?? "",
-    item.payment_method ?? "",
-    item.project_id ?? ""
-  ].join("|");
-}
-function hideMaterializedRecurringTemplates(items) {
-  const materializedSignatures = new Set(
-    items.filter((item) => !item.is_recurring).map((item) => buildMaterializedRecurringSignature(item))
-  );
-  return items.filter((item) => !(item.is_recurring && materializedSignatures.has(buildMaterializedRecurringSignature(item))));
-}
-function buildEffectiveMonthExpenses({
-  monthExpenses,
-  recurringTemplates,
-  year,
-  month,
-  exceptionSet
-}) {
-  const visible = hideMaterializedRecurringTemplates(monthExpenses);
-  const realSignatures = new Set(visible.map((e) => buildRecurringSignature(e.type, e.value, e.description)));
-  const realLooseSignatures = new Set(visible.map((e) => buildRecurringLooseSignature(e.type, e.description)));
-  const materializedSignatures = new Set(
-    visible.filter((e) => !e.is_recurring).map((e) => buildMaterializedRecurringSignature(e))
-  );
-  const realIds = new Set(visible.map((e) => e.id));
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const virtualEntries = [];
-  recurringTemplates.forEach((template) => {
-    if (template.id && realIds.has(template.id)) return;
-    if (template.type === "transfer" || template.credit_card_id) return;
-    if (!shouldProjectRecurringInMonth(template.date, year, month, template.frequency)) return;
-    if (realSignatures.has(buildRecurringSignature(template.type, template.value, template.description)) || realLooseSignatures.has(buildRecurringLooseSignature(template.type, template.description)) || materializedSignatures.has(buildMaterializedRecurringSignature(template)))
-      return;
-    const originalDay = (/* @__PURE__ */ new Date(`${template.date}T12:00:00`)).getDate();
-    const day = Math.min(originalDay, daysInMonth);
-    const occurrenceDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    if (exceptionSet.has(buildRecurringExceptionSignature(template.id ?? "", occurrenceDate))) return;
-    virtualEntries.push({ ...template, date: occurrenceDate, is_paid: false });
-  });
-  return [...visible, ...virtualEntries];
-}
-
 // src/lib/mcp/monthProjection.ts
 var ENGINE_VERSION = "2026-08-17.2";
 var EXPENSE_COLS = "id, description, value, date, type, final_category, category_ai, credit_card_id, wallet_id, destination_wallet_id, is_paid, is_recurring, frequency, installments, installment_group_id, installment_info, invoice_month, payment_method, notes, tags, project_id, debt_id, created_at";
@@ -826,12 +1259,12 @@ async function computeMonthProjection(sb, month) {
 }
 
 // src/lib/mcp/tools/month-summary.ts
-var month_summary_default = defineTool4({
+var month_summary_default = defineTool7({
   name: "month_summary",
   title: "Resumo do m\xEAs",
   description: "Resume receitas, despesas e saldo do m\xEAs (YYYY-MM) usando exatamente o mesmo motor de proje\xE7\xE3o das p\xE1ginas do app: saldo inicial (fim do m\xEAs anterior), receitas e despesas previstas (incluindo n\xE3o pagas, recorrentes projetadas e faturas de cart\xE3o) e saldo previsto do fim do m\xEAs. Tamb\xE9m informa os valores j\xE1 realizados (pagos).",
   inputSchema: {
-    month: z3.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
+    month: z6.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("month_summary", async ({ month }, ctx) => {
@@ -875,8 +1308,8 @@ var month_summary_default = defineTool4({
 });
 
 // src/lib/mcp/tools/list-wallets.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var list_wallets_default = defineTool5({
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var list_wallets_default = defineTool8({
   name: "list_wallets",
   title: "Listar carteiras",
   description: "Lista carteiras e ativos do usu\xE1rio com saldo atual e moeda.",
@@ -897,8 +1330,8 @@ var list_wallets_default = defineTool5({
 });
 
 // src/lib/mcp/tools/list-credit-cards.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var list_credit_cards_default = defineTool6({
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var list_credit_cards_default = defineTool9({
   name: "list_credit_cards",
   title: "Listar cart\xF5es de cr\xE9dito",
   description: "Lista cart\xF5es de cr\xE9dito do usu\xE1rio com limite, dia de fechamento e vencimento.",
@@ -919,14 +1352,14 @@ var list_credit_cards_default = defineTool6({
 });
 
 // src/lib/mcp/tools/month-transactions.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z4 } from "npm:zod@^4.4.3";
-var month_transactions_default = defineTool7({
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z7 } from "npm:zod@^4.4.3";
+var month_transactions_default = defineTool10({
   name: "month_transactions",
   title: "Transa\xE7\xF5es do m\xEAs com saldo projetado",
   description: "Retorna a mesma vis\xE3o da p\xE1gina de Transa\xE7\xF5es de um m\xEAs (YYYY-MM): todas as transa\xE7\xF5es do m\xEAs (incluindo recorrentes projetadas e pagamentos de fatura de cart\xE3o), agrupadas por dia, com o saldo projetado acumulado ao final de cada dia, al\xE9m do saldo inicial e do saldo previsto do fim do m\xEAs.",
   inputSchema: {
-    month: z4.string().describe("M\xEAs no formato YYYY-MM.")
+    month: z7.string().describe("M\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("month_transactions", async ({ month }, ctx) => {
@@ -994,15 +1427,15 @@ var month_transactions_default = defineTool7({
 });
 
 // src/lib/mcp/tools/delete-transaction.ts
-import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z5 } from "npm:zod@^4.4.3";
-var delete_transaction_default = defineTool8({
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z8 } from "npm:zod@^4.4.3";
+var delete_transaction_default = defineTool11({
   name: "delete_transaction",
   title: "Excluir transa\xE7\xE3o",
   description: "Exclui uma transa\xE7\xE3o (despesa ou receita) do usu\xE1rio autenticado pelo id. Para parcelamentos, use scope='group' para remover todas as parcelas do mesmo grupo. A\xE7\xE3o irrevers\xEDvel: confirme com o usu\xE1rio antes de chamar.",
   inputSchema: {
-    id: z5.string().uuid().describe("ID da transa\xE7\xE3o a excluir."),
-    scope: z5.enum(["single", "group"]).optional().describe(
+    id: z8.string().uuid().describe("ID da transa\xE7\xE3o a excluir."),
+    scope: z8.enum(["single", "group"]).optional().describe(
       "'single' (padr\xE3o) remove apenas esta transa\xE7\xE3o; 'group' remove todas as parcelas do mesmo installment_group_id."
     )
   },
@@ -1048,8 +1481,8 @@ var delete_transaction_default = defineTool8({
 });
 
 // src/lib/mcp/tools/list-budgets.ts
-import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z6 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z9 } from "npm:zod@^4.4.3";
 function monthBounds(month) {
   const [y, m] = month.split("-").map(Number);
   const start = `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-01`;
@@ -1058,12 +1491,12 @@ function monthBounds(month) {
   const end = `${String(nextY).padStart(4, "0")}-${String(nextM).padStart(2, "0")}-01`;
   return { start, end };
 }
-var list_budgets_default = defineTool9({
+var list_budgets_default = defineTool12({
   name: "list_budgets",
   title: "Listar or\xE7amentos",
   description: "Lista os or\xE7amentos (metas por categoria) do m\xEAs informado, com o valor planejado, o valor j\xE1 gasto e o saldo restante. Inclui or\xE7amentos recorrentes herdados de meses anteriores quando o m\xEAs n\xE3o tem meta pr\xF3pria.",
   inputSchema: {
-    month: z6.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
+    month: z9.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("list_budgets", async (input, ctx) => {
@@ -1127,18 +1560,18 @@ var list_budgets_default = defineTool9({
 });
 
 // src/lib/mcp/tools/upsert-budget.ts
-import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z7 } from "npm:zod@^4.4.3";
-var upsert_budget_default = defineTool10({
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z10 } from "npm:zod@^4.4.3";
+var upsert_budget_default = defineTool13({
   name: "upsert_budget",
   title: "Criar ou editar or\xE7amento",
   description: "Cria ou atualiza a meta de or\xE7amento de uma categoria em um m\xEAs. Informe category_id (preferencial) ou o nome da categoria \u2014 use list_categories/list_budgets antes para descobrir os identificadores.",
   inputSchema: {
-    month: z7.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM."),
-    allocated_amount: z7.number().min(0).describe("Valor planejado em BRL."),
-    category_id: z7.string().uuid().optional().describe("ID da categoria (preferencial)."),
-    category: z7.string().optional().describe("Nome da categoria, usado se category_id n\xE3o for informado."),
-    is_recurring: z7.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes.")
+    month: z10.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM."),
+    allocated_amount: z10.number().min(0).describe("Valor planejado em BRL."),
+    category_id: z10.string().uuid().optional().describe("ID da categoria (preferencial)."),
+    category: z10.string().optional().describe("Nome da categoria, usado se category_id n\xE3o for informado."),
+    is_recurring: z10.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   handler: safeHandler("upsert_budget", async (input, ctx) => {
@@ -1220,15 +1653,744 @@ var upsert_budget_default = defineTool10({
   })
 });
 
+// src/lib/mcp/tools/invoice-details.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z11 } from "npm:zod@^4.4.3";
+var invoice_details_default = defineTool14({
+  name: "invoice_details",
+  title: "Detalhe da fatura do cart\xE3o",
+  description: "Mostra a fatura de um cart\xE3o de cr\xE9dito num m\xEAs de vencimento (YYYY-MM): total, status (aberta/fechada/vencida/paga), per\xEDodo, data de vencimento e as compras que a comp\xF5em.",
+  inputSchema: {
+    month: z11.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs de vencimento da fatura (YYYY-MM)."),
+    credit_card: z11.string().optional().describe("Nome do cart\xE3o. Se omitido, retorna todos os cart\xF5es."),
+    credit_card_id: z11.string().uuid().optional().describe("ID do cart\xE3o.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: safeHandler("invoice_details", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    try {
+      let cards;
+      if (input.credit_card || input.credit_card_id) {
+        const card = await resolveCreditCard(sb, { id: input.credit_card_id, name: input.credit_card });
+        cards = [card];
+      } else {
+        const { data, error } = await sb.from("credit_cards").select("*");
+        if (error) return fail(error.message);
+        cards = data ?? [];
+      }
+      if (cards.length === 0) return fail("Nenhum cart\xE3o de cr\xE9dito cadastrado.");
+      const { data: expenses, error: expError } = await sb.from("expenses").select("id,date,description,value,type,final_category,credit_card_id,wallet_id,invoice_month,is_paid");
+      if (expError) return fail(expError.message);
+      const rows = expenses ?? [];
+      const [year, monthNumber] = input.month.split("-").map(Number);
+      const invoices = cards.map((card) => {
+        const period = getInvoicePeriod(card, year, monthNumber - 1);
+        const invoice = matchExpensesToInvoice(rows, period);
+        return {
+          card: card.name,
+          card_id: card.id,
+          month: input.month,
+          status: invoice.status,
+          total: Number(invoice.total.toFixed(2)),
+          limit: Number(card.limit_amount),
+          period_start: invoice.periodStart.toISOString().slice(0, 10),
+          period_end: invoice.periodEnd.toISOString().slice(0, 10),
+          due_date: invoice.dueDate.toISOString().slice(0, 10),
+          transactions: invoice.transactions.map((t) => ({
+            id: t.id,
+            date: t.date,
+            description: t.description,
+            value: Number(t.value),
+            category: t.final_category
+          }))
+        };
+      });
+      const summary = invoices.map((i) => `${i.card} (${i.month}): R$ ${i.total.toFixed(2)} \u2014 ${i.status}, vence ${i.due_date}`).join("\n");
+      return ok(summary, { invoices });
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/pay-invoice.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z12 } from "npm:zod@^4.4.3";
+var pay_invoice_default = defineTool15({
+  name: "pay_invoice",
+  title: "Pagar fatura do cart\xE3o",
+  description: "Registra o pagamento da fatura de um cart\xE3o num m\xEAs de vencimento (YYYY-MM), debitando de uma conta/carteira, ou desfaz o pagamento (action='unpay'). Usa a mesma l\xF3gica do app para n\xE3o contar duas vezes a fatura e o pagamento.",
+  inputSchema: {
+    month: z12.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs de vencimento da fatura (YYYY-MM)."),
+    credit_card: z12.string().optional().describe("Nome do cart\xE3o."),
+    credit_card_id: z12.string().uuid().optional().describe("ID do cart\xE3o."),
+    action: z12.enum(["pay", "unpay"]).optional().describe("pay (padr\xE3o) ou unpay para desfazer."),
+    wallet: z12.string().optional().describe("Nome da conta que paga a fatura."),
+    wallet_id: z12.string().uuid().optional().describe("ID da conta que paga a fatura."),
+    date: z12.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data do pagamento. Padr\xE3o: data de vencimento da fatura.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  handler: safeHandler("pay_invoice", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const action = input.action ?? "pay";
+    try {
+      const card = await resolveCreditCard(sb, { id: input.credit_card_id, name: input.credit_card });
+      if (!card) return fail("Informe o cart\xE3o (credit_card ou credit_card_id).");
+      if (action === "unpay") {
+        const { data: data2, error: error2 } = await sb.from("expenses").delete().eq("invoice_month", input.month).eq("credit_card_id", card.id).ilike("description", "Pagamento fatura%").not("wallet_id", "is", null).select("id");
+        if (error2) return fail(error2.message);
+        if (!data2 || data2.length === 0)
+          return fail(`N\xE3o encontrei um pagamento registrado para a fatura de ${card.name} em ${input.month}.`);
+        return ok(`Pagamento da fatura ${card.name} (${input.month}) desfeito.`, { removed: data2.length });
+      }
+      const { data: expenses, error: expError } = await sb.from("expenses").select("id,date,description,value,type,final_category,credit_card_id,wallet_id,invoice_month,is_paid");
+      if (expError) return fail(expError.message);
+      const [year, monthNumber] = input.month.split("-").map(Number);
+      const period = getInvoicePeriod(card, year, monthNumber - 1);
+      const invoice = matchExpensesToInvoice(expenses ?? [], period);
+      if (invoice.status === "paid") return fail(`A fatura de ${card.name} em ${input.month} j\xE1 est\xE1 paga.`);
+      if (invoice.total <= 0) return fail(`A fatura de ${card.name} em ${input.month} n\xE3o tem valor a pagar.`);
+      const wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      const walletId = wallet?.id ?? await defaultWalletId(sb);
+      if (!walletId) return fail("Nenhuma conta/carteira dispon\xEDvel para debitar o pagamento.");
+      const due = invoice.dueDate;
+      const dateStr = input.date ?? `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`;
+      const { data, error } = await sb.from("expenses").insert({
+        user_id: ctx.getUserId(),
+        description: `Pagamento fatura ${card.name} - ${input.month}`,
+        value: invoice.total,
+        final_category: "cartao",
+        category_ai: "cartao",
+        type: "expense",
+        date: dateStr,
+        wallet_id: walletId,
+        credit_card_id: card.id,
+        is_paid: true,
+        is_recurring: false,
+        installments: 1,
+        invoice_month: input.month
+      }).select().single();
+      if (error) return fail(error.message);
+      return ok(
+        `Fatura ${card.name} (${input.month}) paga: R$ ${invoice.total.toFixed(2)} em ${dateStr}.`,
+        { payment: data, invoice_total: invoice.total }
+      );
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/manage-wallet.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z13 } from "npm:zod@^4.4.3";
+var manage_wallet_default = defineTool16({
+  name: "manage_wallet",
+  title: "Criar ou editar carteira",
+  description: "Cria uma nova conta/carteira ou edita uma existente (nome, saldo inicial, moeda e tipo). Para editar, informe wallet ou wallet_id.",
+  inputSchema: {
+    action: z13.enum(["create", "update"]).describe("create para nova carteira, update para editar."),
+    wallet: z13.string().optional().describe("Nome da carteira a editar."),
+    wallet_id: z13.string().uuid().optional().describe("ID da carteira a editar."),
+    name: z13.string().optional().describe("Nome (obrigat\xF3rio em create)."),
+    initial_balance: z13.number().optional().describe("Saldo inicial em BRL."),
+    currency: z13.string().optional().describe("Moeda (ex: BRL, USD). Padr\xE3o: BRL."),
+    asset_type: z13.enum(["cash", "bank", "investment", "crypto", "other"]).optional().describe("Tipo do ativo. Padr\xE3o: bank.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler("manage_wallet", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    try {
+      if (input.action === "create") {
+        if (!input.name) return fail("Informe o nome da carteira.");
+        const initial = input.initial_balance ?? 0;
+        const { data: data2, error: error2 } = await sb.from("wallets").insert({
+          user_id: ctx.getUserId(),
+          name: input.name,
+          asset_type: input.asset_type ?? "bank",
+          currency: input.currency ?? "BRL",
+          initial_balance: initial,
+          current_balance: initial
+        }).select().single();
+        if (error2) return fail(error2.message);
+        return ok(`Carteira "${data2.name}" criada com saldo inicial de R$ ${Number(initial).toFixed(2)}.`, {
+          wallet: data2
+        });
+      }
+      const target = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      if (!target) return fail("Informe wallet ou wallet_id da carteira a editar.");
+      const patch = {};
+      if (input.name !== void 0) patch.name = input.name;
+      if (input.initial_balance !== void 0) patch.initial_balance = input.initial_balance;
+      if (input.currency !== void 0) patch.currency = input.currency;
+      if (input.asset_type !== void 0) patch.asset_type = input.asset_type;
+      if (Object.keys(patch).length === 0) return fail("Nenhum campo para atualizar.");
+      const { data, error } = await sb.from("wallets").update(patch).eq("id", target.id).select().single();
+      if (error) return fail(error.message);
+      return ok(`Carteira "${data.name}" atualizada.`, { wallet: data });
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/manage-category.ts
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z14 } from "npm:zod@^4.4.3";
+var manage_category_default = defineTool17({
+  name: "manage_category",
+  title: "Criar, renomear ou desativar categoria",
+  description: "Cria uma categoria ou subcategoria (informe parent para vincular \xE0 categoria-m\xE3e), renomeia, ou ativa/desativa uma existente. Use list_categories para ver a hierarquia atual.",
+  inputSchema: {
+    action: z14.enum(["create", "update"]).describe("create ou update."),
+    category: z14.string().optional().describe("Nome da categoria a editar."),
+    category_id: z14.string().uuid().optional().describe("ID da categoria a editar."),
+    name: z14.string().optional().describe("Nome (novo nome em update, obrigat\xF3rio em create)."),
+    parent: z14.string().optional().describe("Nome da categoria-m\xE3e (cria uma subcategoria)."),
+    parent_id: z14.string().uuid().optional().describe("ID da categoria-m\xE3e."),
+    icon: z14.string().optional().describe("Emoji/\xEDcone. Padr\xE3o: \u{1F4E6}."),
+    color: z14.string().optional().describe("Cor em hex. Padr\xE3o: #94a3b8."),
+    active: z14.boolean().optional().describe("false desativa a categoria.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler("manage_category", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    try {
+      const parent = input.parent || input.parent_id ? await resolveCategory(sb, { id: input.parent_id, name: input.parent }) : null;
+      if (input.action === "create") {
+        if (!input.name) return fail("Informe o nome da categoria.");
+        const { data: data2, error: error2 } = await sb.from("categories").insert({
+          user_id: ctx.getUserId(),
+          name: input.name,
+          parent_id: parent?.id ?? null,
+          icon: input.icon ?? "\u{1F4E6}",
+          color: input.color ?? "#94a3b8",
+          active: input.active ?? true,
+          sort_order: 999
+        }).select().single();
+        if (error2) return fail(error2.message);
+        return ok(
+          `Categoria "${data2.name}" criada${parent ? ` como subcategoria de "${parent.name}"` : ""}.`,
+          { category: data2 }
+        );
+      }
+      const target = await resolveCategory(sb, { id: input.category_id, name: input.category });
+      if (!target) return fail("Informe category ou category_id da categoria a editar.");
+      const patch = {};
+      if (input.name !== void 0) patch.name = input.name;
+      if (input.icon !== void 0) patch.icon = input.icon;
+      if (input.color !== void 0) patch.color = input.color;
+      if (input.active !== void 0) patch.active = input.active;
+      if (input.parent || input.parent_id) patch.parent_id = parent?.id ?? null;
+      if (Object.keys(patch).length === 0) return fail("Nenhum campo para atualizar.");
+      const { data, error } = await sb.from("categories").update(patch).eq("id", target.id).select().single();
+      if (error) return fail(error.message);
+      return ok(`Categoria "${data.name}" atualizada${data.active ? "" : " (desativada)"}.`, { category: data });
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/manage-project.ts
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z15 } from "npm:zod@^4.4.3";
+var manage_project_default = defineTool18({
+  name: "manage_project",
+  title: "Projetos (centros de custo)",
+  description: "Lista, cria ou edita projetos usados como centros de custo (ex: Reforma, Viagem), com or\xE7amento total opcional e gasto acumulado.",
+  inputSchema: {
+    action: z15.enum(["list", "create", "update"]).describe("list, create ou update."),
+    project: z15.string().optional().describe("Nome do projeto a editar."),
+    project_id: z15.string().uuid().optional().describe("ID do projeto a editar."),
+    name: z15.string().optional().describe("Nome (obrigat\xF3rio em create)."),
+    budget: z15.number().optional().describe("Or\xE7amento total do projeto em BRL."),
+    color: z15.string().optional().describe("Cor em hex. Padr\xE3o: #6366f1.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler("manage_project", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    try {
+      if (input.action === "list") {
+        const { data: data2, error: error2 } = await sb.from("projects").select("*").order("created_at");
+        if (error2) return fail(error2.message);
+        const projects = data2 ?? [];
+        if (projects.length === 0) return ok("Nenhum projeto cadastrado.", { projects: [] });
+        const { data: expenses, error: expError } = await sb.from("expenses").select("project_id,value,type").not("project_id", "is", null);
+        if (expError) return fail(expError.message);
+        const spentByProject = /* @__PURE__ */ new Map();
+        for (const row of expenses ?? []) {
+          if (row.type !== "expense") continue;
+          spentByProject.set(row.project_id, (spentByProject.get(row.project_id) ?? 0) + Number(row.value));
+        }
+        const result = projects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          budget: p.budget === null ? null : Number(p.budget),
+          color: p.color,
+          spent: Number((spentByProject.get(p.id) ?? 0).toFixed(2))
+        }));
+        const summary = result.map(
+          (p) => `${p.name}: gasto R$ ${p.spent.toFixed(2)}${p.budget !== null ? ` de R$ ${p.budget.toFixed(2)}` : " (sem or\xE7amento definido)"}`
+        ).join("\n");
+        return ok(summary, { projects: result });
+      }
+      if (input.action === "create") {
+        if (!input.name) return fail("Informe o nome do projeto.");
+        const { data: data2, error: error2 } = await sb.from("projects").insert({
+          user_id: ctx.getUserId(),
+          name: input.name,
+          budget: input.budget ?? null,
+          color: input.color ?? "#6366f1"
+        }).select().single();
+        if (error2) return fail(error2.message);
+        return ok(`Projeto "${data2.name}" criado.`, { project: data2 });
+      }
+      const target = await resolveProject(sb, { id: input.project_id, name: input.project });
+      if (!target) return fail("Informe project ou project_id do projeto a editar.");
+      const patch = {};
+      if (input.name !== void 0) patch.name = input.name;
+      if (input.budget !== void 0) patch.budget = input.budget;
+      if (input.color !== void 0) patch.color = input.color;
+      if (Object.keys(patch).length === 0) return fail("Nenhum campo para atualizar.");
+      const { data, error } = await sb.from("projects").update(patch).eq("id", target.id).select().single();
+      if (error) return fail(error.message);
+      return ok(`Projeto "${data.name}" atualizado.`, { project: data });
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/investment-ops.ts
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z16 } from "npm:zod@^4.4.3";
+
+// src/lib/investmentMath.ts
+import { differenceInCalendarDays, parseISO, format, addMonths, startOfMonth } from "npm:date-fns@^3.6.0";
+var INVESTMENT_TYPES = [
+  { value: "caixinha", label: "Caixinha / Cofrinho" },
+  { value: "cdb", label: "CDB" },
+  { value: "lci_lca", label: "LCI / LCA" },
+  { value: "tesouro", label: "Tesouro Direto" },
+  { value: "fundo", label: "Fundo de Investimento" },
+  { value: "poupanca", label: "Poupan\xE7a" },
+  { value: "outro", label: "Outro" }
+];
+function investmentTypeLabel(type) {
+  return INVESTMENT_TYPES.find((t) => t.value === type)?.label ?? type;
+}
+function effectiveAnnualRate(inv) {
+  const rate = (inv.rate_value || 0) / 100;
+  const index = (inv.index_value || 0) / 100;
+  switch (inv.rate_kind) {
+    case "cdi_percent":
+      return index * rate;
+    case "prefixado":
+      return rate;
+    case "ipca_plus":
+      return (1 + index) * (1 + rate) - 1;
+    default:
+      return 0;
+  }
+}
+function dailyRate(annual) {
+  if (annual <= -1) return 0;
+  return Math.pow(1 + annual, 1 / 365) - 1;
+}
+function rateLabel(inv) {
+  const fmt = (n) => `${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  switch (inv.rate_kind) {
+    case "cdi_percent":
+      return `${fmt(inv.rate_value)} do CDI (CDI ${fmt(inv.index_value)} a.a.)`;
+    case "prefixado":
+      return `${fmt(inv.rate_value)} a.a. (prefixado)`;
+    case "ipca_plus":
+      return `IPCA (${fmt(inv.index_value)}) + ${fmt(inv.rate_value)} a.a.`;
+    default:
+      return "\u2014";
+  }
+}
+function toDate(iso) {
+  return parseISO(iso.length > 10 ? iso.slice(0, 10) : iso);
+}
+function buildFlows(inv, movements) {
+  const flows = [];
+  const deposits = movements.filter((m) => m.kind === "deposit");
+  if (deposits.length === 0 && inv.principal > 0) {
+    flows.push({ date: toDate(inv.start_date), amount: inv.principal });
+  }
+  movements.forEach((m) => {
+    flows.push({ date: toDate(m.date), amount: m.kind === "deposit" ? m.amount : -m.amount });
+  });
+  return flows.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+function valueAt(inv, movements, asOf) {
+  const flows = buildFlows(inv, movements);
+  if (flows.length === 0) return 0;
+  const d = dailyRate(effectiveAnnualRate(inv));
+  let balance = 0;
+  let cursor = flows[0].date;
+  for (const flow of flows) {
+    if (flow.date > asOf) break;
+    const days = Math.max(0, differenceInCalendarDays(flow.date, cursor));
+    balance = balance * Math.pow(1 + d, days);
+    balance = Math.max(0, balance + flow.amount);
+    cursor = flow.date;
+  }
+  const remaining = Math.max(0, differenceInCalendarDays(asOf, cursor));
+  balance = balance * Math.pow(1 + d, remaining);
+  return balance;
+}
+function netInvested(inv, movements) {
+  const flows = buildFlows(inv, movements);
+  return flows.reduce((s, f) => s + f.amount, 0);
+}
+function computeStats(inv, movements, today = /* @__PURE__ */ new Date()) {
+  const invested = netInvested(inv, movements);
+  const currentValue = inv.status === "redeemed" ? 0 : valueAt(inv, movements, today);
+  const earnings = inv.status === "redeemed" ? 0 : currentValue - invested;
+  const maturity = inv.maturity_date ? toDate(inv.maturity_date) : null;
+  const projectedValue = maturity && inv.status === "active" ? valueAt(inv, movements, maturity > today ? maturity : today) : currentValue;
+  return {
+    invested,
+    currentValue,
+    earnings,
+    earningsPct: invested > 0 ? earnings / invested * 100 : 0,
+    projectedValue,
+    projectedEarnings: projectedValue - invested,
+    daysRemaining: maturity ? differenceInCalendarDays(maturity, today) : null,
+    annualRate: effectiveAnnualRate(inv) * 100
+  };
+}
+
+// src/lib/mcp/tools/investment-ops.ts
+async function resolveInvestment(sb, opts) {
+  if (opts.id) {
+    const { data: data2, error: error2 } = await sb.from("investments").select("*").eq("id", opts.id).maybeSingle();
+    if (error2) throw new ResolveError(error2.message);
+    if (!data2) throw new ResolveError("Investimento n\xE3o encontrado para esta conta.");
+    return data2;
+  }
+  if (!opts.name) return null;
+  const { data, error } = await sb.from("investments").select("*");
+  if (error) throw new ResolveError(error.message);
+  const rows = data ?? [];
+  const target = opts.name.trim().toLowerCase();
+  let matches = rows.filter((r) => String(r.name).trim().toLowerCase() === target);
+  if (matches.length === 0) matches = rows.filter((r) => String(r.name).toLowerCase().includes(target));
+  if (matches.length === 0)
+    throw new ResolveError(
+      `N\xE3o encontrei o investimento "${opts.name}". Op\xE7\xF5es: ${rows.map((r) => r.name).join(", ") || "nenhuma"}.`
+    );
+  if (matches.length > 1)
+    throw new ResolveError(
+      `Mais de um investimento com esse nome. Informe o id: ${matches.map((m) => `${m.name} (${m.id})`).join(", ")}.`
+    );
+  return matches[0];
+}
+var investment_ops_default = defineTool19({
+  name: "investments",
+  title: "Investimentos (caixinhas)",
+  description: "Lista os investimentos do usu\xE1rio com valor atual, rendimento e proje\xE7\xE3o at\xE9 o vencimento, ou registra um aporte (deposit) ou resgate (withdraw) \u2014 que movimenta o dinheiro entre a carteira e o investimento, igual ao app.",
+  inputSchema: {
+    action: z16.enum(["list", "deposit", "withdraw"]).describe("list, deposit (aporte) ou withdraw (resgate)."),
+    investment: z16.string().optional().describe("Nome do investimento (para deposit/withdraw)."),
+    investment_id: z16.string().uuid().optional().describe("ID do investimento."),
+    value: z16.number().positive().optional().describe("Valor do aporte/resgate em BRL."),
+    date: z16.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data da movimenta\xE7\xE3o (YYYY-MM-DD). Padr\xE3o: hoje."),
+    wallet: z16.string().optional().describe("Carteira de origem (aporte) ou destino (resgate)."),
+    wallet_id: z16.string().uuid().optional().describe("ID da carteira."),
+    close_investment: z16.boolean().optional().describe("No resgate, true marca o investimento como resgatado/encerrado.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler("investments", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    try {
+      const { data: investments, error: invError } = await sb.from("investments").select("*").order("created_at");
+      if (invError) return fail(invError.message);
+      const { data: movements, error: movError } = await sb.from("investment_movements").select("*");
+      if (movError) return fail(movError.message);
+      const allMovements = movements ?? [];
+      if (input.action === "list") {
+        const rows = investments ?? [];
+        if (rows.length === 0) return ok("Nenhum investimento cadastrado.", { investments: [] });
+        const result = rows.map((inv2) => {
+          const stats = computeStats(
+            inv2,
+            allMovements.filter((m) => m.investment_id === inv2.id)
+          );
+          return {
+            id: inv2.id,
+            name: inv2.name,
+            type: investmentTypeLabel(inv2.investment_type),
+            rate: rateLabel(inv2),
+            status: inv2.status,
+            start_date: inv2.start_date,
+            maturity_date: inv2.maturity_date,
+            invested: Number(stats.invested.toFixed(2)),
+            current_value: Number(stats.currentValue.toFixed(2)),
+            earnings: Number(stats.earnings.toFixed(2)),
+            earnings_pct: Number(stats.earningsPct.toFixed(2)),
+            projected_value: Number(stats.projectedValue.toFixed(2)),
+            days_remaining: stats.daysRemaining,
+            annual_rate_pct: Number(stats.annualRate.toFixed(2))
+          };
+        });
+        const total = result.reduce((s, r) => s + r.current_value, 0);
+        const summary = [
+          `Total investido (valor atual): R$ ${total.toFixed(2)}`,
+          ...result.map(
+            (r) => `${r.name} (${r.type}, ${r.rate}) \u2014 atual R$ ${r.current_value.toFixed(2)}, rendimento R$ ${r.earnings.toFixed(
+              2
+            )} (${r.earnings_pct.toFixed(2)}%), status ${r.status}`
+          )
+        ].join("\n");
+        return ok(summary, { investments: result, total_current_value: Number(total.toFixed(2)) });
+      }
+      const inv = await resolveInvestment(sb, { id: input.investment_id, name: input.investment });
+      if (!inv) return fail("Informe investment ou investment_id.");
+      if (!input.value) return fail("Informe o valor da movimenta\xE7\xE3o.");
+      if (!inv.investment_wallet_id) return fail("Este investimento n\xE3o tem carteira de investimento vinculada.");
+      const isDeposit = input.action === "deposit";
+      const wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      const cashWalletId = wallet?.id ?? inv.wallet_id ?? await defaultWalletId(sb);
+      if (!cashWalletId) return fail("Nenhuma carteira dispon\xEDvel para a movimenta\xE7\xE3o.");
+      const date = input.date ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      const { data: expense, error: expError } = await sb.from("expenses").insert({
+        user_id: ctx.getUserId(),
+        date,
+        description: isDeposit ? `Aporte em ${inv.name}` : `Resgate de ${inv.name}`,
+        value: input.value,
+        type: "transfer",
+        final_category: "investimentos",
+        category_ai: "investimentos",
+        wallet_id: isDeposit ? cashWalletId : inv.investment_wallet_id,
+        destination_wallet_id: isDeposit ? inv.investment_wallet_id : cashWalletId,
+        is_paid: true,
+        installments: 1,
+        is_recurring: false
+      }).select("id").single();
+      if (expError) return fail(expError.message);
+      const { error: movInsertError } = await sb.from("investment_movements").insert({
+        user_id: ctx.getUserId(),
+        investment_id: inv.id,
+        kind: isDeposit ? "deposit" : "withdraw",
+        amount: input.value,
+        date,
+        expense_id: expense.id
+      });
+      if (movInsertError) {
+        await sb.from("expenses").delete().eq("id", expense.id);
+        return fail(movInsertError.message);
+      }
+      if (!isDeposit && input.close_investment) {
+        await sb.from("investments").update({ status: "redeemed" }).eq("id", inv.id);
+      }
+      return ok(
+        `${isDeposit ? "Aporte" : "Resgate"} de R$ ${input.value.toFixed(2)} em "${inv.name}" registrado em ${date}.`,
+        { investment_id: inv.id, expense_id: expense.id }
+      );
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/compare-months.ts
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z17 } from "npm:zod@^4.4.3";
+function categoryTotals(projection) {
+  const totals = { ...projection.invoiceTotals.byCategory };
+  for (const expense of projection.effectiveMonthExpenses) {
+    if (expense.type !== "expense" || expense.credit_card_id) continue;
+    if (isTrackedCreditCardPayment(expense, projection.creditCards)) continue;
+    const key = expense.final_category ?? "outros";
+    totals[key] = (totals[key] ?? 0) + Number(expense.value);
+  }
+  return totals;
+}
+var compare_months_default = defineTool20({
+  name: "compare_months",
+  title: "Comparar meses",
+  description: "Compara dois meses (YYYY-MM): receitas, despesas, saldo e a varia\xE7\xE3o por categoria, apontando onde o usu\xE1rio gastou mais ou menos. Usa o mesmo motor de proje\xE7\xE3o do app.",
+  inputSchema: {
+    month: z17.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs analisado (YYYY-MM)."),
+    compare_to: z17.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs de compara\xE7\xE3o. Padr\xE3o: m\xEAs anterior ao analisado.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: safeHandler("compare_months", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const [year, monthNumber] = input.month.split("-").map(Number);
+    const previous = input.compare_to ?? `${monthNumber === 1 ? year - 1 : year}-${String(monthNumber === 1 ? 12 : monthNumber - 1).padStart(2, "0")}`;
+    if (previous === input.month) return fail("Escolha dois meses diferentes.");
+    const [current, base] = await Promise.all([
+      computeMonthProjection(sb, input.month),
+      computeMonthProjection(sb, previous)
+    ]);
+    const currentCats = categoryTotals(current);
+    const baseCats = categoryTotals(base);
+    const keys = Array.from(/* @__PURE__ */ new Set([...Object.keys(currentCats), ...Object.keys(baseCats)]));
+    const categories = keys.map((key) => {
+      const now = Number((currentCats[key] ?? 0).toFixed(2));
+      const before = Number((baseCats[key] ?? 0).toFixed(2));
+      return {
+        category: key,
+        current: now,
+        previous: before,
+        diff: Number((now - before).toFixed(2)),
+        diff_pct: before > 0 ? Number(((now - before) / before * 100).toFixed(1)) : null
+      };
+    }).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+    const payload = {
+      month: input.month,
+      compare_to: previous,
+      income: { current: current.totals.totalIncome, previous: base.totals.totalIncome },
+      expense: { current: current.totals.totalExpense, previous: base.totals.totalExpense },
+      balance: { current: current.totals.balance, previous: base.totals.balance },
+      end_of_month_balance: {
+        current: current.totals.projectedBalance,
+        previous: base.totals.projectedBalance
+      },
+      categories,
+      biggest_increases: categories.filter((c) => c.diff > 0).slice(0, 5),
+      biggest_decreases: categories.filter((c) => c.diff < 0).slice(0, 5)
+    };
+    const summary = [
+      `${input.month} vs ${previous}:`,
+      `Receitas: R$ ${payload.income.current.toFixed(2)} vs R$ ${payload.income.previous.toFixed(2)}`,
+      `Despesas: R$ ${payload.expense.current.toFixed(2)} vs R$ ${payload.expense.previous.toFixed(2)}`,
+      `Saldo do m\xEAs: R$ ${payload.balance.current.toFixed(2)} vs R$ ${payload.balance.previous.toFixed(2)}`,
+      ...categories.slice(0, 6).map(
+        (c) => `${c.category}: R$ ${c.current.toFixed(2)} (${c.diff >= 0 ? "+" : ""}R$ ${c.diff.toFixed(2)}${c.diff_pct !== null ? `, ${c.diff_pct >= 0 ? "+" : ""}${c.diff_pct}%` : ""})`
+      )
+    ].join("\n");
+    return ok(summary, payload);
+  })
+});
+
+// src/lib/mcp/tools/financial-score.ts
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z18 } from "npm:zod@^4.4.3";
+function scoreOf(totalIncome, totalExpense, totalBudget, totalSpentInBudget, hasOverdueCards, debtCount, prevExpense, ccUsageRatio) {
+  let savings = 0;
+  if (totalIncome > 0) {
+    const rate = (totalIncome - totalExpense) / totalIncome;
+    savings = rate >= 0.3 ? 100 : rate >= 0.2 ? 85 : rate >= 0.1 ? 70 : rate >= 0 ? 50 : rate >= -0.1 ? 30 : 10;
+  }
+  let budget = 75;
+  if (totalBudget > 0) {
+    const ratio = totalSpentInBudget / totalBudget;
+    budget = ratio <= 0.8 ? 100 : ratio <= 0.95 ? 85 : ratio <= 1 ? 70 : ratio <= 1.1 ? 50 : 20;
+  }
+  let debt = 100 - debtCount * 10 - (hasOverdueCards ? 20 : 0);
+  debt = Math.max(0, Math.min(100, debt));
+  let consistency = 70;
+  if (prevExpense > 0 && totalExpense > 0) {
+    const variation = Math.abs(totalExpense - prevExpense) / prevExpense;
+    consistency = variation <= 0.05 ? 100 : variation <= 0.15 ? 85 : variation <= 0.3 ? 65 : 40;
+  }
+  let credit = 100;
+  if (ccUsageRatio > 0.9) credit = 20;
+  else if (ccUsageRatio > 0.7) credit = 50;
+  else if (ccUsageRatio > 0.5) credit = 70;
+  else if (ccUsageRatio > 0.3) credit = 85;
+  if (hasOverdueCards) credit = Math.min(credit, 30);
+  const overall = Math.round(savings * 0.3 + budget * 0.2 + debt * 0.2 + consistency * 0.15 + credit * 0.15);
+  return { overall, savings, budget, debt, consistency, credit };
+}
+var financial_score_default = defineTool21({
+  name: "financial_score",
+  title: "Score financeiro do m\xEAs",
+  description: "Calcula o score financeiro de um m\xEAs (YYYY-MM) com as mesmas regras da p\xE1gina do app: nota geral de 0 a 100 e as cinco dimens\xF5es (poupan\xE7a, or\xE7amento, d\xEDvidas, consist\xEAncia e cr\xE9dito), com os n\xFAmeros que sustentam cada nota.",
+  inputSchema: {
+    month: z18.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: safeHandler("financial_score", async ({ month }, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const [year, monthNumber] = month.split("-").map(Number);
+    const previousMonth = `${monthNumber === 1 ? year - 1 : year}-${String(
+      monthNumber === 1 ? 12 : monthNumber - 1
+    ).padStart(2, "0")}`;
+    const [current, previous, budgetsRes, debtsRes] = await Promise.all([
+      computeMonthProjection(sb, month),
+      computeMonthProjection(sb, previousMonth),
+      sb.from("budgets").select("category, allocated_amount, month_year").eq("month_year", `${month}-01`),
+      sb.from("debts").select("id, remaining_amount")
+    ]);
+    const budgets = budgetsRes.data ?? [];
+    const totalBudget = budgets.reduce((s, b) => s + Number(b.allocated_amount ?? 0), 0);
+    const budgetCategories = new Set(budgets.map((b) => b.category));
+    let spentInBudget = 0;
+    for (const expense of current.effectiveMonthExpenses) {
+      if (expense.type !== "expense") continue;
+      if (budgetCategories.has(expense.final_category)) spentInBudget += Number(expense.value);
+    }
+    const debts = (debtsRes.data ?? []).filter((d) => Number(d.remaining_amount ?? 0) > 0);
+    let usedLimit = 0;
+    let totalLimit = 0;
+    let hasOverdue = false;
+    const { data: allExpenses } = await sb.from("expenses").select("id,date,description,value,type,final_category,credit_card_id,wallet_id,invoice_month,is_paid");
+    for (const card of current.creditCards) {
+      totalLimit += Number(card.limit_amount ?? 0);
+      const period = getInvoicePeriod(card, year, monthNumber - 1);
+      const invoice = matchExpensesToInvoice(allExpenses ?? [], period);
+      usedLimit += invoice.total;
+      if (invoice.status === "overdue") hasOverdue = true;
+    }
+    const usageRatio = totalLimit > 0 ? usedLimit / totalLimit : 0;
+    const scores = scoreOf(
+      current.totals.totalIncome,
+      current.totals.totalExpense,
+      totalBudget,
+      spentInBudget,
+      hasOverdue,
+      debts.length,
+      previous.totals.totalExpense,
+      usageRatio
+    );
+    const payload = {
+      month,
+      overall_score: scores.overall,
+      savings_score: scores.savings,
+      budget_score: scores.budget,
+      debt_score: scores.debt,
+      consistency_score: scores.consistency,
+      credit_score: scores.credit,
+      total_income: current.totals.totalIncome,
+      total_expense: current.totals.totalExpense,
+      previous_month_expense: previous.totals.totalExpense,
+      total_budget: Number(totalBudget.toFixed(2)),
+      spent_in_budget: Number(spentInBudget.toFixed(2)),
+      active_debts: debts.length,
+      credit_usage_pct: Number((usageRatio * 100).toFixed(1)),
+      has_overdue_invoice: hasOverdue
+    };
+    const summary = [
+      `Score financeiro de ${month}: ${scores.overall}/100`,
+      `Poupan\xE7a ${scores.savings} \xB7 Or\xE7amento ${scores.budget} \xB7 D\xEDvidas ${scores.debt} \xB7 Consist\xEAncia ${scores.consistency} \xB7 Cr\xE9dito ${scores.credit}`,
+      `Receitas R$ ${payload.total_income.toFixed(2)} \xB7 Despesas R$ ${payload.total_expense.toFixed(2)} \xB7 Uso do cr\xE9dito ${payload.credit_usage_pct}%`
+    ].join("\n");
+    return ok(summary, payload);
+  })
+});
+
 // src/lib/mcp/tools/search.ts
-import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z8 } from "npm:zod@^4.4.3";
-var search_default = defineTool11({
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z19 } from "npm:zod@^4.4.3";
+var search_default = defineTool22({
   name: "search",
   title: "Buscar transa\xE7\xF5es",
   description: "Busca transa\xE7\xF5es (despesas e receitas) do usu\xE1rio autenticado por texto livre na descri\xE7\xE3o, categoria ou m\xEAs (YYYY-MM). Retorna uma lista de resultados com id, t\xEDtulo e resumo para depois usar a ferramenta fetch.",
   inputSchema: {
-    query: z8.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
+    query: z19.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("search", async ({ query }, ctx) => {
@@ -1265,14 +2427,14 @@ var search_default = defineTool11({
 });
 
 // src/lib/mcp/tools/fetch.ts
-import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z9 } from "npm:zod@^4.4.3";
-var fetch_default = defineTool12({
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z20 } from "npm:zod@^4.4.3";
+var fetch_default = defineTool23({
   name: "fetch",
   title: "Abrir transa\xE7\xE3o",
   description: "Retorna todos os detalhes de uma transa\xE7\xE3o do usu\xE1rio autenticado a partir do id devolvido pela ferramenta search.",
   inputSchema: {
-    id: z9.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
+    id: z20.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("fetch", async ({ id }, ctx) => {
@@ -1313,8 +2475,8 @@ setLogLevel("info");
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.4.0",
-  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal). Use search para localizar transa\xE7\xF5es por texto ou m\xEAs (YYYY-MM) e fetch para abrir os detalhes de um id encontrado. Use list_transactions/month_summary para consultar dados, create_transaction para lan\xE7ar despesas ou receitas, delete_transaction para excluir uma transa\xE7\xE3o (confirme com o usu\xE1rio antes, \xE9 irrevers\xEDvel), month_transactions para ver, dia a dia, todas as transa\xE7\xF5es de um m\xEAs com o saldo projetado ao final de cada dia, list_budgets para ler os or\xE7amentos do m\xEAs (planejado, gasto e restante) e upsert_budget para criar ou editar a meta de uma categoria, e list_categories/list_wallets/list_credit_cards para contexto do usu\xE1rio.",
+  version: "0.5.0",
+  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal, valores em BRL, meses no formato YYYY-MM e datas YYYY-MM-DD). Consultar: search + fetch para localizar e abrir transa\xE7\xF5es, list_transactions, month_summary, month_transactions (dia a dia com saldo projetado), compare_months (varia\xE7\xE3o por categoria), financial_score, list_budgets, list_categories, list_wallets, list_credit_cards, invoice_details (fatura de um cart\xE3o num m\xEAs). Registrar e editar: create_transaction, update_transaction (use scope 'single' para uma ocorr\xEAncia, 'future' para esta e as pr\xF3ximas de uma recorr\xEAncia, 'all' para toda a s\xE9rie/parcelamento), delete_transaction, set_transaction_paid (marcar pago/recebido ou desfazer), create_transfer (entre carteiras), pay_invoice (pagar/desfazer fatura de cart\xE3o), upsert_budget, manage_wallet, manage_category, manage_project e investments (listar caixinhas, aportar ou resgatar). Antes de qualquer opera\xE7\xE3o que altere s\xE9ries recorrentes, parcelamentos, faturas ou exclua dados, confirme com o usu\xE1rio. Sempre resolva nomes de carteiras, cart\xF5es, categorias e projetos com as ferramentas de listagem quando houver d\xFAvida.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -1327,14 +2489,25 @@ var mcp_default = defineMcp({
     fetch_default,
     list_transactions_default,
     create_transaction_default,
-    list_categories_default,
-    month_summary_default,
-    list_wallets_default,
-    list_credit_cards_default,
-    month_transactions_default,
+    update_transaction_default,
     delete_transaction_default,
+    set_transaction_paid_default,
+    create_transfer_default,
+    month_summary_default,
+    month_transactions_default,
+    compare_months_default,
+    financial_score_default,
+    list_categories_default,
+    manage_category_default,
+    list_wallets_default,
+    manage_wallet_default,
+    manage_project_default,
+    list_credit_cards_default,
+    invoice_details_default,
+    pay_invoice_default,
     list_budgets_default,
-    upsert_budget_default
+    upsert_budget_default,
+    investment_ops_default
   ]
 });
 
