@@ -7,6 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+import { extendedTools, executeExtendedTool } from "./_shared/extendedTools.ts";
+
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const tools = [
@@ -1504,8 +1506,15 @@ async function executeTool(
       return JSON.stringify({ sucesso: true, categorias_salvas: budgetsList.length, detalhes: results });
     }
 
-    default:
+    default: {
+      const extended = await executeExtendedTool(name, args as Record<string, any>, userId, supabase, {
+        projectMonth: async (month: string) =>
+          JSON.parse(await executeTool("projetar_saldo_final_mes", { month }, userId, supabase)),
+        currentMonth: getCurrentMonth,
+      });
+      if (extended !== null) return extended;
       return JSON.stringify({ error: "Função desconhecida" });
+    }
   }
 }
 
@@ -1631,7 +1640,7 @@ Exemplos de comportamento PROIBIDO:
       body: JSON.stringify({
         model: "google/gemini-3.5-flash",
         messages: conversationMessages,
-        tools,
+        tools: [...tools, ...extendedTools],
       }),
     });
 
@@ -1685,7 +1694,7 @@ Exemplos de comportamento PROIBIDO:
         body: JSON.stringify({
           model: "google/gemini-3.5-flash",
           messages: conversationMessages,
-          tools,
+          tools: [...tools, ...extendedTools],
         }),
       });
 
