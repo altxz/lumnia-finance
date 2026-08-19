@@ -119,17 +119,37 @@ export default function OAuthConsentPage() {
   }
 
   if (error) {
+    const notFound = /not found|não encontrad|expired|expirad|invalid/i.test(error);
     return (
       <main className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md rounded-2xl">
-          <CardHeader>
-            <CardTitle>Não foi possível carregar a autorização</CardTitle>
-            <CardDescription>{error}</CardDescription>
+          <CardHeader className="space-y-2">
+            <CardTitle>
+              {notFound ? "Este pedido de conexão expirou" : "Não foi possível carregar a autorização"}
+            </CardTitle>
+            <CardDescription>
+              {notFound
+                ? "O link de autorização já foi usado ou expirou. Volte ao aplicativo que você estava conectando (ChatGPT, Cursor, etc.) e inicie a conexão novamente. Para usar a Lumnia normalmente, entre pelo botão abaixo."
+                : error}
+            </CardDescription>
           </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-2">
+            <Button className="flex-1 rounded-xl" onClick={() => (window.location.href = "/")}>
+              Ir para a Lumnia
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 rounded-xl"
+              onClick={() => (window.location.href = "/auth")}
+            >
+              Entrar novamente
+            </Button>
+          </CardContent>
         </Card>
       </main>
     );
   }
+
 
   if (!details) {
     return (
