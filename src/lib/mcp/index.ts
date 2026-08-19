@@ -1,6 +1,9 @@
 import { auth, defineMcp, setLogLevel } from "@lovable.dev/mcp-js";
 import listTransactions from "./tools/list-transactions";
 import createTransaction from "./tools/create-transaction";
+import updateTransaction from "./tools/update-transaction";
+import createTransfer from "./tools/create-transfer";
+import setTransactionPaid from "./tools/set-transaction-paid";
 import listCategories from "./tools/list-categories";
 import monthSummary from "./tools/month-summary";
 import listWallets from "./tools/list-wallets";
@@ -9,8 +12,17 @@ import monthTransactions from "./tools/month-transactions";
 import deleteTransaction from "./tools/delete-transaction";
 import listBudgets from "./tools/list-budgets";
 import upsertBudget from "./tools/upsert-budget";
+import invoiceDetails from "./tools/invoice-details";
+import payInvoice from "./tools/pay-invoice";
+import manageWallet from "./tools/manage-wallet";
+import manageCategory from "./tools/manage-category";
+import manageProject from "./tools/manage-project";
+import investmentOps from "./tools/investment-ops";
+import compareMonths from "./tools/compare-months";
+import financialScore from "./tools/financial-score";
 import searchTool from "./tools/search";
 import fetchTool from "./tools/fetch";
+
 
 const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
