@@ -7,6 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+import { extendedTools, executeExtendedTool } from "./_shared/extendedTools.ts";
+
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const tools = [
@@ -1504,8 +1506,15 @@ async function executeTool(
       return JSON.stringify({ sucesso: true, categorias_salvas: budgetsList.length, detalhes: results });
     }
 
-    default:
+    default: {
+      const extended = await executeExtendedTool(name, args as Record<string, any>, userId, supabase, {
+        projectMonth: async (month: string) =>
+          JSON.parse(await executeTool("projetar_saldo_final_mes", { month }, userId, supabase)),
+        currentMonth: getCurrentMonth,
+      });
+      if (extended !== null) return extended;
       return JSON.stringify({ error: "Função desconhecida" });
+    }
   }
 }
 
@@ -1568,6 +1577,10 @@ Exemplos de comportamento PROIBIDO:
 - registrar_despesa / registrar_receita: Registar transações
 - consultar_status_orcamento: Orçamentos por categoria
 - projetar_saldo_final_mes: Projeção de fechamento do mês
+- criar_transacao / editar_transacao (scope single|future|all) / marcar_pagamento / registrar_transferencia
+- detalhe_fatura e pagar_fatura (cartões), gerir_carteira, gerir_categoria, gerir_projeto
+- investimentos (listar, aportar, resgatar), score_financeiro, excluir_orcamento
+REGRA: antes de editar séries recorrentes/parcelamentos, pagar faturas ou excluir dados, confirme explicitamente com o utilizador. Resolva nomes de carteiras, cartões, categorias e projetos com as ferramentas de listagem quando houver dúvida. Responda sempre em português do Brasil.
 - consultar_gastos_por_categoria: Gastos por categoria/termo
 - consultar_fatura_cartao: Faturas de cartão de crédito
 - listar_contas_pendentes / consultar_receitas_pendentes: Contas a pagar/receber
@@ -1631,7 +1644,7 @@ Exemplos de comportamento PROIBIDO:
       body: JSON.stringify({
         model: "google/gemini-3.5-flash",
         messages: conversationMessages,
-        tools,
+        tools: [...tools, ...extendedTools],
       }),
     });
 
@@ -1685,7 +1698,7 @@ Exemplos de comportamento PROIBIDO:
         body: JSON.stringify({
           model: "google/gemini-3.5-flash",
           messages: conversationMessages,
-          tools,
+          tools: [...tools, ...extendedTools],
         }),
       });
 
