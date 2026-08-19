@@ -206,69 +206,86 @@ var list_transactions_default = defineTool({
 // src/lib/mcp/tools/create-transaction.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z2 } from "npm:zod@^4.4.3";
-var create_transaction_default = defineTool2({
-  name: "create_transaction",
-  title: "Criar transa\xE7\xE3o",
-  description: "Cria uma nova despesa ou receita para o usu\xE1rio autenticado. Use tipo 'expense' para despesa e 'income' para receita.",
-  inputSchema: {
-    description: z2.string().min(1).describe("Descri\xE7\xE3o curta da transa\xE7\xE3o."),
-    value: z2.number().positive().describe("Valor absoluto (positivo) em BRL."),
-    date: z2.string().describe("Data ISO YYYY-MM-DD."),
-    type: z2.enum(["expense", "income"]).describe("Tipo da transa\xE7\xE3o."),
-    category: z2.string().optional().describe("Nome/slug da categoria final."),
-    is_paid: z2.boolean().optional().describe("Se j\xE1 foi pago/recebido. Padr\xE3o: true."),
-    notes: z2.string().optional()
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-  handler: safeHandler("create_transaction", async (input, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
-    }
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("expenses").insert({
-      user_id: ctx.getUserId(),
-      description: input.description,
-      value: input.value,
-      date: input.date,
-      type: input.type,
-      final_category: input.category ?? "outros",
-      category_ai: input.category ?? "outros",
-      is_paid: input.is_paid ?? true,
-      notes: input.notes ?? null
-    }).select().single();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Criada: ${data.id}` }],
-      structuredContent: { transaction: data }
-    };
-  })
-});
 
-// src/lib/mcp/tools/list-categories.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var list_categories_default = defineTool3({
-  name: "list_categories",
-  title: "Listar categorias",
-  description: "Lista todas as categorias e subcategorias do usu\xE1rio autenticado.",
-  inputSchema: {},
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: safeHandler("list_categories", async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
-    }
-    const sb = supabaseForUser(ctx);
-    const { data, error } = await sb.from("categories").select("id,name,icon,color,parent_id,active,sort_order").order("sort_order");
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { categories: data ?? [] }
-    };
-  })
-});
-
-// src/lib/mcp/tools/month-summary.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z3 } from "npm:zod@^4.4.3";
+// src/lib/mcp/resolve.ts
+var ResolveError = class extends Error {
+};
+function norm(value) {
+  return value.trim().toLowerCase();
+}
+async function resolveByName(sb, table, label, name, select = "id,name") {
+  const { data, error } = await sb.from(table).select(select);
+  if (error) throw new ResolveError(error.message);
+  const rows = data ?? [];
+  const target = norm(name);
+  let matches = rows.filter((r) => norm(String(r.name)) === target);
+  if (matches.length === 0) matches = rows.filter((r) => norm(String(r.name)).includes(target));
+  if (matches.length === 0)
+    throw new ResolveError(
+      `N\xE3o encontrei ${label} chamada "${name}". Op\xE7\xF5es: ${rows.map((r) => r.name).join(", ") || "nenhuma"}.`
+    );
+  if (matches.length > 1)
+    throw new ResolveError(
+      `Existe mais de ${label} com o nome "${name}". Informe o id: ${matches.map((m) => `${m.name} (${m.id})`).join(", ")}.`
+    );
+  return matches[0];
+}
+async function resolveWallet(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("wallets").select("id,name,asset_type,currency").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Carteira n\xE3o encontrada para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "wallets", "carteira", opts.name, "id,name,asset_type,currency");
+  return null;
+}
+async function resolveCreditCard(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("credit_cards").select("*").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Cart\xE3o de cr\xE9dito n\xE3o encontrado para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "credit_cards", "cart\xE3o", opts.name, "*");
+  return null;
+}
+async function resolveProject(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("projects").select("id,name").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Projeto n\xE3o encontrado para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "projects", "projeto", opts.name);
+  return null;
+}
+async function resolveCategory(sb, opts) {
+  if (opts.id) {
+    const { data, error } = await sb.from("categories").select("id,name,parent_id,active").eq("id", opts.id).maybeSingle();
+    if (error) throw new ResolveError(error.message);
+    if (!data) throw new ResolveError("Categoria n\xE3o encontrada para esta conta.");
+    return data;
+  }
+  if (opts.name) return resolveByName(sb, "categories", "categoria", opts.name, "id,name,parent_id,active");
+  return null;
+}
+async function defaultWalletId(sb) {
+  const { data } = await sb.from("user_settings").select("default_wallet_id").maybeSingle();
+  if (data?.default_wallet_id) return data.default_wallet_id;
+  const { data: wallets } = await sb.from("wallets").select("id,asset_type,created_at").order("created_at", { ascending: true });
+  const first = (wallets ?? []).find((w) => w.asset_type !== "investment");
+  return first?.id ?? null;
+}
+function ok(text, structured) {
+  return {
+    content: [{ type: "text", text }],
+    ...structured ? { structuredContent: structured } : {}
+  };
+}
+function fail(text) {
+  return { content: [{ type: "text", text }], isError: true };
+}
 
 // src/lib/creditCardPayments.ts
 var PAYMENT_PREFIX_RE = /^pagamento(?: de)? fatura\s*/i;
@@ -400,6 +417,142 @@ function matchExpensesToInvoice(expenses, period) {
   }
   return { ...period, status, transactions, total };
 }
+
+// src/lib/mcp/tools/create-transaction.ts
+var dateSchema2 = z2.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato YYYY-MM-DD.");
+var create_transaction_default = defineTool2({
+  name: "create_transaction",
+  title: "Criar transa\xE7\xE3o",
+  description: "Cria uma despesa ou receita. Aceita conta/carteira (nome ou id), cart\xE3o de cr\xE9dito, forma de pagamento, recorr\xEAncia fixa mensal/anual, parcelamento, projeto, tags e observa\xE7\xE3o. Sem carteira informada, usa a carteira padr\xE3o do usu\xE1rio. Para despesas no cart\xE3o, o m\xEAs da fatura \xE9 calculado automaticamente pelo fechamento do cart\xE3o.",
+  inputSchema: {
+    description: z2.string().min(1).describe("Descri\xE7\xE3o curta da transa\xE7\xE3o."),
+    value: z2.number().positive().describe("Valor absoluto (positivo) em BRL. Em parcelamentos, \xE9 o valor total."),
+    date: dateSchema2.describe("Data ISO YYYY-MM-DD."),
+    type: z2.enum(["expense", "income"]).describe("expense = despesa, income = receita."),
+    category: z2.string().optional().describe("Nome da categoria."),
+    category_id: z2.string().uuid().optional().describe("ID da categoria (preferencial)."),
+    wallet: z2.string().optional().describe("Nome da conta/carteira."),
+    wallet_id: z2.string().uuid().optional().describe("ID da conta/carteira."),
+    credit_card: z2.string().optional().describe("Nome do cart\xE3o de cr\xE9dito (para compras no cr\xE9dito)."),
+    credit_card_id: z2.string().uuid().optional().describe("ID do cart\xE3o de cr\xE9dito."),
+    invoice_month: z2.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs da fatura (YYYY-MM). Se omitido, \xE9 calculado pelo fechamento do cart\xE3o."),
+    payment_method: z2.string().optional().describe("Forma de pagamento (ex: pix, debito, credito, dinheiro)."),
+    is_paid: z2.boolean().optional().describe("Se j\xE1 foi pago/recebido. Padr\xE3o: true."),
+    is_recurring: z2.boolean().optional().describe("Despesa/receita fixa que se repete."),
+    frequency: z2.enum(["monthly", "yearly"]).optional().describe("Frequ\xEAncia da recorr\xEAncia. Padr\xE3o: monthly."),
+    installments: z2.number().int().min(1).max(360).optional().describe("N\xFAmero de parcelas. Acima de 1, cria uma parcela por m\xEAs dividindo o valor total."),
+    project: z2.string().optional().describe("Nome do projeto/centro de custo."),
+    project_id: z2.string().uuid().optional().describe("ID do projeto."),
+    tags: z2.array(z2.string()).optional().describe("Etiquetas livres."),
+    notes: z2.string().optional().describe("Observa\xE7\xF5es.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler("create_transaction", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    try {
+      const card = await resolveCreditCard(sb, { id: input.credit_card_id, name: input.credit_card });
+      const project = await resolveProject(sb, { id: input.project_id, name: input.project });
+      const category = await resolveCategory(sb, { id: input.category_id, name: input.category });
+      let wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      let walletId = wallet?.id ?? null;
+      if (!card && !walletId) walletId = await defaultWalletId(sb);
+      const categoryName = category?.name ?? input.category ?? "outros";
+      const installments = input.installments ?? 1;
+      const frequency = input.is_recurring ? input.frequency ?? "monthly" : null;
+      let invoiceMonth = input.invoice_month ?? null;
+      if (card && !invoiceMonth) {
+        const due = getPaymentDate(input.date, card);
+        invoiceMonth = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}`;
+      }
+      const base = {
+        user_id: userId,
+        description: input.description,
+        type: input.type,
+        final_category: categoryName,
+        category_ai: categoryName,
+        wallet_id: card ? walletId : walletId,
+        credit_card_id: card?.id ?? null,
+        invoice_month: invoiceMonth,
+        payment_method: input.payment_method ?? (card ? "credito" : null),
+        is_paid: input.is_paid ?? true,
+        is_recurring: !!input.is_recurring,
+        frequency,
+        project_id: project?.id ?? null,
+        tags: input.tags ?? null,
+        notes: input.notes ?? null
+      };
+      if (installments > 1) {
+        const groupId = crypto.randomUUID();
+        const perInstallment = Math.round(input.value / installments * 100) / 100;
+        const start = /* @__PURE__ */ new Date(`${input.date}T12:00:00`);
+        const rows = Array.from({ length: installments }, (_, i) => {
+          const d = new Date(start);
+          d.setMonth(d.getMonth() + i);
+          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          let rowInvoice = invoiceMonth;
+          if (card) {
+            const due = getPaymentDate(iso, card);
+            rowInvoice = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}`;
+          }
+          return {
+            ...base,
+            date: iso,
+            value: perInstallment,
+            installments,
+            installment_group_id: groupId,
+            installment_info: `${i + 1}/${installments}`,
+            invoice_month: rowInvoice,
+            is_paid: i === 0 ? base.is_paid : false,
+            is_recurring: false,
+            frequency: null
+          };
+        });
+        const { data: data2, error: error2 } = await sb.from("expenses").insert(rows).select("id,date,value");
+        if (error2) return fail(error2.message);
+        return ok(
+          `Criadas ${installments} parcelas de R$ ${perInstallment.toFixed(2)} para "${input.description}".`,
+          { installments: data2, installment_group_id: groupId }
+        );
+      }
+      const { data, error } = await sb.from("expenses").insert({ ...base, date: input.date, value: input.value, installments: 1 }).select().single();
+      if (error) return fail(error.message);
+      return ok(
+        `Criada: ${input.description} \u2014 R$ ${input.value.toFixed(2)} em ${input.date}${card ? ` (cart\xE3o ${card.name}, fatura ${invoiceMonth})` : ""}. ID ${data.id}`,
+        { transaction: data }
+      );
+    } catch (error) {
+      if (error instanceof ResolveError) return fail(error.message);
+      throw error;
+    }
+  })
+});
+
+// src/lib/mcp/tools/list-categories.ts
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var list_categories_default = defineTool3({
+  name: "list_categories",
+  title: "Listar categorias",
+  description: "Lista todas as categorias e subcategorias do usu\xE1rio autenticado.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: safeHandler("list_categories", async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "N\xE3o autenticado." }], isError: true };
+    }
+    const sb = supabaseForUser(ctx);
+    const { data, error } = await sb.from("categories").select("id,name,icon,color,parent_id,active,sort_order").order("sort_order");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { categories: data ?? [] }
+    };
+  })
+});
+
+// src/lib/mcp/tools/month-summary.ts
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z3 } from "npm:zod@^4.4.3";
 
 // src/lib/invoiceCashFlow.ts
 function toMonthLabel2(year, month) {
