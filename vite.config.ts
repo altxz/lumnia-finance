@@ -7,6 +7,14 @@ import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    // Identificador único desta build — usado para versionar o cache de dados
+    // no localStorage e para mostrar a versão nas Configurações.
+    __BUILD_ID__: JSON.stringify(
+      mode === "development" ? "dev" : new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)
+    ),
+  },
+
   server: {
     host: "::",
     port: 8080,
@@ -41,15 +49,25 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      // O registo é feito por src/lib/registerServiceWorker.ts (guardado para
+      // dev/preview). O plugin não deve injetar o seu próprio script.
+      injectRegister: null,
+      filename: "sw.js",
       devOptions: {
         enabled: false,
       },
       workbox: {
-        navigateFallbackDenylist: [/^\/~oauth/],
+        // Handlers de Web Push dentro do MESMO service worker (antes havia
+        // um /sw-push.js a competir pelo escopo "/").
+        importScripts: ["/push-handlers.js"],
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/\.lovable\//],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        // Nunca precachear o kill switch antigo nem o HTML como asset estático.
+        globIgnores: ["**/sw-push.js", "**/push-handlers.js"],
         runtimeCaching: [
           {
             // NUNCA fazer cache de chamadas à API (REST/Auth/Realtime/Functions)
@@ -57,6 +75,17 @@ export default defineConfig(({ mode }) => ({
             urlPattern: /^https:\/\/.*\.supabase\.co\/(rest|auth|realtime|functions)\/.*/,
             handler: 'NetworkOnly',
           },
+          {
+            // HTML sempre da rede quando há ligação (cache só como fallback offline).
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 10 },
+            },
+          },
+
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
             handler: 'StaleWhileRevalidate',

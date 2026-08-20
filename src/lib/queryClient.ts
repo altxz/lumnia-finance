@@ -49,8 +49,11 @@ const PERSISTABLE_KEYS = new Set([
 ]);
 
 export const CACHE_STORAGE_KEY = "lumnia-query-cache";
-// Alterar o buster invalida todo o cache persistido (ex.: novo formato de dados).
-const CACHE_BUSTER = "v1";
+// O buster é o id da build: cada deploy invalida automaticamente o cache
+// persistido, evitando dados em formato antigo depois de uma atualização.
+export const BUILD_ID = typeof __BUILD_ID__ !== "undefined" ? __BUILD_ID__ : "dev";
+const CACHE_BUSTER = `v2-${BUILD_ID}`;
+
 
 
 

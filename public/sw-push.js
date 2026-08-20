@@ -1,46 +1,26 @@
-// Service worker for push notifications
-// This file is served from /sw-push.js and handles push events
+// KILL SWITCH — este caminho já não é um service worker ativo.
+// Durante muito tempo o app registou /sw-push.js no escopo "/", competindo com o
+// service worker do PWA (/sw.js) e deixando dispositivos presos numa versão antiga.
+// Este ficheiro substitui esse registo: limpa as caches órfãs, força os clientes a
+// recarregar e desregista-se a si mesmo. Não voltar a registar este caminho.
 
-self.addEventListener("push", (event) => {
-  if (!event.data) return;
+self.addEventListener("install", () => self.skipWaiting());
 
-  try {
-    const data = event.data.json();
-    const options = {
-      body: data.body || "",
-      icon: data.icon || "/pwa-icon-192.png",
-      badge: "/pwa-icon-192.png",
-      vibrate: [200, 100, 200],
-      tag: data.tag || "lumnia-notification",
-      renotify: true,
-      data: {
-        url: data.url || "/",
-      },
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(data.title || "Lumnia", options)
-    );
-  } catch (e) {
-    console.error("Push event error:", e);
-  }
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const url = event.notification.data?.url || "/";
-
+self.addEventListener("activate", (event) =>
   event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && "focus" in client) {
-            client.navigate(url);
-            return client.focus();
-          }
-        }
-        return self.clients.openWindow(url);
-      })
-  );
-});
+    (async () => {
+      try {
+        const names = await caches.keys();
+        const stale = names.filter((n) =>
+          /(^|-)precache-v\d+-|(^|-)runtime-|^images$|^fonts$/.test(n)
+        );
+        await Promise.allSettled(stale.map((n) => caches.delete(n)));
+        await self.clients.claim();
+        const clients = await self.clients.matchAll({ type: "window" });
+        await Promise.allSettled(clients.map((c) => c.navigate(c.url)));
+      } finally {
+        await self.registration.unregister();
+      }
+    })()
+  )
+);

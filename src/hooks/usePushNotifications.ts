@@ -22,19 +22,10 @@ export function usePushNotifications() {
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
-
-    // Don't register in preview/iframe
-    const isPreview = window.location.hostname.includes('lovableproject.com') || 
-                      window.location.hostname.includes('id-preview--');
-    const isIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
-    
-    if (!supported || isPreview || isIframe) return;
-
-    // Register the push service worker
-    navigator.serviceWorker.register('/sw-push.js', { scope: '/' }).catch(err => {
-      console.warn('Push SW registration failed:', err);
-    });
+    // O service worker é registado uma única vez em src/lib/registerServiceWorker.ts
+    // (o /sw.js já inclui os handlers de push). Aqui apenas usamos o registo existente.
   }, []);
+
 
   // Check existing subscription
   useEffect(() => {
