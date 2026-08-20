@@ -30,6 +30,8 @@ import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
 import { getInvoicePeriod, matchExpensesToInvoice, type InvoicePeriod } from '@/lib/invoiceHelpers';
 import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 import { MonthSelector } from '@/components/MonthSelector';
+import { AdjustBalanceModal } from '@/components/wallet/AdjustBalanceModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Wallet types ───
 interface WalletRow {
