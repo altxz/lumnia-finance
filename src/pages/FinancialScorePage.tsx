@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -223,7 +224,7 @@ export default function FinancialScorePage() {
       ]);
 
       // Current month
-      const expenses = (currExp || []).filter((e: any) => e.type !== 'transfer');
+      const expenses = (currExp || []).filter((e: any) => e.type !== 'transfer' && !isBalanceAdjustment(e));
       const inc = expenses.filter((e: any) => e.type === 'income').reduce((s: number, e: any) => s + e.value, 0);
       const exp = expenses.filter((e: any) => e.type !== 'income').reduce((s: number, e: any) => s + e.value, 0);
       setTotalIncome(inc);
