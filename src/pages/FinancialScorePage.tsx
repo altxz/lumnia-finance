@@ -211,7 +211,7 @@ export default function FinancialScorePage() {
       ] = await Promise.all([
         supabase.from('expenses').select('value, type, credit_card_id, final_category, description')
           .eq('user_id', user.id).gte('date', currentMonth).lt('date', nextMonthStr),
-        supabase.from('expenses').select('value, type')
+        supabase.from('expenses').select('value, type, final_category, description')
           .eq('user_id', user.id).gte('date', prevMonthStr).lt('date', currentMonth),
         supabase.from('budgets').select('allocated_amount, category')
           .eq('user_id', user.id).eq('month_year', currentMonth),
@@ -231,7 +231,7 @@ export default function FinancialScorePage() {
       setTotalExpense(exp);
 
       // Previous month
-      const prevFiltered = (prevExp || []).filter((e: any) => e.type !== 'transfer');
+      const prevFiltered = (prevExp || []).filter((e: any) => e.type !== 'transfer' && !isBalanceAdjustment(e));
       setPrevIncome(prevFiltered.filter((e: any) => e.type === 'income').reduce((s: number, e: any) => s + e.value, 0));
       setPrevExpense(prevFiltered.filter((e: any) => e.type !== 'income').reduce((s: number, e: any) => s + e.value, 0));
 
