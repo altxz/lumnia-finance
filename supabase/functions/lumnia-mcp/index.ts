@@ -1842,20 +1842,21 @@ import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z14 } from "npm:zod@^4.4.3";
 var manage_category_default = defineTool17({
   name: "manage_category",
-  title: "Criar, renomear ou desativar categoria",
-  description: "Cria uma categoria ou subcategoria (informe parent para vincular \xE0 categoria-m\xE3e), renomeia, ou ativa/desativa uma existente. Use list_categories para ver a hierarquia atual.",
+  title: "Criar, editar ou excluir categoria",
+  description: "Gerencia as categorias da p\xE1gina de Categorias: cria (action 'create', informe parent para criar subcategoria), edita nome/\xEDcone/cor/categoria-m\xE3e e ativa ou desativa (action 'update'), e exclui definitivamente (action 'delete'). Use list_categories para ver a hierarquia atual. Confirme com o usu\xE1rio antes de excluir.",
   inputSchema: {
-    action: z14.enum(["create", "update"]).describe("create ou update."),
-    category: z14.string().optional().describe("Nome da categoria a editar."),
-    category_id: z14.string().uuid().optional().describe("ID da categoria a editar."),
+    action: z14.enum(["create", "update", "delete"]).describe("create, update ou delete."),
+    category: z14.string().optional().describe("Nome da categoria a editar ou excluir."),
+    category_id: z14.string().uuid().optional().describe("ID da categoria a editar ou excluir."),
     name: z14.string().optional().describe("Nome (novo nome em update, obrigat\xF3rio em create)."),
     parent: z14.string().optional().describe("Nome da categoria-m\xE3e (cria uma subcategoria)."),
     parent_id: z14.string().uuid().optional().describe("ID da categoria-m\xE3e."),
     icon: z14.string().optional().describe("Emoji/\xEDcone. Padr\xE3o: \u{1F4E6}."),
     color: z14.string().optional().describe("Cor em hex. Padr\xE3o: #94a3b8."),
-    active: z14.boolean().optional().describe("false desativa a categoria.")
+    active: z14.boolean().optional().describe("false desativa a categoria."),
+    delete_children: z14.boolean().optional().describe("Em delete: true tamb\xE9m exclui as subcategorias. Padr\xE3o false (bloqueia se houver subcategorias).")
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   handler: safeHandler("manage_category", async (input, ctx) => {
     const sb = supabaseForUser(ctx);
     try {
