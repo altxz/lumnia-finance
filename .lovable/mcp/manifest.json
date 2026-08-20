@@ -671,7 +671,7 @@
               "type": "string"
             },
             "active": {
-              "description": "false desativa a categoria.",
+              "description": "false desativa (arquiva) a categoria.",
               "type": "boolean"
             },
             "delete_children": {

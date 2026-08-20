@@ -1840,81 +1840,85 @@ var manage_wallet_default = defineTool16({
 // src/lib/mcp/tools/manage-category.ts
 import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z14 } from "npm:zod@^4.4.3";
+var categoryFields = {
+  category: z14.string().optional().describe("Nome da categoria a editar ou excluir."),
+  category_id: z14.string().uuid().optional().describe("ID da categoria a editar ou excluir."),
+  name: z14.string().optional().describe("Nome (novo nome em update, obrigat\xF3rio em create)."),
+  parent: z14.string().optional().describe("Nome da categoria-m\xE3e (cria uma subcategoria)."),
+  parent_id: z14.string().uuid().optional().describe("ID da categoria-m\xE3e."),
+  icon: z14.string().optional().describe("Emoji/\xEDcone. Padr\xE3o: \u{1F4E6}."),
+  color: z14.string().optional().describe("Cor em hex. Padr\xE3o: #94a3b8."),
+  active: z14.boolean().optional().describe("false desativa (arquiva) a categoria."),
+  delete_children: z14.boolean().optional().describe("Em delete: true tamb\xE9m exclui as subcategorias. Padr\xE3o false (bloqueia se houver subcategorias).")
+};
+async function runManageCategory(input, ctx) {
+  const sb = supabaseForUser(ctx);
+  try {
+    const parent = input.parent || input.parent_id ? await resolveCategory(sb, { id: input.parent_id, name: input.parent }) : null;
+    if (input.action === "create") {
+      if (!input.name) return fail("Informe o nome da categoria.");
+      const { data: data2, error: error2 } = await sb.from("categories").insert({
+        user_id: ctx.getUserId(),
+        name: input.name,
+        parent_id: parent?.id ?? null,
+        icon: input.icon ?? "\u{1F4E6}",
+        color: input.color ?? "#94a3b8",
+        active: input.active ?? true,
+        sort_order: 999
+      }).select().single();
+      if (error2) return fail(error2.message);
+      return ok(
+        `Categoria "${data2.name}" criada${parent ? ` como subcategoria de "${parent.name}"` : ""}.`,
+        { category: data2 }
+      );
+    }
+    const target = await resolveCategory(sb, { id: input.category_id, name: input.category });
+    if (!target) return fail("Informe category ou category_id da categoria a editar ou excluir.");
+    if (input.action === "delete") {
+      const { data: children, error: childrenError } = await sb.from("categories").select("id,name").eq("parent_id", target.id);
+      if (childrenError) return fail(childrenError.message);
+      const subs = children ?? [];
+      if (subs.length > 0 && !input.delete_children) {
+        return fail(
+          `A categoria "${target.name}" tem ${subs.length} subcategoria(s): ${subs.map((s) => s.name).join(", ")}. Confirme com o usu\xE1rio e repita com delete_children: true para excluir tudo.`
+        );
+      }
+      if (subs.length > 0) {
+        const { error: subError } = await sb.from("categories").delete().in("id", subs.map((s) => s.id));
+        if (subError) return fail(subError.message);
+      }
+      const { error: deleteError } = await sb.from("categories").delete().eq("id", target.id);
+      if (deleteError) return fail(deleteError.message);
+      return ok(
+        `Categoria "${target.name}" exclu\xEDda${subs.length > 0 ? ` junto com ${subs.length} subcategoria(s)` : ""}. As transa\xE7\xF5es j\xE1 lan\xE7adas mant\xEAm o nome da categoria no hist\xF3rico.`,
+        { deleted_id: target.id, deleted_children: subs.length }
+      );
+    }
+    const patch = {};
+    if (input.name !== void 0) patch.name = input.name;
+    if (input.icon !== void 0) patch.icon = input.icon;
+    if (input.color !== void 0) patch.color = input.color;
+    if (input.active !== void 0) patch.active = input.active;
+    if (input.parent || input.parent_id) patch.parent_id = parent?.id ?? null;
+    if (Object.keys(patch).length === 0) return fail("Nenhum campo para atualizar.");
+    const { data, error } = await sb.from("categories").update(patch).eq("id", target.id).select().single();
+    if (error) return fail(error.message);
+    return ok(`Categoria "${data.name}" atualizada${data.active ? "" : " (desativada)"}.`, { category: data });
+  } catch (error) {
+    if (error instanceof ResolveError) return fail(error.message);
+    throw error;
+  }
+}
 var manage_category_default = defineTool17({
   name: "manage_category",
   title: "Criar, editar ou excluir categoria",
   description: "Gerencia as categorias da p\xE1gina de Categorias: cria (action 'create', informe parent para criar subcategoria), edita nome/\xEDcone/cor/categoria-m\xE3e e ativa ou desativa (action 'update'), e exclui definitivamente (action 'delete'). Use list_categories para ver a hierarquia atual. Confirme com o usu\xE1rio antes de excluir.",
   inputSchema: {
     action: z14.enum(["create", "update", "delete"]).describe("create, update ou delete."),
-    category: z14.string().optional().describe("Nome da categoria a editar ou excluir."),
-    category_id: z14.string().uuid().optional().describe("ID da categoria a editar ou excluir."),
-    name: z14.string().optional().describe("Nome (novo nome em update, obrigat\xF3rio em create)."),
-    parent: z14.string().optional().describe("Nome da categoria-m\xE3e (cria uma subcategoria)."),
-    parent_id: z14.string().uuid().optional().describe("ID da categoria-m\xE3e."),
-    icon: z14.string().optional().describe("Emoji/\xEDcone. Padr\xE3o: \u{1F4E6}."),
-    color: z14.string().optional().describe("Cor em hex. Padr\xE3o: #94a3b8."),
-    active: z14.boolean().optional().describe("false desativa a categoria."),
-    delete_children: z14.boolean().optional().describe("Em delete: true tamb\xE9m exclui as subcategorias. Padr\xE3o false (bloqueia se houver subcategorias).")
+    ...categoryFields
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-  handler: safeHandler("manage_category", async (input, ctx) => {
-    const sb = supabaseForUser(ctx);
-    try {
-      const parent = input.parent || input.parent_id ? await resolveCategory(sb, { id: input.parent_id, name: input.parent }) : null;
-      if (input.action === "create") {
-        if (!input.name) return fail("Informe o nome da categoria.");
-        const { data: data2, error: error2 } = await sb.from("categories").insert({
-          user_id: ctx.getUserId(),
-          name: input.name,
-          parent_id: parent?.id ?? null,
-          icon: input.icon ?? "\u{1F4E6}",
-          color: input.color ?? "#94a3b8",
-          active: input.active ?? true,
-          sort_order: 999
-        }).select().single();
-        if (error2) return fail(error2.message);
-        return ok(
-          `Categoria "${data2.name}" criada${parent ? ` como subcategoria de "${parent.name}"` : ""}.`,
-          { category: data2 }
-        );
-      }
-      const target = await resolveCategory(sb, { id: input.category_id, name: input.category });
-      if (!target) return fail("Informe category ou category_id da categoria a editar ou excluir.");
-      if (input.action === "delete") {
-        const { data: children, error: childrenError } = await sb.from("categories").select("id,name").eq("parent_id", target.id);
-        if (childrenError) return fail(childrenError.message);
-        const subs = children ?? [];
-        if (subs.length > 0 && !input.delete_children) {
-          return fail(
-            `A categoria "${target.name}" tem ${subs.length} subcategoria(s): ${subs.map((s) => s.name).join(", ")}. Confirme com o usu\xE1rio e repita com delete_children: true para excluir tudo.`
-          );
-        }
-        if (subs.length > 0) {
-          const { error: subError } = await sb.from("categories").delete().in("id", subs.map((s) => s.id));
-          if (subError) return fail(subError.message);
-        }
-        const { error: deleteError } = await sb.from("categories").delete().eq("id", target.id);
-        if (deleteError) return fail(deleteError.message);
-        return ok(
-          `Categoria "${target.name}" exclu\xEDda${subs.length > 0 ? ` junto com ${subs.length} subcategoria(s)` : ""}. As transa\xE7\xF5es j\xE1 lan\xE7adas mant\xEAm o nome da categoria no hist\xF3rico.`,
-          { deleted_id: target.id, deleted_children: subs.length }
-        );
-      }
-      const patch = {};
-      if (input.name !== void 0) patch.name = input.name;
-      if (input.icon !== void 0) patch.icon = input.icon;
-      if (input.color !== void 0) patch.color = input.color;
-      if (input.active !== void 0) patch.active = input.active;
-      if (input.parent || input.parent_id) patch.parent_id = parent?.id ?? null;
-      if (Object.keys(patch).length === 0) return fail("Nenhum campo para atualizar.");
-      const { data, error } = await sb.from("categories").update(patch).eq("id", target.id).select().single();
-      if (error) return fail(error.message);
-      return ok(`Categoria "${data.name}" atualizada${data.active ? "" : " (desativada)"}.`, { category: data });
-    } catch (error) {
-      if (error instanceof ResolveError) return fail(error.message);
-      throw error;
-    }
-  })
+  handler: safeHandler("manage_category", (input, ctx) => runManageCategory(input, ctx))
 });
 
 // src/lib/mcp/tools/manage-project.ts
