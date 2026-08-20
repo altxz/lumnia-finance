@@ -683,6 +683,19 @@ export default function WalletPage() {
                                         <Badge variant="outline" className="text-[10px] mt-1">{w.currency}</Badge>
                                       )}
                                     </div>
+                                    <div className="flex items-center gap-1">
+                                    {w.asset_type !== 'crypto' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Ajustar saldo"
+                                        aria-label={`Ajustar saldo de ${w.name}`}
+                                        className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl"
+                                        onClick={() => setAdjustWallet(w)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl">
