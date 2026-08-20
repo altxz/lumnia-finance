@@ -713,6 +713,7 @@ export default function WalletPage() {
                                         </AlertDialogFooter>
                                       </AlertDialogContent>
                                     </AlertDialog>
+                                    </div>
                                   </div>
                                   {isForeign ? (
                                     <div className="mt-3">
