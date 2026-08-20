@@ -28,6 +28,7 @@ export function WeekComparisonChart({ expenses }: Props) {
 
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer' || e.credit_card_id) return;
+      if (isBalanceAdjustment(e)) return;
       const d = new Date(e.date + 'T12:00:00');
       if (d >= thisWeekStart) {
         thisWeek[d.getDay()] = (thisWeek[d.getDay()] || 0) + e.value;
