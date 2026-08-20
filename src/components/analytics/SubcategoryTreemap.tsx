@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
@@ -30,6 +31,7 @@ export function SubcategoryTreemap({ expenses, categories }: Props) {
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
       if (e.description?.startsWith('Pagamento fatura')) return;
+      if (isBalanceAdjustment(e)) return;
       map[e.final_category] = (map[e.final_category] || 0) + e.value;
     });
 

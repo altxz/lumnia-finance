@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/constants';
@@ -28,6 +29,7 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
 
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
+      if (isBalanceAdjustment(e)) return;
       if (e.credit_card_id) return;
       const d = new Date(e.date + 'T12:00:00');
       if (d.getMonth() === m && d.getFullYear() === y) {

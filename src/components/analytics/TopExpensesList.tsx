@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
@@ -8,7 +9,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(142, 71%,
 
 export function TopExpensesList({ expenses }: { expenses: any[] }) {
   const data = useMemo(() => {
-    const validExpenses = expenses.filter(e => e.type === 'expense');
+    const validExpenses = expenses.filter(e => e.type === 'expense' && !isBalanceAdjustment(e));
     const sorted = [...validExpenses].sort((a, b) => b.value - a.value).slice(0, 5);
     return sorted.map(e => ({
       name: (e.description || 'Sem descrição').length > 18

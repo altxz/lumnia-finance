@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
@@ -166,6 +167,7 @@ export function useBudgetData() {
     [...effective, ...virtualCardRows].forEach((e: any) => {
       if (e.type === 'income') { income += Number(e.value || 0); return; }
       if (e.type === 'transfer') return;
+      if (isBalanceAdjustment(e)) return;
       if (isCreditCardPaymentLabel(e.description) || e.description?.startsWith('Pagamento fatura')) return;
       spent[e.final_category] = (spent[e.final_category] || 0) + Number(e.value || 0);
     });

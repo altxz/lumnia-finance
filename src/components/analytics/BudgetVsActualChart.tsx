@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
@@ -20,6 +21,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
     (expenses || []).forEach((e: any) => {
       if (e.type === 'income' || e.type === 'transfer') return;
       if (e.description?.startsWith('Pagamento fatura')) return;
+      if (isBalanceAdjustment(e)) return;
       spent[e.final_category] = (spent[e.final_category] || 0) + Number(e.value || 0);
     });
 

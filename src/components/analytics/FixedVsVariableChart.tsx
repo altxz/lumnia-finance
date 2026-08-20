@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
@@ -14,6 +15,7 @@ export function FixedVsVariableChart({ expenses }: Props) {
     let variable = 0;
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
+      if (isBalanceAdjustment(e)) return;
       if (e.is_recurring) fixed += e.value;
       else variable += e.value;
     });

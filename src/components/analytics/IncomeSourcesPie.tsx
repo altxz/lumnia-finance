@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
@@ -16,6 +17,7 @@ export function IncomeSourcesPie({ expenses, categories }: Props) {
     const map: Record<string, number> = {};
     expenses.forEach(e => {
       if (e.type !== 'income') return;
+      if (isBalanceAdjustment(e)) return;
       map[e.final_category] = (map[e.final_category] || 0) + e.value;
     });
     if (Object.keys(map).length === 0) return [];
