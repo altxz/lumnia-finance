@@ -135,6 +135,17 @@ export default function WalletPage() {
     name: '', asset_type: 'checking_account' as string, currency: 'BRL' as string, current_balance: '',
     crypto_symbol: '', crypto_amount: '', crypto_price: '',
   });
+  const queryClient = useQueryClient();
+  const [adjustWallet, setAdjustWallet] = useState<WalletRow | null>(null);
+
+  const handleAdjustSaved = () => {
+    projected.refetch?.();
+    queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
+    queryClient.invalidateQueries({ queryKey: ['wallets'] });
+    fetchWallets();
+  };
+
 
   // ─── Credit Cards state ───
   const [cards, setCards] = useState<CreditCardRow[]>([]);
