@@ -30,6 +30,8 @@ import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
 import { getInvoicePeriod, matchExpensesToInvoice, type InvoicePeriod } from '@/lib/invoiceHelpers';
 import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 import { MonthSelector } from '@/components/MonthSelector';
+import { AdjustBalanceModal } from '@/components/wallet/AdjustBalanceModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Wallet types ───
 interface WalletRow {
@@ -133,6 +135,17 @@ export default function WalletPage() {
     name: '', asset_type: 'checking_account' as string, currency: 'BRL' as string, current_balance: '',
     crypto_symbol: '', crypto_amount: '', crypto_price: '',
   });
+  const queryClient = useQueryClient();
+  const [adjustWallet, setAdjustWallet] = useState<WalletRow | null>(null);
+
+  const handleAdjustSaved = () => {
+    projected.refetch?.();
+    queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
+    queryClient.invalidateQueries({ queryKey: ['wallets'] });
+    fetchWallets();
+  };
+
 
   // ─── Credit Cards state ───
   const [cards, setCards] = useState<CreditCardRow[]>([]);
@@ -670,6 +683,19 @@ export default function WalletPage() {
                                         <Badge variant="outline" className="text-[10px] mt-1">{w.currency}</Badge>
                                       )}
                                     </div>
+                                    <div className="flex items-center gap-1">
+                                    {w.asset_type !== 'crypto' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Ajustar saldo"
+                                        aria-label={`Ajustar saldo de ${w.name}`}
+                                        className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl"
+                                        onClick={() => setAdjustWallet(w)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl">
@@ -687,6 +713,7 @@ export default function WalletPage() {
                                         </AlertDialogFooter>
                                       </AlertDialogContent>
                                     </AlertDialog>
+                                    </div>
                                   </div>
                                   {isForeign ? (
                                     <div className="mt-3">
@@ -1163,6 +1190,15 @@ export default function WalletPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Ajustar saldo da conta ─── */}
+      <AdjustBalanceModal
+        open={!!adjustWallet}
+        onOpenChange={v => { if (!v) setAdjustWallet(null); }}
+        wallet={adjustWallet ? { id: adjustWallet.id, name: adjustWallet.name } : null}
+        currentBalance={adjustWallet ? getWalletValue(adjustWallet) : 0}
+        onSaved={handleAdjustSaved}
+      />
     </SidebarProvider>
   );
 }

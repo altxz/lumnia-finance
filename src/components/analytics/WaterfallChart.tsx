@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine } from 'recharts';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
@@ -30,7 +31,7 @@ function resolveCategoryName(cat: string): string {
 
 export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProps) {
   const data = useMemo(() => {
-    const nonTransfers = expenses.filter(e => e.type !== 'transfer');
+    const nonTransfers = expenses.filter(e => e.type !== 'transfer' && !isBalanceAdjustment(e));
     const totalIncome = nonTransfers
       .filter(e => e.type === 'income')
       .reduce((s, e) => s + e.value, 0);

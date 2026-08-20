@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Expense } from '@/components/ExpenseTable';
@@ -56,7 +57,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
       .gte('date', fromDate.toISOString().split('T')[0])
       .order('date', { ascending: true });
 
-    const allExpenses = (data || []) as Expense[];
+    const allExpenses = ((data || []) as Expense[]).filter(e => !isBalanceAdjustment(e));
 
     const periodStart = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, '0')}`;
     const now = new Date();

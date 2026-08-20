@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
@@ -32,6 +33,7 @@ export function DailySpendingChart({ expenses }: Props) {
 
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
+      if (isBalanceAdjustment(e)) return;
       const d = new Date(e.date + 'T12:00:00');
       if (d.getMonth() !== selectedMonth || d.getFullYear() !== selectedYear) return;
       const day = d.getDate();
