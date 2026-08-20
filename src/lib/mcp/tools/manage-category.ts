@@ -56,7 +56,40 @@ export default defineTool({
       }
 
       const target = await resolveCategory(sb, { id: input.category_id, name: input.category });
-      if (!target) return fail("Informe category ou category_id da categoria a editar.");
+      if (!target) return fail("Informe category ou category_id da categoria a editar ou excluir.");
+
+      if (input.action === "delete") {
+        const { data: children, error: childrenError } = await sb
+          .from("categories")
+          .select("id,name")
+          .eq("parent_id", target.id);
+        if (childrenError) return fail(childrenError.message);
+
+        const subs = children ?? [];
+        if (subs.length > 0 && !input.delete_children) {
+          return fail(
+            `A categoria "${target.name}" tem ${subs.length} subcategoria(s): ${subs
+              .map((s: any) => s.name)
+              .join(", ")}. Confirme com o usuário e repita com delete_children: true para excluir tudo.`,
+          );
+        }
+
+        if (subs.length > 0) {
+          const { error: subError } = await sb
+            .from("categories")
+            .delete()
+            .in("id", subs.map((s: any) => s.id));
+          if (subError) return fail(subError.message);
+        }
+
+        const { error: deleteError } = await sb.from("categories").delete().eq("id", target.id);
+        if (deleteError) return fail(deleteError.message);
+        return ok(
+          `Categoria "${target.name}" excluída${subs.length > 0 ? ` junto com ${subs.length} subcategoria(s)` : ""}. As transações já lançadas mantêm o nome da categoria no histórico.`,
+          { deleted_id: target.id, deleted_children: subs.length },
+        );
+      }
+
       const patch: Record<string, unknown> = {};
       if (input.name !== undefined) patch.name = input.name;
       if (input.icon !== undefined) patch.icon = input.icon;
