@@ -4,10 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Shield, Key, Download, Trash2, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Shield, Key, Download, Trash2, Loader2, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { exportFinancialWorkbook } from '@/lib/exportToExcel';
+import { BUILD_ID, clearPersistedCache } from '@/lib/queryClient';
+import { forceAppUpdate } from '@/lib/registerServiceWorker';
+
 
 
 interface SecuritySectionProps {
@@ -140,6 +143,28 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
               {exporting ? 'Exportando...' : 'Baixar Meus Dados'}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2"><RefreshCw className="h-5 w-5 text-primary" />Versão do app</CardTitle>
+          <CardDescription>Se o app parecer preso numa versão antiga, force a atualização</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Versão instalada: <span className="font-mono">{BUILD_ID}</span>
+          </p>
+          <Button
+            onClick={() => { clearPersistedCache(); void forceAppUpdate(); }}
+            variant="outline"
+            className="gap-2 rounded-xl w-full sm:w-auto"
+          >
+            <RefreshCw className="h-4 w-4" />Forçar atualização
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Limpa o cache local do aplicativo e recarrega com a versão mais recente. Seus dados no servidor não são afetados.
+          </p>
         </CardContent>
       </Card>
 
