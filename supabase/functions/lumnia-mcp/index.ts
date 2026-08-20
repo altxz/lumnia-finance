@@ -1842,20 +1842,21 @@ import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z14 } from "npm:zod@^4.4.3";
 var manage_category_default = defineTool17({
   name: "manage_category",
-  title: "Criar, renomear ou desativar categoria",
-  description: "Cria uma categoria ou subcategoria (informe parent para vincular \xE0 categoria-m\xE3e), renomeia, ou ativa/desativa uma existente. Use list_categories para ver a hierarquia atual.",
+  title: "Criar, editar ou excluir categoria",
+  description: "Gerencia as categorias da p\xE1gina de Categorias: cria (action 'create', informe parent para criar subcategoria), edita nome/\xEDcone/cor/categoria-m\xE3e e ativa ou desativa (action 'update'), e exclui definitivamente (action 'delete'). Use list_categories para ver a hierarquia atual. Confirme com o usu\xE1rio antes de excluir.",
   inputSchema: {
-    action: z14.enum(["create", "update"]).describe("create ou update."),
-    category: z14.string().optional().describe("Nome da categoria a editar."),
-    category_id: z14.string().uuid().optional().describe("ID da categoria a editar."),
+    action: z14.enum(["create", "update", "delete"]).describe("create, update ou delete."),
+    category: z14.string().optional().describe("Nome da categoria a editar ou excluir."),
+    category_id: z14.string().uuid().optional().describe("ID da categoria a editar ou excluir."),
     name: z14.string().optional().describe("Nome (novo nome em update, obrigat\xF3rio em create)."),
     parent: z14.string().optional().describe("Nome da categoria-m\xE3e (cria uma subcategoria)."),
     parent_id: z14.string().uuid().optional().describe("ID da categoria-m\xE3e."),
     icon: z14.string().optional().describe("Emoji/\xEDcone. Padr\xE3o: \u{1F4E6}."),
     color: z14.string().optional().describe("Cor em hex. Padr\xE3o: #94a3b8."),
-    active: z14.boolean().optional().describe("false desativa a categoria.")
+    active: z14.boolean().optional().describe("false desativa a categoria."),
+    delete_children: z14.boolean().optional().describe("Em delete: true tamb\xE9m exclui as subcategorias. Padr\xE3o false (bloqueia se houver subcategorias).")
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   handler: safeHandler("manage_category", async (input, ctx) => {
     const sb = supabaseForUser(ctx);
     try {
@@ -1878,7 +1879,27 @@ var manage_category_default = defineTool17({
         );
       }
       const target = await resolveCategory(sb, { id: input.category_id, name: input.category });
-      if (!target) return fail("Informe category ou category_id da categoria a editar.");
+      if (!target) return fail("Informe category ou category_id da categoria a editar ou excluir.");
+      if (input.action === "delete") {
+        const { data: children, error: childrenError } = await sb.from("categories").select("id,name").eq("parent_id", target.id);
+        if (childrenError) return fail(childrenError.message);
+        const subs = children ?? [];
+        if (subs.length > 0 && !input.delete_children) {
+          return fail(
+            `A categoria "${target.name}" tem ${subs.length} subcategoria(s): ${subs.map((s) => s.name).join(", ")}. Confirme com o usu\xE1rio e repita com delete_children: true para excluir tudo.`
+          );
+        }
+        if (subs.length > 0) {
+          const { error: subError } = await sb.from("categories").delete().in("id", subs.map((s) => s.id));
+          if (subError) return fail(subError.message);
+        }
+        const { error: deleteError } = await sb.from("categories").delete().eq("id", target.id);
+        if (deleteError) return fail(deleteError.message);
+        return ok(
+          `Categoria "${target.name}" exclu\xEDda${subs.length > 0 ? ` junto com ${subs.length} subcategoria(s)` : ""}. As transa\xE7\xF5es j\xE1 lan\xE7adas mant\xEAm o nome da categoria no hist\xF3rico.`,
+          { deleted_id: target.id, deleted_children: subs.length }
+        );
+      }
       const patch = {};
       if (input.name !== void 0) patch.name = input.name;
       if (input.icon !== void 0) patch.icon = input.icon;
@@ -2475,8 +2496,8 @@ setLogLevel("info");
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.5.0",
-  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal, valores em BRL, meses no formato YYYY-MM e datas YYYY-MM-DD). Consultar: search + fetch para localizar e abrir transa\xE7\xF5es, list_transactions, month_summary, month_transactions (dia a dia com saldo projetado), compare_months (varia\xE7\xE3o por categoria), financial_score, list_budgets, list_categories, list_wallets, list_credit_cards, invoice_details (fatura de um cart\xE3o num m\xEAs). Registrar e editar: create_transaction, update_transaction (use scope 'single' para uma ocorr\xEAncia, 'future' para esta e as pr\xF3ximas de uma recorr\xEAncia, 'all' para toda a s\xE9rie/parcelamento), delete_transaction, set_transaction_paid (marcar pago/recebido ou desfazer), create_transfer (entre carteiras), pay_invoice (pagar/desfazer fatura de cart\xE3o), upsert_budget, manage_wallet, manage_category, manage_project e investments (listar caixinhas, aportar ou resgatar). Antes de qualquer opera\xE7\xE3o que altere s\xE9ries recorrentes, parcelamentos, faturas ou exclua dados, confirme com o usu\xE1rio. Sempre resolva nomes de carteiras, cart\xF5es, categorias e projetos com as ferramentas de listagem quando houver d\xFAvida.",
+  version: "0.5.1",
+  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal, valores em BRL, meses no formato YYYY-MM e datas YYYY-MM-DD). Consultar: search + fetch para localizar e abrir transa\xE7\xF5es, list_transactions, month_summary, month_transactions (dia a dia com saldo projetado), compare_months (varia\xE7\xE3o por categoria), financial_score, list_budgets, list_categories, list_wallets, list_credit_cards, invoice_details (fatura de um cart\xE3o num m\xEAs). Registrar e editar: create_transaction, update_transaction (use scope 'single' para uma ocorr\xEAncia, 'future' para esta e as pr\xF3ximas de uma recorr\xEAncia, 'all' para toda a s\xE9rie/parcelamento), delete_transaction, set_transaction_paid (marcar pago/recebido ou desfazer), create_transfer (entre carteiras), pay_invoice (pagar/desfazer fatura de cart\xE3o), upsert_budget, manage_wallet, manage_category (criar, editar e excluir categorias e subcategorias), manage_project e investments (listar caixinhas, aportar ou resgatar). Antes de qualquer opera\xE7\xE3o que altere s\xE9ries recorrentes, parcelamentos, faturas ou exclua dados, confirme com o usu\xE1rio. Sempre resolva nomes de carteiras, cart\xF5es, categorias e projetos com as ferramentas de listagem quando houver d\xFAvida.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
