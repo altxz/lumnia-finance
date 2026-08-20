@@ -686,6 +686,136 @@
         "outputSchema": null
       },
       {
+        "name": "create_category",
+        "title": "Criar categoria",
+        "description": "Cria uma nova categoria ou subcategoria na página de Categorias. Informe name e, para subcategoria, parent (nome da categoria-mãe) ou parent_id.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Nome da nova categoria."
+            },
+            "parent": {
+              "description": "Nome da categoria-mãe (cria uma subcategoria).",
+              "type": "string"
+            },
+            "parent_id": {
+              "description": "ID da categoria-mãe.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "icon": {
+              "description": "Emoji/ícone. Padrão: 📦.",
+              "type": "string"
+            },
+            "color": {
+              "description": "Cor em hex. Padrão: #94a3b8.",
+              "type": "string"
+            },
+            "active": {
+              "description": "false desativa (arquiva) a categoria.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_category",
+        "title": "Editar categoria",
+        "description": "Edita uma categoria existente: renomeia, muda ícone/cor, move para outra categoria-mãe (parent/parent_id) ou arquiva/desarquiva com active. Identifique pelo nome (category) ou id (category_id).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "category": {
+              "description": "Nome da categoria a editar ou excluir.",
+              "type": "string"
+            },
+            "category_id": {
+              "description": "ID da categoria a editar ou excluir.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "name": {
+              "description": "Nome (novo nome em update, obrigatório em create).",
+              "type": "string"
+            },
+            "parent": {
+              "description": "Nome da categoria-mãe (cria uma subcategoria).",
+              "type": "string"
+            },
+            "parent_id": {
+              "description": "ID da categoria-mãe.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "icon": {
+              "description": "Emoji/ícone. Padrão: 📦.",
+              "type": "string"
+            },
+            "color": {
+              "description": "Cor em hex. Padrão: #94a3b8.",
+              "type": "string"
+            },
+            "active": {
+              "description": "false desativa (arquiva) a categoria.",
+              "type": "boolean"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_category",
+        "title": "Excluir categoria",
+        "description": "Exclui definitivamente uma categoria (ou subcategoria). Se ela tiver subcategorias, é necessário repetir com delete_children: true. Confirme com o usuário antes de excluir.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "category": {
+              "description": "Nome da categoria a editar ou excluir.",
+              "type": "string"
+            },
+            "category_id": {
+              "description": "ID da categoria a editar ou excluir.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "delete_children": {
+              "description": "Em delete: true também exclui as subcategorias. Padrão false (bloqueia se houver subcategorias).",
+              "type": "boolean"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
         "name": "list_wallets",
         "title": "Listar carteiras",
         "description": "Lista carteiras e ativos do usuário com saldo atual e moeda.",

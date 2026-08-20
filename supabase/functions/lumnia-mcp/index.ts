@@ -1921,20 +1921,83 @@ var manage_category_default = defineTool17({
   handler: safeHandler("manage_category", (input, ctx) => runManageCategory(input, ctx))
 });
 
-// src/lib/mcp/tools/manage-project.ts
+// src/lib/mcp/tools/create-category.ts
 import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z15 } from "npm:zod@^4.4.3";
-var manage_project_default = defineTool18({
+var create_category_default = defineTool18({
+  name: "create_category",
+  title: "Criar categoria",
+  description: "Cria uma nova categoria ou subcategoria na p\xE1gina de Categorias. Informe name e, para subcategoria, parent (nome da categoria-m\xE3e) ou parent_id.",
+  inputSchema: {
+    name: z15.string().describe("Nome da nova categoria."),
+    parent: categoryFields.parent,
+    parent_id: categoryFields.parent_id,
+    icon: categoryFields.icon,
+    color: categoryFields.color,
+    active: categoryFields.active
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler(
+    "create_category",
+    (input, ctx) => runManageCategory({ ...input, action: "create" }, ctx)
+  )
+});
+
+// src/lib/mcp/tools/update-category.ts
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var update_category_default = defineTool19({
+  name: "update_category",
+  title: "Editar categoria",
+  description: "Edita uma categoria existente: renomeia, muda \xEDcone/cor, move para outra categoria-m\xE3e (parent/parent_id) ou arquiva/desarquiva com active. Identifique pelo nome (category) ou id (category_id).",
+  inputSchema: {
+    category: categoryFields.category,
+    category_id: categoryFields.category_id,
+    name: categoryFields.name,
+    parent: categoryFields.parent,
+    parent_id: categoryFields.parent_id,
+    icon: categoryFields.icon,
+    color: categoryFields.color,
+    active: categoryFields.active
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  handler: safeHandler(
+    "update_category",
+    (input, ctx) => runManageCategory({ ...input, action: "update" }, ctx)
+  )
+});
+
+// src/lib/mcp/tools/delete-category.ts
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var delete_category_default = defineTool20({
+  name: "delete_category",
+  title: "Excluir categoria",
+  description: "Exclui definitivamente uma categoria (ou subcategoria). Se ela tiver subcategorias, \xE9 necess\xE1rio repetir com delete_children: true. Confirme com o usu\xE1rio antes de excluir.",
+  inputSchema: {
+    category: categoryFields.category,
+    category_id: categoryFields.category_id,
+    delete_children: categoryFields.delete_children
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  handler: safeHandler(
+    "delete_category",
+    (input, ctx) => runManageCategory({ ...input, action: "delete" }, ctx)
+  )
+});
+
+// src/lib/mcp/tools/manage-project.ts
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z16 } from "npm:zod@^4.4.3";
+var manage_project_default = defineTool21({
   name: "manage_project",
   title: "Projetos (centros de custo)",
   description: "Lista, cria ou edita projetos usados como centros de custo (ex: Reforma, Viagem), com or\xE7amento total opcional e gasto acumulado.",
   inputSchema: {
-    action: z15.enum(["list", "create", "update"]).describe("list, create ou update."),
-    project: z15.string().optional().describe("Nome do projeto a editar."),
-    project_id: z15.string().uuid().optional().describe("ID do projeto a editar."),
-    name: z15.string().optional().describe("Nome (obrigat\xF3rio em create)."),
-    budget: z15.number().optional().describe("Or\xE7amento total do projeto em BRL."),
-    color: z15.string().optional().describe("Cor em hex. Padr\xE3o: #6366f1.")
+    action: z16.enum(["list", "create", "update"]).describe("list, create ou update."),
+    project: z16.string().optional().describe("Nome do projeto a editar."),
+    project_id: z16.string().uuid().optional().describe("ID do projeto a editar."),
+    name: z16.string().optional().describe("Nome (obrigat\xF3rio em create)."),
+    budget: z16.number().optional().describe("Or\xE7amento total do projeto em BRL."),
+    color: z16.string().optional().describe("Cor em hex. Padr\xE3o: #6366f1.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   handler: safeHandler("manage_project", async (input, ctx) => {
@@ -1993,8 +2056,8 @@ var manage_project_default = defineTool18({
 });
 
 // src/lib/mcp/tools/investment-ops.ts
-import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z16 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z17 } from "npm:zod@^4.4.3";
 
 // src/lib/investmentMath.ts
 import { differenceInCalendarDays, parseISO, format, addMonths, startOfMonth } from "npm:date-fns@^3.6.0";
@@ -2119,19 +2182,19 @@ async function resolveInvestment(sb, opts) {
     );
   return matches[0];
 }
-var investment_ops_default = defineTool19({
+var investment_ops_default = defineTool22({
   name: "investments",
   title: "Investimentos (caixinhas)",
   description: "Lista os investimentos do usu\xE1rio com valor atual, rendimento e proje\xE7\xE3o at\xE9 o vencimento, ou registra um aporte (deposit) ou resgate (withdraw) \u2014 que movimenta o dinheiro entre a carteira e o investimento, igual ao app.",
   inputSchema: {
-    action: z16.enum(["list", "deposit", "withdraw"]).describe("list, deposit (aporte) ou withdraw (resgate)."),
-    investment: z16.string().optional().describe("Nome do investimento (para deposit/withdraw)."),
-    investment_id: z16.string().uuid().optional().describe("ID do investimento."),
-    value: z16.number().positive().optional().describe("Valor do aporte/resgate em BRL."),
-    date: z16.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data da movimenta\xE7\xE3o (YYYY-MM-DD). Padr\xE3o: hoje."),
-    wallet: z16.string().optional().describe("Carteira de origem (aporte) ou destino (resgate)."),
-    wallet_id: z16.string().uuid().optional().describe("ID da carteira."),
-    close_investment: z16.boolean().optional().describe("No resgate, true marca o investimento como resgatado/encerrado.")
+    action: z17.enum(["list", "deposit", "withdraw"]).describe("list, deposit (aporte) ou withdraw (resgate)."),
+    investment: z17.string().optional().describe("Nome do investimento (para deposit/withdraw)."),
+    investment_id: z17.string().uuid().optional().describe("ID do investimento."),
+    value: z17.number().positive().optional().describe("Valor do aporte/resgate em BRL."),
+    date: z17.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data da movimenta\xE7\xE3o (YYYY-MM-DD). Padr\xE3o: hoje."),
+    wallet: z17.string().optional().describe("Carteira de origem (aporte) ou destino (resgate)."),
+    wallet_id: z17.string().uuid().optional().describe("ID da carteira."),
+    close_investment: z17.boolean().optional().describe("No resgate, true marca o investimento como resgatado/encerrado.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   handler: safeHandler("investments", async (input, ctx) => {
@@ -2229,8 +2292,8 @@ var investment_ops_default = defineTool19({
 });
 
 // src/lib/mcp/tools/compare-months.ts
-import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z17 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z18 } from "npm:zod@^4.4.3";
 function categoryTotals(projection) {
   const totals = { ...projection.invoiceTotals.byCategory };
   for (const expense of projection.effectiveMonthExpenses) {
@@ -2241,13 +2304,13 @@ function categoryTotals(projection) {
   }
   return totals;
 }
-var compare_months_default = defineTool20({
+var compare_months_default = defineTool23({
   name: "compare_months",
   title: "Comparar meses",
   description: "Compara dois meses (YYYY-MM): receitas, despesas, saldo e a varia\xE7\xE3o por categoria, apontando onde o usu\xE1rio gastou mais ou menos. Usa o mesmo motor de proje\xE7\xE3o do app.",
   inputSchema: {
-    month: z17.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs analisado (YYYY-MM)."),
-    compare_to: z17.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs de compara\xE7\xE3o. Padr\xE3o: m\xEAs anterior ao analisado.")
+    month: z18.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs analisado (YYYY-MM)."),
+    compare_to: z18.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs de compara\xE7\xE3o. Padr\xE3o: m\xEAs anterior ao analisado.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("compare_months", async (input, ctx) => {
@@ -2301,8 +2364,8 @@ var compare_months_default = defineTool20({
 });
 
 // src/lib/mcp/tools/financial-score.ts
-import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z18 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z19 } from "npm:zod@^4.4.3";
 function scoreOf(totalIncome, totalExpense, totalBudget, totalSpentInBudget, hasOverdueCards, debtCount, prevExpense, ccUsageRatio) {
   let savings = 0;
   if (totalIncome > 0) {
@@ -2330,12 +2393,12 @@ function scoreOf(totalIncome, totalExpense, totalBudget, totalSpentInBudget, has
   const overall = Math.round(savings * 0.3 + budget * 0.2 + debt * 0.2 + consistency * 0.15 + credit * 0.15);
   return { overall, savings, budget, debt, consistency, credit };
 }
-var financial_score_default = defineTool21({
+var financial_score_default = defineTool24({
   name: "financial_score",
   title: "Score financeiro do m\xEAs",
   description: "Calcula o score financeiro de um m\xEAs (YYYY-MM) com as mesmas regras da p\xE1gina do app: nota geral de 0 a 100 e as cinco dimens\xF5es (poupan\xE7a, or\xE7amento, d\xEDvidas, consist\xEAncia e cr\xE9dito), com os n\xFAmeros que sustentam cada nota.",
   inputSchema: {
-    month: z18.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
+    month: z19.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("financial_score", async ({ month }, ctx) => {
@@ -2408,14 +2471,14 @@ var financial_score_default = defineTool21({
 });
 
 // src/lib/mcp/tools/search.ts
-import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z19 } from "npm:zod@^4.4.3";
-var search_default = defineTool22({
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z20 } from "npm:zod@^4.4.3";
+var search_default = defineTool25({
   name: "search",
   title: "Buscar transa\xE7\xF5es",
   description: "Busca transa\xE7\xF5es (despesas e receitas) do usu\xE1rio autenticado por texto livre na descri\xE7\xE3o, categoria ou m\xEAs (YYYY-MM). Retorna uma lista de resultados com id, t\xEDtulo e resumo para depois usar a ferramenta fetch.",
   inputSchema: {
-    query: z19.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
+    query: z20.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("search", async ({ query }, ctx) => {
@@ -2452,14 +2515,14 @@ var search_default = defineTool22({
 });
 
 // src/lib/mcp/tools/fetch.ts
-import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z20 } from "npm:zod@^4.4.3";
-var fetch_default = defineTool23({
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z21 } from "npm:zod@^4.4.3";
+var fetch_default = defineTool26({
   name: "fetch",
   title: "Abrir transa\xE7\xE3o",
   description: "Retorna todos os detalhes de uma transa\xE7\xE3o do usu\xE1rio autenticado a partir do id devolvido pela ferramenta search.",
   inputSchema: {
-    id: z20.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
+    id: z21.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("fetch", async ({ id }, ctx) => {
@@ -2524,6 +2587,9 @@ var mcp_default = defineMcp({
     financial_score_default,
     list_categories_default,
     manage_category_default,
+    create_category_default,
+    update_category_default,
+    delete_category_default,
     list_wallets_default,
     manage_wallet_default,
     manage_project_default,
