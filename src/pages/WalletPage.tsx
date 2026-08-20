@@ -1190,6 +1190,15 @@ export default function WalletPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Ajustar saldo da conta ─── */}
+      <AdjustBalanceModal
+        open={!!adjustWallet}
+        onOpenChange={v => { if (!v) setAdjustWallet(null); }}
+        wallet={adjustWallet ? { id: adjustWallet.id, name: adjustWallet.name } : null}
+        currentBalance={adjustWallet ? getWalletValue(adjustWallet) : 0}
+        onSaved={handleAdjustSaved}
+      />
     </SidebarProvider>
   );
 }
