@@ -106,5 +106,14 @@ export const runUpsertBudget = async (input: any, ctx: any) => {
       ],
       structuredContent: { budget: data, action: "created" },
     };
-  }),
+};
+
+export default defineTool({
+  name: "upsert_budget",
+  title: "Criar ou editar orçamento",
+  description:
+    "Cria ou atualiza a meta de orçamento de uma categoria em um mês. Informe category_id (preferencial) ou o nome da categoria — use list_categories/list_budgets antes para descobrir os identificadores.",
+  inputSchema: budgetFields,
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("upsert_budget", (input: any, ctx) => runUpsertBudget(input, ctx)),
 });

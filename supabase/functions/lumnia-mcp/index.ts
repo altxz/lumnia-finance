@@ -1562,95 +1562,97 @@ var list_budgets_default = defineTool12({
 // src/lib/mcp/tools/upsert-budget.ts
 import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z10 } from "npm:zod@^4.4.3";
-var upsert_budget_default = defineTool13({
-  name: "upsert_budget",
-  title: "Criar ou editar or\xE7amento",
-  description: "Cria ou atualiza a meta de or\xE7amento de uma categoria em um m\xEAs. Informe category_id (preferencial) ou o nome da categoria \u2014 use list_categories/list_budgets antes para descobrir os identificadores.",
-  inputSchema: {
-    month: z10.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM."),
-    allocated_amount: z10.number().min(0).describe("Valor planejado em BRL."),
-    category_id: z10.string().uuid().optional().describe("ID da categoria (preferencial)."),
-    category: z10.string().optional().describe("Nome da categoria, usado se category_id n\xE3o for informado."),
-    is_recurring: z10.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-  handler: safeHandler("upsert_budget", async (input, ctx) => {
-    const sb = supabaseForUser(ctx);
-    const monthStart = `${input.month}-01`;
-    let categoryId = input.category_id ?? null;
-    let categoryName = input.category ?? null;
-    const { data: categories, error: catError } = await sb.from("categories").select("id,name,active");
-    if (catError) return { content: [{ type: "text", text: catError.message }], isError: true };
-    const cats = categories ?? [];
-    if (categoryId) {
-      const found = cats.find((c) => c.id === categoryId);
-      if (!found)
-        return { content: [{ type: "text", text: "Categoria n\xE3o encontrada para este usu\xE1rio." }], isError: true };
-      categoryName = found.name;
-    } else if (categoryName) {
-      const target = categoryName.trim().toLowerCase();
-      const matches = cats.filter((c) => String(c.name).trim().toLowerCase() === target);
-      if (matches.length === 0)
-        return {
-          content: [
-            { type: "text", text: `Nenhuma categoria chamada "${categoryName}". Use list_categories para ver as op\xE7\xF5es.` }
-          ],
-          isError: true
-        };
-      if (matches.length > 1)
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Existe mais de uma categoria "${categoryName}". Informe category_id: ${matches.map((m) => m.id).join(", ")}`
-            }
-          ],
-          isError: true
-        };
-      categoryId = matches[0].id;
-      categoryName = matches[0].name;
-    } else {
+var budgetFields = {
+  month: z10.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM."),
+  allocated_amount: z10.number().min(0).describe("Valor planejado em BRL."),
+  category_id: z10.string().uuid().optional().describe("ID da categoria (preferencial)."),
+  category: z10.string().optional().describe("Nome da categoria, usado se category_id n\xE3o for informado."),
+  is_recurring: z10.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes.")
+};
+var runUpsertBudget = async (input, ctx) => {
+  const sb = supabaseForUser(ctx);
+  const monthStart = `${input.month}-01`;
+  let categoryId = input.category_id ?? null;
+  let categoryName = input.category ?? null;
+  const { data: categories, error: catError } = await sb.from("categories").select("id,name,active");
+  if (catError) return { content: [{ type: "text", text: catError.message }], isError: true };
+  const cats = categories ?? [];
+  if (categoryId) {
+    const found = cats.find((c) => c.id === categoryId);
+    if (!found)
+      return { content: [{ type: "text", text: "Categoria n\xE3o encontrada para este usu\xE1rio." }], isError: true };
+    categoryName = found.name;
+  } else if (categoryName) {
+    const target = categoryName.trim().toLowerCase();
+    const matches = cats.filter((c) => String(c.name).trim().toLowerCase() === target);
+    if (matches.length === 0)
       return {
-        content: [{ type: "text", text: "Informe category_id ou category." }],
+        content: [
+          { type: "text", text: `Nenhuma categoria chamada "${categoryName}". Use list_categories para ver as op\xE7\xF5es.` }
+        ],
         isError: true
       };
-    }
-    const { data: existing, error: findError } = await sb.from("budgets").select("*").eq("month_year", monthStart).eq("category_id", categoryId).maybeSingle();
-    if (findError) return { content: [{ type: "text", text: findError.message }], isError: true };
-    if (existing) {
-      const patch = { allocated_amount: input.allocated_amount };
-      if (input.is_recurring !== void 0) patch.is_recurring = input.is_recurring;
-      const { data: data2, error: error2 } = await sb.from("budgets").update(patch).eq("id", existing.id).select().single();
-      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
+    if (matches.length > 1)
       return {
         content: [
           {
             type: "text",
-            text: `Or\xE7amento atualizado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+            text: `Existe mais de uma categoria "${categoryName}". Informe category_id: ${matches.map((m) => m.id).join(", ")}`
           }
         ],
-        structuredContent: { budget: data2, action: "updated" }
+        isError: true
       };
-    }
-    const { data, error } = await sb.from("budgets").insert({
-      user_id: ctx.getUserId(),
-      category: categoryName ?? "",
-      category_id: categoryId,
-      month_year: monthStart,
-      allocated_amount: input.allocated_amount,
-      is_recurring: input.is_recurring ?? false
-    }).select().single();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    categoryId = matches[0].id;
+    categoryName = matches[0].name;
+  } else {
+    return {
+      content: [{ type: "text", text: "Informe category_id ou category." }],
+      isError: true
+    };
+  }
+  const { data: existing, error: findError } = await sb.from("budgets").select("*").eq("month_year", monthStart).eq("category_id", categoryId).maybeSingle();
+  if (findError) return { content: [{ type: "text", text: findError.message }], isError: true };
+  if (existing) {
+    const patch = { allocated_amount: input.allocated_amount };
+    if (input.is_recurring !== void 0) patch.is_recurring = input.is_recurring;
+    const { data: data2, error: error2 } = await sb.from("budgets").update(patch).eq("id", existing.id).select().single();
+    if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
     return {
       content: [
         {
           type: "text",
-          text: `Or\xE7amento criado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+          text: `Or\xE7amento atualizado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
         }
       ],
-      structuredContent: { budget: data, action: "created" }
+      structuredContent: { budget: data2, action: "updated" }
     };
-  })
+  }
+  const { data, error } = await sb.from("budgets").insert({
+    user_id: ctx.getUserId(),
+    category: categoryName ?? "",
+    category_id: categoryId,
+    month_year: monthStart,
+    allocated_amount: input.allocated_amount,
+    is_recurring: input.is_recurring ?? false
+  }).select().single();
+  if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+  return {
+    content: [
+      {
+        type: "text",
+        text: `Or\xE7amento criado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+      }
+    ],
+    structuredContent: { budget: data, action: "created" }
+  };
+};
+var upsert_budget_default = defineTool13({
+  name: "upsert_budget",
+  title: "Criar ou editar or\xE7amento",
+  description: "Cria ou atualiza a meta de or\xE7amento de uma categoria em um m\xEAs. Informe category_id (preferencial) ou o nome da categoria \u2014 use list_categories/list_budgets antes para descobrir os identificadores.",
+  inputSchema: budgetFields,
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("upsert_budget", (input, ctx) => runUpsertBudget(input, ctx))
 });
 
 // src/lib/mcp/tools/invoice-details.ts
