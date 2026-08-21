@@ -14,7 +14,7 @@ export const budgetFields = {
   is_recurring: z.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes."),
 };
 
-export const runUpsertBudget = async (input: any, ctx: any) => {
+export const runUpsertBudget = async (input: any, ctx: any): Promise<any> => {
     const sb = supabaseForUser(ctx);
     const monthStart = `${input.month}-01`;
 
