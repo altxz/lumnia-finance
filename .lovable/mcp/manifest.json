@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "lumnia-mcp",
-      "version": "0.5.2",
+      "version": "0.5.3",
       "title": "Lumnia"
     },
     "tools": [
@@ -1119,6 +1119,134 @@
             "month",
             "allocated_amount"
           ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_budget",
+        "title": "Criar orçamento",
+        "description": "Cria a meta de orçamento (valor planejado) de uma categoria em um mês na página de Orçamento. Se já existir meta para a categoria no mês, o valor é atualizado.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "description": "Mês no formato YYYY-MM."
+            },
+            "allocated_amount": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Valor planejado em BRL."
+            },
+            "category_id": {
+              "description": "ID da categoria (preferencial).",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "category": {
+              "description": "Nome da categoria, usado se category_id não for informado.",
+              "type": "string"
+            },
+            "is_recurring": {
+              "description": "Se a meta deve se repetir nos meses seguintes.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "month",
+            "allocated_amount"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_budget",
+        "title": "Editar orçamento",
+        "description": "Altera o valor planejado (e a recorrência) da meta de orçamento de uma categoria em um mês. Se ainda não existir meta, ela é criada.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "description": "Mês no formato YYYY-MM."
+            },
+            "allocated_amount": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Valor planejado em BRL."
+            },
+            "category_id": {
+              "description": "ID da categoria (preferencial).",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "category": {
+              "description": "Nome da categoria, usado se category_id não for informado.",
+              "type": "string"
+            },
+            "is_recurring": {
+              "description": "Se a meta deve se repetir nos meses seguintes.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "month",
+            "allocated_amount"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_budget",
+        "title": "Excluir orçamento",
+        "description": "Exclui a meta de orçamento de uma categoria em um mês. Informe budget_id (de list_budgets) ou month + category_id/category.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "budget_id": {
+              "description": "ID da meta retornado por list_budgets.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "month": {
+              "description": "Mês no formato YYYY-MM (usado com category_id/category).",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$"
+            },
+            "category_id": {
+              "description": "ID da categoria.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "category": {
+              "description": "Nome da categoria.",
+              "type": "string"
+            }
+          }
         },
         "outputSchema": null
       },

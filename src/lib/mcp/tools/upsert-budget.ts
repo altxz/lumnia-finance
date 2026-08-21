@@ -3,26 +3,18 @@ import { z } from "zod";
 import { safeHandler } from "../safeHandler";
 import { supabaseForUser } from "../supabaseClient";
 
-export default defineTool({
-  name: "upsert_budget",
-  title: "Criar ou editar orçamento",
-  description:
-    "Cria ou atualiza a meta de orçamento de uma categoria em um mês. Informe category_id (preferencial) ou o nome da categoria — use list_categories/list_budgets antes para descobrir os identificadores.",
-  inputSchema: {
-    month: z
-      .string()
-      .regex(/^\d{4}-\d{2}$/)
-      .describe("Mês no formato YYYY-MM."),
-    allocated_amount: z.number().min(0).describe("Valor planejado em BRL."),
-    category_id: z.string().uuid().optional().describe("ID da categoria (preferencial)."),
-    category: z.string().optional().describe("Nome da categoria, usado se category_id não for informado."),
-    is_recurring: z
-      .boolean()
-      .optional()
-      .describe("Se a meta deve se repetir nos meses seguintes."),
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-  handler: safeHandler("upsert_budget", async (input, ctx) => {
+export const budgetFields = {
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .describe("Mês no formato YYYY-MM."),
+  allocated_amount: z.number().min(0).describe("Valor planejado em BRL."),
+  category_id: z.string().uuid().optional().describe("ID da categoria (preferencial)."),
+  category: z.string().optional().describe("Nome da categoria, usado se category_id não for informado."),
+  is_recurring: z.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes."),
+};
+
+export const runUpsertBudget = async (input: any, ctx: any): Promise<any> => {
     const sb = supabaseForUser(ctx);
     const monthStart = `${input.month}-01`;
 
@@ -114,5 +106,14 @@ export default defineTool({
       ],
       structuredContent: { budget: data, action: "created" },
     };
-  }),
+};
+
+export default defineTool({
+  name: "upsert_budget",
+  title: "Criar ou editar orçamento",
+  description:
+    "Cria ou atualiza a meta de orçamento de uma categoria em um mês. Informe category_id (preferencial) ou o nome da categoria — use list_categories/list_budgets antes para descobrir os identificadores.",
+  inputSchema: budgetFields,
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("upsert_budget", (input: any, ctx) => runUpsertBudget(input, ctx)),
 });

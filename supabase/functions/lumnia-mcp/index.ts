@@ -1562,108 +1562,196 @@ var list_budgets_default = defineTool12({
 // src/lib/mcp/tools/upsert-budget.ts
 import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z10 } from "npm:zod@^4.4.3";
-var upsert_budget_default = defineTool13({
-  name: "upsert_budget",
-  title: "Criar ou editar or\xE7amento",
-  description: "Cria ou atualiza a meta de or\xE7amento de uma categoria em um m\xEAs. Informe category_id (preferencial) ou o nome da categoria \u2014 use list_categories/list_budgets antes para descobrir os identificadores.",
-  inputSchema: {
-    month: z10.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM."),
-    allocated_amount: z10.number().min(0).describe("Valor planejado em BRL."),
-    category_id: z10.string().uuid().optional().describe("ID da categoria (preferencial)."),
-    category: z10.string().optional().describe("Nome da categoria, usado se category_id n\xE3o for informado."),
-    is_recurring: z10.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-  handler: safeHandler("upsert_budget", async (input, ctx) => {
-    const sb = supabaseForUser(ctx);
-    const monthStart = `${input.month}-01`;
-    let categoryId = input.category_id ?? null;
-    let categoryName = input.category ?? null;
-    const { data: categories, error: catError } = await sb.from("categories").select("id,name,active");
-    if (catError) return { content: [{ type: "text", text: catError.message }], isError: true };
-    const cats = categories ?? [];
-    if (categoryId) {
-      const found = cats.find((c) => c.id === categoryId);
-      if (!found)
-        return { content: [{ type: "text", text: "Categoria n\xE3o encontrada para este usu\xE1rio." }], isError: true };
-      categoryName = found.name;
-    } else if (categoryName) {
-      const target = categoryName.trim().toLowerCase();
-      const matches = cats.filter((c) => String(c.name).trim().toLowerCase() === target);
-      if (matches.length === 0)
-        return {
-          content: [
-            { type: "text", text: `Nenhuma categoria chamada "${categoryName}". Use list_categories para ver as op\xE7\xF5es.` }
-          ],
-          isError: true
-        };
-      if (matches.length > 1)
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Existe mais de uma categoria "${categoryName}". Informe category_id: ${matches.map((m) => m.id).join(", ")}`
-            }
-          ],
-          isError: true
-        };
-      categoryId = matches[0].id;
-      categoryName = matches[0].name;
-    } else {
+var budgetFields = {
+  month: z10.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM."),
+  allocated_amount: z10.number().min(0).describe("Valor planejado em BRL."),
+  category_id: z10.string().uuid().optional().describe("ID da categoria (preferencial)."),
+  category: z10.string().optional().describe("Nome da categoria, usado se category_id n\xE3o for informado."),
+  is_recurring: z10.boolean().optional().describe("Se a meta deve se repetir nos meses seguintes.")
+};
+var runUpsertBudget = async (input, ctx) => {
+  const sb = supabaseForUser(ctx);
+  const monthStart = `${input.month}-01`;
+  let categoryId = input.category_id ?? null;
+  let categoryName = input.category ?? null;
+  const { data: categories, error: catError } = await sb.from("categories").select("id,name,active");
+  if (catError) return { content: [{ type: "text", text: catError.message }], isError: true };
+  const cats = categories ?? [];
+  if (categoryId) {
+    const found = cats.find((c) => c.id === categoryId);
+    if (!found)
+      return { content: [{ type: "text", text: "Categoria n\xE3o encontrada para este usu\xE1rio." }], isError: true };
+    categoryName = found.name;
+  } else if (categoryName) {
+    const target = categoryName.trim().toLowerCase();
+    const matches = cats.filter((c) => String(c.name).trim().toLowerCase() === target);
+    if (matches.length === 0)
       return {
-        content: [{ type: "text", text: "Informe category_id ou category." }],
+        content: [
+          { type: "text", text: `Nenhuma categoria chamada "${categoryName}". Use list_categories para ver as op\xE7\xF5es.` }
+        ],
         isError: true
       };
-    }
-    const { data: existing, error: findError } = await sb.from("budgets").select("*").eq("month_year", monthStart).eq("category_id", categoryId).maybeSingle();
-    if (findError) return { content: [{ type: "text", text: findError.message }], isError: true };
-    if (existing) {
-      const patch = { allocated_amount: input.allocated_amount };
-      if (input.is_recurring !== void 0) patch.is_recurring = input.is_recurring;
-      const { data: data2, error: error2 } = await sb.from("budgets").update(patch).eq("id", existing.id).select().single();
-      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
+    if (matches.length > 1)
       return {
         content: [
           {
             type: "text",
-            text: `Or\xE7amento atualizado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+            text: `Existe mais de uma categoria "${categoryName}". Informe category_id: ${matches.map((m) => m.id).join(", ")}`
           }
         ],
-        structuredContent: { budget: data2, action: "updated" }
+        isError: true
       };
-    }
-    const { data, error } = await sb.from("budgets").insert({
-      user_id: ctx.getUserId(),
-      category: categoryName ?? "",
-      category_id: categoryId,
-      month_year: monthStart,
-      allocated_amount: input.allocated_amount,
-      is_recurring: input.is_recurring ?? false
-    }).select().single();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    categoryId = matches[0].id;
+    categoryName = matches[0].name;
+  } else {
+    return {
+      content: [{ type: "text", text: "Informe category_id ou category." }],
+      isError: true
+    };
+  }
+  const { data: existing, error: findError } = await sb.from("budgets").select("*").eq("month_year", monthStart).eq("category_id", categoryId).maybeSingle();
+  if (findError) return { content: [{ type: "text", text: findError.message }], isError: true };
+  if (existing) {
+    const patch = { allocated_amount: input.allocated_amount };
+    if (input.is_recurring !== void 0) patch.is_recurring = input.is_recurring;
+    const { data: data2, error: error2 } = await sb.from("budgets").update(patch).eq("id", existing.id).select().single();
+    if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
     return {
       content: [
         {
           type: "text",
-          text: `Or\xE7amento criado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+          text: `Or\xE7amento atualizado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
         }
       ],
-      structuredContent: { budget: data, action: "created" }
+      structuredContent: { budget: data2, action: "updated" }
+    };
+  }
+  const { data, error } = await sb.from("budgets").insert({
+    user_id: ctx.getUserId(),
+    category: categoryName ?? "",
+    category_id: categoryId,
+    month_year: monthStart,
+    allocated_amount: input.allocated_amount,
+    is_recurring: input.is_recurring ?? false
+  }).select().single();
+  if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+  return {
+    content: [
+      {
+        type: "text",
+        text: `Or\xE7amento criado: ${categoryName} em ${input.month} = ${input.allocated_amount}`
+      }
+    ],
+    structuredContent: { budget: data, action: "created" }
+  };
+};
+var upsert_budget_default = defineTool13({
+  name: "upsert_budget",
+  title: "Criar ou editar or\xE7amento",
+  description: "Cria ou atualiza a meta de or\xE7amento de uma categoria em um m\xEAs. Informe category_id (preferencial) ou o nome da categoria \u2014 use list_categories/list_budgets antes para descobrir os identificadores.",
+  inputSchema: budgetFields,
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("upsert_budget", (input, ctx) => runUpsertBudget(input, ctx))
+});
+
+// src/lib/mcp/tools/create-budget.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var create_budget_default = defineTool14({
+  name: "create_budget",
+  title: "Criar or\xE7amento",
+  description: "Cria a meta de or\xE7amento (valor planejado) de uma categoria em um m\xEAs na p\xE1gina de Or\xE7amento. Se j\xE1 existir meta para a categoria no m\xEAs, o valor \xE9 atualizado.",
+  inputSchema: budgetFields,
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("create_budget", (input, ctx) => runUpsertBudget(input, ctx))
+});
+
+// src/lib/mcp/tools/update-budget.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var update_budget_default = defineTool15({
+  name: "update_budget",
+  title: "Editar or\xE7amento",
+  description: "Altera o valor planejado (e a recorr\xEAncia) da meta de or\xE7amento de uma categoria em um m\xEAs. Se ainda n\xE3o existir meta, ela \xE9 criada.",
+  inputSchema: budgetFields,
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  handler: safeHandler("update_budget", (input, ctx) => runUpsertBudget(input, ctx))
+});
+
+// src/lib/mcp/tools/delete-budget.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z11 } from "npm:zod@^4.4.3";
+var delete_budget_default = defineTool16({
+  name: "delete_budget",
+  title: "Excluir or\xE7amento",
+  description: "Exclui a meta de or\xE7amento de uma categoria em um m\xEAs. Informe budget_id (de list_budgets) ou month + category_id/category.",
+  inputSchema: {
+    budget_id: z11.string().uuid().optional().describe("ID da meta retornado por list_budgets."),
+    month: z11.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs no formato YYYY-MM (usado com category_id/category)."),
+    category_id: z11.string().uuid().optional().describe("ID da categoria."),
+    category: z11.string().optional().describe("Nome da categoria.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+  handler: safeHandler("delete_budget", async (input, ctx) => {
+    const sb = supabaseForUser(ctx);
+    let targetId = input.budget_id ?? null;
+    if (!targetId) {
+      if (!input.month || !input.category_id && !input.category)
+        return {
+          content: [{ type: "text", text: "Informe budget_id ou month + category_id/category." }],
+          isError: true
+        };
+      let categoryId = input.category_id ?? null;
+      if (!categoryId) {
+        const { data: cats, error: catError } = await sb.from("categories").select("id,name");
+        if (catError) return { content: [{ type: "text", text: catError.message }], isError: true };
+        const target = String(input.category).trim().toLowerCase();
+        const matches = (cats ?? []).filter((c) => String(c.name).trim().toLowerCase() === target);
+        if (matches.length === 0)
+          return {
+            content: [{ type: "text", text: `Nenhuma categoria chamada "${input.category}".` }],
+            isError: true
+          };
+        if (matches.length > 1)
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Existe mais de uma categoria "${input.category}". Informe category_id: ${matches.map((m) => m.id).join(", ")}`
+              }
+            ],
+            isError: true
+          };
+        categoryId = matches[0].id;
+      }
+      const { data: existing, error: findError } = await sb.from("budgets").select("id").eq("month_year", `${input.month}-01`).eq("category_id", categoryId).maybeSingle();
+      if (findError) return { content: [{ type: "text", text: findError.message }], isError: true };
+      if (!existing)
+        return {
+          content: [{ type: "text", text: "Nenhuma meta de or\xE7amento encontrada para esta categoria no m\xEAs." }],
+          isError: true
+        };
+      targetId = existing.id;
+    }
+    const { error } = await sb.from("budgets").delete().eq("id", targetId);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: "Meta de or\xE7amento exclu\xEDda." }],
+      structuredContent: { deleted_id: targetId, action: "deleted" }
     };
   })
 });
 
 // src/lib/mcp/tools/invoice-details.ts
-import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z11 } from "npm:zod@^4.4.3";
-var invoice_details_default = defineTool14({
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z12 } from "npm:zod@^4.4.3";
+var invoice_details_default = defineTool17({
   name: "invoice_details",
   title: "Detalhe da fatura do cart\xE3o",
   description: "Mostra a fatura de um cart\xE3o de cr\xE9dito num m\xEAs de vencimento (YYYY-MM): total, status (aberta/fechada/vencida/paga), per\xEDodo, data de vencimento e as compras que a comp\xF5em.",
   inputSchema: {
-    month: z11.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs de vencimento da fatura (YYYY-MM)."),
-    credit_card: z11.string().optional().describe("Nome do cart\xE3o. Se omitido, retorna todos os cart\xF5es."),
-    credit_card_id: z11.string().uuid().optional().describe("ID do cart\xE3o.")
+    month: z12.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs de vencimento da fatura (YYYY-MM)."),
+    credit_card: z12.string().optional().describe("Nome do cart\xE3o. Se omitido, retorna todos os cart\xF5es."),
+    credit_card_id: z12.string().uuid().optional().describe("ID do cart\xE3o.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("invoice_details", async (input, ctx) => {
@@ -1715,20 +1803,20 @@ var invoice_details_default = defineTool14({
 });
 
 // src/lib/mcp/tools/pay-invoice.ts
-import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z12 } from "npm:zod@^4.4.3";
-var pay_invoice_default = defineTool15({
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z13 } from "npm:zod@^4.4.3";
+var pay_invoice_default = defineTool18({
   name: "pay_invoice",
   title: "Pagar fatura do cart\xE3o",
   description: "Registra o pagamento da fatura de um cart\xE3o num m\xEAs de vencimento (YYYY-MM), debitando de uma conta/carteira, ou desfaz o pagamento (action='unpay'). Usa a mesma l\xF3gica do app para n\xE3o contar duas vezes a fatura e o pagamento.",
   inputSchema: {
-    month: z12.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs de vencimento da fatura (YYYY-MM)."),
-    credit_card: z12.string().optional().describe("Nome do cart\xE3o."),
-    credit_card_id: z12.string().uuid().optional().describe("ID do cart\xE3o."),
-    action: z12.enum(["pay", "unpay"]).optional().describe("pay (padr\xE3o) ou unpay para desfazer."),
-    wallet: z12.string().optional().describe("Nome da conta que paga a fatura."),
-    wallet_id: z12.string().uuid().optional().describe("ID da conta que paga a fatura."),
-    date: z12.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data do pagamento. Padr\xE3o: data de vencimento da fatura.")
+    month: z13.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs de vencimento da fatura (YYYY-MM)."),
+    credit_card: z13.string().optional().describe("Nome do cart\xE3o."),
+    credit_card_id: z13.string().uuid().optional().describe("ID do cart\xE3o."),
+    action: z13.enum(["pay", "unpay"]).optional().describe("pay (padr\xE3o) ou unpay para desfazer."),
+    wallet: z13.string().optional().describe("Nome da conta que paga a fatura."),
+    wallet_id: z13.string().uuid().optional().describe("ID da conta que paga a fatura."),
+    date: z13.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data do pagamento. Padr\xE3o: data de vencimento da fatura.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   handler: safeHandler("pay_invoice", async (input, ctx) => {
@@ -1784,20 +1872,20 @@ var pay_invoice_default = defineTool15({
 });
 
 // src/lib/mcp/tools/manage-wallet.ts
-import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z13 } from "npm:zod@^4.4.3";
-var manage_wallet_default = defineTool16({
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z14 } from "npm:zod@^4.4.3";
+var manage_wallet_default = defineTool19({
   name: "manage_wallet",
   title: "Criar ou editar carteira",
   description: "Cria uma nova conta/carteira ou edita uma existente (nome, saldo inicial, moeda e tipo). Para editar, informe wallet ou wallet_id.",
   inputSchema: {
-    action: z13.enum(["create", "update"]).describe("create para nova carteira, update para editar."),
-    wallet: z13.string().optional().describe("Nome da carteira a editar."),
-    wallet_id: z13.string().uuid().optional().describe("ID da carteira a editar."),
-    name: z13.string().optional().describe("Nome (obrigat\xF3rio em create)."),
-    initial_balance: z13.number().optional().describe("Saldo inicial em BRL."),
-    currency: z13.string().optional().describe("Moeda (ex: BRL, USD). Padr\xE3o: BRL."),
-    asset_type: z13.enum(["cash", "bank", "investment", "crypto", "other"]).optional().describe("Tipo do ativo. Padr\xE3o: bank.")
+    action: z14.enum(["create", "update"]).describe("create para nova carteira, update para editar."),
+    wallet: z14.string().optional().describe("Nome da carteira a editar."),
+    wallet_id: z14.string().uuid().optional().describe("ID da carteira a editar."),
+    name: z14.string().optional().describe("Nome (obrigat\xF3rio em create)."),
+    initial_balance: z14.number().optional().describe("Saldo inicial em BRL."),
+    currency: z14.string().optional().describe("Moeda (ex: BRL, USD). Padr\xE3o: BRL."),
+    asset_type: z14.enum(["cash", "bank", "investment", "crypto", "other"]).optional().describe("Tipo do ativo. Padr\xE3o: bank.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   handler: safeHandler("manage_wallet", async (input, ctx) => {
@@ -1838,18 +1926,18 @@ var manage_wallet_default = defineTool16({
 });
 
 // src/lib/mcp/tools/manage-category.ts
-import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z14 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z15 } from "npm:zod@^4.4.3";
 var categoryFields = {
-  category: z14.string().optional().describe("Nome da categoria a editar ou excluir."),
-  category_id: z14.string().uuid().optional().describe("ID da categoria a editar ou excluir."),
-  name: z14.string().optional().describe("Nome (novo nome em update, obrigat\xF3rio em create)."),
-  parent: z14.string().optional().describe("Nome da categoria-m\xE3e (cria uma subcategoria)."),
-  parent_id: z14.string().uuid().optional().describe("ID da categoria-m\xE3e."),
-  icon: z14.string().optional().describe("Emoji/\xEDcone. Padr\xE3o: \u{1F4E6}."),
-  color: z14.string().optional().describe("Cor em hex. Padr\xE3o: #94a3b8."),
-  active: z14.boolean().optional().describe("false desativa (arquiva) a categoria."),
-  delete_children: z14.boolean().optional().describe("Em delete: true tamb\xE9m exclui as subcategorias. Padr\xE3o false (bloqueia se houver subcategorias).")
+  category: z15.string().optional().describe("Nome da categoria a editar ou excluir."),
+  category_id: z15.string().uuid().optional().describe("ID da categoria a editar ou excluir."),
+  name: z15.string().optional().describe("Nome (novo nome em update, obrigat\xF3rio em create)."),
+  parent: z15.string().optional().describe("Nome da categoria-m\xE3e (cria uma subcategoria)."),
+  parent_id: z15.string().uuid().optional().describe("ID da categoria-m\xE3e."),
+  icon: z15.string().optional().describe("Emoji/\xEDcone. Padr\xE3o: \u{1F4E6}."),
+  color: z15.string().optional().describe("Cor em hex. Padr\xE3o: #94a3b8."),
+  active: z15.boolean().optional().describe("false desativa (arquiva) a categoria."),
+  delete_children: z15.boolean().optional().describe("Em delete: true tamb\xE9m exclui as subcategorias. Padr\xE3o false (bloqueia se houver subcategorias).")
 };
 async function runManageCategory(input, ctx) {
   const sb = supabaseForUser(ctx);
@@ -1909,12 +1997,12 @@ async function runManageCategory(input, ctx) {
     throw error;
   }
 }
-var manage_category_default = defineTool17({
+var manage_category_default = defineTool20({
   name: "manage_category",
   title: "Criar, editar ou excluir categoria",
   description: "Gerencia as categorias da p\xE1gina de Categorias: cria (action 'create', informe parent para criar subcategoria), edita nome/\xEDcone/cor/categoria-m\xE3e e ativa ou desativa (action 'update'), e exclui definitivamente (action 'delete'). Use list_categories para ver a hierarquia atual. Confirme com o usu\xE1rio antes de excluir.",
   inputSchema: {
-    action: z14.enum(["create", "update", "delete"]).describe("create, update ou delete."),
+    action: z15.enum(["create", "update", "delete"]).describe("create, update ou delete."),
     ...categoryFields
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
@@ -1922,14 +2010,14 @@ var manage_category_default = defineTool17({
 });
 
 // src/lib/mcp/tools/create-category.ts
-import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z15 } from "npm:zod@^4.4.3";
-var create_category_default = defineTool18({
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z16 } from "npm:zod@^4.4.3";
+var create_category_default = defineTool21({
   name: "create_category",
   title: "Criar categoria",
   description: "Cria uma nova categoria ou subcategoria na p\xE1gina de Categorias. Informe name e, para subcategoria, parent (nome da categoria-m\xE3e) ou parent_id.",
   inputSchema: {
-    name: z15.string().describe("Nome da nova categoria."),
+    name: z16.string().describe("Nome da nova categoria."),
     parent: categoryFields.parent,
     parent_id: categoryFields.parent_id,
     icon: categoryFields.icon,
@@ -1944,8 +2032,8 @@ var create_category_default = defineTool18({
 });
 
 // src/lib/mcp/tools/update-category.ts
-import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var update_category_default = defineTool19({
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var update_category_default = defineTool22({
   name: "update_category",
   title: "Editar categoria",
   description: "Edita uma categoria existente: renomeia, muda \xEDcone/cor, move para outra categoria-m\xE3e (parent/parent_id) ou arquiva/desarquiva com active. Identifique pelo nome (category) ou id (category_id).",
@@ -1967,8 +2055,8 @@ var update_category_default = defineTool19({
 });
 
 // src/lib/mcp/tools/delete-category.ts
-import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.26.2";
-var delete_category_default = defineTool20({
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.2";
+var delete_category_default = defineTool23({
   name: "delete_category",
   title: "Excluir categoria",
   description: "Exclui definitivamente uma categoria (ou subcategoria). Se ela tiver subcategorias, \xE9 necess\xE1rio repetir com delete_children: true. Confirme com o usu\xE1rio antes de excluir.",
@@ -1985,19 +2073,19 @@ var delete_category_default = defineTool20({
 });
 
 // src/lib/mcp/tools/manage-project.ts
-import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z16 } from "npm:zod@^4.4.3";
-var manage_project_default = defineTool21({
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z17 } from "npm:zod@^4.4.3";
+var manage_project_default = defineTool24({
   name: "manage_project",
   title: "Projetos (centros de custo)",
   description: "Lista, cria ou edita projetos usados como centros de custo (ex: Reforma, Viagem), com or\xE7amento total opcional e gasto acumulado.",
   inputSchema: {
-    action: z16.enum(["list", "create", "update"]).describe("list, create ou update."),
-    project: z16.string().optional().describe("Nome do projeto a editar."),
-    project_id: z16.string().uuid().optional().describe("ID do projeto a editar."),
-    name: z16.string().optional().describe("Nome (obrigat\xF3rio em create)."),
-    budget: z16.number().optional().describe("Or\xE7amento total do projeto em BRL."),
-    color: z16.string().optional().describe("Cor em hex. Padr\xE3o: #6366f1.")
+    action: z17.enum(["list", "create", "update"]).describe("list, create ou update."),
+    project: z17.string().optional().describe("Nome do projeto a editar."),
+    project_id: z17.string().uuid().optional().describe("ID do projeto a editar."),
+    name: z17.string().optional().describe("Nome (obrigat\xF3rio em create)."),
+    budget: z17.number().optional().describe("Or\xE7amento total do projeto em BRL."),
+    color: z17.string().optional().describe("Cor em hex. Padr\xE3o: #6366f1.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   handler: safeHandler("manage_project", async (input, ctx) => {
@@ -2056,8 +2144,8 @@ var manage_project_default = defineTool21({
 });
 
 // src/lib/mcp/tools/investment-ops.ts
-import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z17 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z18 } from "npm:zod@^4.4.3";
 
 // src/lib/investmentMath.ts
 import { differenceInCalendarDays, parseISO, format, addMonths, startOfMonth } from "npm:date-fns@^3.6.0";
@@ -2182,19 +2270,19 @@ async function resolveInvestment(sb, opts) {
     );
   return matches[0];
 }
-var investment_ops_default = defineTool22({
+var investment_ops_default = defineTool25({
   name: "investments",
   title: "Investimentos (caixinhas)",
   description: "Lista os investimentos do usu\xE1rio com valor atual, rendimento e proje\xE7\xE3o at\xE9 o vencimento, ou registra um aporte (deposit) ou resgate (withdraw) \u2014 que movimenta o dinheiro entre a carteira e o investimento, igual ao app.",
   inputSchema: {
-    action: z17.enum(["list", "deposit", "withdraw"]).describe("list, deposit (aporte) ou withdraw (resgate)."),
-    investment: z17.string().optional().describe("Nome do investimento (para deposit/withdraw)."),
-    investment_id: z17.string().uuid().optional().describe("ID do investimento."),
-    value: z17.number().positive().optional().describe("Valor do aporte/resgate em BRL."),
-    date: z17.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data da movimenta\xE7\xE3o (YYYY-MM-DD). Padr\xE3o: hoje."),
-    wallet: z17.string().optional().describe("Carteira de origem (aporte) ou destino (resgate)."),
-    wallet_id: z17.string().uuid().optional().describe("ID da carteira."),
-    close_investment: z17.boolean().optional().describe("No resgate, true marca o investimento como resgatado/encerrado.")
+    action: z18.enum(["list", "deposit", "withdraw"]).describe("list, deposit (aporte) ou withdraw (resgate)."),
+    investment: z18.string().optional().describe("Nome do investimento (para deposit/withdraw)."),
+    investment_id: z18.string().uuid().optional().describe("ID do investimento."),
+    value: z18.number().positive().optional().describe("Valor do aporte/resgate em BRL."),
+    date: z18.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Data da movimenta\xE7\xE3o (YYYY-MM-DD). Padr\xE3o: hoje."),
+    wallet: z18.string().optional().describe("Carteira de origem (aporte) ou destino (resgate)."),
+    wallet_id: z18.string().uuid().optional().describe("ID da carteira."),
+    close_investment: z18.boolean().optional().describe("No resgate, true marca o investimento como resgatado/encerrado.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   handler: safeHandler("investments", async (input, ctx) => {
@@ -2292,8 +2380,8 @@ var investment_ops_default = defineTool22({
 });
 
 // src/lib/mcp/tools/compare-months.ts
-import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z18 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z19 } from "npm:zod@^4.4.3";
 function categoryTotals(projection) {
   const totals = { ...projection.invoiceTotals.byCategory };
   for (const expense of projection.effectiveMonthExpenses) {
@@ -2304,13 +2392,13 @@ function categoryTotals(projection) {
   }
   return totals;
 }
-var compare_months_default = defineTool23({
+var compare_months_default = defineTool26({
   name: "compare_months",
   title: "Comparar meses",
   description: "Compara dois meses (YYYY-MM): receitas, despesas, saldo e a varia\xE7\xE3o por categoria, apontando onde o usu\xE1rio gastou mais ou menos. Usa o mesmo motor de proje\xE7\xE3o do app.",
   inputSchema: {
-    month: z18.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs analisado (YYYY-MM)."),
-    compare_to: z18.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs de compara\xE7\xE3o. Padr\xE3o: m\xEAs anterior ao analisado.")
+    month: z19.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs analisado (YYYY-MM)."),
+    compare_to: z19.string().regex(/^\d{4}-\d{2}$/).optional().describe("M\xEAs de compara\xE7\xE3o. Padr\xE3o: m\xEAs anterior ao analisado.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("compare_months", async (input, ctx) => {
@@ -2364,8 +2452,8 @@ var compare_months_default = defineTool23({
 });
 
 // src/lib/mcp/tools/financial-score.ts
-import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z19 } from "npm:zod@^4.4.3";
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z20 } from "npm:zod@^4.4.3";
 function scoreOf(totalIncome, totalExpense, totalBudget, totalSpentInBudget, hasOverdueCards, debtCount, prevExpense, ccUsageRatio) {
   let savings = 0;
   if (totalIncome > 0) {
@@ -2393,12 +2481,12 @@ function scoreOf(totalIncome, totalExpense, totalBudget, totalSpentInBudget, has
   const overall = Math.round(savings * 0.3 + budget * 0.2 + debt * 0.2 + consistency * 0.15 + credit * 0.15);
   return { overall, savings, budget, debt, consistency, credit };
 }
-var financial_score_default = defineTool24({
+var financial_score_default = defineTool27({
   name: "financial_score",
   title: "Score financeiro do m\xEAs",
   description: "Calcula o score financeiro de um m\xEAs (YYYY-MM) com as mesmas regras da p\xE1gina do app: nota geral de 0 a 100 e as cinco dimens\xF5es (poupan\xE7a, or\xE7amento, d\xEDvidas, consist\xEAncia e cr\xE9dito), com os n\xFAmeros que sustentam cada nota.",
   inputSchema: {
-    month: z19.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
+    month: z20.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("financial_score", async ({ month }, ctx) => {
@@ -2471,14 +2559,14 @@ var financial_score_default = defineTool24({
 });
 
 // src/lib/mcp/tools/search.ts
-import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z20 } from "npm:zod@^4.4.3";
-var search_default = defineTool25({
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z21 } from "npm:zod@^4.4.3";
+var search_default = defineTool28({
   name: "search",
   title: "Buscar transa\xE7\xF5es",
   description: "Busca transa\xE7\xF5es (despesas e receitas) do usu\xE1rio autenticado por texto livre na descri\xE7\xE3o, categoria ou m\xEAs (YYYY-MM). Retorna uma lista de resultados com id, t\xEDtulo e resumo para depois usar a ferramenta fetch.",
   inputSchema: {
-    query: z20.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
+    query: z21.string().trim().min(1).describe("Termo de busca: descri\xE7\xE3o, categoria ou m\xEAs no formato YYYY-MM.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("search", async ({ query }, ctx) => {
@@ -2515,14 +2603,14 @@ var search_default = defineTool25({
 });
 
 // src/lib/mcp/tools/fetch.ts
-import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.26.2";
-import { z as z21 } from "npm:zod@^4.4.3";
-var fetch_default = defineTool26({
+import { defineTool as defineTool29 } from "npm:@lovable.dev/mcp-js@0.26.2";
+import { z as z22 } from "npm:zod@^4.4.3";
+var fetch_default = defineTool29({
   name: "fetch",
   title: "Abrir transa\xE7\xE3o",
   description: "Retorna todos os detalhes de uma transa\xE7\xE3o do usu\xE1rio autenticado a partir do id devolvido pela ferramenta search.",
   inputSchema: {
-    id: z21.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
+    id: z22.string().trim().min(1).describe("ID da transa\xE7\xE3o (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: safeHandler("fetch", async ({ id }, ctx) => {
@@ -2563,8 +2651,8 @@ setLogLevel("info");
 var mcp_default = defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.5.2",
-  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal, valores em BRL, meses no formato YYYY-MM e datas YYYY-MM-DD). Consultar: search + fetch para localizar e abrir transa\xE7\xF5es, list_transactions, month_summary, month_transactions (dia a dia com saldo projetado), compare_months (varia\xE7\xE3o por categoria), financial_score, list_budgets, list_categories, list_wallets, list_credit_cards, invoice_details (fatura de um cart\xE3o num m\xEAs). Registrar e editar: create_transaction, update_transaction (use scope 'single' para uma ocorr\xEAncia, 'future' para esta e as pr\xF3ximas de uma recorr\xEAncia, 'all' para toda a s\xE9rie/parcelamento), delete_transaction, set_transaction_paid (marcar pago/recebido ou desfazer), create_transfer (entre carteiras), pay_invoice (pagar/desfazer fatura de cart\xE3o), upsert_budget, manage_wallet, manage_category, create_category, update_category e delete_category (criar, editar/arquivar e excluir categorias e subcategorias), manage_project e investments (listar caixinhas, aportar ou resgatar). Antes de qualquer opera\xE7\xE3o que altere s\xE9ries recorrentes, parcelamentos, faturas ou exclua dados, confirme com o usu\xE1rio. Sempre resolva nomes de carteiras, cart\xF5es, categorias e projetos com as ferramentas de listagem quando houver d\xFAvida.",
+  version: "0.5.3",
+  instructions: "Ferramentas para o app Lumnia (gest\xE3o financeira pessoal, valores em BRL, meses no formato YYYY-MM e datas YYYY-MM-DD). Consultar: search + fetch para localizar e abrir transa\xE7\xF5es, list_transactions, month_summary, month_transactions (dia a dia com saldo projetado), compare_months (varia\xE7\xE3o por categoria), financial_score, list_budgets (metas de or\xE7amento do m\xEAs com planejado, gasto e restante), list_categories, list_wallets, list_credit_cards, invoice_details (fatura de um cart\xE3o num m\xEAs). Registrar e editar: create_transaction, update_transaction (use scope 'single' para uma ocorr\xEAncia, 'future' para esta e as pr\xF3ximas de uma recorr\xEAncia, 'all' para toda a s\xE9rie/parcelamento), delete_transaction, set_transaction_paid (marcar pago/recebido ou desfazer), create_transfer (entre carteiras), pay_invoice (pagar/desfazer fatura de cart\xE3o), upsert_budget, create_budget, update_budget e delete_budget (criar, editar e excluir metas de or\xE7amento por categoria e m\xEAs), manage_wallet, manage_category, create_category, update_category e delete_category (criar, editar/arquivar e excluir categorias e subcategorias), manage_project e investments (listar caixinhas, aportar ou resgatar). Antes de qualquer opera\xE7\xE3o que altere s\xE9ries recorrentes, parcelamentos, faturas ou exclua dados, confirme com o usu\xE1rio. Sempre resolva nomes de carteiras, cart\xF5es, categorias e projetos com as ferramentas de listagem quando houver d\xFAvida.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -2598,6 +2686,9 @@ var mcp_default = defineMcp({
     pay_invoice_default,
     list_budgets_default,
     upsert_budget_default,
+    create_budget_default,
+    update_budget_default,
+    delete_budget_default,
     investment_ops_default
   ]
 });
