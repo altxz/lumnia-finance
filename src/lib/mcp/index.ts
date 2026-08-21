@@ -12,6 +12,9 @@ import monthTransactions from "./tools/month-transactions";
 import deleteTransaction from "./tools/delete-transaction";
 import listBudgets from "./tools/list-budgets";
 import upsertBudget from "./tools/upsert-budget";
+import createBudget from "./tools/create-budget";
+import updateBudget from "./tools/update-budget";
+import deleteBudget from "./tools/delete-budget";
 import invoiceDetails from "./tools/invoice-details";
 import payInvoice from "./tools/pay-invoice";
 import manageWallet from "./tools/manage-wallet";
@@ -35,9 +38,9 @@ setLogLevel("info");
 export default defineMcp({
   name: "lumnia-mcp",
   title: "Lumnia",
-  version: "0.5.2",
+  version: "0.5.3",
   instructions:
-    "Ferramentas para o app Lumnia (gestão financeira pessoal, valores em BRL, meses no formato YYYY-MM e datas YYYY-MM-DD). Consultar: search + fetch para localizar e abrir transações, list_transactions, month_summary, month_transactions (dia a dia com saldo projetado), compare_months (variação por categoria), financial_score, list_budgets, list_categories, list_wallets, list_credit_cards, invoice_details (fatura de um cartão num mês). Registrar e editar: create_transaction, update_transaction (use scope 'single' para uma ocorrência, 'future' para esta e as próximas de uma recorrência, 'all' para toda a série/parcelamento), delete_transaction, set_transaction_paid (marcar pago/recebido ou desfazer), create_transfer (entre carteiras), pay_invoice (pagar/desfazer fatura de cartão), upsert_budget, manage_wallet, manage_category, create_category, update_category e delete_category (criar, editar/arquivar e excluir categorias e subcategorias), manage_project e investments (listar caixinhas, aportar ou resgatar). Antes de qualquer operação que altere séries recorrentes, parcelamentos, faturas ou exclua dados, confirme com o usuário. Sempre resolva nomes de carteiras, cartões, categorias e projetos com as ferramentas de listagem quando houver dúvida.",
+    "Ferramentas para o app Lumnia (gestão financeira pessoal, valores em BRL, meses no formato YYYY-MM e datas YYYY-MM-DD). Consultar: search + fetch para localizar e abrir transações, list_transactions, month_summary, month_transactions (dia a dia com saldo projetado), compare_months (variação por categoria), financial_score, list_budgets (metas de orçamento do mês com planejado, gasto e restante), list_categories, list_wallets, list_credit_cards, invoice_details (fatura de um cartão num mês). Registrar e editar: create_transaction, update_transaction (use scope 'single' para uma ocorrência, 'future' para esta e as próximas de uma recorrência, 'all' para toda a série/parcelamento), delete_transaction, set_transaction_paid (marcar pago/recebido ou desfazer), create_transfer (entre carteiras), pay_invoice (pagar/desfazer fatura de cartão), upsert_budget, create_budget, update_budget e delete_budget (criar, editar e excluir metas de orçamento por categoria e mês), manage_wallet, manage_category, create_category, update_category e delete_category (criar, editar/arquivar e excluir categorias e subcategorias), manage_project e investments (listar caixinhas, aportar ou resgatar). Antes de qualquer operação que altere séries recorrentes, parcelamentos, faturas ou exclua dados, confirme com o usuário. Sempre resolva nomes de carteiras, cartões, categorias e projetos com as ferramentas de listagem quando houver dúvida.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -71,6 +74,9 @@ export default defineMcp({
     payInvoice,
     listBudgets,
     upsertBudget,
+    createBudget,
+    updateBudget,
+    deleteBudget,
     investmentOps,
   ],
 
