@@ -1,13 +1,16 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FINANCIAL_STALE_TIME } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { InfoPopover } from '@/components/ui/info-popover';
-import { Activity, PiggyBank, Target, Shield, BarChart3, CreditCard, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Lightbulb, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
+import { isInvoicePayment } from '@/lib/utils';
+import {
+  computeFinancialScore, getScoreColor, type ScoreDimension,
+} from '@/lib/financialScore';
 import {
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar,
 } from 'recharts';
@@ -22,215 +25,159 @@ interface DashboardScoreCarouselProps {
   monthExpenses: any[];
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 80) return 'hsl(142, 71%, 45%)';
-  if (score >= 60) return 'hsl(45, 93%, 47%)';
-  if (score >= 40) return 'hsl(25, 95%, 53%)';
-  return 'hsl(0, 72%, 51%)';
+function monthKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-
-function getScoreLabel(score: number): string {
-  if (score >= 90) return 'Excelente';
-  if (score >= 80) return 'Muito Bom';
-  if (score >= 70) return 'Bom';
-  if (score >= 60) return 'Regular';
-  if (score >= 40) return 'Atenção';
-  return 'Crítico';
-}
-
-function getScoreEmoji(score: number): string {
-  if (score >= 80) return '🏆';
-  if (score >= 60) return '👍';
-  if (score >= 40) return '⚠️';
-  return '🚨';
-}
-
-interface SubScore {
-  key: string;
-  label: string;
-  score: number;
-  icon: React.ReactNode;
-  description: string;
-  tip: string;
-}
-
-function calculateScores(
-  totalIncome: number,
-  totalExpense: number,
-  totalBudget: number,
-  totalSpentInBudget: number,
-  hasOverdueCards: boolean,
-  debtCount: number,
-  prevExpense: number,
-  ccUsageRatio: number,
-): { overall: number; sub: SubScore[] } {
-  let savingsScore = 0;
-  if (totalIncome > 0) {
-    const savingsRate = (totalIncome - totalExpense) / totalIncome;
-    if (savingsRate >= 0.3) savingsScore = 100;
-    else if (savingsRate >= 0.2) savingsScore = 85;
-    else if (savingsRate >= 0.1) savingsScore = 70;
-    else if (savingsRate >= 0) savingsScore = 50;
-    else if (savingsRate >= -0.1) savingsScore = 30;
-    else savingsScore = 10;
-  }
-
-  let budgetScore = 75;
-  if (totalBudget > 0) {
-    const ratio = totalSpentInBudget / totalBudget;
-    if (ratio <= 0.8) budgetScore = 100;
-    else if (ratio <= 0.95) budgetScore = 85;
-    else if (ratio <= 1) budgetScore = 70;
-    else if (ratio <= 1.1) budgetScore = 50;
-    else budgetScore = 20;
-  }
-
-  let debtScore = 100;
-  if (debtCount > 0) debtScore -= debtCount * 10;
-  if (hasOverdueCards) debtScore -= 20;
-  debtScore = Math.max(0, Math.min(100, debtScore));
-
-  let consistencyScore = 70;
-  if (prevExpense > 0 && totalExpense > 0) {
-    const variation = Math.abs(totalExpense - prevExpense) / prevExpense;
-    if (variation <= 0.05) consistencyScore = 100;
-    else if (variation <= 0.15) consistencyScore = 85;
-    else if (variation <= 0.3) consistencyScore = 65;
-    else consistencyScore = 40;
-  }
-
-  let creditScore = 100;
-  if (ccUsageRatio > 0.9) creditScore = 20;
-  else if (ccUsageRatio > 0.7) creditScore = 50;
-  else if (ccUsageRatio > 0.5) creditScore = 70;
-  else if (ccUsageRatio > 0.3) creditScore = 85;
-  if (hasOverdueCards) creditScore = Math.min(creditScore, 30);
-
-  const weights = { savings: 0.30, budget: 0.20, debt: 0.20, consistency: 0.15, credit: 0.15 };
-  const overall = Math.round(
-    savingsScore * weights.savings +
-    budgetScore * weights.budget +
-    debtScore * weights.debt +
-    consistencyScore * weights.consistency +
-    creditScore * weights.credit
+/** Barra de 5 pontos: leitura rápida sem depender de largura de pixel. */
+function Dots({ score }: { score: number | null }) {
+  const filled = score === null ? 0 : Math.round(score / 20);
+  const color = score === null ? 'hsl(var(--muted-foreground))' : getScoreColor(score);
+  return (
+    <span className="flex items-center gap-[3px] shrink-0">
+      {[0, 1, 2, 3, 4].map(i => (
+        <span
+          key={i}
+          className="block w-1.5 h-1.5 rounded-full transition-colors"
+          style={{ backgroundColor: i < filled ? color : 'hsl(var(--muted))' }}
+        />
+      ))}
+    </span>
   );
+}
 
-  const sub: SubScore[] = [
-    {
-      key: 'savings', label: 'Poupança', score: savingsScore,
-      icon: <PiggyBank className="h-4 w-4" />,
-      description: savingsScore >= 70 ? 'Boa taxa de poupança' : 'Tente poupar mais',
-      tip: 'Baseado na porcentagem da renda que você economiza. Meta ideal: 20%+.',
-    },
-    {
-      key: 'budget', label: 'Orçamento', score: budgetScore,
-      icon: <Target className="h-4 w-4" />,
-      description: budgetScore >= 70 ? 'Dentro do orçamento' : 'Gastos acima do planejado',
-      tip: 'Avalia se você está dentro dos limites de orçamento definidos.',
-    },
-    {
-      key: 'debt', label: 'Dívidas', score: debtScore,
-      icon: <Shield className="h-4 w-4" />,
-      description: debtScore >= 80 ? 'Dívidas sob controle' : 'Muitas dívidas ativas',
-      tip: 'Considera o número de dívidas ativas e faturas vencidas.',
-    },
-    {
-      key: 'consistency', label: 'Consistência', score: consistencyScore,
-      icon: <BarChart3 className="h-4 w-4" />,
-      description: consistencyScore >= 70 ? 'Gastos estáveis' : 'Gastos instáveis',
-      tip: 'Mede a estabilidade dos seus gastos em relação ao mês anterior.',
-    },
-    {
-      key: 'credit', label: 'Crédito', score: creditScore,
-      icon: <CreditCard className="h-4 w-4" />,
-      description: creditScore >= 70 ? 'Uso saudável do crédito' : 'Alto uso de crédito',
-      tip: 'Baseado na utilização do limite de crédito. Ideal: abaixo de 30%.',
-    },
-  ];
-
-  return { overall, sub };
+function DimensionRow({ d }: { d: ScoreDimension }) {
+  return (
+    <div className="flex items-center gap-2 text-[11px]">
+      <span className="shrink-0 whitespace-nowrap text-muted-foreground">{d.label}</span>
+      <Dots score={d.score} />
+      <span
+        className="w-6 text-right font-semibold tabular-nums"
+        style={{ color: d.score === null ? 'hsl(var(--muted-foreground))' : getScoreColor(d.score) }}
+      >
+        {d.score === null ? '—' : d.score}
+      </span>
+      <span className="flex-1 min-w-0 truncate text-muted-foreground">{d.detail}</span>
+    </div>
+  );
 }
 
 export function DashboardScoreCarousel({
-  totalIncome, totalExpense, totalBudget, totalSpentInBudget,
-  hasOverdueCards, creditCards, monthExpenses,
+  totalIncome, totalExpense, hasOverdueCards, creditCards, monthExpenses,
 }: DashboardScoreCarouselProps) {
   const { user } = useAuth();
   const [slide, setSlide] = useState(0);
-  const [saving, setSaving] = useState(false);
 
-  // Dados extra do score vêm do cache (revalidados em segundo plano).
-  const { data: scoreExtras } = useQuery({
-    queryKey: ['dashboard-score-extras', user?.id],
+  const { data: extras } = useQuery({
+    queryKey: ['dashboard-score-extras-v2', user?.id],
     queryFn: async () => {
       const now = new Date();
-      const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const currentMonth = monthKey(now);
+      const threeAgo = monthKey(new Date(now.getFullYear(), now.getMonth() - 3, 1));
 
-      const [{ data: debts }, { data: prevExp }] = await Promise.all([
-        supabase.from('debts').select('id').eq('user_id', user!.id).eq('type', 'i_owe'),
-        supabase.from('expenses').select('value, type').eq('user_id', user!.id)
-          .gte('date', prevMonthStr).lt('date', currentMonth),
-      ]);
-      const filtered = (prevExp || []).filter((e: any) => e.type !== 'transfer' && e.type !== 'income');
+      const [{ data: debts }, { data: history }, { data: budgets }, { data: wallets }, { data: investments }, { data: prevScores }] =
+        await Promise.all([
+          supabase.from('debts').select('id, remaining_amount').eq('user_id', user!.id).eq('type', 'i_owe'),
+          supabase.from('expenses').select('value, type, date, description, final_category')
+            .eq('user_id', user!.id).gte('date', threeAgo).lt('date', currentMonth),
+          supabase.from('budgets').select('category, allocated_amount').eq('user_id', user!.id).eq('month_year', currentMonth),
+          supabase.from('wallets').select('current_balance, asset_type').eq('user_id', user!.id),
+          supabase.from('investments').select('principal, status').eq('user_id', user!.id),
+          supabase.from('financial_scores').select('month_year, overall_score')
+            .eq('user_id', user!.id).lt('month_year', currentMonth)
+            .order('month_year', { ascending: false }).limit(1),
+        ]);
+
+      // Despesas dos 3 meses anteriores, do mais recente para o mais antigo.
+      const buckets: Record<string, number> = {};
+      (history || []).forEach((e: any) => {
+        if (e.type === 'income' || e.type === 'transfer') return;
+        if (isBalanceAdjustment(e) || isInvoicePayment(e)) return;
+        const k = e.date.slice(0, 7);
+        buckets[k] = (buckets[k] || 0) + Number(e.value);
+      });
+      const previousExpenses = Object.keys(buckets).sort().reverse().map(k => buckets[k]);
+
+      const liquid = (wallets || [])
+        .filter((w: any) => w.asset_type !== 'crypto')
+        .reduce((s: number, w: any) => s + Number(w.current_balance || 0), 0);
+      const invested = (investments || [])
+        .filter((i: any) => i.status === 'active')
+        .reduce((s: number, i: any) => s + Number(i.principal || 0), 0);
+
       return {
-        debtCount: (debts || []).length,
-        prevExpense: filtered.reduce((s: number, e: any) => s + e.value, 0),
+        debtTotal: (debts || []).reduce((s: number, d: any) => s + Number(d.remaining_amount || 0), 0),
+        previousExpenses,
+        budgets: (budgets || []).map((b: any) => ({ category: b.category, allocated: Number(b.allocated_amount || 0) })),
+        liquidReserve: liquid + invested,
+        previousOverall: prevScores?.[0]?.overall_score ?? null,
       };
     },
     enabled: !!user,
     staleTime: FINANCIAL_STALE_TIME,
   });
 
-  const debtCount = scoreExtras?.debtCount ?? 0;
-  const prevExpense = scoreExtras?.prevExpense ?? 0;
+  const result = useMemo(() => {
+    const spentByCategory: Record<string, number> = {};
+    let ccExpenses = 0;
+    let installmentExpenses = 0;
+    let debtPayments = 0;
 
-  const ccUsageRatio = useMemo(() => {
-    const totalLimit = creditCards.reduce((s, c) => s + (c.limit_amount || 0), 0);
-    const ccExp = monthExpenses.filter(e => e.credit_card_id && e.type !== 'income').reduce((s, e) => s + e.value, 0);
-    return totalLimit > 0 ? ccExp / totalLimit : 0;
-  }, [creditCards, monthExpenses]);
+    monthExpenses.forEach((e: any) => {
+      if (e.type === 'income' || e.type === 'transfer') return;
+      if (isBalanceAdjustment(e) || isInvoicePayment(e)) return;
+      spentByCategory[e.final_category] = (spentByCategory[e.final_category] || 0) + Number(e.value);
+      if (e.credit_card_id) ccExpenses += Number(e.value);
+      else if (e.installment_group_id) installmentExpenses += Number(e.value);
+      if (e.debt_id) debtPayments += Number(e.value);
+    });
 
-  const { overall, sub } = useMemo(() =>
-    calculateScores(totalIncome, totalExpense, totalBudget, totalSpentInBudget, hasOverdueCards, debtCount, prevExpense, ccUsageRatio),
-    [totalIncome, totalExpense, totalBudget, totalSpentInBudget, hasOverdueCards, debtCount, prevExpense, ccUsageRatio]
+    const totalLimit = creditCards.reduce((s, c) => s + Number(c.limit_amount || 0), 0);
+
+    return computeFinancialScore({
+      totalIncome,
+      totalExpense,
+      budgets: (extras?.budgets || []).map(b => ({
+        category: b.category,
+        allocated: b.allocated,
+        spent: spentByCategory[b.category] || 0,
+      })),
+      committedAmount: ccExpenses + installmentExpenses + debtPayments,
+      creditUsageRatio: totalLimit > 0 ? ccExpenses / totalLimit : 0,
+      hasOverdueInvoice: hasOverdueCards,
+      liquidReserve: extras?.liquidReserve,
+      previousExpenses: extras?.previousExpenses || [],
+    });
+  }, [totalIncome, totalExpense, monthExpenses, creditCards, hasOverdueCards, extras]);
+
+  // Snapshot automático do mês: grava quando a nota muda (mesma tabela/upsert).
+  const lastSaved = useRef<number | null>(null);
+  useEffect(() => {
+    if (!user || !extras) return;
+    if (lastSaved.current === result.overall) return;
+    lastSaved.current = result.overall;
+    const currentMonth = monthKey(new Date());
+    supabase.from('financial_scores').upsert({
+      user_id: user.id,
+      month_year: currentMonth,
+      overall_score: result.overall,
+      ...result.persisted,
+      total_income: totalIncome,
+      total_expense: totalExpense,
+    }, { onConflict: 'user_id,month_year' }).then(() => {});
+  }, [user, extras, result, totalIncome, totalExpense]);
+
+  const radarData = useMemo(
+    () => result.dimensions.map(d => ({ subject: `${d.label} ${d.score ?? '—'}`, score: d.score ?? 0, fullMark: 100 })),
+    [result]
   );
-
-  const radarData = useMemo(() =>
-    sub.map(s => ({ subject: s.label, score: s.score, fullMark: 100 })),
-    [sub]
-  );
-
-  const saveScore = useCallback(async () => {
-    if (!user) return;
-    setSaving(true);
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-    try {
-      await supabase.from('financial_scores').upsert({
-        user_id: user.id,
-        month_year: currentMonth,
-        overall_score: overall,
-        savings_score: sub.find(s => s.key === 'savings')!.score,
-        budget_score: sub.find(s => s.key === 'budget')!.score,
-        debt_score: sub.find(s => s.key === 'debt')!.score,
-        consistency_score: sub.find(s => s.key === 'consistency')!.score,
-        credit_score: sub.find(s => s.key === 'credit')!.score,
-        total_income: totalIncome,
-        total_expense: totalExpense,
-      }, { onConflict: 'user_id,month_year' });
-    } finally {
-      setSaving(false);
-    }
-  }, [user, overall, sub, totalIncome, totalExpense]);
 
   const totalSlides = 2;
   const prev = () => setSlide(s => (s - 1 + totalSlides) % totalSlides);
   const next = () => setSlide(s => (s + 1) % totalSlides);
 
-  const scoreColor = getScoreColor(overall);
+  const scoreColor = getScoreColor(result.overall);
+  const diff = extras?.previousOverall != null ? result.overall - extras.previousOverall : null;
 
   return (
     <Card className="rounded-2xl border-border/50 h-full flex flex-col">
@@ -239,9 +186,16 @@ export function DashboardScoreCarousel({
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Activity className="h-4 w-4 text-muted-foreground" />
             {slide === 0 ? 'Score Financeiro' : 'Perfil Financeiro'}
+            <InfoPopover>
+              <p className="text-xs">
+                Nota de 0 a 100 que combina cinco dimensões: poupança (30%), dívidas e crédito (25%),
+                orçamento (20%), reserva (15%) e consistência (10%). Dimensões sem dados suficientes
+                ficam de fora e o peso é redistribuído.
+              </p>
+            </InfoPopover>
           </CardTitle>
           <div className="flex items-center gap-1">
-            <button onClick={prev} className="p-1 rounded-full hover:bg-muted transition-colors">
+            <button onClick={prev} aria-label="Anterior" className="p-1 rounded-full hover:bg-muted transition-colors">
               <ChevronLeft className="h-4 w-4 text-muted-foreground" />
             </button>
             <div className="flex gap-1">
@@ -252,64 +206,74 @@ export function DashboardScoreCarousel({
                 />
               ))}
             </div>
-            <button onClick={next} className="p-1 rounded-full hover:bg-muted transition-colors">
+            <button onClick={next} aria-label="Próximo" className="p-1 rounded-full hover:bg-muted transition-colors">
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col items-center justify-center px-4 pb-4 pt-0 overflow-hidden">
-        <div className="w-full relative" style={{ minHeight: 200 }}>
-          {/* Slide 0: Detailed Score + Sub-scores */}
+      <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-0 overflow-hidden">
+        <div className="w-full relative flex-1" style={{ minHeight: 210 }}>
+          {/* Slide 0: nota + dimensões com números reais + próximo passo */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2 transition-all duration-400 ease-in-out"
+            className="absolute inset-0 flex flex-col gap-2 transition-all duration-400 ease-in-out"
             style={{
               opacity: slide === 0 ? 1 : 0,
               transform: `translateX(${slide === 0 ? 0 : 100}%)`,
               pointerEvents: slide === 0 ? 'auto' : 'none',
             }}
           >
-            <div className="flex items-center gap-3 w-full">
-              <div className="relative w-20 h-20 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="relative w-[68px] h-[68px] shrink-0">
                 <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-                  <circle cx="60" cy="60" r={50} fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
+                  <circle cx="60" cy="60" r={50} fill="none" stroke="hsl(var(--muted))" strokeWidth="9" />
                   <circle
                     cx="60" cy="60" r={50} fill="none"
                     stroke={scoreColor}
-                    strokeWidth="8"
+                    strokeWidth="9"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 50}
-                    strokeDashoffset={2 * Math.PI * 50 - (overall / 100) * 2 * Math.PI * 50}
+                    strokeDashoffset={2 * Math.PI * 50 - (result.overall / 100) * 2 * Math.PI * 50}
                     className="transition-all duration-700 ease-out"
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xl font-bold" style={{ color: scoreColor }}>{overall}</span>
+                  <span className="text-lg font-bold leading-none" style={{ color: scoreColor }}>{result.overall}</span>
                   <span className="text-[8px] text-muted-foreground">/ 100</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold" style={{ color: scoreColor }}>
-                  {getScoreEmoji(overall)} {getScoreLabel(overall)}
-                </p>
-                <div className="space-y-1 mt-1.5">
-                  {sub.map(s => (
-                    <div key={s.key} className="flex items-center gap-1.5">
-                      <span className="text-[10px] w-20 truncate text-muted-foreground">{s.label}</span>
-                      <Progress value={s.score} className="h-1 flex-1" />
-                      <span className="text-[10px] font-medium w-6 text-right" style={{ color: getScoreColor(s.score) }}>{s.score}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-sm font-semibold" style={{ color: scoreColor }}>
+                    {result.emoji} {result.label}
+                  </p>
+                  {diff !== null && diff !== 0 && (
+                    <span className={`flex items-center text-[10px] font-medium ${diff > 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                      {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                      {Math.abs(diff)} vs. mês anterior
+                    </span>
+                  )}
                 </div>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">{result.headline}</p>
               </div>
             </div>
-            <Button onClick={saveScore} disabled={saving} variant="outline" size="sm" className="mt-1 text-xs h-7 gap-1">
-              <RefreshCw className={`h-3 w-3 ${saving ? 'animate-spin' : ''}`} />
-              {saving ? 'Salvando...' : 'Salvar Score'}
-            </Button>
+
+            <div className="space-y-1 border-t border-border/50 pt-2">
+              {result.dimensions.map(d => <DimensionRow key={d.key} d={d} />)}
+            </div>
+
+            {result.nextStep && (
+              <div className="mt-auto flex items-start gap-1.5 rounded-xl bg-muted/60 px-2.5 py-2">
+                <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                <p className="text-[10px] leading-snug text-muted-foreground">
+                  <span className="font-semibold text-foreground">Próximo passo: </span>
+                  {result.nextStep.action} (+{result.nextStep.potentialGain} pts)
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Slide 1: Radar Chart */}
+          {/* Slide 1: radar */}
           <div
             className="absolute inset-0 flex flex-col items-center justify-center transition-all duration-400 ease-in-out"
             style={{
@@ -318,10 +282,10 @@ export function DashboardScoreCarousel({
               pointerEvents: slide === 1 ? 'auto' : 'none',
             }}
           >
-            <ResponsiveContainer width="100%" height={190}>
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+            <ResponsiveContainer width="100%" height={200}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="68%">
                 <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
                 <Radar
                   name="Score"
                   dataKey="score"

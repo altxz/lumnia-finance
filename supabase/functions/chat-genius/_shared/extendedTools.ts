@@ -13,6 +13,7 @@ import {
   resolveProject,
   resolveWallet,
 } from "./resolve.ts";
+import { computeFinancialScore } from "./financialScore.ts";
 import {
   INVOICE_EXPENSE_COLS,
   getInvoicePeriod,
@@ -187,7 +188,7 @@ export const extendedTools = [
   ),
   fn(
     "score_financeiro",
-    "Calcula o score financeiro do mês com as mesmas regras da página do app: nota geral 0-100 e as cinco dimensões (poupança 30%, orçamento 20%, dívidas 20%, consistência 15%, crédito 15%).",
+    "Calcula o score financeiro do mês com as mesmas regras da página do app: nota geral 0-100 e as cinco dimensões (poupança 30%, dívidas e crédito 25%, orçamento 20%, reserva 15%, consistência 10%), com o número real que sustenta cada nota e o próximo passo recomendado.",
     { month: S(MONTH_DESC) },
     [],
   ),
@@ -904,117 +905,111 @@ async function investments(args: any, userId: string, sb: any) {
 
 /* --------------------------------- análises -------------------------------- */
 
-function scoreOf(
-  totalIncome: number,
-  totalExpense: number,
-  totalBudget: number,
-  totalSpentInBudget: number,
-  hasOverdueCards: boolean,
-  debtCount: number,
-  prevExpense: number,
-  ccUsageRatio: number,
-) {
-  let savings = 0;
-  if (totalIncome > 0) {
-    const rate = (totalIncome - totalExpense) / totalIncome;
-    savings = rate >= 0.3 ? 100 : rate >= 0.2 ? 85 : rate >= 0.1 ? 70 : rate >= 0 ? 50 : rate >= -0.1 ? 30 : 10;
-  }
-
-  let budget = 75;
-  if (totalBudget > 0) {
-    const ratio = totalSpentInBudget / totalBudget;
-    budget = ratio <= 0.8 ? 100 : ratio <= 0.95 ? 85 : ratio <= 1 ? 70 : ratio <= 1.1 ? 50 : 20;
-  }
-
-  let debt = Math.max(0, Math.min(100, 100 - debtCount * 10 - (hasOverdueCards ? 20 : 0)));
-
-  let consistency = 70;
-  if (prevExpense > 0 && totalExpense > 0) {
-    const variation = Math.abs(totalExpense - prevExpense) / prevExpense;
-    consistency = variation <= 0.05 ? 100 : variation <= 0.15 ? 85 : variation <= 0.3 ? 65 : 40;
-  }
-
-  let credit = 100;
-  if (ccUsageRatio > 0.9) credit = 20;
-  else if (ccUsageRatio > 0.7) credit = 50;
-  else if (ccUsageRatio > 0.5) credit = 70;
-  else if (ccUsageRatio > 0.3) credit = 85;
-  if (hasOverdueCards) credit = Math.min(credit, 30);
-
-  const overall = Math.round(savings * 0.3 + budget * 0.2 + debt * 0.2 + consistency * 0.15 + credit * 0.15);
-  return { overall, savings, budget, debt, consistency, credit };
-}
-
 async function financialScore(args: any, userId: string, sb: any, helpers: ExtendedHelpers) {
   const month = args.month || helpers.currentMonth();
   const { year, monthNumber } = monthParts(month);
-  const previousMonth = `${monthNumber === 1 ? year - 1 : year}-${pad2(monthNumber === 1 ? 12 : monthNumber - 1)}`;
+  const monthAt = (offset: number) => {
+    const d = new Date(year, monthNumber - 1 + offset, 1);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+  };
 
   // Usa o MESMO motor de projeção das telas (projetar_saldo_final_mes).
-  const [current, previous] = await Promise.all([helpers.projectMonth(month), helpers.projectMonth(previousMonth)]);
+  const [current, prev1, prev2, prev3] = await Promise.all([
+    helpers.projectMonth(month),
+    helpers.projectMonth(monthAt(-1)),
+    helpers.projectMonth(monthAt(-2)),
+    helpers.projectMonth(monthAt(-3)),
+  ]);
   const totalIncome = Number(current?.total_receitas_mes ?? 0);
   const totalExpense = Number(current?.total_despesas_mes ?? 0);
-  const prevExpense = Number(previous?.total_despesas_mes ?? 0);
+  const previousExpenses = [prev1, prev2, prev3].map((p) => Number(p?.total_despesas_mes ?? 0));
 
-  const [{ data: budgetRows }, { data: debtRows }, { data: cardRows }] = await Promise.all([
-    sb.from("budgets").select("category, allocated_amount").eq("user_id", userId).eq("month_year", `${month}-01`),
-    sb.from("debts").select("id, remaining_amount").eq("user_id", userId),
-    sb.from("credit_cards").select("*").eq("user_id", userId),
-  ]);
+  const [{ data: budgetRows }, { data: debtRows }, { data: cardRows }, { data: walletRows }, { data: investmentRows }] =
+    await Promise.all([
+      sb.from("budgets").select("category, allocated_amount").eq("user_id", userId).eq("month_year", `${month}-01`),
+      sb.from("debts").select("id, remaining_amount").eq("user_id", userId).eq("type", "i_owe"),
+      sb.from("credit_cards").select("*").eq("user_id", userId),
+      sb.from("wallets").select("current_balance, asset_type").eq("user_id", userId),
+      sb.from("investments").select("principal, status").eq("user_id", userId),
+    ]);
 
   const budgets = (budgetRows ?? []) as any[];
-  const totalBudget = budgets.reduce((s, b) => s + Number(b.allocated_amount ?? 0), 0);
-  const budgetCategories = new Set(budgets.map((b) => b.category));
-
   const rows = await loadInvoiceExpenses(sb, userId);
   const monthStart = `${month}-01`;
   const monthEnd = `${month}-${pad2(new Date(year, monthNumber, 0).getDate())}`;
-  let spentInBudget = 0;
+
+  const spentByCategory: Record<string, number> = {};
+  let ccExpenses = 0;
+  let committed = 0;
   for (const e of rows) {
-    if (e.type !== "expense") continue;
+    if (e.type === "income" || e.type === "transfer") continue;
     if (e.date < monthStart || e.date > monthEnd) continue;
-    if (budgetCategories.has(e.final_category)) spentInBudget += Number(e.value);
+    const value = Number(e.value ?? 0);
+    spentByCategory[e.final_category] = (spentByCategory[e.final_category] ?? 0) + value;
+    if (e.credit_card_id) {
+      ccExpenses += value;
+      committed += value;
+    } else if ((e as any).installment_group_id) {
+      committed += value;
+    }
+    if ((e as any).debt_id) committed += value;
   }
 
-  const debts = ((debtRows ?? []) as any[]).filter((d) => Number(d.remaining_amount ?? 0) > 0);
-
-  let usedLimit = 0;
   let totalLimit = 0;
   let hasOverdue = false;
   for (const card of (cardRows ?? []) as any[]) {
     totalLimit += Number(card.limit_amount ?? 0);
     const invoice = matchExpensesToInvoice(rows, getInvoicePeriod(card as any, year, monthNumber - 1));
-    usedLimit += invoice.total;
     if (invoice.status === "overdue") hasOverdue = true;
   }
-  const usageRatio = totalLimit > 0 ? usedLimit / totalLimit : 0;
+  const usageRatio = totalLimit > 0 ? ccExpenses / totalLimit : 0;
 
-  const scores = scoreOf(
+  const liquid = ((walletRows ?? []) as any[])
+    .filter((w) => w.asset_type !== "crypto")
+    .reduce((s, w) => s + Number(w.current_balance ?? 0), 0);
+  const invested = ((investmentRows ?? []) as any[])
+    .filter((i) => i.status === "active")
+    .reduce((s, i) => s + Number(i.principal ?? 0), 0);
+
+  const result = computeFinancialScore({
     totalIncome,
     totalExpense,
-    totalBudget,
-    spentInBudget,
-    hasOverdue,
-    debts.length,
-    prevExpense,
-    usageRatio,
-  );
+    budgets: budgets.map((b) => ({
+      category: b.category,
+      allocated: Number(b.allocated_amount ?? 0),
+      spent: spentByCategory[b.category] ?? 0,
+    })),
+    committedAmount: committed,
+    creditUsageRatio: usageRatio,
+    hasOverdueInvoice: hasOverdue,
+    liquidReserve: liquid + invested,
+    previousExpenses,
+  });
+
+  const debts = ((debtRows ?? []) as any[]).filter((d) => Number(d.remaining_amount ?? 0) > 0);
 
   return okJson({
     month,
-    score_geral: scores.overall,
-    poupanca: scores.savings,
-    orcamento: scores.budget,
-    dividas: scores.debt,
-    consistencia: scores.consistency,
-    credito: scores.credit,
+    score_geral: result.overall,
+    classificacao: result.label,
+    resumo: result.headline,
+    dimensoes: result.dimensions.map((d) => ({
+      chave: d.key,
+      nome: d.label,
+      nota: d.score,
+      peso_pct: Number((d.weight * 100).toFixed(1)),
+      avaliada: d.evaluated,
+      numero_real: d.detail,
+      acao: d.action,
+    })),
+    proximo_passo: result.nextStep,
     total_receitas: Math.round(totalIncome * 100) / 100,
     total_despesas: Math.round(totalExpense * 100) / 100,
-    despesas_mes_anterior: Math.round(prevExpense * 100) / 100,
-    total_orcado: Math.round(totalBudget * 100) / 100,
-    gasto_em_categorias_orcadas: Math.round(spentInBudget * 100) / 100,
-    dividas_ativas: debts.length,
+    despesas_meses_anteriores: previousExpenses.map((v) => Math.round(v * 100) / 100),
+    comprometido_no_mes: Math.round(committed * 100) / 100,
     uso_do_credito_pct: Number((usageRatio * 100).toFixed(1)),
+    reserva_liquida: Math.round((liquid + invested) * 100) / 100,
+    dividas_ativas: debts.length,
     fatura_vencida: hasOverdue,
   });
 }

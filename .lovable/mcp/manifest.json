@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "lumnia-mcp",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Lumnia"
     },
     "tools": [
@@ -578,7 +578,7 @@
       {
         "name": "financial_score",
         "title": "Score financeiro do mês",
-        "description": "Calcula o score financeiro de um mês (YYYY-MM) com as mesmas regras da página do app: nota geral de 0 a 100 e as cinco dimensões (poupança, orçamento, dívidas, consistência e crédito), com os números que sustentam cada nota.",
+        "description": "Calcula o score financeiro de um mês (YYYY-MM) com as mesmas regras da página do app: nota geral de 0 a 100 e as cinco dimensões (poupança, orçamento, dívidas e crédito, reserva e consistência), com os números que sustentam cada nota e o próximo passo recomendado.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
