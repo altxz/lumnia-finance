@@ -17,7 +17,7 @@ const AREA_COLORS = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 shadow-float border border-white/10" style={{ background: 'rgba(30,30,40,0.92)', backdropFilter: 'blur(8px)' }}>
+    <div className="rounded-2xl px-3 py-2 shadow-card border border-border/60 bg-popover/95 backdrop-blur-xl">
       <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} className="text-xs font-semibold" style={{ color: p.color || 'hsl(var(--popover-foreground))' }}>
