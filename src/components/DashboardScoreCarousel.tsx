@@ -49,7 +49,7 @@ function Dots({ score }: { score: number | null }) {
 function DimensionRow({ d }: { d: ScoreDimension }) {
   return (
     <div className="flex items-center gap-2 text-[11px]">
-      <span className="w-[86px] truncate text-muted-foreground">{d.label}</span>
+      <span className="shrink-0 whitespace-nowrap text-muted-foreground">{d.label}</span>
       <Dots score={d.score} />
       <span
         className="w-6 text-right font-semibold tabular-nums"
