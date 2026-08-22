@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { showFriendlyError } from '@/lib/errorHandler';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Expense } from '@/components/ExpenseTable';
-import { buildFutureRecurringExceptionDates } from '@/lib/recurringProjection';
+import { buildFutureRecurringExceptionDates, resolveRecurringEditAction } from '@/lib/recurringProjection';
 
 interface EditExpenseModalProps {
   open: boolean;
@@ -181,9 +181,22 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         invoice_month: creditCardId ? (invoiceMonth || null) : null,
       };
 
+      // Motor único de decisão: garante que o molde de uma recorrência nunca é
+      // reescrito quando a ocorrência editada é apenas uma projeção futura.
+      const editAction = isExistingInstallment
+        ? 'installment'
+        : resolveRecurringEditAction({
+            isRecurringRow: !!expense.is_recurring,
+            isProjectedOccurrence,
+            wantRecurring: wantInstallment,
+            installmentMode,
+            canConvertToInstallment,
+            scope,
+          });
+
       // Editing a recurring occurrence and choosing "only this":
       // create a real one-off entry for this specific date without changing the recurring template.
-      const isRecurringSingleEdit = scope === 'single' && expense.is_recurring && !isExistingInstallment;
+      const isRecurringSingleEdit = editAction === 'single-occurrence';
       if (isRecurringSingleEdit) {
         const oneOffRow = {
           user_id: user!.id,
@@ -220,7 +233,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         return;
       }
 
-      if (wantInstallment && canConvertToInstallment && installmentMode === 'limited') {
+      if (editAction === 'convert-to-installments') {
         // Convert single expense to installment/repeat plan
         const installmentValue = valueMode === 'total'
           ? Math.round((parsedValue / numInstallments) * 100) / 100
@@ -281,8 +294,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         if (insertError) throw insertError;
 
         toast({ title: 'Parcelamento criado!', description: `Transação dividida em ${numInstallments}x de R$ ${installmentValue.toFixed(2)}` });
-      } else if (wantInstallment && canConvertToInstallment && installmentMode === 'fixed') {
-        // Convert to fixed recurring
+      } else if (editAction === 'activate-recurring') {
+        // ATIVAR recorrência numa transação avulsa (nunca reescreve um molde existente)
         const { error } = await supabase.from('expenses').update({
           ...baseFields,
           value: parsedValue,
@@ -295,7 +308,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
         if (error) throw error;
         toast({ title: 'Recorrência ativada!', description: 'Esta transação será replicada automaticamente todo mês.' });
-      } else if (scope === 'all') {
+      } else if (editAction === 'split-series' || (editAction === 'installment' && scope === 'all')) {
         // Update ALL siblings with the same signature
         if (isExistingInstallment && expense.installment_group_id) {
           // Update all in the same installment group
@@ -410,11 +423,20 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         const recurringFields = !wantInstallment && expense.is_recurring
           ? { is_recurring: false, frequency: null }
           : {};
+        // Segurança: se a ocorrência editada é uma projeção (a linha do banco
+        // pertence a outro mês), nunca sobrescrever a data nem o estado pago
+        // do molde — isso apagaria o lançamento histórico.
+        const safeFields = { ...baseFields } as Record<string, unknown>;
+        if (isProjectedOccurrence) {
+          delete safeFields.date;
+          delete safeFields.is_paid;
+        }
         const { error } = await supabase.from('expenses').update({
-          ...baseFields,
+          ...safeFields,
           value: parsedValue,
           ...recurringFields,
         }).eq('id', expense.id);
+
 
         if (error) throw error;
         toast({ title: expense.is_recurring && !wantInstallment ? 'Recorrência desativada!' : 'Transação atualizada!' });
