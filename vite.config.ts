@@ -2,7 +2,6 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { VitePWA } from "vite-plugin-pwa";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 // https://vitejs.dev/config/
@@ -62,114 +61,12 @@ export default defineConfig(({ mode }) => {
         });
       },
     } as Plugin),
-    VitePWA({
+    // NOTA: o vite-plugin-pwa foi removido de propósito.
+    // O service worker de cache (/sw.js) guardava o index.html e deixava
+    // dispositivos presos em versões antigas. Agora o HTML vem sempre da rede,
+    // o manifesto é estático (public/manifest.webmanifest) e o único service
+    // worker é o de notificações push (public/push-sw.js), sem cache.
 
-      registerType: "autoUpdate",
-      // O registo é feito por src/lib/registerServiceWorker.ts (guardado para
-      // dev/preview). O plugin não deve injetar o seu próprio script.
-      injectRegister: null,
-      filename: "sw.js",
-      devOptions: {
-        enabled: false,
-      },
-      workbox: {
-        // Handlers de Web Push dentro do MESMO service worker (antes havia
-        // um /sw-push.js a competir pelo escopo "/").
-        importScripts: ["/push-handlers.js"],
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/\.lovable\//],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        skipWaiting: true,
-        clientsClaim: true,
-        cleanupOutdatedCaches: true,
-        // Nunca precachear o kill switch antigo, o HTML como asset estático,
-        // nem o carimbo de versão (tem de vir sempre da rede).
-        globIgnores: ["**/sw-push.js", "**/push-handlers.js", "**/version.json"],
-        runtimeCaching: [
-          {
-            // O carimbo de versão nunca pode ser servido de cache.
-            urlPattern: /\/version\.json/,
-            handler: 'NetworkOnly',
-          },
-          {
-            // Rotas internas da Lovable (consentimento OAuth do conector MCP)
-            // nunca podem ser servidas de cache.
-            urlPattern: /\/\.lovable\//,
-            handler: 'NetworkOnly',
-          },
-
-          {
-            // NUNCA fazer cache de chamadas à API (REST/Auth/Realtime/Functions)
-            // Isso evita ver dados desatualizados após pagar fatura, editar despesa etc.
-            urlPattern: /^https:\/\/.*\.supabase\.co\/(rest|auth|realtime|functions)\/.*/,
-            handler: 'NetworkOnly',
-          },
-
-          {
-            // HTML sempre da rede quando há ligação (cache só como fallback offline).
-            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'html',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 10 },
-            },
-          },
-
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'images',
-              expiration: { maxEntries: 60, maxAgeSeconds: 7 * 24 * 60 * 60 },
-            },
-          },
-          {
-            urlPattern: /\.(?:woff2?|ttf|otf|eot)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'fonts',
-              expiration: { maxEntries: 10, maxAgeSeconds: 365 * 24 * 60 * 60 },
-            },
-          },
-        ],
-      },
-      manifest: {
-        name: "Lumnia",
-        short_name: "Lumnia",
-        description: "Gerencie receitas e despesas com IA",
-        theme_color: "#5447BC",
-        background_color: "#5447BC",
-        display: "standalone",
-        start_url: "/",
-        icons: [
-          {
-            src: "/pwa-icon-192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/pwa-icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "/pwa-icon-maskable-192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "maskable",
-          },
-          {
-            src: "/pwa-icon-maskable-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
-    }),
   ].filter(Boolean),
   resolve: {
     alias: {

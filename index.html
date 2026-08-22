@@ -9,6 +9,81 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#5447BC" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Lumnia" />
+
+    <!--
+      Guarda de arranque: este script vive no HTML (servido sempre com no-cache),
+      por isso corre mesmo em dispositivos que ainda tenham o pacote JavaScript
+      antigo em cache. Remove qualquer service worker de cache que tenha ficado a
+      controlar o app, apaga as caches antigas e recarrega uma única vez.
+    -->
+    <script>
+      (function () {
+        if (!('serviceWorker' in navigator)) return;
+        var PUSH_SW = '/push-sw.js';
+        var FLAG = 'lumnia:sw-purged';
+        var wasControlled = !!navigator.serviceWorker.controller;
+
+        function isAppCache(name) {
+          return (
+            /(^|-)precache-v\d+-/.test(name) ||
+            /(^|-)runtime-/.test(name) ||
+            /(^|-)googleAnalytics-/.test(name) ||
+            name === 'html' ||
+            name === 'images' ||
+            name === 'fonts'
+          );
+        }
+
+        function clearCaches() {
+          if (!('caches' in window)) return Promise.resolve();
+          return caches.keys().then(function (names) {
+            return Promise.all(
+              names.filter(isAppCache).map(function (n) {
+                return caches.delete(n);
+              })
+            );
+          });
+        }
+
+        navigator.serviceWorker
+          .getRegistrations()
+          .then(function (regs) {
+            var stale = regs.filter(function (r) {
+              var url =
+                (r.active && r.active.scriptURL) ||
+                (r.waiting && r.waiting.scriptURL) ||
+                (r.installing && r.installing.scriptURL) ||
+                '';
+              return url && url.indexOf(PUSH_SW) === -1;
+            });
+            if (!stale.length) return null;
+            return Promise.all(
+              stale.map(function (r) {
+                return r.unregister();
+              })
+            )
+              .then(clearCaches)
+              .then(function () {
+                var alreadyPurged = false;
+                try {
+                  alreadyPurged = sessionStorage.getItem(FLAG) === '1';
+                  sessionStorage.setItem(FLAG, '1');
+                } catch (e) {}
+                if (wasControlled && !alreadyPurged) {
+                  var url = new URL(window.location.href);
+                  url.searchParams.set('_fresh', String(Date.now()));
+                  window.location.replace(url.toString());
+                }
+              });
+          })
+          .catch(function () {});
+      })();
+    </script>
+
 
     <!-- Preconnect to Supabase for faster API calls -->
     <link rel="preconnect" href="https://nvskvrgsfzaynotdgzoy.supabase.co" crossorigin />
