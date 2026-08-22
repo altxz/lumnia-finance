@@ -626,7 +626,7 @@ export default function WalletPage() {
                             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                             <YAxis tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
                             <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
-                            <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                               {byType.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                             </Bar>
                           </BarChart>

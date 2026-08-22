@@ -41,8 +41,8 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
     const max = Math.max(totalIncome, totalExpense, 1);
     const saldo = totalIncome - totalExpense;
     const rows = [
-      { label: 'Receitas', value: totalIncome, color: 'hsl(142, 71%, 45%)' },
-      { label: 'Despesas', value: totalExpense, color: 'hsl(0, 84%, 60%)' },
+      { label: 'Receitas', value: totalIncome, color: 'hsl(var(--success))' },
+      { label: 'Despesas', value: totalExpense, color: 'hsl(var(--destructive))' },
     ];
     return (
       <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
@@ -78,12 +78,12 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
           <BarChart data={data} barGap={6} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(160, 84%, 39%)" />
-                <stop offset="100%" stopColor="hsl(142, 71%, 45%)" />
+                <stop offset="0%" stopColor="hsl(var(--success))" />
+                <stop offset="100%" stopColor="hsl(var(--success))" />
               </linearGradient>
               <linearGradient id="gradExpense" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(12, 76%, 61%)" />
-                <stop offset="100%" stopColor="hsl(0, 84%, 60%)" />
+                <stop offset="0%" stopColor="hsl(var(--accent))" />
+                <stop offset="100%" stopColor="hsl(var(--destructive))" />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />

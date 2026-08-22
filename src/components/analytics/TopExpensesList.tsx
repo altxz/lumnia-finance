@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelL
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(142, 71%, 45%)', 'hsl(var(--accent))', 'hsl(280, 60%, 55%)'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--success))', 'hsl(var(--accent))', 'hsl(var(--chart-5))'];
 
 export function TopExpensesList({ expenses }: { expenses: any[] }) {
   const data = useMemo(() => {
@@ -75,7 +75,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
                 );
               }}
             />
-            <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20}>
+            <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
               {data.map((_entry, index) => (
                 <Cell key={index} fill={`url(#topExpGrad${index % COLORS.length})`} />
               ))}

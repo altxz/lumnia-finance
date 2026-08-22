@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 
-const COLORS = ['hsl(245, 45%, 51%)', 'hsl(80, 80%, 50%)', 'hsl(280, 94%, 68%)', 'hsl(230, 96%, 64%)', 'hsl(0, 84%, 60%)', 'hsl(40, 90%, 55%)', 'hsl(170, 70%, 45%)'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-4))', 'hsl(var(--chart-3))', 'hsl(var(--chart-6))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--chart-8))'];
 
 interface Props {
   categoryStats: CategoryStats[];
@@ -94,9 +94,9 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
                 <XAxis type="number" tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`} tick={{ fontSize: 9 }} />
                 <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 9 }} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
-                <Bar dataKey="orcamento" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[0, 6, 6, 0]} barSize={16} name="Orçamento" />
-                <Bar dataKey="atual" fill="hsl(245, 45%, 51%)" radius={[0, 6, 6, 0]} barSize={16} name="Gasto" />
-                {compare && <Bar dataKey="anterior" fill="hsl(245, 45%, 51%, 0.3)" radius={[0, 6, 6, 0]} barSize={16} name="Anterior" />}
+                <Bar dataKey="orcamento" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[0, 8, 8, 0]} barSize={16} name="Orçamento" />
+                <Bar dataKey="atual" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} barSize={16} name="Gasto" />
+                {compare && <Bar dataKey="anterior" fill="hsl(var(--primary) / 0.3)" radius={[0, 8, 8, 0]} barSize={16} name="Anterior" />}
               </BarChart>
             </ResponsiveContainer>
           ) : (

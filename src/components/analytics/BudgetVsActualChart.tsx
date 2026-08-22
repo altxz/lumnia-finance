@@ -156,8 +156,8 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
                   );
                 }}
               />
-              <Bar dataKey="planejado" name="Planejado" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[0, 4, 4, 0]} barSize={10} />
-              <Bar dataKey="realizado" name="Realizado" radius={[0, 4, 4, 0]} barSize={10}>
+              <Bar dataKey="planejado" name="Planejado" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[0, 8, 8, 0]} barSize={10} />
+              <Bar dataKey="realizado" name="Realizado" radius={[0, 8, 8, 0]} barSize={10}>
                 {rows.map((r, i) => (
                   <Cell key={i} fill={r.realizado > r.planejado ? 'hsl(var(--destructive))' : 'hsl(var(--chart-2))'} />
                 ))}

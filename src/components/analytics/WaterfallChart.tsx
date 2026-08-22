@@ -67,7 +67,7 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
       base: Math.min(cursor, cursor + totalIncome),
       value: totalIncome,
       amount: totalIncome,
-      fill: 'hsl(142, 71%, 45%)',
+      fill: 'hsl(var(--success))',
       type: 'income',
     });
     cursor += totalIncome;
@@ -149,8 +149,8 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
                   <div className="rounded-xl border-0 p-2.5 text-xs shadow-lg" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}>
                     <p className="font-semibold mb-1">{item.name}</p>
                     <p style={{
-                      color: item.type === 'income' ? 'hsl(142, 71%, 45%)' :
-                        item.type === 'expense' ? 'hsl(0, 84%, 60%)' :
+                      color: item.type === 'income' ? 'hsl(var(--success))' :
+                        item.type === 'expense' ? 'hsl(var(--destructive))' :
                         'hsl(var(--primary))'
                     }}>
                       {item.amount >= 0 ? '+' : ''}{formatCurrency(item.amount)}
@@ -161,7 +161,7 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
             />
             <ReferenceLine y={0} stroke="hsl(var(--border))" />
             <Bar dataKey="base" stackId="waterfall" fill="transparent" radius={0} />
-            <Bar dataKey="value" stackId="waterfall" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="value" stackId="waterfall" radius={[8, 8, 0, 0]}>
               {data.map((entry, index) => (
                 <Cell key={index} fill={entry.fill} opacity={entry.type === 'expense' ? 0.85 : 1} />
               ))}

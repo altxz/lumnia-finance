@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 
-const COLORS = ['hsl(245, 45%, 51%)', 'hsl(142, 71%, 45%)', 'hsl(280, 60%, 55%)', 'hsl(40, 90%, 55%)', 'hsl(0, 84%, 60%)'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--chart-5))', 'hsl(var(--accent))', 'hsl(var(--destructive))'];
 
 interface Props {
   expenses: any[];

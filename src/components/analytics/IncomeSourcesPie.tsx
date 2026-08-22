@@ -11,7 +11,7 @@ interface Props {
   categories: any[];
 }
 
-const COLORS = ['hsl(142, 71%, 45%)', 'hsl(142, 50%, 60%)', 'hsl(160, 60%, 45%)', 'hsl(180, 50%, 50%)', 'hsl(200, 60%, 55%)'];
+const COLORS = ['hsl(var(--success))', 'hsl(var(--success))', 'hsl(var(--chart-8))', 'hsl(var(--chart-6))', 'hsl(var(--chart-6))'];
 
 export function IncomeSourcesPie({ expenses, categories }: Props) {
   const isMobile = useIsMobile();

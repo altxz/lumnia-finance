@@ -471,7 +471,7 @@ export default function CategoryDetailsPage() {
                               formatter={(v: number) => [formatCurrency(v), 'Gasto']}
                               labelFormatter={(l) => `Dia ${l}`}
                             />
-                            <Bar dataKey="total" fill={accent} radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="total" fill={accent} radius={[8, 8, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>

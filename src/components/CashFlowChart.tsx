@@ -244,8 +244,8 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
                 label={{ value: 'Hoje', position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               />
             )}
-            <Bar yAxisId="bars" dataKey="receitas" fill="hsl(142, 71%, 45%)" radius={[3, 3, 0, 0]} barSize={8} opacity={0.85} />
-            <Bar yAxisId="bars" dataKey="despesas" fill="hsl(var(--destructive))" radius={[3, 3, 0, 0]} barSize={8} opacity={0.85} />
+            <Bar yAxisId="bars" dataKey="receitas" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} barSize={8} opacity={0.85} />
+            <Bar yAxisId="bars" dataKey="despesas" fill="hsl(var(--destructive))" radius={[8, 8, 0, 0]} barSize={8} opacity={0.85} />
             <Line
               yAxisId="line"
               type="monotone"
