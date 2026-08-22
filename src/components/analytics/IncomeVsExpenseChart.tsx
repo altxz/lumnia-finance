@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -23,16 +24,55 @@ interface Props {
 }
 
 export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
+  const isMobile = useIsMobile();
   const data = [{ name: 'Mês Atual', receitas: totalIncome, despesas: totalExpense }];
+
+  const header = (
+    <CardHeader className="pb-1 px-4 pt-3 sm:pb-2 sm:px-6 sm:pt-6">
+      <div className="flex items-center gap-1.5">
+        <CardTitle className="text-[13px] sm:text-sm font-semibold whitespace-nowrap">Receita vs Despesas</CardTitle>
+        <InfoPopover><p>Comparação direta entre o volume total de dinheiro que entrou e o que saiu, considerando faturas de cartão pelo mês de vencimento.</p></InfoPopover>
+      </div>
+    </CardHeader>
+  );
+
+  // Celular: barras horizontais com valores — muito mais legível que um gráfico minúsculo.
+  if (isMobile) {
+    const max = Math.max(totalIncome, totalExpense, 1);
+    const saldo = totalIncome - totalExpense;
+    const rows = [
+      { label: 'Receitas', value: totalIncome, color: 'hsl(142, 71%, 45%)' },
+      { label: 'Despesas', value: totalExpense, color: 'hsl(0, 84%, 60%)' },
+    ];
+    return (
+      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+        {header}
+        <CardContent className="flex-1 min-h-0 flex flex-col justify-center gap-3 px-4 pb-4 pt-0">
+          {rows.map(r => (
+            <div key={r.label} className="space-y-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground">{r.label}</span>
+                <span className="text-sm font-bold tabular-nums" style={{ color: r.color }}>{formatCurrency(r.value)}</span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <span className="block h-full rounded-full" style={{ width: `${(r.value / max) * 100}%`, backgroundColor: r.color }} />
+              </div>
+            </div>
+          ))}
+          <div className="flex items-baseline justify-between border-t pt-2">
+            <span className="text-[11px] text-muted-foreground">Resultado</span>
+            <span className={`text-sm font-bold tabular-nums ${saldo >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+              {saldo >= 0 ? '+' : ''}{formatCurrency(saldo)}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-sm font-semibold">Receita vs Despesas</CardTitle>
-          <InfoPopover><p>Comparação direta entre o volume total de dinheiro que entrou e o que saiu, considerando faturas de cartão pelo mês de vencimento.</p></InfoPopover>
-        </div>
-      </CardHeader>
+      {header}
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} barGap={6} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
