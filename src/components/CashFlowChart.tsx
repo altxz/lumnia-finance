@@ -123,7 +123,9 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
   const balanceChange = endBalance - baseBalance;
   const todayLabel = format(today, 'dd/MM');
 
-  const tickInterval = Math.max(1, Math.floor(chartData.length / 8));
+  const isMobile = useIsMobile();
+  const tickInterval = Math.max(1, Math.floor(chartData.length / (isMobile ? 5 : 8)));
+
 
   if (loading) {
     return (
