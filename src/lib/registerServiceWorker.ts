@@ -12,7 +12,29 @@
 
 const SW_URL = "/sw.js";
 const LEGACY_SW_URLS = ["/sw-push.js", "/service-worker.js"];
-const RELOAD_FLAG = "lumnia-sw-reloaded";
+
+/** Ouvintes avisados quando existe uma versão nova pronta a assumir. */
+const updateListeners = new Set<() => void>();
+let updateReady = false;
+
+/** Regista um ouvinte de "versão nova pronta". Devolve a função para remover. */
+export function onServiceWorkerUpdateReady(listener: () => void) {
+  updateListeners.add(listener);
+  if (updateReady) listener();
+  return () => updateListeners.delete(listener);
+}
+
+function notifyUpdateReady() {
+  updateReady = true;
+  updateListeners.forEach((l) => {
+    try {
+      l();
+    } catch {
+      // ignorar
+    }
+  });
+}
+
 
 function isPreviewContext(): boolean {
   const inIframe = (() => {
