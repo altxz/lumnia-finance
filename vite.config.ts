@@ -82,15 +82,22 @@ export default defineConfig(({ mode }) => {
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        // Nunca precachear o kill switch antigo nem o HTML como asset estático.
-        globIgnores: ["**/sw-push.js", "**/push-handlers.js"],
+        // Nunca precachear o kill switch antigo, o HTML como asset estático,
+        // nem o carimbo de versão (tem de vir sempre da rede).
+        globIgnores: ["**/sw-push.js", "**/push-handlers.js", "**/version.json"],
         runtimeCaching: [
+          {
+            // O carimbo de versão nunca pode ser servido de cache.
+            urlPattern: /\/version\.json/,
+            handler: 'NetworkOnly',
+          },
           {
             // Rotas internas da Lovable (consentimento OAuth do conector MCP)
             // nunca podem ser servidas de cache.
             urlPattern: /\/\.lovable\//,
             handler: 'NetworkOnly',
           },
+
           {
             // NUNCA fazer cache de chamadas à API (REST/Auth/Realtime/Functions)
             // Isso evita ver dados desatualizados após pagar fatura, editar despesa etc.
