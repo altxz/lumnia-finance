@@ -65,7 +65,9 @@ const App = () => (
                       <Route path="/projetos" element={<ProjectsPage />} />
                       <Route path="/investimentos" element={<InvestmentsPage />} />
                       
+                      <Route path="/atualizar" element={<ForceUpdatePage />} />
                       <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
+
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AnimatedRoutes>
