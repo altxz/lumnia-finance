@@ -87,7 +87,6 @@ export default function FinancialScorePage() {
         { data: histExp },
         { data: budgetData },
         { data: cards },
-        { data: debts },
         { data: wallets },
         { data: investments },
         { data: scoreHistory },
@@ -100,7 +99,6 @@ export default function FinancialScorePage() {
         supabase.from('budgets').select('allocated_amount, category')
           .eq('user_id', user.id).eq('month_year', currentMonth),
         supabase.from('credit_cards').select('id, due_day, limit_amount').eq('user_id', user.id),
-        supabase.from('debts').select('id, remaining_amount').eq('user_id', user.id).eq('type', 'i_owe'),
         supabase.from('wallets').select('current_balance, asset_type').eq('user_id', user.id),
         supabase.from('investments').select('principal, status').eq('user_id', user.id),
         supabase.from('financial_scores').select('*')
@@ -151,7 +149,7 @@ export default function FinancialScorePage() {
           allocated: Number(b.allocated_amount || 0),
           spent: spent[b.category] || 0,
         })),
-        committedAmount: committed + (debts || []).reduce((s: number, d: any) => s + Number(d.remaining_amount || 0) * 0, 0),
+        committedAmount: committed,
         creditUsageRatio: totalLimit > 0 ? ccExpenses / totalLimit : 0,
         hasOverdueInvoice: (cards || []).some((c: any) => c.due_day < today) && ccExpenses > 0,
         liquidReserve: liquid + invested,
