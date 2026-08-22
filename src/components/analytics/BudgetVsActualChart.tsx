@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface BudgetItem {
   category: string;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function BudgetVsActualChart({ budgets, expenses }: Props) {
+  const isMobile = useIsMobile();
   const { rows, totalPlanned, totalActual } = useMemo(() => {
     const spent: Record<string, number> = {};
     (expenses || []).forEach((e: any) => {

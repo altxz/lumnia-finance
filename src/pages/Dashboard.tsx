@@ -273,7 +273,7 @@ export default function Dashboard() {
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><WeekComparisonChart expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><BudgetVsActualChart budgets={budgetDataRaw as any} expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="medium" mobile="full"><Suspense fallback={<ChartFallback />}><BudgetVsActualChart budgets={budgetDataRaw as any} expenses={projected.monthExpenses} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><EndOfMonthForecast /></Suspense></Tile>
                   <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></Tile>
