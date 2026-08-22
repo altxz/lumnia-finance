@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -6,14 +6,17 @@ import { VitePWA } from "vite-plugin-pwa";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const buildId =
+    mode === "development" ? "dev" : new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
+
+  return {
   define: {
     // Identificador único desta build — usado para versionar o cache de dados
     // no localStorage e para mostrar a versão nas Configurações.
-    __BUILD_ID__: JSON.stringify(
-      mode === "development" ? "dev" : new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)
-    ),
+    __BUILD_ID__: JSON.stringify(buildId),
   },
+
 
   server: {
     host: "::",
@@ -47,7 +50,20 @@ export default defineConfig(({ mode }) => ({
     react(),
     mcpPlugin({ functionName: "lumnia-mcp" }),
     mode === "development" && componentTagger(),
+    ({
+      // Carimbo de versão publicado com a build, para o app detetar deploys novos.
+      name: "lumnia-version-stamp",
+      apply: "build",
+      generateBundle() {
+        this.emitFile({
+          type: "asset",
+          fileName: "version.json",
+          source: JSON.stringify({ buildId }),
+        });
+      },
+    } as Plugin),
     VitePWA({
+
       registerType: "autoUpdate",
       // O registo é feito por src/lib/registerServiceWorker.ts (guardado para
       // dev/preview). O plugin não deve injetar o seu próprio script.
@@ -66,15 +82,22 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        // Nunca precachear o kill switch antigo nem o HTML como asset estático.
-        globIgnores: ["**/sw-push.js", "**/push-handlers.js"],
+        // Nunca precachear o kill switch antigo, o HTML como asset estático,
+        // nem o carimbo de versão (tem de vir sempre da rede).
+        globIgnores: ["**/sw-push.js", "**/push-handlers.js", "**/version.json"],
         runtimeCaching: [
+          {
+            // O carimbo de versão nunca pode ser servido de cache.
+            urlPattern: /\/version\.json/,
+            handler: 'NetworkOnly',
+          },
           {
             // Rotas internas da Lovable (consentimento OAuth do conector MCP)
             // nunca podem ser servidas de cache.
             urlPattern: /\/\.lovable\//,
             handler: 'NetworkOnly',
           },
+
           {
             // NUNCA fazer cache de chamadas à API (REST/Auth/Realtime/Functions)
             // Isso evita ver dados desatualizados após pagar fatura, editar despesa etc.
@@ -153,4 +176,6 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+  };
+});
+

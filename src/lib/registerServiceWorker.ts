@@ -12,7 +12,29 @@
 
 const SW_URL = "/sw.js";
 const LEGACY_SW_URLS = ["/sw-push.js", "/service-worker.js"];
-const RELOAD_FLAG = "lumnia-sw-reloaded";
+
+/** Ouvintes avisados quando existe uma versão nova pronta a assumir. */
+const updateListeners = new Set<() => void>();
+let updateReady = false;
+
+/** Regista um ouvinte de "versão nova pronta". Devolve a função para remover. */
+export function onServiceWorkerUpdateReady(listener: () => void) {
+  updateListeners.add(listener);
+  if (updateReady) listener();
+  return () => updateListeners.delete(listener);
+}
+
+function notifyUpdateReady() {
+  updateReady = true;
+  updateListeners.forEach((l) => {
+    try {
+      l();
+    } catch {
+      // ignorar
+    }
+  });
+}
+
 
 function isPreviewContext(): boolean {
   const inIframe = (() => {
@@ -89,20 +111,23 @@ export function registerServiceWorker() {
         return;
       }
 
-      // Quando o controlador muda (versão nova ativou com skipWaiting),
-      // recarregar uma única vez para garantir HTML + chunks da mesma versão.
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (sessionStorage.getItem(RELOAD_FLAG)) return;
-        sessionStorage.setItem(RELOAD_FLAG, "1");
-        window.location.reload();
+      // Em vez de recarregar sozinho (podia interromper um formulário a meio),
+      // avisamos a interface para mostrar o banner "Atualizar agora".
+      navigator.serviceWorker.addEventListener("controllerchange", notifyUpdateReady);
+
+      const checkWaiting = () => {
+        if (registration.waiting && navigator.serviceWorker.controller) notifyUpdateReady();
+      };
+      checkWaiting();
+      registration.addEventListener("updatefound", () => {
+        const installing = registration.installing;
+        installing?.addEventListener("statechange", () => {
+          if (installing.state === "installed" && navigator.serviceWorker.controller) {
+            notifyUpdateReady();
+          }
+        });
       });
 
-      // Se já existe uma versão em espera, ativá-la imediatamente.
-      const promoteWaiting = () => {
-        registration.waiting?.postMessage({ type: "SKIP_WAITING" });
-      };
-      promoteWaiting();
-      registration.addEventListener("updatefound", promoteWaiting);
 
       const check = () => registration.update().catch(() => {});
       const interval = setInterval(check, 30_000);
