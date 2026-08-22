@@ -111,20 +111,23 @@ export function registerServiceWorker() {
         return;
       }
 
-      // Quando o controlador muda (versão nova ativou com skipWaiting),
-      // recarregar uma única vez para garantir HTML + chunks da mesma versão.
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (sessionStorage.getItem(RELOAD_FLAG)) return;
-        sessionStorage.setItem(RELOAD_FLAG, "1");
-        window.location.reload();
+      // Em vez de recarregar sozinho (podia interromper um formulário a meio),
+      // avisamos a interface para mostrar o banner "Atualizar agora".
+      navigator.serviceWorker.addEventListener("controllerchange", notifyUpdateReady);
+
+      const checkWaiting = () => {
+        if (registration.waiting && navigator.serviceWorker.controller) notifyUpdateReady();
+      };
+      checkWaiting();
+      registration.addEventListener("updatefound", () => {
+        const installing = registration.installing;
+        installing?.addEventListener("statechange", () => {
+          if (installing.state === "installed" && navigator.serviceWorker.controller) {
+            notifyUpdateReady();
+          }
+        });
       });
 
-      // Se já existe uma versão em espera, ativá-la imediatamente.
-      const promoteWaiting = () => {
-        registration.waiting?.postMessage({ type: "SKIP_WAITING" });
-      };
-      promoteWaiting();
-      registration.addEventListener("updatefound", promoteWaiting);
 
       const check = () => registration.update().catch(() => {});
       const interval = setInterval(check, 30_000);
