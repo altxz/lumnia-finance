@@ -168,7 +168,29 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    background-image:
+      radial-gradient(1100px 600px at 8% -8%, hsl(270 70% 88% / 0.75), transparent 65%),
+      radial-gradient(900px 520px at 105% 4%, hsl(20 100% 88% / 0.7), transparent 62%),
+      radial-gradient(900px 700px at 55% 108%, hsl(270 70% 90% / 0.6), transparent 65%);
+    background-attachment: fixed;
   }
+
+  .dark body {
+    background-image:
+      radial-gradient(1100px 600px at 8% -8%, hsl(270 45% 28% / 0.5), transparent 65%),
+      radial-gradient(900px 520px at 105% 4%, hsl(20 55% 26% / 0.45), transparent 62%),
+      radial-gradient(900px 700px at 55% 108%, hsl(270 40% 24% / 0.4), transparent 65%);
+  }
+
+  h1 {
+    @apply font-medium tracking-tight;
+  }
+
+  h2,
+  h3 {
+    @apply font-medium tracking-tight;
+  }
+
 
   /* Prevent iOS auto-zoom on focus by guaranteeing 16px font on inputs in mobile */
   @media (max-width: 640px) {
