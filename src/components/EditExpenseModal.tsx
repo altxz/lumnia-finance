@@ -281,8 +281,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         if (insertError) throw insertError;
 
         toast({ title: 'Parcelamento criado!', description: `Transação dividida em ${numInstallments}x de R$ ${installmentValue.toFixed(2)}` });
-      } else if (wantInstallment && canConvertToInstallment && installmentMode === 'fixed') {
-        // Convert to fixed recurring
+      } else if (wantInstallment && canConvertToInstallment && installmentMode === 'fixed' && !expense.is_recurring) {
+        // ATIVAR recorrência numa transação avulsa (nunca reescreve um molde existente)
         const { error } = await supabase.from('expenses').update({
           ...baseFields,
           value: parsedValue,
