@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFutureRecurringExceptionDates } from '@/lib/recurringProjection';
+import { buildFutureRecurringExceptionDates, resolveRecurringEditAction } from '@/lib/recurringProjection';
 
 /**
  * Regression suite for the "alterar todas as próximas" flow.
@@ -115,5 +115,40 @@ describe('cutoff semantics protect already-registered months', () => {
     const dates = buildFutureRecurringExceptionDates('2025-01-05', cutoff, 'monthly', 1);
     expect(dates[0]).toBe('2026-05-05');
     expect(dates).toContain('2026-06-05');
+  });
+});
+
+describe('resolveRecurringEditAction — protege o molde da recorrência', () => {
+  const base = {
+    isRecurringRow: true,
+    isProjectedOccurrence: true,
+    wantRecurring: true,
+    installmentMode: 'fixed' as const,
+    canConvertToInstallment: true,
+  };
+
+  it('editar ocorrência projetada com "todas as próximas" faz split de série (não reescreve o molde)', () => {
+    expect(resolveRecurringEditAction({ ...base, scope: 'all' })).toBe('split-series');
+  });
+
+  it('editar ocorrência projetada com "apenas esta" cria lançamento avulso', () => {
+    expect(resolveRecurringEditAction({ ...base, scope: 'single' })).toBe('single-occurrence');
+  });
+
+  it('ativar recorrência só acontece em transação ainda não recorrente', () => {
+    expect(
+      resolveRecurringEditAction({ ...base, isRecurringRow: false, isProjectedOccurrence: false, scope: 'single' }),
+    ).toBe('activate-recurring');
+  });
+
+  it('nunca converte em parcelamento a partir de uma ocorrência projetada', () => {
+    expect(
+      resolveRecurringEditAction({
+        ...base,
+        isRecurringRow: false,
+        installmentMode: 'limited',
+        scope: 'single',
+      }),
+    ).toBe('activate-recurring');
   });
 });

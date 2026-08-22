@@ -173,3 +173,32 @@ export function buildEffectiveMonthExpenses<T extends MaterializedRecurringLike 
 
   return [...visible, ...virtualEntries];
 }
+
+/**
+ * Decide o que a edição de uma transação deve fazer, garantindo que a linha
+ * "molde" de uma recorrência NUNCA seja reescrita quando a ocorrência editada
+ * é apenas uma projeção de um mês futuro (isso apagaria o mês histórico).
+ */
+export function resolveRecurringEditAction({
+  isRecurringRow,
+  isProjectedOccurrence,
+  wantRecurring,
+  installmentMode,
+  canConvertToInstallment,
+  scope,
+}: {
+  isRecurringRow: boolean;
+  isProjectedOccurrence: boolean;
+  wantRecurring: boolean;
+  installmentMode: 'fixed' | 'limited';
+  canConvertToInstallment: boolean;
+  scope: 'single' | 'all';
+}): 'single-occurrence' | 'convert-to-installments' | 'activate-recurring' | 'split-series' | 'plain-update' {
+  if (isRecurringRow && scope === 'single') return 'single-occurrence';
+  if (isRecurringRow && scope === 'all') return 'split-series';
+  if (wantRecurring && canConvertToInstallment && !isProjectedOccurrence && installmentMode === 'limited') {
+    return 'convert-to-installments';
+  }
+  if (wantRecurring && canConvertToInstallment && installmentMode === 'fixed') return 'activate-recurring';
+  return 'plain-update';
+}
