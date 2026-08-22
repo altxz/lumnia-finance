@@ -97,7 +97,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       {settingsItem?.visible && (
-        <SidebarFooter className="pb-4">
+        <SidebarFooter className="pb-20">
           <SidebarMenu>{renderItem(settingsItem)}</SidebarMenu>
         </SidebarFooter>
       )}
