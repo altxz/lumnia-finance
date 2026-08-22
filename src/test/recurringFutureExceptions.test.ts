@@ -149,6 +149,6 @@ describe('resolveRecurringEditAction — protege o molde da recorrência', () =>
         installmentMode: 'limited',
         scope: 'single',
       }),
-    ).toBe('activate-recurring');
+    ).toBe('plain-update');
   });
 });
