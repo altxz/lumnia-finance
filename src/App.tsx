@@ -27,7 +27,9 @@ const ProjectsPage = lazyWithRetry(() => import("./pages/ProjectsPage"));
 const InvestmentsPage = lazyWithRetry(() => import("./pages/InvestmentsPage"));
 
 const OAuthConsentPage = lazyWithRetry(() => import("./pages/OAuthConsentPage"));
+const ForceUpdatePage = lazyWithRetry(() => import("./pages/ForceUpdatePage"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
+
 
 
 function PageFallback() {
