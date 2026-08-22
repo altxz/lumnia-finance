@@ -308,7 +308,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
         if (error) throw error;
         toast({ title: 'Recorrência ativada!', description: 'Esta transação será replicada automaticamente todo mês.' });
-      } else if (scope === 'all') {
+      } else if (editAction === 'split-series' || (editAction === 'installment' && scope === 'all')) {
         // Update ALL siblings with the same signature
         if (isExistingInstallment && expense.installment_group_id) {
           // Update all in the same installment group
