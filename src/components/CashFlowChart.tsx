@@ -10,6 +10,8 @@ import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceM
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { format, startOfDay } from 'date-fns';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 type TimeFilter = 'month' | 'past15' | 'next15';
 
