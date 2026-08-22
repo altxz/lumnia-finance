@@ -233,7 +233,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         return;
       }
 
-      if (wantInstallment && canConvertToInstallment && installmentMode === 'limited' && !isProjectedOccurrence) {
+      if (editAction === 'convert-to-installments') {
         // Convert single expense to installment/repeat plan
         const installmentValue = valueMode === 'total'
           ? Math.round((parsedValue / numInstallments) * 100) / 100
