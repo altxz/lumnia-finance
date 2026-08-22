@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 
-const COLORS = ['hsl(245, 45%, 51%)', 'hsl(142, 71%, 45%)', 'hsl(280, 60%, 55%)', 'hsl(40, 90%, 55%)', 'hsl(0, 84%, 60%)'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--chart-5))', 'hsl(var(--accent))', 'hsl(var(--destructive))'];
 
 interface Props {
   expenses: any[];
@@ -15,9 +15,9 @@ interface Props {
 const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 shadow-lg border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
-      <p className="text-xs font-semibold text-white">{payload[0].name}</p>
-      <p className="text-xs text-white/80">{formatCurrency(payload[0].value)}</p>
+    <div className="rounded-2xl px-3 py-2 shadow-card border border-border/60 bg-popover/95 backdrop-blur-xl">
+      <p className="text-xs font-semibold text-popover-foreground">{payload[0].name}</p>
+      <p className="text-xs text-muted-foreground">{formatCurrency(payload[0].value)}</p>
     </div>
   );
 };
@@ -43,7 +43,7 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Top 5 Categorias</CardTitle></CardHeader>
         <CardContent className="flex-1 min-h-0 pb-4 flex items-center justify-center text-sm text-muted-foreground">Sem dados</CardContent>
       </Card>
@@ -51,7 +51,7 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Top 5 Categorias</CardTitle>

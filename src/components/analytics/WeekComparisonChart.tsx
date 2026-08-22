@@ -45,7 +45,7 @@ export function WeekComparisonChart({ expenses }: Props) {
   }, [expenses]);
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Semana Atual vs Anterior</CardTitle>
@@ -60,8 +60,8 @@ export function WeekComparisonChart({ expenses }: Props) {
             <YAxis tickFormatter={v => `R$${v}`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={45} />
             <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="atual" name="Esta semana" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="anterior" name="Semana passada" fill="hsl(var(--muted-foreground))" opacity={0.5} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="atual" name="Esta semana" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="anterior" name="Semana passada" fill="hsl(var(--muted-foreground))" opacity={0.5} radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

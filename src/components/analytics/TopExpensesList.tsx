@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelL
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(142, 71%, 45%)', 'hsl(var(--accent))', 'hsl(280, 60%, 55%)'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--success))', 'hsl(var(--accent))', 'hsl(var(--chart-5))'];
 
 export function TopExpensesList({ expenses }: { expenses: any[] }) {
   const data = useMemo(() => {
@@ -22,7 +22,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Maiores Compras</CardTitle></CardHeader>
         <CardContent className="flex-1 min-h-0 pb-4 flex items-center justify-center text-sm text-muted-foreground">Sem dados</CardContent>
       </Card>
@@ -30,7 +30,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Maiores Compras</CardTitle>
@@ -68,14 +68,14 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 return (
-                  <div className="rounded-xl border-0 p-2.5 shadow-lg" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}>
+                  <div className="rounded-xl border-0 p-2.5 shadow-float" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}>
                     <p className="text-xs font-medium">{payload[0].payload.fullName}</p>
                     <p className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{formatCurrency(payload[0].value as number)}</p>
                   </div>
                 );
               }}
             />
-            <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20}>
+            <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
               {data.map((_entry, index) => (
                 <Cell key={index} fill={`url(#topExpGrad${index % COLORS.length})`} />
               ))}

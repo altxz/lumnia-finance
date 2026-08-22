@@ -173,7 +173,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
             onClick={() => setType('income')}
             className={`flex items-center justify-center gap-2 py-4 text-sm font-bold transition-colors ${
               !isExpense
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-success text-success-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
@@ -222,11 +222,11 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
               {/* Payment method */}
               <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
                 <button type="button" onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInstallments('1'); }}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'debit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'debit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
                   💳 Débito
                 </button>
                 <button type="button" onClick={() => setPaymentMethod('credit')}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'credit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'credit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
                   <CreditCard className="h-3.5 w-3.5 inline mr-1" />Crédito
                 </button>
               </div>
@@ -252,11 +252,11 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
                     <div className="space-y-1.5">
                       <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
                         <button type="button" onClick={() => setInstallmentValueType('total')}
-                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'total' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'total' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
                           Valor Total
                         </button>
                         <button type="button" onClick={() => setInstallmentValueType('per_installment')}
-                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}>
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
                           Valor da Parcela
                         </button>
                       </div>
@@ -279,7 +279,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
             className={`w-full h-12 rounded-xl text-base font-bold ${
               isExpense
                 ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-success text-success-foreground hover:bg-success/90'
             }`}
           >
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Salvar'}

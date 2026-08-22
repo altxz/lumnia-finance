@@ -57,7 +57,7 @@ export function EndOfMonthForecast(_props: EndOfMonthForecastProps = {}) {
   const todayPoint = todayDay ? chartData.find(p => p.day === todayDay) : undefined;
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">

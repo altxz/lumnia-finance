@@ -50,7 +50,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
 
   if (rows.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold">Orçado vs Realizado</CardTitle>
         </CardHeader>
@@ -81,7 +81,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
   // Celular: lista com barras de progresso (sem espaço vazio, valores sempre legíveis).
   if (isMobile) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         {header}
         <CardContent className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2.5">
           {rows.map(r => {
@@ -113,7 +113,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       {header}
       <CardContent className="flex-1 min-h-0 pb-4 overflow-y-auto">
 
@@ -145,7 +145,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
                   const row = payload[0].payload as typeof rows[number];
                   const diff = row.planejado - row.realizado;
                   return (
-                    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md space-y-1">
+                    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-card space-y-1">
                       <p className="font-semibold text-popover-foreground">{label}</p>
                       <p className="text-muted-foreground">Planejado: {formatCurrency(row.planejado)}</p>
                       <p className="text-muted-foreground">Realizado: {formatCurrency(row.realizado)}</p>
@@ -156,8 +156,8 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
                   );
                 }}
               />
-              <Bar dataKey="planejado" name="Planejado" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[0, 4, 4, 0]} barSize={10} />
-              <Bar dataKey="realizado" name="Realizado" radius={[0, 4, 4, 0]} barSize={10}>
+              <Bar dataKey="planejado" name="Planejado" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[0, 8, 8, 0]} barSize={10} />
+              <Bar dataKey="realizado" name="Realizado" radius={[0, 8, 8, 0]} barSize={10}>
                 {rows.map((r, i) => (
                   <Cell key={i} fill={r.realizado > r.planejado ? 'hsl(var(--destructive))' : 'hsl(var(--chart-2))'} />
                 ))}

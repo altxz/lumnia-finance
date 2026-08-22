@@ -572,7 +572,7 @@ export default function WalletPage() {
                 </div>
 
                 {/* Total Net Worth */}
-                <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
+                <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
                   <CardContent className="p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
                     <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
                       <Wallet className="h-5 w-5 sm:h-7 sm:w-7" />
@@ -626,7 +626,7 @@ export default function WalletPage() {
                             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                             <YAxis tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
                             <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
-                            <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                               {byType.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                             </Bar>
                           </BarChart>
@@ -669,7 +669,7 @@ export default function WalletPage() {
                             const projectedVal = getWalletProjectedValue(w);
                             const isForeign = w.currency !== 'BRL';
                             return (
-                              <Card key={w.id} className="rounded-2xl hover:shadow-md transition-shadow">
+                              <Card key={w.id} className="rounded-2xl hover:shadow-card transition-shadow">
                                 <CardContent className="p-5">
                                   <div className="flex items-start justify-between">
                                     <div className="min-w-0">
@@ -915,7 +915,7 @@ export default function WalletPage() {
                           const pct = card.limit_amount > 0 ? Math.min((used / card.limit_amount) * 100, 100) : 0;
                           const available = Math.max(card.limit_amount - used, 0);
                           return (
-                            <Card key={card.id} className="rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedCardId(card.id)}>
+                            <Card key={card.id} className="rounded-2xl overflow-hidden cursor-pointer hover:shadow-float transition-shadow" onClick={() => setSelectedCardId(card.id)}>
                               <div className={`h-2 ${pct > 80 ? 'bg-destructive' : pct > 50 ? 'bg-yellow-500' : 'bg-green-500'}`} />
                               <CardContent className="p-5 space-y-4">
                                 <div className="flex items-start justify-between">

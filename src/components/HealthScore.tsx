@@ -12,9 +12,9 @@ interface HealthScoreProps {
 }
 
 function getScoreColor(score: number) {
-  if (score < 40) return 'hsl(0, 72%, 51%)';
-  if (score < 70) return 'hsl(45, 93%, 47%)';
-  return 'hsl(142, 71%, 45%)';
+  if (score < 40) return 'hsl(var(--destructive))';
+  if (score < 70) return 'hsl(var(--accent))';
+  return 'hsl(var(--success))';
 }
 
 function getMessage(score: number) {

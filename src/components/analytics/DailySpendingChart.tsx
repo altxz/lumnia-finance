@@ -9,10 +9,10 @@ import { InfoPopover } from '@/components/ui/info-popover';
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 shadow-lg border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
-      <p className="text-xs text-white/70 mb-1">Dia {label}</p>
+    <div className="rounded-2xl px-3 py-2 shadow-card border border-border/60 bg-popover/95 backdrop-blur-xl">
+      <p className="text-xs text-muted-foreground mb-1">Dia {label}</p>
       {payload.map((p: any, i: number) => (
-        <p key={i} className="text-xs font-semibold" style={{ color: p.color || '#fff' }}>
+        <p key={i} className="text-xs font-semibold" style={{ color: p.color || 'hsl(var(--popover-foreground))' }}>
           {p.name}: {formatCurrency(p.value)}
         </p>
       ))}
@@ -50,7 +50,7 @@ export function DailySpendingChart({ expenses }: Props) {
   }, [expenses, daysInMonth, selectedMonth, selectedYear]);
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Média Diária de Gastos</CardTitle>
@@ -62,8 +62,8 @@ export function DailySpendingChart({ expenses }: Props) {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="gradDailySpend" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(210, 80%, 55%)" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="hsl(210, 80%, 55%)" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="hsl(var(--chart-6))" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="hsl(var(--chart-6))" stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="gradDailyAvg" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
@@ -74,7 +74,7 @@ export function DailySpendingChart({ expenses }: Props) {
             <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} interval={4} />
             <YAxis tickFormatter={v => `R$${v}`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} />
             <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey="gasto" name="Gasto" stroke="hsl(210, 80%, 55%)" strokeWidth={1.5} fill="url(#gradDailySpend)" dot={false} />
+            <Area type="monotone" dataKey="gasto" name="Gasto" stroke="hsl(var(--chart-6))" strokeWidth={1.5} fill="url(#gradDailySpend)" dot={false} />
             <Area type="monotone" dataKey="media" name="Média" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#gradDailyAvg)" dot={false} strokeDasharray="4 2" />
           </AreaChart>
         </ResponsiveContainer>

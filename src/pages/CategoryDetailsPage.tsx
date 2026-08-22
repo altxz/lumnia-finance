@@ -313,7 +313,7 @@ export default function CategoryDetailsPage() {
             ) : (
               <>
                 {/* Hero KPI banner */}
-                <Card className="rounded-2xl border-0 shadow-md overflow-hidden">
+                <Card className="rounded-2xl border-0 shadow-card overflow-hidden">
                   <CardContent
                     className="p-4 sm:p-6 lg:p-8 relative"
                     style={{ background: `linear-gradient(135deg, ${accent}15, ${accent}05)` }}
@@ -373,7 +373,7 @@ export default function CategoryDetailsPage() {
 
                 {/* Indicadores secundários */}
                 <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                  <Card className="rounded-2xl border-0 shadow-sm">
+                  <Card className="rounded-2xl border-0 shadow-soft">
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                         <TrendingUp className="h-4 w-4" />
@@ -384,7 +384,7 @@ export default function CategoryDetailsPage() {
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="rounded-2xl border-0 shadow-sm">
+                  <Card className="rounded-2xl border-0 shadow-soft">
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                         <TrendingDown className="h-4 w-4" />
@@ -395,7 +395,7 @@ export default function CategoryDetailsPage() {
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="rounded-2xl border-0 shadow-sm">
+                  <Card className="rounded-2xl border-0 shadow-soft">
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         <CalendarIcon className="h-4 w-4" />
@@ -411,7 +411,7 @@ export default function CategoryDetailsPage() {
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="rounded-2xl border-0 shadow-sm">
+                  <Card className="rounded-2xl border-0 shadow-soft">
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-accent/20 text-accent-foreground flex items-center justify-center shrink-0">
                         <ArrowDownUp className="h-4 w-4" />
@@ -430,7 +430,7 @@ export default function CategoryDetailsPage() {
                 {/* Charts row */}
                 <div className="grid gap-4 lg:grid-cols-2">
                   {/* Trend last 6 months */}
-                  <Card className="rounded-2xl border-0 shadow-md">
+                  <Card className="rounded-2xl border-0 shadow-card">
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between mb-3">
                         <h2 className="text-sm font-semibold">Evolução · últimos 6 meses</h2>
@@ -454,7 +454,7 @@ export default function CategoryDetailsPage() {
                   </Card>
 
                   {/* Daily distribution */}
-                  <Card className="rounded-2xl border-0 shadow-md">
+                  <Card className="rounded-2xl border-0 shadow-card">
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between mb-3">
                         <h2 className="text-sm font-semibold">Gastos por dia do mês</h2>
@@ -471,7 +471,7 @@ export default function CategoryDetailsPage() {
                               formatter={(v: number) => [formatCurrency(v), 'Gasto']}
                               labelFormatter={(l) => `Dia ${l}`}
                             />
-                            <Bar dataKey="total" fill={accent} radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="total" fill={accent} radius={[8, 8, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -481,7 +481,7 @@ export default function CategoryDetailsPage() {
 
                 {/* Breakdown by subcategory */}
                 {subCategories.length > 0 && breakdown.length > 0 && (
-                  <Card className="rounded-2xl border-0 shadow-md">
+                  <Card className="rounded-2xl border-0 shadow-card">
                     <CardContent className="p-5 space-y-3">
                       <div className="flex items-center justify-between">
                         <h2 className="text-sm font-semibold">Distribuição por subcategoria</h2>
@@ -521,7 +521,7 @@ export default function CategoryDetailsPage() {
 
                 {/* Top 5 transactions */}
                 {topTransactions.length > 0 && (
-                  <Card className="rounded-2xl border-0 shadow-md">
+                  <Card className="rounded-2xl border-0 shadow-card">
                     <CardContent className="p-5 space-y-3">
                       <div className="flex items-center gap-2">
                         <Crown className="h-4 w-4 text-amber-500" />
@@ -552,7 +552,7 @@ export default function CategoryDetailsPage() {
                 )}
 
                 {/* Transactions list */}
-                <Card className="rounded-2xl border-0 shadow-md">
+                <Card className="rounded-2xl border-0 shadow-card">
                   <CardContent className="p-0">
                     <div className="px-5 py-4 border-b flex items-center justify-between">
                       <h2 className="text-sm font-semibold">Lançamentos do período</h2>

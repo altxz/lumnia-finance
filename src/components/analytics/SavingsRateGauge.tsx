@@ -19,10 +19,10 @@ export function SavingsRateGauge({ totalIncome, totalExpense }: Props) {
   const offset = circumference - (rate / 100) * circumference;
 
   const ratingLabel = rate >= 30 ? 'Excelente' : rate >= 20 ? 'Bom' : rate >= 10 ? 'Atenção' : 'Crítico';
-  const ratingColor = rate >= 30 ? 'hsl(142, 71%, 45%)' : rate >= 20 ? 'hsl(142, 50%, 55%)' : rate >= 10 ? 'hsl(45, 93%, 47%)' : 'hsl(0, 84%, 60%)';
+  const ratingColor = rate >= 30 ? 'hsl(var(--success))' : rate >= 20 ? 'hsl(var(--success))' : rate >= 10 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))';
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-0 px-4 pt-3 sm:px-6 sm:pt-6">
         <div className="flex items-center gap-1.5">
           <CardTitle className="text-[13px] sm:text-sm font-semibold whitespace-nowrap">Taxa de Poupança</CardTitle>

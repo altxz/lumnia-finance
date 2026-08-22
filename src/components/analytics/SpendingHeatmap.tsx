@@ -82,7 +82,7 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
   const firstDayWeekday = new Date(selectedYear, selectedMonth, 1).getDay();
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
                 type="button"
                 onClick={() => setView(key)}
                 className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                  view === key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+                  view === key ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'
                 }`}
               >
                 {label}

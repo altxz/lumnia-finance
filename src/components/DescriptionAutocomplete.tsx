@@ -54,7 +54,7 @@ export function DescriptionAutocomplete({
       />
 
       {showList && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-popover shadow-float overflow-hidden">
           <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             Lançamentos parecidos
           </p>

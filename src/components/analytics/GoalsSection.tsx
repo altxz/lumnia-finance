@@ -26,7 +26,7 @@ export function GoalsSection({ avgMonthly, totalCurrentPeriod }: Props) {
 
   return (
     <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -58,7 +58,7 @@ export function GoalsSection({ avgMonthly, totalCurrentPeriod }: Props) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">

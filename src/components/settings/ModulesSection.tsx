@@ -33,7 +33,7 @@ export function ModulesSection() {
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardContent className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
@@ -42,7 +42,7 @@ export function ModulesSection() {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md">
+    <Card className="rounded-2xl border-0 shadow-card">
       <CardHeader>
         <CardTitle className="text-lg font-bold">Módulos e Recursos</CardTitle>
         <p className="text-sm text-muted-foreground">Ative ou desative funcionalidades para personalizar a sua experiência.</p>

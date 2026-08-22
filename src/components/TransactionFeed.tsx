@@ -985,7 +985,7 @@ export function TransactionFeed({
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel className="rounded-xl" onClick={() => { setPayingExpense(null); setPayApplyScope(null); }}>Cancelar</AlertDialogCancel>
             <Button
-              className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+              className="rounded-xl bg-success text-success-foreground hover:bg-success/90"
               disabled={
                 (payValueChanged && !!payingExpense?.installment_group_id && !payingExpense?.is_recurring && !payApplyScope) ||
                 (!!payingExpense?.is_recurring && (payValueChanged || payDateMode !== 'original') && !payApplyScope) ||

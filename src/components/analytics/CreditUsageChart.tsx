@@ -25,7 +25,7 @@ export function CreditUsageChart({ cards, unpaidExpenses }: Props) {
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Uso de Cartão de Crédito</CardTitle></CardHeader>
         <CardContent className="flex-1 min-h-0 pb-4 flex items-center justify-center text-sm text-muted-foreground">Nenhum cartão</CardContent>
       </Card>
@@ -33,7 +33,7 @@ export function CreditUsageChart({ cards, unpaidExpenses }: Props) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Uso de Cartão de Crédito</CardTitle>

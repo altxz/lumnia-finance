@@ -41,7 +41,7 @@ function TrendBadge({ current, previous, invertColor }: { current: number; previ
 
 function SummaryCard({ children, className, onClick }: { children: ReactNode; className: string; onClick?: () => void }) {
   return (
-    <Card className={`rounded-2xl border-0 shadow-md overflow-hidden ${className}`} onClick={onClick}>
+    <Card className={`rounded-2xl border-0 shadow-card overflow-hidden ${className}`} onClick={onClick}>
       <CardContent className="p-3 sm:p-4 lg:p-5">
         {children}
       </CardContent>

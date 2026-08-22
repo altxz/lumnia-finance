@@ -174,25 +174,25 @@ export default function HistoryPage() {
               {/* ════════ TAB: Assinaturas Fixas ════════ */}
               <TabsContent value="subscriptions" className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <Card className="rounded-2xl border-0 shadow-md bg-destructive text-destructive-foreground">
+                  <Card className="rounded-2xl border-0 shadow-card bg-destructive text-destructive-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center"><ArrowDownCircle className="h-5 w-5" /></div>
                       <div><p className="text-xs font-medium opacity-80">Saídas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyExpense)}</p></div>
                     </CardContent>
                   </Card>
-                  <Card className="rounded-2xl border-0 shadow-md bg-green-600 text-white">
+                  <Card className="rounded-2xl border-0 shadow-card bg-success text-success-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center"><ArrowUpCircle className="h-5 w-5" /></div>
                       <div><p className="text-xs font-medium opacity-80">Entradas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyIncome)}</p></div>
                     </CardContent>
                   </Card>
-                  <Card className="rounded-2xl border-0 shadow-md bg-pink text-pink-foreground">
+                  <Card className="rounded-2xl border-0 shadow-card bg-pink text-pink-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center"><CalendarClock className="h-5 w-5" /></div>
                       <div><p className="text-xs font-medium opacity-80">Custo anual (saídas)</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualExpense)}</p></div>
                     </CardContent>
                   </Card>
-                  <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
+                  <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><Wallet className="h-5 w-5" /></div>
                       <div><p className="text-xs font-medium opacity-80">Receita anual</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualIncome)}</p></div>
@@ -217,7 +217,7 @@ export default function HistoryPage() {
                       const annualValue = item.frequency === 'annual' ? item.value : item.value * 12;
                       const monthlyValue = item.frequency === 'annual' ? item.value / 12 : item.value;
                       return (
-                        <Card key={item.id} className="rounded-2xl hover:shadow-md transition-shadow">
+                        <Card key={item.id} className="rounded-2xl hover:shadow-card transition-shadow">
                           <CardContent className="p-5">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-center gap-3 min-w-0">
@@ -251,7 +251,7 @@ export default function HistoryPage() {
             </Tabs>
 
             {/* Saldo do mês anterior */}
-            <Card className="rounded-2xl border-0 shadow-md p-4 sm:p-5">
+            <Card className="rounded-2xl border-0 shadow-card p-4 sm:p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">

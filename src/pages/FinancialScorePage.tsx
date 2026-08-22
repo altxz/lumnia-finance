@@ -397,8 +397,8 @@ export default function FinancialScorePage() {
                             return labels[v] || v;
                           }} />
                           <Area type="monotone" dataKey="score" stroke="hsl(var(--primary))" fill="url(#gradScore)" strokeWidth={2.5} />
-                          <Area type="monotone" dataKey="savings" stroke="hsl(142, 71%, 45%)" fill="none" strokeWidth={1} strokeDasharray="4 4" />
-                          <Area type="monotone" dataKey="budget" stroke="hsl(45, 93%, 47%)" fill="none" strokeWidth={1} strokeDasharray="4 4" />
+                          <Area type="monotone" dataKey="savings" stroke="hsl(var(--success))" fill="none" strokeWidth={1} strokeDasharray="4 4" />
+                          <Area type="monotone" dataKey="budget" stroke="hsl(var(--accent))" fill="none" strokeWidth={1} strokeDasharray="4 4" />
                         </AreaChart>
                       </ResponsiveContainer>
                     </CardContent>

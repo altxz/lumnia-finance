@@ -170,7 +170,7 @@ export function CategoriesSection() {
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardContent className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
@@ -180,7 +180,7 @@ export function CategoriesSection() {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <Tag className="h-5 w-5 text-primary" />
@@ -315,7 +315,7 @@ export function CategoriesSection() {
       {/* Big Create Button */}
       <Button
         onClick={openCreate}
-        className="w-full h-14 rounded-2xl gap-3 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 shadow-md"
+        className="w-full h-14 rounded-2xl gap-3 text-base font-semibold bg-accent text-accent-foreground hover:bg-accent/90 shadow-card"
       >
         <PlusCircle className="h-6 w-6" />
         Criar Nova Categoria
@@ -386,7 +386,7 @@ export function CategoriesSection() {
                     key={icon}
                     type="button"
                     onClick={() => setForm(f => ({ ...f, icon }))}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${form.icon === icon ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${form.icon === icon ? 'gradient-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}
                   >
                     <LucideIcon name={icon} className="h-4 w-4" />
                   </button>

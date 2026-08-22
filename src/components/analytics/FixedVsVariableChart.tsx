@@ -35,7 +35,7 @@ export function FixedVsVariableChart({ expenses }: Props) {
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Fixos vs Variáveis</CardTitle></CardHeader>
         <CardContent className="flex-1 min-h-0 pb-4 flex items-center justify-center text-sm text-muted-foreground">Sem dados</CardContent>
       </Card>
@@ -55,7 +55,7 @@ export function FixedVsVariableChart({ expenses }: Props) {
   if (isMobile) {
     const fixedPct = total > 0 ? (data[0].value / total) * 100 : 0;
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         {header}
         <CardContent className="flex-1 min-h-0 flex flex-col justify-center gap-2.5 px-4 pb-4 pt-0">
           <div>
@@ -81,7 +81,7 @@ export function FixedVsVariableChart({ expenses }: Props) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       {header}
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">
