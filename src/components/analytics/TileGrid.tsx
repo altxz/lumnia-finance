@@ -16,11 +16,18 @@ const SIZE_CLASSES: Record<TileSize, string> = {
 /** Só afeta o celular; a partir de sm os valores de SIZE_CLASSES voltam a valer. */
 const MOBILE_CLASSES: Record<TileMobile, string> = {
   // 2 por linha, altura compacta (cartões de leitura rápida)
-  half: 'col-span-1 min-h-[150px] sm:min-h-0',
+  half: 'col-span-1 min-h-[160px]',
   // largura total no celular, altura enxuta
-  full: 'col-span-2 min-h-[180px] sm:min-h-0',
+  full: 'col-span-2 min-h-[200px]',
   // largura total com mais altura útil para o gráfico
-  tall: 'col-span-2 min-h-[380px] sm:min-h-0',
+  tall: 'col-span-2 min-h-[400px]',
+};
+
+/** Reafirma, a partir de sm, o número de colunas do tamanho de desktop. */
+const SM_SPAN: Record<TileSize, string> = {
+  small: 'sm:col-span-1',
+  medium: 'sm:col-span-2',
+  wide: 'sm:col-span-2 xl:col-span-4',
 };
 
 export function TileGrid({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -47,7 +54,7 @@ export function Tile({
       className={cn(
         'flex flex-col min-w-0',
         SIZE_CLASSES[size],
-        mobile && MOBILE_CLASSES[mobile],
+        mobile && [MOBILE_CLASSES[mobile], SM_SPAN[size]],
         className,
       )}
     >
@@ -55,4 +62,5 @@ export function Tile({
     </div>
   );
 }
+
 
