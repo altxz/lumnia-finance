@@ -6,14 +6,17 @@ import { VitePWA } from "vite-plugin-pwa";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const buildId =
+    mode === "development" ? "dev" : new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
+
+  return {
   define: {
     // Identificador único desta build — usado para versionar o cache de dados
     // no localStorage e para mostrar a versão nas Configurações.
-    __BUILD_ID__: JSON.stringify(
-      mode === "development" ? "dev" : new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)
-    ),
+    __BUILD_ID__: JSON.stringify(buildId),
   },
+
 
   server: {
     host: "::",
