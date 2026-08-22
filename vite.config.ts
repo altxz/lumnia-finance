@@ -50,7 +50,20 @@ export default defineConfig(({ mode }) => {
     react(),
     mcpPlugin({ functionName: "lumnia-mcp" }),
     mode === "development" && componentTagger(),
+    {
+      // Carimbo de versão publicado com a build, para o app detetar deploys novos.
+      name: "lumnia-version-stamp",
+      apply: "build" as const,
+      generateBundle() {
+        this.emitFile({
+          type: "asset",
+          fileName: "version.json",
+          source: JSON.stringify({ buildId }),
+        });
+      },
+    },
     VitePWA({
+
       registerType: "autoUpdate",
       // O registo é feito por src/lib/registerServiceWorker.ts (guardado para
       // dev/preview). O plugin não deve injetar o seu próprio script.
