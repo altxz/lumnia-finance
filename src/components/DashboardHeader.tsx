@@ -36,16 +36,16 @@ export function DashboardHeader() {
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-4 lg:px-8">
+    <header className="sticky top-0 z-30 h-16 border-b border-border/50 bg-background/70 backdrop-blur-xl flex items-center justify-between px-4 lg:px-8">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="rounded-xl">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="rounded-full">
           <Menu className="h-5 w-5" />
         </Button>
-        <h2 className="text-lg font-bold hidden sm:block">Painel de Despesas</h2>
+        <h2 className="text-lg font-medium tracking-tight hidden sm:block">Painel de Despesas</h2>
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-3">
-          <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border-2 border-primary/20">
+          <Avatar className="h-9 w-9 border-2 border-card shadow-soft">
             <AvatarImage src={avatarUrl || undefined} alt={displayName} />
             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs sm:text-sm">
               {initials}
@@ -59,13 +59,13 @@ export function DashboardHeader() {
         {/* Theme Toggle */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-xl">
+            <Button variant="ghost" size="icon" className="rounded-full">
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Alternar tema</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-xl">
+          <DropdownMenuContent align="end" className="rounded-full">
             <DropdownMenuItem onClick={() => setTheme('light')} className="gap-2 cursor-pointer">
               <Sun className="h-4 w-4" /> Claro
             </DropdownMenuItem>
@@ -82,14 +82,15 @@ export function DashboardHeader() {
         <Button
           onClick={() => setAddModalOpen(true)}
           size="sm"
-          className="hidden md:inline-flex gap-2 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+          variant="gradient"
+          className="hidden md:inline-flex gap-2"
         >
           <Plus className="h-4 w-4" />
           Nova Transação
         </Button>
 
         <NotificationBell />
-        <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 rounded-xl">
+        <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 rounded-full">
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Sair</span>
         </Button>
