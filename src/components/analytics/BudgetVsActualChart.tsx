@@ -64,18 +64,57 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
   const pct = totalPlanned > 0 ? (totalActual / totalPlanned) * 100 : 0;
   const chartHeight = Math.max(rows.length * 42, 160);
 
+  const header = (
+    <CardHeader className="pb-2 px-4 pt-4 sm:px-6 sm:pt-6">
+      <div className="flex items-center gap-2">
+        <CardTitle className="text-sm sm:text-base font-semibold">Orçado vs Realizado</CardTitle>
+        <InfoPopover><p>Compara, por categoria, o valor planejado no orçamento do mês com o valor real já gasto.</p></InfoPopover>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {formatCurrency(totalActual)} de {formatCurrency(totalPlanned)} · {pct.toFixed(0)}% do orçamento
+      </p>
+    </CardHeader>
+  );
+
+  // Celular: lista com barras de progresso (sem espaço vazio, valores sempre legíveis).
+  if (isMobile) {
+    return (
+      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+        {header}
+        <CardContent className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-2.5">
+          {rows.map(r => {
+            const rowPct = r.planejado > 0 ? Math.min(100, (r.realizado / r.planejado) * 100) : 0;
+            const over = r.realizado > r.planejado;
+            return (
+              <div key={r.category} className="space-y-1">
+                <div className="flex items-baseline justify-between gap-2 text-[11px]">
+                  <span className="truncate font-medium">{r.category}</span>
+                  <span className={`shrink-0 tabular-nums ${over ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+                    {formatCurrency(r.realizado)} / {formatCurrency(r.planejado)}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <span
+                    className="block h-full rounded-full"
+                    style={{
+                      width: `${rowPct}%`,
+                      backgroundColor: over ? 'hsl(var(--destructive))' : 'hsl(var(--chart-2))',
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-base font-semibold">Orçado vs Realizado</CardTitle>
-          <InfoPopover><p>Compara, por categoria, o valor planejado no orçamento do mês com o valor real já gasto.</p></InfoPopover>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {formatCurrency(totalActual)} de {formatCurrency(totalPlanned)} · {pct.toFixed(0)}% do orçamento
-        </p>
-      </CardHeader>
+      {header}
       <CardContent className="flex-1 min-h-0 pb-4 overflow-y-auto">
+
         <div style={{ height: chartHeight }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 12, left: 0, bottom: 0 }} barGap={2}>
