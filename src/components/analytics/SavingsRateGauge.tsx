@@ -23,14 +23,15 @@ export function SavingsRateGauge({ totalIncome, totalExpense }: Props) {
 
   return (
     <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
-      <CardHeader className="pb-0">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-sm font-semibold">Taxa de Poupança</CardTitle>
+      <CardHeader className="pb-0 px-4 pt-3 sm:px-6 sm:pt-6">
+        <div className="flex items-center gap-1.5">
+          <CardTitle className="text-[13px] sm:text-sm font-semibold whitespace-nowrap">Taxa de Poupança</CardTitle>
           <InfoPopover><p>A porcentagem da sua renda que você não gastou e conseguiu guardar no mês.</p></InfoPopover>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 flex flex-col items-center justify-center pt-2 pb-4">
-        <svg viewBox="0 0 180 120" className="w-full max-w-[200px] h-auto">
+      <CardContent className="flex-1 min-h-0 flex flex-col items-center justify-center px-2 pt-1 pb-3 sm:px-6 sm:pt-2 sm:pb-4">
+        <svg viewBox="0 0 180 120" className="w-full max-w-[160px] sm:max-w-[200px] h-auto">
+
           <defs>
             <linearGradient id="savingsArcGrad" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor={ratingColor} stopOpacity={0.6} />

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
+import { ptBR } from 'date-fns/locale';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { formatCurrency, getCategoryInfo, getCategoryLabel } from '@/lib/constants';
@@ -62,6 +63,7 @@ export function CalendarView({ expenses, wallets }: CalendarViewProps) {
           selected={selectedDay}
           onSelect={handleDayClick}
           month={calendarMonth}
+          locale={ptBR}
           className="p-0 pointer-events-auto w-full flex-1"
           classNames={{
             months: "flex flex-col w-full",

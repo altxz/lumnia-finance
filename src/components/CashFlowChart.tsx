@@ -10,6 +10,8 @@ import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceM
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { format, startOfDay } from 'date-fns';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 type TimeFilter = 'month' | 'past15' | 'next15';
 
@@ -123,7 +125,9 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
   const balanceChange = endBalance - baseBalance;
   const todayLabel = format(today, 'dd/MM');
 
-  const tickInterval = Math.max(1, Math.floor(chartData.length / 8));
+  const isMobile = useIsMobile();
+  const tickInterval = Math.max(1, Math.floor(chartData.length / (isMobile ? 5 : 8)));
+
 
   if (loading) {
     return (
@@ -179,9 +183,9 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
           <span>Saldo previsto: <strong className={endBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}>{formatCurrency(endBalance)}</strong></span>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 pb-4">
+      <CardContent className="flex-1 min-h-0 pb-4 px-2 sm:px-6">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 5, right: isMobile ? 0 : 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
             <XAxis
               dataKey="label"
@@ -192,23 +196,24 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
             />
             <YAxis
               yAxisId="bars"
-              tickFormatter={(v) => (Math.abs(v) >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v.toFixed(0)}`)}
+              tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v.toFixed(0)}`)}
               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
-              width={40}
+              width={isMobile ? 28 : 40}
               orientation="left"
             />
             <YAxis
               yAxisId="line"
-              tickFormatter={(v) => (Math.abs(v) >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v.toFixed(0)}`)}
+              tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v.toFixed(0)}`)}
               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
-              width={40}
+              width={isMobile ? 28 : 40}
               orientation="right"
               domain={['auto', 'auto']}
             />
+
             <Tooltip
               cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
               content={({ active, payload, label }) => {
