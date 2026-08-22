@@ -181,9 +181,22 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         invoice_month: creditCardId ? (invoiceMonth || null) : null,
       };
 
+      // Motor único de decisão: garante que o molde de uma recorrência nunca é
+      // reescrito quando a ocorrência editada é apenas uma projeção futura.
+      const editAction = isExistingInstallment
+        ? 'installment'
+        : resolveRecurringEditAction({
+            isRecurringRow: !!expense.is_recurring,
+            isProjectedOccurrence,
+            wantRecurring: wantInstallment,
+            installmentMode,
+            canConvertToInstallment,
+            scope,
+          });
+
       // Editing a recurring occurrence and choosing "only this":
       // create a real one-off entry for this specific date without changing the recurring template.
-      const isRecurringSingleEdit = scope === 'single' && expense.is_recurring && !isExistingInstallment;
+      const isRecurringSingleEdit = editAction === 'single-occurrence';
       if (isRecurringSingleEdit) {
         const oneOffRow = {
           user_id: user!.id,
