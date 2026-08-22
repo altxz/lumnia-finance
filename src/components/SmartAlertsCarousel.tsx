@@ -81,7 +81,7 @@ export function SmartAlertsCarousel({ alerts }: Props) {
             return (
               <div
                 key={alert.id}
-                className={`flex-[0_0_auto] w-[85%] sm:w-[45%] lg:w-[32%] min-w-0 rounded-2xl border ${style.bg} ${style.border} p-3 sm:p-4 transition-shadow hover:shadow-md`}
+                className={`flex-[0_0_auto] w-[85%] sm:w-[45%] lg:w-[32%] min-w-0 rounded-2xl border ${style.bg} ${style.border} p-3 sm:p-4 transition-shadow hover:shadow-card`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${style.iconBg}`}>
@@ -102,7 +102,7 @@ export function SmartAlertsCarousel({ alerts }: Props) {
       {canScrollPrev && (
         <button
           onClick={() => emblaApi?.scrollPrev()}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-background border shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-background border shadow-card opacity-0 group-hover:opacity-100 transition-opacity z-10"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -110,7 +110,7 @@ export function SmartAlertsCarousel({ alerts }: Props) {
       {canScrollNext && (
         <button
           onClick={() => emblaApi?.scrollNext()}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-background border shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-background border shadow-card opacity-0 group-hover:opacity-100 transition-opacity z-10"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

@@ -174,7 +174,7 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
 
   if (invoices.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardContent className="flex-1 flex items-center justify-center p-6 text-sm text-muted-foreground">
           Nenhum cartão de crédito cadastrado
         </CardContent>
@@ -194,7 +194,7 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
 
   return (
     <>
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col overflow-hidden">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col overflow-hidden">
         {/* Header with multi-card tabs */}
         <div className="bg-primary px-4 py-3 flex items-center gap-3">
           <CreditCard className="h-4 w-4 text-primary-foreground shrink-0" />
@@ -210,7 +210,7 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
                   className={cn(
                     "px-3 py-1 rounded-full text-xs font-semibold transition-all",
                     idx === safeIdx
-                      ? "bg-primary-foreground text-primary shadow-sm"
+                      ? "bg-primary-foreground text-primary shadow-soft"
                       : "bg-primary-foreground/20 text-primary-foreground/80 hover:bg-primary-foreground/30"
                   )}
                 >
@@ -228,7 +228,7 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
             {/* LEFT: Virtual Card */}
             <div className="lg:w-[280px] shrink-0">
               <div className={cn(
-                "relative w-full aspect-[1.586/1] rounded-2xl bg-gradient-to-br shadow-lg overflow-hidden",
+                "relative w-full aspect-[1.586/1] rounded-2xl bg-gradient-to-br shadow-float overflow-hidden",
                 gradient
               )}>
                 {/* Card pattern overlay */}

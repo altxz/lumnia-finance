@@ -40,7 +40,7 @@ export function InsightsSection({ avgMonthly, categoryStats, weekdayAnalysis, pr
 
   return (
     <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -59,7 +59,7 @@ export function InsightsSection({ avgMonthly, categoryStats, weekdayAnalysis, pr
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -78,7 +78,7 @@ export function InsightsSection({ avgMonthly, categoryStats, weekdayAnalysis, pr
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">

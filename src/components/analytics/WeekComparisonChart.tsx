@@ -45,7 +45,7 @@ export function WeekComparisonChart({ expenses }: Props) {
   }, [expenses]);
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Semana Atual vs Anterior</CardTitle>

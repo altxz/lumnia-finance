@@ -17,7 +17,7 @@ const AREA_COLORS = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 shadow-lg border border-white/10" style={{ background: 'rgba(30,30,40,0.92)', backdropFilter: 'blur(8px)' }}>
+    <div className="rounded-lg px-3 py-2 shadow-float border border-white/10" style={{ background: 'rgba(30,30,40,0.92)', backdropFilter: 'blur(8px)' }}>
       <p className="text-xs font-medium text-white/70 mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} className="text-xs font-semibold" style={{ color: p.color || '#fff' }}>
@@ -50,7 +50,7 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
 
   return (
     <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Evolução Mensal + Projeção</CardTitle>
@@ -80,7 +80,7 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Evolução por Categoria</CardTitle>

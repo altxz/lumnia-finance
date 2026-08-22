@@ -562,7 +562,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                           type="button"
                           onClick={() => setInstallmentMode('fixed')}
                           className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                            installmentMode === 'fixed' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                            installmentMode === 'fixed' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                           }`}
                         >
                           <Repeat className="h-3.5 w-3.5" />
@@ -572,7 +572,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                           type="button"
                           onClick={() => setInstallmentMode('limited')}
                           className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                            installmentMode === 'limited' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                            installmentMode === 'limited' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                           }`}
                         >
                           <Hash className="h-3.5 w-3.5" />
@@ -615,7 +615,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                                 type="button"
                                 onClick={() => setValueMode('total')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  valueMode === 'total' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                  valueMode === 'total' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor Total
@@ -624,7 +624,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                                 type="button"
                                 onClick={() => setValueMode('per_installment')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  valueMode === 'per_installment' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                  valueMode === 'per_installment' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor da Parcela

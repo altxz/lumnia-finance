@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 shadow-lg border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
+    <div className="rounded-lg px-3 py-2 shadow-float border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
       <p className="text-xs text-white/70 mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} className="text-xs font-semibold" style={{ color: p.color || '#fff' }}>
@@ -45,7 +45,7 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
       { label: 'Despesas', value: totalExpense, color: 'hsl(var(--destructive))' },
     ];
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         {header}
         <CardContent className="flex-1 min-h-0 flex flex-col justify-center gap-3 px-4 pb-4 pt-0">
           {rows.map(r => (
@@ -71,7 +71,7 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       {header}
       <CardContent className="flex-1 min-h-0 pb-4">
         <ResponsiveContainer width="100%" height="100%">

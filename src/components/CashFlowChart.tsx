@@ -131,7 +131,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardContent className="h-[320px] flex items-center justify-center">
           <span className="text-muted-foreground text-sm">Carregando gráfico...</span>
         </CardContent>
@@ -140,7 +140,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
                 if (!active || !payload?.length) return null;
                 const point = payload[0]?.payload as DayData;
                 return (
-                  <div className="rounded-lg border bg-background p-2.5 text-xs shadow-lg">
+                  <div className="rounded-lg border bg-background p-2.5 text-xs shadow-float">
                     <p className="font-semibold mb-1.5">
                       {label} {point?.projected && <span className="text-muted-foreground">(projeção)</span>}
                     </p>

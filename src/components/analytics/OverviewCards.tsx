@@ -21,7 +21,7 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
       {/* Saldo Projetado (priority card) */}
-      <Card className={`rounded-2xl border-0 shadow-md ${isNegativeBalance ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>
+      <Card className={`rounded-2xl border-0 shadow-card ${isNegativeBalance ? 'bg-destructive text-destructive-foreground' : 'gradient-primary text-primary-foreground'}`}>
         <CardContent className="p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isNegativeBalance ? 'bg-destructive-foreground/20' : 'bg-primary-foreground/20'}`}>
@@ -41,7 +41,7 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md bg-ai text-ai-foreground">
+      <Card className="rounded-2xl border-0 shadow-card bg-ai text-ai-foreground">
         <CardContent className="p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-ai-foreground/20 flex items-center justify-center">
@@ -54,7 +54,7 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md bg-accent text-accent-foreground">
+      <Card className="rounded-2xl border-0 shadow-card bg-accent text-accent-foreground">
         <CardContent className="p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-accent-foreground/10 flex items-center justify-center">
@@ -69,7 +69,7 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md bg-pink text-pink-foreground">
+      <Card className="rounded-2xl border-0 shadow-card bg-pink text-pink-foreground">
         <CardContent className="p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center">

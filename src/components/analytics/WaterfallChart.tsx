@@ -109,7 +109,7 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
   }, [expenses, startingBalance]);
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-base font-semibold">Cascata do Mês</CardTitle>
@@ -146,7 +146,7 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
                 if (!active || !payload?.length) return null;
                 const item = payload[0]?.payload as WaterfallItem;
                 return (
-                  <div className="rounded-xl border-0 p-2.5 text-xs shadow-lg" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}>
+                  <div className="rounded-xl border-0 p-2.5 text-xs shadow-float" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}>
                     <p className="font-semibold mb-1">{item.name}</p>
                     <p style={{
                       color: item.type === 'income' ? 'hsl(var(--success))' :

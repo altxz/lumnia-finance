@@ -316,7 +316,7 @@ export default function InvestmentsPage() {
 
 function SummaryCard({ icon: Icon, label, value, highlight, positive }: { icon: typeof Wallet; label: string; value: number; highlight?: boolean; positive?: boolean }) {
   return (
-    <Card className={`rounded-2xl border-0 shadow-sm ${highlight ? 'bg-primary text-primary-foreground' : ''}`}>
+    <Card className={`rounded-2xl border-0 shadow-soft ${highlight ? 'gradient-primary text-primary-foreground' : ''}`}>
       <CardContent className="p-4 space-y-1">
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${highlight ? 'opacity-80' : 'text-muted-foreground'}`} />

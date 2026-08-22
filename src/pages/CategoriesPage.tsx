@@ -278,7 +278,7 @@ export default function CategoriesPage() {
 
             {/* Stats Cards */}
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-              <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
+              <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary-foreground/20 flex items-center justify-center shrink-0"><Tag className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
@@ -288,7 +288,7 @@ export default function CategoriesPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-2xl border-0 shadow-md">
+              <Card className="rounded-2xl border-0 shadow-card">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"><TrendingDown className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
@@ -298,7 +298,7 @@ export default function CategoriesPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-2xl border-0 shadow-md">
+              <Card className="rounded-2xl border-0 shadow-card">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"><TrendingUp className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
@@ -308,7 +308,7 @@ export default function CategoriesPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-2xl border-0 shadow-md">
+              <Card className="rounded-2xl border-0 shadow-card">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"><ArrowUpRight className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
@@ -323,7 +323,7 @@ export default function CategoriesPage() {
             {/* Top Rankings: Despesas e Receitas separados */}
             <div className="grid gap-4 lg:grid-cols-2">
               {expenseTopRanking.length > 0 && (
-                <Card className="rounded-2xl border-0 shadow-md">
+                <Card className="rounded-2xl border-0 shadow-card">
                   <CardContent className="p-4 sm:p-5 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="text-sm font-semibold flex items-center gap-2 min-w-0">
@@ -366,7 +366,7 @@ export default function CategoriesPage() {
               )}
 
               {incomeTopRanking.length > 0 && (
-                <Card className="rounded-2xl border-0 shadow-md">
+                <Card className="rounded-2xl border-0 shadow-card">
                   <CardContent className="p-4 sm:p-5 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="text-sm font-semibold flex items-center gap-2 min-w-0">
@@ -479,7 +479,7 @@ export default function CategoriesPage() {
                         {subs.length > 0 && (
                           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pl-4 border-l-2" style={{ borderColor: parent.color + '40' }}>
                             {subs.map(cat => (
-                              <Card key={cat.id} className="rounded-2xl border shadow-sm hover:shadow-md transition-shadow">
+                              <Card key={cat.id} className="rounded-2xl border shadow-soft hover:shadow-card transition-shadow">
                                 <CardContent className="p-4 space-y-2">
                                   <button
                                     type="button"
@@ -579,7 +579,7 @@ export default function CategoriesPage() {
                     key={icon}
                     type="button"
                     onClick={() => setForm(f => ({ ...f, icon }))}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${form.icon === icon ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${form.icon === icon ? 'gradient-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'}`}
                   >
                     <LucideIcon name={icon} className="h-4 w-4" />
                   </button>

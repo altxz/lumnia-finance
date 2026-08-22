@@ -46,7 +46,7 @@ export function SubcategoryTreemap({ expenses, categories }: Props) {
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+      <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Subcategorias</CardTitle></CardHeader>
         <CardContent className="flex-1 min-h-0 flex items-center justify-center text-sm text-muted-foreground pb-4">Sem dados</CardContent>
       </Card>
@@ -54,7 +54,7 @@ export function SubcategoryTreemap({ expenses, categories }: Props) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-md h-full flex flex-col">
+    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold">Subcategorias Detalhadas</CardTitle>

@@ -25,7 +25,7 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
   return (
     <div className="w-full space-y-3 px-1">
       {/* Saldo principal */}
-      <Card className="rounded-2xl border-0 shadow-md p-4 sm:p-5 flex flex-col items-center">
+      <Card className="rounded-2xl border-0 shadow-card p-4 sm:p-5 flex flex-col items-center">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs sm:text-sm font-medium text-muted-foreground">{label}</span>
           <button
@@ -44,7 +44,7 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
       {/* Métricas em cards individuais */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Receitas */}
-        <Card className="rounded-2xl border-0 shadow-md p-4 flex items-center gap-3">
+        <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
             <ArrowUpCircle className="h-5 w-5 text-emerald-500" />
           </div>
@@ -57,7 +57,7 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
         </Card>
 
         {/* Despesas */}
-        <Card className="rounded-2xl border-0 shadow-md p-4 flex items-center gap-3">
+        <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
             <ArrowDownCircle className="h-5 w-5 text-destructive" />
           </div>
@@ -70,7 +70,7 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
         </Card>
 
         {/* Balanço */}
-        <Card className="rounded-2xl border-0 shadow-md p-4 flex items-center gap-3">
+        <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
             balance >= 0 ? 'bg-emerald-500/10' : 'bg-destructive/10'
           }`}>

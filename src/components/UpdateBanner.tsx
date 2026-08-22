@@ -16,7 +16,7 @@ export function UpdateBanner() {
       className="fixed z-50 left-3 right-3 bottom-3 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-sm animate-in fade-in slide-in-from-bottom-2"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="rounded-2xl border border-border bg-popover/95 backdrop-blur shadow-lg p-4 flex flex-col gap-3">
+      <div className="rounded-2xl border border-border bg-popover/95 backdrop-blur shadow-float p-4 flex flex-col gap-3">
         <div className="flex items-start gap-2">
           <RefreshCw className="h-4 w-4 mt-0.5 text-primary shrink-0" />
           <div>

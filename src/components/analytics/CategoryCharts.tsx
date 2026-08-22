@@ -56,7 +56,7 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
 
   return (
     <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Distribuição por Categoria</CardTitle>
@@ -80,7 +80,7 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md">
+      <Card className="rounded-2xl border-0 shadow-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Gasto vs Orçamento</CardTitle>
@@ -105,7 +105,7 @@ export function CategoryCharts({ categoryStats, compare }: Props) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-md lg:col-span-2">
+      <Card className="rounded-2xl border-0 shadow-card lg:col-span-2">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold">Alertas por Categoria</CardTitle>

@@ -409,7 +409,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               onClick={() => setType('expense')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'expense'
-                  ? 'bg-destructive text-destructive-foreground shadow-sm'
+                  ? 'bg-destructive text-destructive-foreground shadow-soft'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -421,7 +421,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               onClick={() => setType('income')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'income'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-600 text-white shadow-soft'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -433,7 +433,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               onClick={() => setType('transfer')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'transfer'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  ? 'bg-primary text-primary-foreground shadow-soft'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -514,7 +514,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       type="button"
                       onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInvoiceMonth(''); }}
                       className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        paymentMethod === 'debit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                        paymentMethod === 'debit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       💳 Débito
@@ -523,7 +523,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       type="button"
                       onClick={() => { setPaymentMethod('credit'); setWalletId(''); }}
                       className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        paymentMethod === 'credit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                        paymentMethod === 'credit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       💳 Crédito
@@ -634,7 +634,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       type="button"
                       onClick={() => setRecurringMode('fixed')}
                       className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        recurringMode === 'fixed' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                        recurringMode === 'fixed' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Repeat className="h-3.5 w-3.5" />
@@ -644,7 +644,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       type="button"
                       onClick={() => setRecurringMode('limited')}
                       className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        recurringMode === 'limited' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                        recurringMode === 'limited' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Hash className="h-3.5 w-3.5" />
@@ -690,7 +690,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                                 type="button"
                                 onClick={() => setInstallmentValueType('total')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  installmentValueType === 'total' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                  installmentValueType === 'total' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor Total
@@ -699,7 +699,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                                 type="button"
                                 onClick={() => setInstallmentValueType('per_installment')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                  installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor da Parcela

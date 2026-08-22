@@ -168,7 +168,7 @@ export default function ProjectsPage() {
                   return (
                     <Card
                       key={project.id}
-                      className="rounded-2xl hover:shadow-md transition-shadow cursor-pointer"
+                      className="rounded-2xl hover:shadow-card transition-shadow cursor-pointer"
                       onClick={() => handleOpenProject(project)}
                     >
                       <CardContent className="p-5">

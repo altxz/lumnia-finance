@@ -13,7 +13,7 @@ export function BudgetSummaryCards({ totalIncome, totalAllocated, totalSpent }: 
 
   return (
     <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">
-      <Card className="rounded-2xl border-0 shadow-md bg-green-600 text-white">
+      <Card className="rounded-2xl border-0 shadow-card bg-success text-success-foreground">
         <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
             <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -24,7 +24,7 @@ export function BudgetSummaryCards({ totalIncome, totalAllocated, totalSpent }: 
           </div>
         </CardContent>
       </Card>
-      <Card className="rounded-2xl border-0 shadow-md bg-primary text-primary-foreground">
+      <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
         <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
             <PiggyBank className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -35,7 +35,7 @@ export function BudgetSummaryCards({ totalIncome, totalAllocated, totalSpent }: 
           </div>
         </CardContent>
       </Card>
-      <Card className={`rounded-2xl border-0 shadow-md ${remaining < 0 ? 'bg-destructive text-destructive-foreground' : 'bg-accent text-accent-foreground'}`}>
+      <Card className={`rounded-2xl border-0 shadow-card ${remaining < 0 ? 'bg-destructive text-destructive-foreground' : 'bg-accent text-accent-foreground'}`}>
         <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
           <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${remaining < 0 ? 'bg-destructive-foreground/20' : 'bg-accent-foreground/10'}`}>
             <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -46,7 +46,7 @@ export function BudgetSummaryCards({ totalIncome, totalAllocated, totalSpent }: 
           </div>
         </CardContent>
       </Card>
-      <Card className="rounded-2xl border-0 shadow-md bg-destructive text-destructive-foreground">
+      <Card className="rounded-2xl border-0 shadow-card bg-destructive text-destructive-foreground">
         <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center shrink-0">
             <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" />
