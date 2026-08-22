@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -50,10 +50,10 @@ export default defineConfig(({ mode }) => {
     react(),
     mcpPlugin({ functionName: "lumnia-mcp" }),
     mode === "development" && componentTagger(),
-    {
+    ({
       // Carimbo de versão publicado com a build, para o app detetar deploys novos.
       name: "lumnia-version-stamp",
-      apply: "build" as const,
+      apply: "build",
       generateBundle() {
         this.emitFile({
           type: "asset",
@@ -61,7 +61,7 @@ export default defineConfig(({ mode }) => {
           source: JSON.stringify({ buildId }),
         });
       },
-    },
+    } as Plugin),
     VitePWA({
 
       registerType: "autoUpdate",
