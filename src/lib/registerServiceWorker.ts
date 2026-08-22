@@ -91,10 +91,10 @@ export async function unregisterLegacyWorkers() {
   const regs = await getRegistrations();
   const legacy = regs.filter((r) => {
     const url = scriptUrlOf(r);
-    if (!url) return false;
-    if (url.endsWith(PUSH_SW_URL)) return false;
-    return LEGACY_SW_URLS.some((p) => url.endsWith(p)) || true;
+    // Tudo o que não seja o worker de push tem de sair (inclui LEGACY_SW_URLS).
+    return !!url && !url.endsWith(PUSH_SW_URL);
   });
+
   await Promise.allSettled(legacy.map((r) => r.unregister()));
   return legacy.length > 0;
 }
