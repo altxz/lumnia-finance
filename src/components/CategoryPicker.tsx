@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import type { LucideProps } from 'lucide-react';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
+import { findCategoryByName } from '@/lib/categoryMatch';
 
 interface Category {
   id: string;
@@ -20,6 +21,10 @@ interface CategoryPickerProps {
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
+  /** Desempata categorias com o mesmo nome (ex.: "Transferências"). */
+  type?: string | null;
+  /** Alternativa quando o valor principal não corresponde (ex.: category_ai). */
+  fallbackValue?: string | null;
 }
 
 function DynamicIcon({ name, ...props }: { name: string } & Omit<LucideProps, 'ref'>) {
@@ -35,7 +40,14 @@ function DynamicIcon({ name, ...props }: { name: string } & Omit<LucideProps, 'r
   );
 }
 
-export function CategoryPicker({ categories, value, onValueChange, placeholder = 'Selecione a categoria' }: CategoryPickerProps) {
+export function CategoryPicker({
+  categories,
+  value,
+  onValueChange,
+  placeholder = 'Selecione a categoria',
+  type,
+  fallbackValue,
+}: CategoryPickerProps) {
   const [open, setOpen] = useState(false);
 
   const grouped = useMemo(() => {
@@ -47,10 +59,14 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
     }));
   }, [categories]);
 
-  const selectedCategory = useMemo(() => {
-    if (!value) return null;
-    return categories.find(c => c.name.toLowerCase() === value);
-  }, [categories, value]);
+  // Correspondência tolerante (maiúsculas, acentos, espaços, nomes legados) e
+  // resolvida só quando a lista de categorias já carregou.
+  const selectedCategory = useMemo(
+    () => findCategoryByName(categories, value, type) ?? findCategoryByName(categories, fallbackValue, type),
+    [categories, value, type, fallbackValue],
+  );
+
+  const isSelected = (category: Category) => !!selectedCategory && selectedCategory.id === category.id;
 
   const handleSelect = (categoryName: string) => {
     onValueChange(categoryName.toLowerCase());
@@ -59,9 +75,9 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
 
   const defaultAccordion = useMemo(() => {
     if (!value) return undefined;
-    const parent = grouped.find(g => g.subs.some(s => s.name.toLowerCase() === value));
+    const parent = grouped.find(g => g.subs.some(s => selectedCategory && s.id === selectedCategory.id));
     return parent ? parent.id : undefined;
-  }, [value, grouped]);
+  }, [value, grouped, selectedCategory]);
 
   return (
     <div className="relative">
@@ -78,6 +94,8 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
             <DynamicIcon name={selectedCategory.icon} className="h-4 w-4 shrink-0" style={{ color: selectedCategory.color }} />
             <span className="truncate">{selectedCategory.name}</span>
           </span>
+        ) : value ? (
+          <span className="truncate" title={value}>{value}</span>
         ) : (
           <span className="text-muted-foreground">{placeholder}</span>
         )}
@@ -101,13 +119,13 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                     type="button"
                     className={cn(
                       'w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
-                      value === group.name.toLowerCase() && 'bg-secondary'
+                      isSelected(group) && 'bg-secondary'
                     )}
                     onClick={() => handleSelect(group.name)}
                   >
                     <DynamicIcon name={group.icon} className="h-4 w-4 shrink-0" style={{ color: group.color }} />
                     <span className="font-medium flex-1 text-left">{group.name}</span>
-                    {value === group.name.toLowerCase() && (
+                    {isSelected(group) && (
                       <Check className="h-4 w-4 text-primary shrink-0" />
                     )}
                   </button>
@@ -129,13 +147,13 @@ export function CategoryPicker({ categories, value, onValueChange, placeholder =
                         type="button"
                         className={cn(
                           'w-full flex items-center gap-2 pl-10 pr-3 py-3 min-h-[44px] text-sm hover:bg-secondary/60 transition-colors',
-                          value === sub.name.toLowerCase() && 'bg-secondary'
+                          isSelected(sub) && 'bg-secondary'
                         )}
                         onClick={() => handleSelect(sub.name)}
                       >
                         <DynamicIcon name={sub.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: sub.color }} />
                         <span className="flex-1 text-left">{sub.name}</span>
-                        {value === sub.name.toLowerCase() && (
+                        {isSelected(sub) && (
                           <Check className="h-4 w-4 text-primary shrink-0" />
                         )}
                       </button>

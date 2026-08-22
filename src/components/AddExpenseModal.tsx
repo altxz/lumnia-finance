@@ -599,6 +599,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                   categories={dbCategories}
                   value={finalCategory}
                   onValueChange={setFinalCategory}
+                  type={type}
+                  fallbackValue={categoryAi}
                   placeholder="Selecione a categoria"
                 />
               </div>

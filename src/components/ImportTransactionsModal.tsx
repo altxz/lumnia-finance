@@ -457,6 +457,7 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
               categories={dbCategories}
               value={t.category}
               onValueChange={(v) => updateCategory(i, v)}
+              type={t.type}
               placeholder="Categoria"
             />
 
@@ -551,6 +552,7 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
                     categories={dbCategories}
                     value={t.category}
                     onValueChange={(v) => updateCategory(i, v)}
+                    type={t.type}
                     placeholder="Categoria"
                   />
                 </TableCell>
