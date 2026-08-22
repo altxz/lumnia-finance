@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { showFriendlyError } from '@/lib/errorHandler';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Expense } from '@/components/ExpenseTable';
-import { buildFutureRecurringExceptionDates } from '@/lib/recurringProjection';
+import { buildFutureRecurringExceptionDates, resolveRecurringEditAction } from '@/lib/recurringProjection';
 
 interface EditExpenseModalProps {
   open: boolean;
