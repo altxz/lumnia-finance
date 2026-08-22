@@ -23,7 +23,7 @@ export function usePushNotifications() {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     setIsSupported(supported);
     // O service worker é registado uma única vez em src/lib/registerServiceWorker.ts
-    // (o /sw.js já inclui os handlers de push). Aqui apenas usamos o registo existente.
+    // (/push-sw.js, sem cache). Aqui apenas usamos o registo existente.
   }, []);
 
 
