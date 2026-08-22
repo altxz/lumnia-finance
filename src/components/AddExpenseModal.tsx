@@ -319,7 +319,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         return row;
       });
 
-      const { error } = await supabase.from('expenses').insert(rows);
+      const { error } = await supabase.from('expenses').insert(rows as never);
       if (error) {
         showFriendlyError(error, 'Erro ao salvar');
       } else {

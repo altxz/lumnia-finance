@@ -70,11 +70,18 @@ export default defineConfig(({ mode }) => ({
         globIgnores: ["**/sw-push.js", "**/push-handlers.js"],
         runtimeCaching: [
           {
+            // Rotas internas da Lovable (consentimento OAuth do conector MCP)
+            // nunca podem ser servidas de cache.
+            urlPattern: /\/\.lovable\//,
+            handler: 'NetworkOnly',
+          },
+          {
             // NUNCA fazer cache de chamadas à API (REST/Auth/Realtime/Functions)
             // Isso evita ver dados desatualizados após pagar fatura, editar despesa etc.
             urlPattern: /^https:\/\/.*\.supabase\.co\/(rest|auth|realtime|functions)\/.*/,
             handler: 'NetworkOnly',
           },
+
           {
             // HTML sempre da rede quando há ligação (cache só como fallback offline).
             urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
