@@ -2454,37 +2454,246 @@ var compare_months_default = defineTool26({
 // src/lib/mcp/tools/financial-score.ts
 import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.26.2";
 import { z as z20 } from "npm:zod@^4.4.3";
-function scoreOf(totalIncome, totalExpense, totalBudget, totalSpentInBudget, hasOverdueCards, debtCount, prevExpense, ccUsageRatio) {
-  let savings = 0;
+
+// src/lib/financialScore.ts
+var BASE_WEIGHTS = {
+  savings: 0.3,
+  budget: 0.2,
+  debtCredit: 0.25,
+  reserve: 0.15,
+  consistency: 0.1
+};
+var LABELS = {
+  savings: "Poupan\xE7a",
+  budget: "Or\xE7amento",
+  debtCredit: "D\xEDvidas e cr\xE9dito",
+  reserve: "Reserva",
+  consistency: "Consist\xEAncia"
+};
+var TIPS = {
+  savings: "Quanto da renda do m\xEAs sobrou depois das despesas. 30% ou mais vale nota m\xE1xima; 20% j\xE1 \xE9 muito bom; abaixo de 0% (gastou mais do que ganhou) a nota cai r\xE1pido.",
+  budget: "Ader\xEAncia aos or\xE7amentos definidos, avaliada categoria por categoria. Estourar uma categoria n\xE3o \xE9 compensado por sobrar em outra.",
+  debtCredit: "Quanto da renda est\xE1 comprometida com faturas de cart\xE3o, parcelas e d\xEDvidas. At\xE9 30% \xE9 saud\xE1vel; acima de 50% derruba a nota. Fatura vencida limita o m\xE1ximo.",
+  reserve: "Meses de despesa que o seu saldo dispon\xEDvel mais os investimentos conseguem cobrir. 6 meses ou mais vale nota m\xE1xima.",
+  consistency: "Desvio dos gastos deste m\xEAs contra a m\xE9dia dos meses anteriores. S\xF3 gastar acima da m\xE9dia penaliza \u2014 economizar nunca perde ponto."
+};
+var clamp = (v, min = 0, max = 100) => Math.max(min, Math.min(max, v));
+function curve(value, points) {
+  if (value <= points[0][0]) return points[0][1];
+  const last = points[points.length - 1];
+  if (value >= last[0]) return last[1];
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[i + 1];
+    if (value >= x1 && value <= x2) {
+      const t = x2 === x1 ? 0 : (value - x1) / (x2 - x1);
+      return y1 + t * (y2 - y1);
+    }
+  }
+  return last[1];
+}
+function stateOf(score) {
+  if (score === null) return "unevaluated";
+  if (score >= 70) return "good";
+  if (score >= 45) return "warning";
+  return "critical";
+}
+function getScoreLabel(score) {
+  if (score >= 90) return "Excelente";
+  if (score >= 75) return "Muito bom";
+  if (score >= 60) return "Bom";
+  if (score >= 45) return "Regular";
+  if (score >= 30) return "Aten\xE7\xE3o";
+  return "Cr\xEDtico";
+}
+function getScoreEmoji(score) {
+  if (score >= 75) return "\u{1F3C6}";
+  if (score >= 60) return "\u{1F44D}";
+  if (score >= 45) return "\u26A0\uFE0F";
+  return "\u{1F6A8}";
+}
+var money = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+var pct = (v) => `${(v * 100).toFixed(0)}%`;
+function computeFinancialScore(input) {
+  const {
+    totalIncome,
+    totalExpense,
+    budgets = [],
+    committedAmount = 0,
+    creditUsageRatio = 0,
+    hasOverdueInvoice = false,
+    liquidReserve,
+    previousExpenses = []
+  } = input;
+  const raw = {
+    savings: { score: null, detail: "Sem receita registada no m\xEAs", action: "Registe as suas receitas para avaliar a poupan\xE7a" },
+    budget: { score: null, detail: "Nenhum or\xE7amento definido", action: "Defina or\xE7amentos para as suas principais categorias" },
+    debtCredit: { score: null, detail: "Sem renda para comparar compromissos", action: "Registe as suas receitas do m\xEAs" },
+    reserve: { score: null, detail: "Sem dados de saldo e investimentos", action: "Cadastre as suas carteiras e investimentos" },
+    consistency: { score: null, detail: "Sem hist\xF3rico suficiente", action: "Continue a registar \u2014 a partir do segundo m\xEAs d\xE1 para comparar" }
+  };
   if (totalIncome > 0) {
     const rate = (totalIncome - totalExpense) / totalIncome;
-    savings = rate >= 0.3 ? 100 : rate >= 0.2 ? 85 : rate >= 0.1 ? 70 : rate >= 0 ? 50 : rate >= -0.1 ? 30 : 10;
+    const score = curve(rate, [
+      [-0.3, 0],
+      [-0.1, 20],
+      [0, 40],
+      [0.1, 65],
+      [0.2, 85],
+      [0.3, 100]
+    ]);
+    const saved = totalIncome - totalExpense;
+    raw.savings = {
+      score: clamp(score),
+      detail: rate >= 0 ? `poupou ${pct(rate)} da renda (${money(saved)})` : `gastou ${pct(Math.abs(rate))} mais do que ganhou (${money(Math.abs(saved))})`,
+      action: rate >= 0.2 ? "Taxa de poupan\xE7a saud\xE1vel \u2014 mantenha o ritmo" : `Poupar ${money(Math.max(0, totalIncome * 0.2 - saved))} a mais no m\xEAs chega aos 20% ideais`
+    };
   }
-  let budget = 75;
-  if (totalBudget > 0) {
-    const ratio = totalSpentInBudget / totalBudget;
-    budget = ratio <= 0.8 ? 100 : ratio <= 0.95 ? 85 : ratio <= 1 ? 70 : ratio <= 1.1 ? 50 : 20;
+  const activeBudgets = budgets.filter((b) => b.allocated > 0);
+  if (activeBudgets.length > 0) {
+    let weighted = 0;
+    let totalAllocated = 0;
+    let worst = null;
+    for (const b of activeBudgets) {
+      const ratio = b.spent / b.allocated;
+      const line = curve(ratio, [
+        [0.8, 100],
+        [0.95, 88],
+        [1, 75],
+        [1.1, 50],
+        [1.3, 20],
+        [1.6, 0]
+      ]);
+      weighted += line * b.allocated;
+      totalAllocated += b.allocated;
+      const over = b.spent - b.allocated;
+      if (over > 0 && (!worst || over > worst.over)) worst = { category: b.category, over };
+    }
+    const score = clamp(weighted / totalAllocated);
+    const totalSpent = activeBudgets.reduce((s, b) => s + b.spent, 0);
+    raw.budget = {
+      score,
+      detail: worst ? `estourou ${money(worst.over)} em ${worst.category}` : `${money(totalSpent)} de ${money(totalAllocated)} or\xE7ados`,
+      action: worst ? `Cortar ${money(worst.over)} em ${worst.category} fecha o or\xE7amento` : "Todas as categorias dentro do planeado"
+    };
   }
-  let debt = 100 - debtCount * 10 - (hasOverdueCards ? 20 : 0);
-  debt = Math.max(0, Math.min(100, debt));
-  let consistency = 70;
-  if (prevExpense > 0 && totalExpense > 0) {
-    const variation = Math.abs(totalExpense - prevExpense) / prevExpense;
-    consistency = variation <= 0.05 ? 100 : variation <= 0.15 ? 85 : variation <= 0.3 ? 65 : 40;
+  if (totalIncome > 0) {
+    const commitmentRatio = committedAmount / totalIncome;
+    let score = curve(commitmentRatio, [
+      [0, 100],
+      [0.3, 85],
+      [0.4, 65],
+      [0.5, 45],
+      [0.7, 20],
+      [1, 0]
+    ]);
+    if (creditUsageRatio > 0.9) score = Math.min(score, 30);
+    else if (creditUsageRatio > 0.7) score = Math.min(score, 55);
+    else if (creditUsageRatio > 0.5) score = Math.min(score, 75);
+    if (hasOverdueInvoice) score = Math.min(score, 25);
+    raw.debtCredit = {
+      score: clamp(score),
+      detail: hasOverdueInvoice ? `fatura vencida em aberto \xB7 ${pct(commitmentRatio)} da renda comprometida` : `${pct(commitmentRatio)} da renda comprometida \xB7 ${pct(creditUsageRatio)} do limite usado`,
+      action: hasOverdueInvoice ? "Pague a fatura vencida \u2014 \xE9 o que mais pesa no score agora" : commitmentRatio > 0.3 ? `Reduzir ${money(committedAmount - totalIncome * 0.3)} de compromissos volta ao n\xEDvel saud\xE1vel de 30%` : "Compromissos em n\xEDvel saud\xE1vel"
+    };
   }
-  let credit = 100;
-  if (ccUsageRatio > 0.9) credit = 20;
-  else if (ccUsageRatio > 0.7) credit = 50;
-  else if (ccUsageRatio > 0.5) credit = 70;
-  else if (ccUsageRatio > 0.3) credit = 85;
-  if (hasOverdueCards) credit = Math.min(credit, 30);
-  const overall = Math.round(savings * 0.3 + budget * 0.2 + debt * 0.2 + consistency * 0.15 + credit * 0.15);
-  return { overall, savings, budget, debt, consistency, credit };
+  if (liquidReserve !== void 0) {
+    const monthlyNeed = (() => {
+      const hist2 = [totalExpense, ...previousExpenses].filter((v) => v > 0);
+      if (hist2.length === 0) return 0;
+      return hist2.reduce((s, v) => s + v, 0) / hist2.length;
+    })();
+    if (monthlyNeed > 0) {
+      const months = Math.max(0, liquidReserve) / monthlyNeed;
+      const score = curve(months, [
+        [0, 0],
+        [1, 30],
+        [3, 70],
+        [6, 100]
+      ]);
+      raw.reserve = {
+        score: clamp(score),
+        detail: `${months.toFixed(1)} ${months === 1 ? "m\xEAs" : "meses"} de folga (${money(Math.max(0, liquidReserve))})`,
+        action: months >= 6 ? "Reserva de emerg\xEAncia completa" : `Guardar ${money(Math.max(0, monthlyNeed * 6 - liquidReserve))} completa 6 meses de reserva`
+      };
+    }
+  }
+  const hist = previousExpenses.filter((v) => v > 0).slice(0, 3);
+  if (hist.length > 0 && totalExpense > 0) {
+    const avg = hist.reduce((s, v) => s + v, 0) / hist.length;
+    const deviation = (totalExpense - avg) / avg;
+    const score = deviation <= 0 ? 100 : curve(deviation, [
+      [0, 100],
+      [0.1, 85],
+      [0.25, 60],
+      [0.5, 30],
+      [1, 0]
+    ]);
+    raw.consistency = {
+      score: clamp(score),
+      detail: deviation <= 0 ? `${pct(Math.abs(deviation))} abaixo da m\xE9dia (${money(avg)})` : `${pct(deviation)} acima da m\xE9dia (${money(avg)})`,
+      action: deviation <= 0.1 ? "Gastos est\xE1veis em rela\xE7\xE3o \xE0 m\xE9dia" : `Voltar \xE0 m\xE9dia significa gastar ${money(totalExpense - avg)} a menos`
+    };
+  }
+  const keys = Object.keys(BASE_WEIGHTS);
+  const evaluatedKeys = keys.filter((k) => raw[k].score !== null);
+  const baseSum = evaluatedKeys.reduce((s, k) => s + BASE_WEIGHTS[k], 0);
+  const dimensions = keys.map((key) => {
+    const { score, detail, action } = raw[key];
+    const evaluated = score !== null;
+    return {
+      key,
+      label: LABELS[key],
+      score,
+      weight: evaluated && baseSum > 0 ? BASE_WEIGHTS[key] / baseSum : 0,
+      evaluated,
+      state: stateOf(score),
+      detail,
+      action,
+      tip: TIPS[key]
+    };
+  });
+  const overall = baseSum > 0 ? Math.round(dimensions.reduce((s, d) => s + (d.score ?? 0) * d.weight, 0)) : 50;
+  let nextStep = null;
+  for (const d of dimensions) {
+    if (!d.evaluated || d.score === null || d.score >= 95) continue;
+    const gain = Math.round((100 - d.score) * d.weight);
+    if (gain <= 0) continue;
+    if (!nextStep || gain > nextStep.potentialGain) {
+      nextStep = { key: d.key, label: d.label, potentialGain: gain, action: d.action };
+    }
+  }
+  const weakest = dimensions.filter((d) => d.evaluated && d.score !== null).sort((a, b) => (a.score ?? 0) - (b.score ?? 0))[0];
+  const strongest = dimensions.filter((d) => d.evaluated && d.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  const headline = (() => {
+    if (!weakest) return "Registe receitas e despesas para calcular o seu score.";
+    if (overall >= 75) return `M\xEAs sob controlo: ${strongest.label.toLowerCase()} ${strongest.detail}.`;
+    if (weakest === strongest) return `${weakest.label}: ${weakest.detail}.`;
+    return `${strongest.label} bem (${strongest.detail}), mas ${weakest.label.toLowerCase()} ${weakest.detail}.`;
+  })();
+  const scoreOf = (key) => Math.round(raw[key].score ?? 0);
+  return {
+    overall,
+    label: getScoreLabel(overall),
+    emoji: getScoreEmoji(overall),
+    headline,
+    dimensions,
+    nextStep,
+    persisted: {
+      savings_score: scoreOf("savings"),
+      budget_score: scoreOf("budget"),
+      debt_score: scoreOf("debtCredit"),
+      consistency_score: scoreOf("consistency"),
+      credit_score: scoreOf("reserve")
+    }
+  };
 }
+
+// src/lib/mcp/tools/financial-score.ts
 var financial_score_default = defineTool27({
   name: "financial_score",
   title: "Score financeiro do m\xEAs",
-  description: "Calcula o score financeiro de um m\xEAs (YYYY-MM) com as mesmas regras da p\xE1gina do app: nota geral de 0 a 100 e as cinco dimens\xF5es (poupan\xE7a, or\xE7amento, d\xEDvidas, consist\xEAncia e cr\xE9dito), com os n\xFAmeros que sustentam cada nota.",
+  description: "Calcula o score financeiro de um m\xEAs (YYYY-MM) com as mesmas regras da p\xE1gina do app: nota geral de 0 a 100 e as cinco dimens\xF5es (poupan\xE7a, or\xE7amento, d\xEDvidas e cr\xE9dito, reserva e consist\xEAncia), com os n\xFAmeros que sustentam cada nota e o pr\xF3ximo passo recomendado.",
   inputSchema: {
     month: z20.string().regex(/^\d{4}-\d{2}$/).describe("M\xEAs no formato YYYY-MM.")
   },
@@ -2492,25 +2701,36 @@ var financial_score_default = defineTool27({
   handler: safeHandler("financial_score", async ({ month }, ctx) => {
     const sb = supabaseForUser(ctx);
     const [year, monthNumber] = month.split("-").map(Number);
-    const previousMonth = `${monthNumber === 1 ? year - 1 : year}-${String(
-      monthNumber === 1 ? 12 : monthNumber - 1
-    ).padStart(2, "0")}`;
-    const [current, previous, budgetsRes, debtsRes] = await Promise.all([
+    const monthAt = (offset) => {
+      const d = new Date(year, monthNumber - 1 + offset, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    };
+    const [current, prev1, prev2, prev3, budgetsRes, debtsRes, walletsRes, investmentsRes] = await Promise.all([
       computeMonthProjection(sb, month),
-      computeMonthProjection(sb, previousMonth),
+      computeMonthProjection(sb, monthAt(-1)),
+      computeMonthProjection(sb, monthAt(-2)),
+      computeMonthProjection(sb, monthAt(-3)),
       sb.from("budgets").select("category, allocated_amount, month_year").eq("month_year", `${month}-01`),
-      sb.from("debts").select("id, remaining_amount")
+      sb.from("debts").select("id, remaining_amount").eq("type", "i_owe"),
+      sb.from("wallets").select("current_balance, asset_type"),
+      sb.from("investments").select("principal, status")
     ]);
     const budgets = budgetsRes.data ?? [];
-    const totalBudget = budgets.reduce((s, b) => s + Number(b.allocated_amount ?? 0), 0);
-    const budgetCategories = new Set(budgets.map((b) => b.category));
-    let spentInBudget = 0;
+    const spentByCategory = {};
+    let ccExpenses = 0;
+    let committed = 0;
     for (const expense of current.effectiveMonthExpenses) {
-      if (expense.type !== "expense") continue;
-      if (budgetCategories.has(expense.final_category)) spentInBudget += Number(expense.value);
+      if (expense.type === "income" || expense.type === "transfer") continue;
+      const value = Number(expense.value ?? 0);
+      spentByCategory[expense.final_category] = (spentByCategory[expense.final_category] ?? 0) + value;
+      if (expense.credit_card_id) {
+        ccExpenses += value;
+        committed += value;
+      } else if (expense.installment_group_id) {
+        committed += value;
+      }
+      if (expense.debt_id) committed += value;
     }
-    const debts = (debtsRes.data ?? []).filter((d) => Number(d.remaining_amount ?? 0) > 0);
-    let usedLimit = 0;
     let totalLimit = 0;
     let hasOverdue = false;
     const { data: allExpenses } = await sb.from("expenses").select("id,date,description,value,type,final_category,credit_card_id,wallet_id,invoice_month,is_paid");
@@ -2518,42 +2738,56 @@ var financial_score_default = defineTool27({
       totalLimit += Number(card.limit_amount ?? 0);
       const period = getInvoicePeriod(card, year, monthNumber - 1);
       const invoice = matchExpensesToInvoice(allExpenses ?? [], period);
-      usedLimit += invoice.total;
       if (invoice.status === "overdue") hasOverdue = true;
     }
-    const usageRatio = totalLimit > 0 ? usedLimit / totalLimit : 0;
-    const scores = scoreOf(
-      current.totals.totalIncome,
-      current.totals.totalExpense,
-      totalBudget,
-      spentInBudget,
-      hasOverdue,
-      debts.length,
-      previous.totals.totalExpense,
-      usageRatio
-    );
+    const liquid = (walletsRes.data ?? []).filter((w) => w.asset_type !== "crypto").reduce((s, w) => s + Number(w.current_balance ?? 0), 0);
+    const invested = (investmentsRes.data ?? []).filter((i) => i.status === "active").reduce((s, i) => s + Number(i.principal ?? 0), 0);
+    const result = computeFinancialScore({
+      totalIncome: current.totals.totalIncome,
+      totalExpense: current.totals.totalExpense,
+      budgets: budgets.map((b) => ({
+        category: b.category,
+        allocated: Number(b.allocated_amount ?? 0),
+        spent: spentByCategory[b.category] ?? 0
+      })),
+      committedAmount: committed,
+      creditUsageRatio: totalLimit > 0 ? ccExpenses / totalLimit : 0,
+      hasOverdueInvoice: hasOverdue,
+      liquidReserve: liquid + invested,
+      previousExpenses: [prev1, prev2, prev3].map((p) => p.totals.totalExpense)
+    });
+    const activeDebts = (debtsRes.data ?? []).filter((d) => Number(d.remaining_amount ?? 0) > 0);
     const payload = {
       month,
-      overall_score: scores.overall,
-      savings_score: scores.savings,
-      budget_score: scores.budget,
-      debt_score: scores.debt,
-      consistency_score: scores.consistency,
-      credit_score: scores.credit,
+      overall_score: result.overall,
+      rating: result.label,
+      headline: result.headline,
+      dimensions: result.dimensions.map((d) => ({
+        key: d.key,
+        label: d.label,
+        score: d.score,
+        weight_pct: Number((d.weight * 100).toFixed(1)),
+        evaluated: d.evaluated,
+        detail: d.detail,
+        action: d.action
+      })),
+      next_step: result.nextStep,
       total_income: current.totals.totalIncome,
       total_expense: current.totals.totalExpense,
-      previous_month_expense: previous.totals.totalExpense,
-      total_budget: Number(totalBudget.toFixed(2)),
-      spent_in_budget: Number(spentInBudget.toFixed(2)),
-      active_debts: debts.length,
-      credit_usage_pct: Number((usageRatio * 100).toFixed(1)),
-      has_overdue_invoice: hasOverdue
+      previous_months_expense: [prev1, prev2, prev3].map((p) => p.totals.totalExpense),
+      committed_amount: Number(committed.toFixed(2)),
+      credit_usage_pct: totalLimit > 0 ? Number((ccExpenses / totalLimit * 100).toFixed(1)) : 0,
+      liquid_reserve: Number((liquid + invested).toFixed(2)),
+      active_debts: activeDebts.length,
+      has_overdue_invoice: hasOverdue,
+      ...result.persisted
     };
     const summary = [
-      `Score financeiro de ${month}: ${scores.overall}/100`,
-      `Poupan\xE7a ${scores.savings} \xB7 Or\xE7amento ${scores.budget} \xB7 D\xEDvidas ${scores.debt} \xB7 Consist\xEAncia ${scores.consistency} \xB7 Cr\xE9dito ${scores.credit}`,
-      `Receitas R$ ${payload.total_income.toFixed(2)} \xB7 Despesas R$ ${payload.total_expense.toFixed(2)} \xB7 Uso do cr\xE9dito ${payload.credit_usage_pct}%`
-    ].join("\n");
+      `Score financeiro de ${month}: ${result.overall}/100 (${result.label})`,
+      result.headline,
+      result.dimensions.map((d) => `${d.label} ${d.score ?? "n/d"} \u2014 ${d.detail}`).join(" \xB7 "),
+      result.nextStep ? `Pr\xF3ximo passo: ${result.nextStep.action} (+${result.nextStep.potentialGain} pts)` : ""
+    ].filter(Boolean).join("\n");
     return ok(summary, payload);
   })
 });
