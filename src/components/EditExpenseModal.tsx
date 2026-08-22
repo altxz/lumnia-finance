@@ -410,11 +410,20 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         const recurringFields = !wantInstallment && expense.is_recurring
           ? { is_recurring: false, frequency: null }
           : {};
+        // Segurança: se a ocorrência editada é uma projeção (a linha do banco
+        // pertence a outro mês), nunca sobrescrever a data nem o estado pago
+        // do molde — isso apagaria o lançamento histórico.
+        const safeFields = { ...baseFields } as Record<string, unknown>;
+        if (isProjectedOccurrence) {
+          delete safeFields.date;
+          delete safeFields.is_paid;
+        }
         const { error } = await supabase.from('expenses').update({
-          ...baseFields,
+          ...safeFields,
           value: parsedValue,
           ...recurringFields,
         }).eq('id', expense.id);
+
 
         if (error) throw error;
         toast({ title: expense.is_recurring && !wantInstallment ? 'Recorrência desativada!' : 'Transação atualizada!' });
