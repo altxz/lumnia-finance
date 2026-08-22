@@ -1,5 +1,5 @@
-// Handlers de Web Push, importados pelo service worker único (/sw.js).
-// NÃO registar este ficheiro como service worker.
+// Handlers de Web Push, importados por /push-sw.js.
+// NÃO registar este ficheiro diretamente como service worker.
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
