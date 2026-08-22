@@ -2639,8 +2639,9 @@ function computeFinancialScore(input) {
   const evaluatedKeys = keys.filter((k) => raw[k].score !== null);
   const baseSum = evaluatedKeys.reduce((s, k) => s + BASE_WEIGHTS[k], 0);
   const dimensions = keys.map((key) => {
-    const { score, detail, action } = raw[key];
-    const evaluated = score !== null;
+    const { score: rawScore, detail, action } = raw[key];
+    const evaluated = rawScore !== null;
+    const score = rawScore === null ? null : Math.round(rawScore);
     return {
       key,
       label: LABELS[key],
