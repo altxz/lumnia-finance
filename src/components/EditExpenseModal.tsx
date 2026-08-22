@@ -62,7 +62,7 @@ function advanceInvoiceMonth(ym: string, months: number): string {
 
 const TYPE_STYLES = {
   expense: { bg: 'bg-destructive/10', border: 'border-destructive/20', accent: 'bg-destructive text-destructive-foreground hover:bg-destructive/90', valueBorder: 'border-destructive/30 focus-within:border-destructive' },
-  income: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', accent: 'bg-emerald-600 text-white hover:bg-emerald-700', valueBorder: 'border-emerald-500/30 focus-within:border-emerald-500' },
+  income: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', accent: 'bg-success text-success-foreground hover:bg-success/90', valueBorder: 'border-emerald-500/30 focus-within:border-emerald-500' },
   transfer: { bg: 'bg-primary/10', border: 'border-primary/20', accent: 'bg-primary text-primary-foreground hover:bg-primary/90', valueBorder: 'border-primary/30 focus-within:border-primary' },
 } as const;
 

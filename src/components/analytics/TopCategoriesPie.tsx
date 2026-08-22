@@ -15,9 +15,9 @@ interface Props {
 const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 shadow-float border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
-      <p className="text-xs font-semibold text-white">{payload[0].name}</p>
-      <p className="text-xs text-white/80">{formatCurrency(payload[0].value)}</p>
+    <div className="rounded-2xl px-3 py-2 shadow-card border border-border/60 bg-popover/95 backdrop-blur-xl">
+      <p className="text-xs font-semibold text-popover-foreground">{payload[0].name}</p>
+      <p className="text-xs text-muted-foreground">{formatCurrency(payload[0].value)}</p>
     </div>
   );
 };

@@ -9,10 +9,10 @@ import { InfoPopover } from '@/components/ui/info-popover';
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 shadow-float border border-white/10" style={{ background: 'rgba(30,30,40,0.92)' }}>
-      <p className="text-xs text-white/70 mb-1">Dia {label}</p>
+    <div className="rounded-2xl px-3 py-2 shadow-card border border-border/60 bg-popover/95 backdrop-blur-xl">
+      <p className="text-xs text-muted-foreground mb-1">Dia {label}</p>
       {payload.map((p: any, i: number) => (
-        <p key={i} className="text-xs font-semibold" style={{ color: p.color || '#fff' }}>
+        <p key={i} className="text-xs font-semibold" style={{ color: p.color || 'hsl(var(--popover-foreground))' }}>
           {p.name}: {formatCurrency(p.value)}
         </p>
       ))}

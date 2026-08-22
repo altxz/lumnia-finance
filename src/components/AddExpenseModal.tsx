@@ -93,7 +93,7 @@ const TYPE_STYLES = {
   income: {
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/20',
-    accent: 'bg-emerald-600 text-white hover:bg-emerald-700',
+    accent: 'bg-success text-success-foreground hover:bg-success/90',
     valueBorder: 'border-emerald-500/30 focus-within:border-emerald-500',
     icon: ArrowUpCircle,
   },

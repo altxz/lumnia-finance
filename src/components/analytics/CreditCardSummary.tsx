@@ -34,7 +34,7 @@ const CARD_GRADIENTS: Record<string, string> = {
   bradesco: 'from-red-600 via-red-500 to-red-700',
   santander: 'from-red-700 via-red-600 to-red-800',
   c6: 'from-zinc-800 via-zinc-700 to-zinc-900',
-  default: 'from-primary via-primary/80 to-primary/60',
+  default: 'from-primary via-primary/80 to-accent',
 };
 
 function getCardGradient(cardName: string): string {
