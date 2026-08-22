@@ -6,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import dynamicIconImports from 'lucide-react/dynamicIconImports';
 import type { LucideProps } from 'lucide-react';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
-import { findCategoryByName, normalizeCategoryKey } from '@/lib/categoryMatch';
+import { findCategoryByName } from '@/lib/categoryMatch';
 
 interface Category {
   id: string;

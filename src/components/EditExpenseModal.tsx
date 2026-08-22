@@ -665,6 +665,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                   categories={dbCategories}
                   value={finalCategory}
                   onValueChange={setFinalCategory}
+                  type={type}
+                  fallbackValue={expense.category_ai}
                 />
               </div>
 
