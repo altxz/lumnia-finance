@@ -13,6 +13,7 @@ import {
   resolveProject,
   resolveWallet,
 } from "./resolve.ts";
+import { computeFinancialScore } from "./financialScore.ts";
 import {
   INVOICE_EXPENSE_COLS,
   getInvoicePeriod,
