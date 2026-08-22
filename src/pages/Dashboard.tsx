@@ -259,29 +259,30 @@ export default function Dashboard() {
                 <Suspense fallback={<TileGrid><Tile size="wide"><ChartFallback /></Tile><Tile size="medium"><ChartFallback /></Tile><Tile size="medium"><ChartFallback /></Tile></TileGrid>}>
                 <TileGrid>
                   <Tile size="wide"><Suspense fallback={<ChartFallback />}><CreditCardSummary cards={projected.creditCards} allExpenses={projected.invoiceExpenses} wallets={projected.wallets} refetch={projected.refetch} /></Suspense></Tile>
-                  <Tile size="wide"><Suspense fallback={<ChartFallback />}><CashFlowChart creditCards={projected.creditCards} wallets={projected.wallets} /></Suspense></Tile>
+                  <Tile size="wide" mobile="tall"><Suspense fallback={<ChartFallback />}><CashFlowChart creditCards={projected.creditCards} wallets={projected.wallets} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><TopExpensesList expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><SubcategoryTreemap expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
+                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><SubcategoryTreemap expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
 
-                  <Tile size="small"><Suspense fallback={<ChartFallback />}><FixedVsVariableChart expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="small"><Suspense fallback={<ChartFallback />}><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
-                  <Tile size="small"><Suspense fallback={<ChartFallback />}><IncomeVsExpenseChart totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
-                  <Tile size="small"><Suspense fallback={<ChartFallback />}><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
+                  <Tile size="small" mobile="half"><Suspense fallback={<ChartFallback />}><FixedVsVariableChart expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="small" mobile="half"><Suspense fallback={<ChartFallback />}><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
+                  <Tile size="small" mobile="full"><Suspense fallback={<ChartFallback />}><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
+                  <Tile size="small" mobile="full"><Suspense fallback={<ChartFallback />}><IncomeVsExpenseChart totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><DailySpendingChart expenses={projected.monthExpenses} /></Suspense></Tile>
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><WeekComparisonChart expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><BudgetVsActualChart budgets={budgetDataRaw as any} expenses={projected.monthExpenses} /></Suspense></Tile>
+                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><BudgetVsActualChart budgets={budgetDataRaw as any} expenses={projected.monthExpenses} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><EndOfMonthForecast /></Suspense></Tile>
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></Tile>
+                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><SpendingHeatmap expenses={projected.monthExpenses} /></Suspense></Tile>
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><CreditUsageChart cards={cardsForUsage} unpaidExpenses={unpaidCCExpenses} /></Suspense></Tile>
 
-                  <Tile size="wide"><Suspense fallback={<ChartFallback />}><NetWorthChart /></Suspense></Tile>
+                  <Tile size="wide" mobile="tall"><Suspense fallback={<ChartFallback />}><NetWorthChart /></Suspense></Tile>
+
                 </TileGrid>
                 </Suspense>
               </>
