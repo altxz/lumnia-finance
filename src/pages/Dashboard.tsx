@@ -279,7 +279,7 @@ export default function Dashboard() {
                   <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><SpendingHeatmap expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><CreditUsageChart cards={cardsForUsage} unpaidExpenses={unpaidCCExpenses} /></Suspense></Tile>
+                  <Tile size="medium" mobile="full"><Suspense fallback={<ChartFallback />}><CreditUsageChart cards={cardsForUsage} unpaidExpenses={unpaidCCExpenses} /></Suspense></Tile>
 
                   <Tile size="wide" mobile="tall"><Suspense fallback={<ChartFallback />}><NetWorthChart /></Suspense></Tile>
 
