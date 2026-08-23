@@ -227,8 +227,8 @@ export function DashboardScoreCarousel({
               pointerEvents: slide === 0 ? 'auto' : 'none',
             }}
           >
-            <div className="flex items-center gap-3">
-              <div className="relative w-16 h-16 shrink-0">
+            <div className="flex items-start gap-3">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
                 <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
                   <circle cx="60" cy="60" r={50} fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
                   <circle
@@ -243,28 +243,29 @@ export function DashboardScoreCarousel({
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-base font-bold leading-none" style={{ color: scoreColor }}>{result.overall}</span>
-                  <span className="text-[8px] text-muted-foreground">/100</span>
+                  <span className="text-[8px] text-muted-foreground leading-none mt-0.5">/100</span>
                 </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-sm font-semibold" style={{ color: scoreColor }}>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: scoreColor }}>
                     {result.emoji} {result.label}
                   </p>
                   {diff !== null && diff !== 0 && (
-                    <span className={`flex items-center text-[10px] font-medium ${diff > 0 ? 'text-success' : 'text-destructive'}`}>
+                    <span className={`flex items-center text-[10px] font-medium shrink-0 ${diff > 0 ? 'text-success' : 'text-destructive'}`}>
                       {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                       {Math.abs(diff)}
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">{result.headline}</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-1 line-clamp-3 sm:line-clamp-2">{result.headline}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border/50 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/50 pt-1.5 divide-y divide-border/40 sm:divide-y-0">
               {result.dimensions.map(d => <DimensionRow key={d.key} d={d} />)}
             </div>
+
 
             {result.nextStep && (
               <div className="mt-auto flex items-start gap-2 rounded-xl bg-muted/60 px-3 py-2">
