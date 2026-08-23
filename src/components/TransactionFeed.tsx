@@ -682,7 +682,7 @@ export function TransactionFeed({
                               <Pin className="h-3 w-3 text-muted-foreground shrink-0" />
                             )}
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          <div className="flex items-center gap-1 mt-0.5 flex-nowrap overflow-hidden whitespace-nowrap">
                             {isInvoiceItem && originalDate && (
                               <span className="text-[11px] text-muted-foreground">
                                 Compra em {formatPurchaseDate(originalDate)}
