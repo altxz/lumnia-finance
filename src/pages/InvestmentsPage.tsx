@@ -23,6 +23,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import { CHART_SERIES } from '@/lib/chartPalette';
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { InvestmentFormModal } from '@/components/investments/InvestmentFormModal';
 import { InvestmentMovementModal } from '@/components/investments/InvestmentMovementModal';
@@ -31,7 +32,7 @@ import {
   type Investment, type InvestmentMovement,
 } from '@/lib/investmentMath';
 
-const PIE_COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--ai))', '#F59E0B', '#10B981', '#8B5CF6', '#EF4444'];
+const PIE_COLORS = CHART_SERIES;
 
 export default function InvestmentsPage() {
   const { user, loading: authLoading } = useAuth();

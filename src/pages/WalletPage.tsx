@@ -20,6 +20,7 @@ import { formatCurrency, getCategoryInfo } from '@/lib/constants';
 import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft, Pencil, PiggyBank } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { CHART_SERIES } from '@/lib/chartPalette';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useExchangeRates, convertToBRL, formatForeignCurrency, type ExchangeRates } from '@/hooks/useExchangeRates';
@@ -64,7 +65,7 @@ const ASSET_ICONS: Record<string, typeof Wallet> = {
   investment: PiggyBank,
 };
 
-const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--ai))', '#F59E0B'];
+const CHART_COLORS = CHART_SERIES;
 
 const CURRENCY_OPTIONS = [
   { value: 'BRL', label: 'Real (BRL)' },

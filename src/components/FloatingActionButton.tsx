@@ -15,10 +15,10 @@ export function FloatingActionButton({ onCreated }: FloatingActionButtonProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-40 h-14 w-14 rounded-full gradient-primary text-primary-foreground shadow-float hover:brightness-105 active:scale-95 transition-all flex items-center justify-center"
+        className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 sm:right-6 z-40 h-11 w-11 md:h-14 md:w-14 rounded-full gradient-primary text-primary-foreground shadow-float hover:brightness-105 active:scale-95 transition-all flex items-center justify-center"
         aria-label="Adicionar lançamento rápido"
       >
-        <Plus className="h-7 w-7" strokeWidth={2.5} />
+        <Plus className="h-6 w-6" strokeWidth={2.5} />
       </button>
       {open && (
         <Suspense fallback={null}>

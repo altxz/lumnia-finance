@@ -36,7 +36,7 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
     return sorted.map(([cat, total]) => {
       const dbCat = categories.find((c: any) => c.name.toLowerCase() === cat);
       const name = cat.toLowerCase() === 'outros' ? 'Outras Despesas' : (dbCat?.name || cat);
-      return { name, value: total, color: dbCat?.color };
+      return { name, value: total };
     });
   }, [expenses, categories]);
 
@@ -65,8 +65,8 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={82} paddingAngle={3} dataKey="value" strokeWidth={0}>
-                  {data.map((entry, i) => (
-                    <Cell key={i} fill={entry.color || COLORS[i % COLORS.length]} />
+                  {data.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
@@ -78,7 +78,7 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
               const pct = grandTotal > 0 ? ((entry.value / grandTotal) * 100).toFixed(1) : '0';
               return (
                 <div key={i} className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: entry.color || COLORS[i % COLORS.length] }} />
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
                   <span className="truncate text-muted-foreground">{entry.name}</span>
                   <span className="font-semibold ml-auto">{pct}%</span>
                 </div>

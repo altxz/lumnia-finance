@@ -4,18 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LayoutGrid } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import type { CategoryStats } from '@/hooks/useAnalyticsData';
-import { useCategories } from '@/hooks/useStaticData';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { seriesColor, readableTextColor } from '@/lib/chartPalette';
 
 
 interface ExpenseTreemapProps {
   categoryStats: CategoryStats[];
-}
-
-interface CategoryColor {
-  name: string;
-  color: string;
 }
 
 const CustomContent = (props: any) => {
@@ -41,23 +35,16 @@ const CustomContent = (props: any) => {
 };
 
 export function ExpenseTreemap({ categoryStats }: ExpenseTreemapProps) {
-  // Cores vêm do cache partilhado de categorias (30 min).
-  const { data: categories = [] } = useCategories();
-  const categoryColors: CategoryColor[] = categories.map(c => ({ name: c.name, color: c.color }));
-
   const treemapData = useMemo(() => {
-    const colorMap: Record<string, string> = {};
-    categoryColors.forEach(c => { colorMap[c.name.toLowerCase()] = c.color; });
-
     const expenseStats = categoryStats.filter(s => s.total > 0);
     if (expenseStats.length === 0) return [];
 
     return expenseStats.map((s, idx) => ({
       name: s.category,
       value: Math.round(s.total * 100) / 100,
-      fill: colorMap[s.category.toLowerCase()] || seriesColor(idx),
+      fill: seriesColor(idx),
     }));
-  }, [categoryStats, categoryColors]);
+  }, [categoryStats]);
 
   if (treemapData.length === 0) {
     return null;

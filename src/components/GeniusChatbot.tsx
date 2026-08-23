@@ -266,7 +266,7 @@ export function GeniusChatbot() {
       <Button
         onClick={() => setIsOpen(prev => !prev)}
         className={cn(
-          'fixed bottom-6 left-4 sm:left-6 z-50 rounded-full shadow-float transition-all duration-300',
+          'fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-4 sm:left-6 z-50 rounded-full shadow-float transition-all duration-300',
           'h-11 w-11 md:h-14 md:w-14',
           isOpen
             ? 'bg-muted text-muted-foreground hover:bg-muted/80 scale-90'

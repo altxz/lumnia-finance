@@ -17,7 +17,7 @@ interface Slice {
   color: string;
 }
 
-export function SubcategoryBreakdown({ expenses, categories }: Props) {
+export function SubcategoryBreakdown({ expenses }: Props) {
   const isMobile = useIsMobile();
   const limit = isMobile ? 5 : 6;
 
@@ -34,16 +34,11 @@ export function SubcategoryBreakdown({ expenses, categories }: Props) {
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
     const sum = sorted.reduce((acc, [, v]) => acc + v, 0);
 
-    const top: Slice[] = sorted.slice(0, limit).map(([cat, value], i) => {
-      const dbCat = categories.find(
-        (c: any) => c.name?.toLowerCase() === String(cat).toLowerCase(),
-      );
-      return {
-        name: dbCat?.name || cat,
-        value,
-        color: dbCat?.color || seriesColor(i),
-      };
-    });
+    const top: Slice[] = sorted.slice(0, limit).map(([cat, value], i) => ({
+      name: cat,
+      value,
+      color: seriesColor(i),
+    }));
 
     const restValue = sorted.slice(limit).reduce((acc, [, v]) => acc + v, 0);
     if (restValue > 0) {
@@ -51,7 +46,7 @@ export function SubcategoryBreakdown({ expenses, categories }: Props) {
     }
 
     return { slices: top, total: sum };
-  }, [expenses, categories, limit]);
+  }, [expenses, limit]);
 
   if (slices.length === 0 || total <= 0) {
     return (

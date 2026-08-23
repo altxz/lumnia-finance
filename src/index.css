@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Recharts injeta estilos claros inline no tooltip padrão. Estes seletores
+   mantêm todos os popups legíveis com os mesmos tokens da interface, inclusive
+   no dark mode. */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+  z-index: 40;
+}
+
+.recharts-default-tooltip {
+  background: hsl(var(--popover) / 0.96) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 1rem !important;
+  box-shadow: var(--shadow-card) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  padding: 0.65rem 0.8rem !important;
+  backdrop-filter: blur(14px);
+}
+
+.recharts-tooltip-label {
+  color: hsl(var(--muted-foreground)) !important;
+  font-weight: 600;
+  margin-bottom: 0.25rem !important;
+}
+
+.recharts-tooltip-item {
+  font-family: Figtree, system-ui, sans-serif !important;
+  font-weight: 600;
+}
+
 @layer base {
   :root {
     /* Paleta Lumnia: #8F41DE, #FF7535, #DAC0F4, #FFD6C2, #FFFFFF, #2C2C2C */
