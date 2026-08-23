@@ -4,22 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { CHART_SERIES, readableTextColor } from '@/lib/chartPalette';
 
 interface Props {
   expenses: any[];
   categories: any[];
 }
 
-const FALLBACK_COLORS = ['#6366f1','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+const FALLBACK_COLORS = CHART_SERIES;
 
 function CustomContent(props: any) {
   const { x, y, width, height, name, fill } = props;
   if (width < 30 || height < 20) return null;
+  const textColor = readableTextColor(fill);
   return (
     <g>
       <rect x={x} y={y} width={width} height={height} fill={fill} rx={4} stroke="hsl(var(--background))" strokeWidth={2} />
       {width > 50 && height > 30 && (
-        <text x={x + 6} y={y + 16} fill="#fff" fontSize={11} fontWeight={600}>{name?.slice(0, Math.floor(width / 7))}</text>
+        <text x={x + 6} y={y + 16} fill={textColor} fontSize={11} fontWeight={600}>{name?.slice(0, Math.floor(width / 7))}</text>
       )}
     </g>
   );

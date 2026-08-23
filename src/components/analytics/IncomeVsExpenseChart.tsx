@@ -62,7 +62,7 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
           ))}
           <div className="flex items-baseline justify-between border-t pt-2">
             <span className="text-[11px] text-muted-foreground">Resultado</span>
-            <span className={`text-sm font-bold tabular-nums ${saldo >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+            <span className={`text-sm font-bold tabular-nums ${saldo >= 0 ? 'text-success' : 'text-destructive'}`}>
               {saldo >= 0 ? '+' : ''}{formatCurrency(saldo)}
             </span>
           </div>

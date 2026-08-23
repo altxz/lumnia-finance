@@ -64,7 +64,7 @@ export function EndOfMonthForecast(_props: EndOfMonthForecastProps = {}) {
             <CardTitle className="text-sm font-semibold truncate">Previsão Fim de Mês</CardTitle>
             <InfoPopover><p>Projeção diária do saldo usando o mesmo cálculo da página de Transações: receitas, despesas em débito (pagas e pendentes), recorrências e o pagamento das faturas no vencimento.</p></InfoPopover>
           </div>
-          <span className={`text-sm font-bold shrink-0 ${endBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>{formatCurrency(endBalance)}</span>
+          <span className={`text-sm font-bold shrink-0 ${endBalance >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(endBalance)}</span>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4">

@@ -4,16 +4,10 @@ import { formatCurrency } from '@/lib/constants';
 import { MonthlyData } from '@/hooks/useAnalyticsData';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { chartAxisProps, chartGridProps } from '@/components/ui/chart';
+import { CHART_SERIES } from '@/lib/chartPalette';
 
-const AREA_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--success))',
-  'hsl(var(--chart-5))',
-  'hsl(var(--accent))',
-  'hsl(var(--destructive))',
-  'hsl(var(--chart-6))',
-  'hsl(var(--muted-foreground))',
-];
+const AREA_COLORS = CHART_SERIES;
+
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -65,7 +59,7 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
                 <defs>
                   <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="hsl(var(--primary))" />
-                    <stop offset="100%" stopColor="hsl(var(--chart-5))" />
+                    <stop offset="100%" stopColor="hsl(var(--chart-2))" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid {...chartGridProps} />

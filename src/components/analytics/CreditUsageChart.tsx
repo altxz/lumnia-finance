@@ -44,7 +44,7 @@ export function CreditUsageChart({ cards, unpaidExpenses }: Props) {
         {data.map((card) => {
           const colorClass =
             card.pct >= 90 ? 'bg-destructive' :
-            card.pct >= 70 ? 'bg-orange-500 dark:bg-destructive/70' :
+            card.pct >= 70 ? 'bg-warning dark:bg-warning/80' :
             'bg-primary';
 
           return (

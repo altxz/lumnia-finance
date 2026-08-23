@@ -62,8 +62,8 @@ export function DailySpendingChart({ expenses }: Props) {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="gradDailySpend" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--chart-6))" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="hsl(var(--chart-6))" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="gradDailyAvg" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
@@ -74,7 +74,7 @@ export function DailySpendingChart({ expenses }: Props) {
             <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} interval={4} />
             <YAxis tickFormatter={v => `R$${v}`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={50} />
             <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey="gasto" name="Gasto" stroke="hsl(var(--chart-6))" strokeWidth={1.5} fill="url(#gradDailySpend)" dot={false} />
+            <Area type="monotone" dataKey="gasto" name="Gasto" stroke="hsl(var(--chart-2))" strokeWidth={1.5} fill="url(#gradDailySpend)" dot={false} />
             <Area type="monotone" dataKey="media" name="Média" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#gradDailyAvg)" dot={false} strokeDasharray="4 2" />
           </AreaChart>
         </ResponsiveContainer>

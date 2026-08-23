@@ -5,13 +5,14 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { CHART_SERIES } from '@/lib/chartPalette';
 
 interface Props {
   expenses: any[];
   categories: any[];
 }
 
-const COLORS = ['hsl(var(--success))', 'hsl(var(--success))', 'hsl(var(--chart-8))', 'hsl(var(--chart-6))', 'hsl(var(--chart-6))'];
+const COLORS = CHART_SERIES;
 
 export function IncomeSourcesPie({ expenses, categories }: Props) {
   const isMobile = useIsMobile();
