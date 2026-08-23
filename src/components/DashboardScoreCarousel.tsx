@@ -49,7 +49,7 @@ function Dots({ score }: { score: number | null }) {
 function DimensionRow({ d }: { d: ScoreDimension }) {
   const color = d.score === null ? 'hsl(var(--muted-foreground))' : getScoreColor(d.score);
   return (
-    <div className="flex items-center gap-2 py-[3px] min-w-0">
+    <div className="flex items-center gap-2 py-[5px] min-w-0">
       <span className="text-[11px] leading-tight text-muted-foreground truncate flex-1 min-w-0">
         {d.label}
       </span>
@@ -216,7 +216,7 @@ export function DashboardScoreCarousel({
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-0 overflow-hidden">
-        <div className="w-full relative flex-1 min-h-[290px] sm:min-h-[250px]">
+        <div className="w-full relative flex-1 min-h-[300px]">
 
           {/* Slide 0: nota + dimensões com números reais + próximo passo */}
           <div
@@ -262,7 +262,7 @@ export function DashboardScoreCarousel({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 border-t border-border/50 pt-1.5 divide-y divide-border/40 sm:divide-y-0">
+            <div className="flex flex-col border-t border-border/50 pt-1 divide-y divide-border/40">
               {result.dimensions.map(d => <DimensionRow key={d.key} d={d} />)}
             </div>
 
