@@ -4,6 +4,7 @@ import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { lazyNamedWithRetry } from '@/lib/lazyWithRetry';
 import { UpdateBanner } from './UpdateBanner';
 import { BankTransactionCapture } from './BankTransactionCapture';
+import { MobileBottomNav } from './MobileBottomNav';
 
 const FloatingActionButton = lazyNamedWithRetry(() => import('./FloatingActionButton'), m => m.FloatingActionButton);
 const GeniusChatbot = lazyNamedWithRetry(() => import('./GeniusChatbot'), m => m.GeniusChatbot);
@@ -16,6 +17,7 @@ export function AuthenticatedExtras() {
     <Suspense fallback={null}>
       <FloatingActionButton />
       <GeniusChatbot />
+      <MobileBottomNav />
       <UpdateBanner />
       <BankTransactionCapture />
     </Suspense>

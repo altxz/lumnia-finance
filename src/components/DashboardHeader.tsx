@@ -36,9 +36,9 @@ export function DashboardHeader() {
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-border/50 bg-background/70 backdrop-blur-xl flex items-center justify-between px-4 lg:px-8">
+    <header className="sticky top-0 z-30 flex h-24 items-center justify-between border-b border-border/50 bg-background/70 px-4 pt-6 backdrop-blur-xl md:h-16 md:pt-0 lg:px-8">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="rounded-full">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden rounded-full md:inline-flex">
           <Menu className="h-5 w-5" />
         </Button>
         <h2 className="text-lg font-medium tracking-tight hidden sm:block">Painel de Despesas</h2>

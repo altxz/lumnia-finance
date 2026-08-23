@@ -226,6 +226,12 @@
       radial-gradient(900px 700px at 55% 108%, hsl(263 60% 24% / 0.38), transparent 65%);
   }
 
+  @media (max-width: 767px) {
+    main {
+      scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+    }
+  }
+
   h1 {
     @apply font-medium tracking-tight;
   }
@@ -303,6 +309,63 @@
 
 @layer utilities {
   /* Purse glassmorphism surfaces */
+  .mobile-bottom-shell {
+    filter: drop-shadow(0 18px 32px hsl(240 30% 4% / 0.42));
+    transition: opacity 180ms ease, transform 220ms ease, visibility 220ms ease;
+  }
+
+  /* Modals need the entire viewport, especially for their sticky action row. */
+  body:has([role="dialog"]) .mobile-bottom-shell {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(100% + 2rem));
+    visibility: hidden;
+  }
+
+  .mobile-bottom-nav {
+    border: 1px solid hsl(255 24% 95% / 0.12);
+    background: linear-gradient(145deg, hsl(246 22% 12% / 0.94), hsl(240 24% 7% / 0.9));
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.08), 0 18px 42px hsl(240 35% 3% / 0.38);
+    -webkit-backdrop-filter: blur(24px) saturate(135%);
+    backdrop-filter: blur(24px) saturate(135%);
+  }
+
+  .mobile-nav-item {
+    @apply mx-auto flex h-12 min-w-[54px] flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[9px] font-medium transition-all duration-200;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .mobile-nav-item.is-active {
+    color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.16);
+    box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.18), 0 8px 22px hsl(var(--primary) / 0.13);
+  }
+
+  .mobile-add-button {
+    @apply mx-auto flex h-[60px] w-[60px] -translate-y-3 items-center justify-center rounded-[22px] text-primary-foreground transition-transform active:scale-95;
+    background: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--accent)) 115%);
+    border: 4px solid hsl(242 23% 9% / 0.96);
+    box-shadow: 0 12px 28px hsl(var(--primary) / 0.38), inset 0 1px 0 hsl(0 0% 100% / 0.3);
+  }
+
+  .mobile-more-panel {
+    border: 1px solid hsl(var(--border) / 0.58);
+    background: hsl(var(--popover) / 0.9);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.12), 0 22px 55px hsl(240 30% 4% / 0.34);
+    -webkit-backdrop-filter: blur(26px) saturate(145%);
+    backdrop-filter: blur(26px) saturate(145%);
+  }
+
+  :root:not(.dark) .mobile-bottom-nav {
+    border-color: hsl(var(--glass-border));
+    background: linear-gradient(145deg, hsl(var(--popover) / 0.82), hsl(var(--card) / 0.7));
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.72), 0 18px 42px hsl(253 24% 35% / 0.2);
+  }
+
+  :root:not(.dark) .mobile-add-button {
+    border-color: hsl(var(--card) / 0.96);
+  }
+
   .glass {
     background-image: var(--gradient-card);
     background-color: hsl(var(--card) / 0.65);

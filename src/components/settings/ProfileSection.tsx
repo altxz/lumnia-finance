@@ -87,7 +87,7 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
           <CardDescription>Clique no avatar para alterar</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               <Avatar className="h-20 w-20 border-2 border-border">
                 <AvatarImage src={previewUrl || ''} />
@@ -98,9 +98,9 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
               </div>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-semibold">{settings.full_name || 'Sem nome'}</p>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <p className="break-all text-sm text-muted-foreground">{user?.email}</p>
               <p className="text-xs text-muted-foreground mt-1">Conta criada em {formatDate(user?.created_at || new Date().toISOString())}</p>
             </div>
           </div>
@@ -172,15 +172,15 @@ export function ProfileSection({ settings, onChange, user, stats }: ProfileSecti
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"><BarChart3 className="h-5 w-5 text-primary" /></div>
-              <div><p className="text-xs text-muted-foreground">Total Despesas</p><p className="font-bold text-lg">{stats.totalExpenses}</p></div>
+              <div className="min-w-0"><p className="text-xs text-muted-foreground">Total Despesas</p><p className="font-bold text-lg">{stats.totalExpenses}</p></div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
               <div className="w-10 h-10 rounded-xl bg-ai/10 flex items-center justify-center"><Calendar className="h-5 w-5 text-ai" /></div>
-              <div><p className="text-xs text-muted-foreground">Mês Mais Ativo</p><p className="font-bold">{stats.mostActiveMonth || '—'}</p></div>
+              <div className="min-w-0"><p className="text-xs text-muted-foreground">Mês Mais Ativo</p><p className="font-bold leading-snug">{stats.mostActiveMonth || '—'}</p></div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
               <div className="w-10 h-10 rounded-xl bg-accent/30 flex items-center justify-center"><User className="h-5 w-5 text-accent-foreground" /></div>
-              <div><p className="text-xs text-muted-foreground">Categoria Favorita</p><p className="font-bold">{stats.favoriteCategory || '—'}</p></div>
+              <div className="min-w-0"><p className="text-xs text-muted-foreground">Categoria Favorita</p><p className="font-bold leading-snug">{stats.favoriteCategory || '—'}</p></div>
             </div>
           </div>
         </CardContent>

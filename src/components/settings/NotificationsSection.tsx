@@ -64,7 +64,7 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
       {isAndroidApp && (
         <Card className="rounded-2xl border-ai/25">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex flex-wrap items-center gap-2">
               <Landmark className="h-5 w-5 text-ai" />
               Detecção de Transações Bancárias
               <Badge variant="outline" className="text-[10px] ml-1">Android</Badge>
@@ -79,11 +79,11 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
               </p>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <Label className="text-sm font-medium">Acesso às notificações bancárias</Label>
                 <p className="text-xs text-muted-foreground">{bankCaptureEnabled ? 'Ativado no Android' : 'Desativado no Android'}</p>
               </div>
-              <Button variant={bankCaptureEnabled ? 'outline' : 'default'} onClick={() => bankCaptureEnabled ? BankNotificationCapture.openSettings() : setDisclosureOpen(true)}>
+              <Button className="shrink-0" variant={bankCaptureEnabled ? 'outline' : 'default'} onClick={() => bankCaptureEnabled ? BankNotificationCapture.openSettings() : setDisclosureOpen(true)}>
                 {bankCaptureEnabled ? 'Gerenciar' : 'Ativar'}
               </Button>
             </div>
@@ -129,8 +129,8 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 space-y-0.5">
                 <Label className="text-sm font-medium">Lembretes de Contas a Vencer</Label>
                 <p className="text-xs text-muted-foreground">
                   {isSubscribed
@@ -143,7 +143,7 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
                   </p>
                 )}
               </div>
-              <Switch
+              <Switch className="shrink-0"
                 checked={isSubscribed}
                 onCheckedChange={handleTogglePush}
                 disabled={permission === 'denied'}
@@ -164,12 +164,12 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
             { key: 'notify_email_alerts', label: 'Alertas de Gastos', desc: 'Aviso quando ultrapassar limites de gastos' },
             { key: 'notify_email_news', label: 'Novas Funcionalidades', desc: 'Fique por dentro das novidades da Lumnia' },
           ].map(item => (
-            <div key={item.key} className="flex items-center justify-between py-2">
-              <div className="space-y-0.5">
+            <div key={item.key} className="flex items-center justify-between gap-4 py-2">
+              <div className="min-w-0 space-y-0.5">
                 <Label className="text-sm font-medium">{item.label}</Label>
                 <p className="text-xs text-muted-foreground">{item.desc}</p>
               </div>
-              <Switch checked={settings[item.key]} onCheckedChange={v => onChange(item.key, v)} />
+              <Switch className="shrink-0" checked={settings[item.key]} onCheckedChange={v => onChange(item.key, v)} />
             </div>
           ))}
         </CardContent>
@@ -186,12 +186,12 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
             { key: 'notify_app_reminders', label: 'Lembretes de Cadastro', desc: 'Lembretes para registrar despesas' },
             { key: 'notify_app_achievements', label: 'Conquistas', desc: 'Notificações de metas e conquistas' },
           ].map(item => (
-            <div key={item.key} className="flex items-center justify-between py-2">
-              <div className="space-y-0.5">
+            <div key={item.key} className="flex items-center justify-between gap-4 py-2">
+              <div className="min-w-0 space-y-0.5">
                 <Label className="text-sm font-medium">{item.label}</Label>
                 <p className="text-xs text-muted-foreground">{item.desc}</p>
               </div>
-              <Switch checked={settings[item.key]} onCheckedChange={v => onChange(item.key, v)} />
+              <Switch className="shrink-0" checked={settings[item.key]} onCheckedChange={v => onChange(item.key, v)} />
             </div>
           ))}
         </CardContent>

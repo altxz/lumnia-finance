@@ -21,6 +21,8 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { settings } = useUserSettings();
 
+  if (isMobile) return null;
+
   const items = [
     { title: 'Dashboard', url: '/', icon: LayoutDashboard, visible: true, badge: false },
     { title: 'Transações', url: '/historico', icon: ArrowLeftRight, visible: true, badge: false },

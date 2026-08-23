@@ -100,7 +100,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
           {newPassword && confirmPassword && newPassword !== confirmPassword && (
             <p className="text-xs text-destructive">As senhas não conferem</p>
           )}
-          <Button onClick={handleChangePassword} disabled={changingPassword || !newPassword || !confirmPassword} className="rounded-xl">
+          <Button onClick={handleChangePassword} disabled={changingPassword || !newPassword || !confirmPassword} className="w-full rounded-xl sm:w-auto">
             {changingPassword ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Alterando...</> : 'Alterar Senha'}
           </Button>
         </CardContent>
@@ -115,7 +115,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
           <div className="rounded-xl border p-4 space-y-3">
             <div className="flex items-start gap-3">
               <FileSpreadsheet className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <p className="text-sm font-semibold">Planilha Excel (.xlsx)</p>
                 <p className="text-xs text-muted-foreground">
                   Extração completa com abas de Transações (dia a dia, categoria, débito, crédito, status),
@@ -133,7 +133,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
           <div className="rounded-xl border p-4 space-y-3">
             <div className="flex items-start gap-3">
               <Download className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <p className="text-sm font-semibold">Backup JSON (LGPD)</p>
                 <p className="text-xs text-muted-foreground">Arquivo bruto com suas transações, para portabilidade de dados.</p>
               </div>
@@ -177,7 +177,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
         <CardContent>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="gap-2 rounded-xl"><Trash2 className="h-4 w-4" />Excluir Minha Conta</Button>
+              <Button variant="destructive" className="w-full gap-2 rounded-xl sm:w-auto"><Trash2 className="h-4 w-4" />Excluir Minha Conta</Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>

@@ -196,16 +196,16 @@ export function CategoriesSection() {
                 const subs = getChildren(parent.id);
                 return (
                   <AccordionItem key={parent.id} value={parent.id} className="border-b-0">
-                    <div className="flex items-center gap-2 group">
+                    <div className="group flex min-w-0 items-center gap-1 sm:gap-2">
                       <AccordionTrigger className="flex-1 py-3 hover:no-underline">
-                        <div className="flex items-center gap-3">
+                        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                           <div
                             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                             style={{ backgroundColor: parent.color + '20' }}
                           >
                             <LucideIcon name={parent.icon} className="h-4 w-4" />
                           </div>
-                          <span className="font-semibold text-sm">{parent.name}</span>
+                          <span className="min-w-0 truncate text-sm font-semibold">{parent.name}</span>
                           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: parent.color }} />
                           {subs.length > 0 && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
@@ -214,7 +214,7 @@ export function CategoriesSection() {
                           )}
                         </div>
                       </AccordionTrigger>
-                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+                      <div className="mr-1 flex shrink-0 gap-0.5 opacity-100 transition-opacity md:mr-2 md:opacity-0 md:group-hover:opacity-100">
                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-primary" onClick={(e) => { e.stopPropagation(); openAddSub(parent.id); }} title="Adicionar subcategoria">
                           <PlusCircle className="h-3.5 w-3.5" />
                         </Button>
@@ -265,14 +265,14 @@ export function CategoriesSection() {
                               >
                                 <LucideIcon name={sub.icon} className="h-3.5 w-3.5" />
                               </div>
-                              <span className="text-sm flex-1">{sub.name}</span>
+                              <span className="min-w-0 flex-1 truncate text-sm">{sub.name}</span>
                               <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: sub.color }} />
                               {sub.keywords && sub.keywords.length > 0 && (
                                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
                                   {sub.keywords.length} keywords
                                 </Badge>
                               )}
-                              <div className="flex gap-0.5 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+                              <div className="flex shrink-0 gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover/sub:opacity-100">
                                 <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg" onClick={() => openEdit(sub)}>
                                   <Pencil className="h-2.5 w-2.5" />
                                 </Button>
@@ -380,7 +380,7 @@ export function CategoriesSection() {
             {/* Icon */}
             <div className="space-y-2">
               <Label>Ícone</Label>
-              <div className="grid grid-cols-10 gap-1.5 max-h-32 overflow-y-auto">
+              <div className="grid max-h-32 grid-cols-8 gap-1.5 overflow-y-auto sm:grid-cols-10">
                 {ICON_OPTIONS.map(icon => (
                   <button
                     key={icon}
@@ -425,7 +425,7 @@ export function CategoriesSection() {
             {/* Preview */}
             <div className="space-y-2">
               <Label>Preview</Label>
-              <div className="flex items-center gap-3 p-3 rounded-xl border bg-secondary/30">
+              <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border bg-secondary/30 sm:gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: form.color + '20' }}>
                   <LucideIcon name={form.icon} className="h-4 w-4" />
                 </div>

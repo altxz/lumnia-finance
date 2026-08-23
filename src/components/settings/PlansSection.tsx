@@ -32,8 +32,8 @@ export function PlansSection({ plan, expenseCount }: PlansSectionProps) {
       {/* Current Plan */}
       <Card className={`rounded-2xl border-2 ${plan === 'premium' ? 'border-accent bg-accent/5' : 'border-primary/20'}`}>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <CardTitle className="text-lg flex items-center gap-2">
                 {plan === 'premium' ? <Crown className="h-5 w-5 text-accent-foreground" /> : <Sparkles className="h-5 w-5 text-primary" />}
                 Plano {plan === 'premium' ? 'Premium' : 'Gratuito'}
@@ -70,7 +70,7 @@ export function PlansSection({ plan, expenseCount }: PlansSectionProps) {
             <div className="flex items-center gap-3">
               <Crown className="h-8 w-8" />
               <div>
-                <h3 className="text-xl font-bold">Upgrade para Premium</h3>
+                <h3 className="text-xl font-bold leading-tight">Upgrade para Premium</h3>
                 <p className="text-sm opacity-80">Desbloqueie todo o potencial da IA</p>
               </div>
             </div>
@@ -92,15 +92,16 @@ export function PlansSection({ plan, expenseCount }: PlansSectionProps) {
           <CardTitle className="text-lg">Comparativo de Planos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-muted-foreground pb-2 border-b">
+          <div className="overflow-x-auto pb-1">
+           <div className="min-w-[460px] space-y-3">
+            <div className="grid grid-cols-[minmax(190px,1fr)_90px_90px] gap-2 text-xs font-semibold text-muted-foreground pb-2 border-b">
               <span>Funcionalidade</span>
               <span className="text-center">Gratuito</span>
               <span className="text-center">Premium</span>
             </div>
             {features.map(f => (
-              <div key={f.name} className="grid grid-cols-3 gap-2 text-sm items-center">
-                <span>{f.name}</span>
+              <div key={f.name} className="grid grid-cols-[minmax(190px,1fr)_90px_90px] gap-2 text-sm items-center">
+                <span className="whitespace-nowrap">{f.name}</span>
                 <div className="text-center">
                   {f.free === true ? <CheckCircle className="h-4 w-4 text-accent-foreground mx-auto" /> :
                    f.free === false ? <XCircle className="h-4 w-4 text-muted-foreground mx-auto" /> :
@@ -112,6 +113,7 @@ export function PlansSection({ plan, expenseCount }: PlansSectionProps) {
                 </div>
               </div>
             ))}
+           </div>
           </div>
         </CardContent>
       </Card>

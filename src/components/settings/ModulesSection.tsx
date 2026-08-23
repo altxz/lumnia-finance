@@ -53,7 +53,7 @@ export function ModulesSection() {
           return (
             <div
               key={mod.key}
-              className="flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-secondary/30"
+              className="flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-secondary/30 sm:gap-4 sm:p-4"
             >
               <div className={`w-10 h-10 rounded-xl bg-secondary flex items-center justify-center shrink-0`}>
                 <Icon className={`h-5 w-5 ${mod.color}`} />
@@ -62,7 +62,7 @@ export function ModulesSection() {
                 <Label className="text-sm font-semibold cursor-pointer">{mod.title}</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">{mod.description}</p>
               </div>
-              <Switch
+              <Switch className="shrink-0"
                 checked={settings[mod.key]}
                 onCheckedChange={(v) => updateSetting(mod.key, v)}
               />

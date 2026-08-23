@@ -159,7 +159,7 @@ export default function SettingsPage() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto pb-24">
+          <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto pb-40 md:pb-24">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Configurações</h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">Personalize sua experiência na Lumnia</p>
@@ -170,40 +170,40 @@ export default function SettingsPage() {
             ) : (
               <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
                 <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 pb-1 -webkit-overflow-scrolling-touch">
-                  <TabsList className="rounded-xl bg-secondary/50 p-1 h-auto gap-1 w-max sm:w-auto sm:flex-wrap">
-                    <TabsTrigger value="profile" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Perfil</TabsTrigger>
-                    <TabsTrigger value="ai" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />IA</TabsTrigger>
-                    <TabsTrigger value="automation" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Auto</TabsTrigger>
-                    <TabsTrigger value="notifications" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Notif.</TabsTrigger>
-                    <TabsTrigger value="security" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Seg.</TabsTrigger>
-                    <TabsTrigger value="categories" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Cat.</TabsTrigger>
-                    <TabsTrigger value="modules" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><ToggleRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Mód.</TabsTrigger>
-                    <TabsTrigger value="plans" className="rounded-lg gap-1 sm:gap-1.5 data-[state=active]:bg-background text-xs sm:text-sm min-h-[44px]"><Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Planos</TabsTrigger>
+                  <TabsList className="floating-glass rounded-2xl p-1 h-auto gap-1 w-max sm:w-auto sm:flex-wrap">
+                    <TabsTrigger value="profile" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Perfil</TabsTrigger>
+                    <TabsTrigger value="ai" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />IA</TabsTrigger>
+                    <TabsTrigger value="automation" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Auto</TabsTrigger>
+                    <TabsTrigger value="notifications" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Notif.</TabsTrigger>
+                    <TabsTrigger value="security" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Seg.</TabsTrigger>
+                    <TabsTrigger value="categories" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Cat.</TabsTrigger>
+                    <TabsTrigger value="modules" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><ToggleRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Mód.</TabsTrigger>
+                    <TabsTrigger value="plans" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Planos</TabsTrigger>
                   </TabsList>
                 </div>
 
-                <TabsContent value="profile">
+                <TabsContent value="profile" className="settings-pane">
                   <ProfileSection settings={settings} onChange={handleChange} user={user} stats={stats} />
                 </TabsContent>
-                <TabsContent value="ai">
+                <TabsContent value="ai" className="settings-pane">
                   <AiSection settings={settings} onChange={handleChange} />
                 </TabsContent>
-                <TabsContent value="automation">
+                <TabsContent value="automation" className="settings-pane">
                   <AutomationSection rules={rules} onRulesChange={fetchSettings} userId={user.id} />
                 </TabsContent>
-                <TabsContent value="notifications">
+                <TabsContent value="notifications" className="settings-pane">
                   <NotificationsSection settings={settings} onChange={handleChange} />
                 </TabsContent>
-                <TabsContent value="security">
+                <TabsContent value="security" className="settings-pane">
                   <SecuritySection user={user} onDeleteAccount={handleDeleteAccount} />
                 </TabsContent>
-                <TabsContent value="categories">
+                <TabsContent value="categories" className="settings-pane">
                   <CategoriesSection />
                 </TabsContent>
-                <TabsContent value="modules">
+                <TabsContent value="modules" className="settings-pane">
                   <ModulesSection />
                 </TabsContent>
-                <TabsContent value="plans">
+                <TabsContent value="plans" className="settings-pane">
                   <PlansSection plan={settings.plan} expenseCount={stats.totalExpenses} />
                 </TabsContent>
               </Tabs>
@@ -212,10 +212,10 @@ export default function SettingsPage() {
 
           {/* Fixed save footer */}
           {dirty && (
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur border-t p-4 flex items-center justify-end gap-3">
-              <p className="text-sm text-muted-foreground mr-auto">Você tem alterações não salvas</p>
-              <Button variant="outline" onClick={fetchSettings} className="rounded-xl">Descartar</Button>
-              <Button onClick={handleSave} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold gap-2">
+            <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-3 right-3 z-50 floating-glass rounded-2xl p-3 flex flex-wrap items-center justify-end gap-2 md:bottom-0 md:left-0 md:right-0 md:rounded-none md:border-x-0 md:border-b-0 md:p-4">
+              <p className="w-full text-xs text-muted-foreground md:mr-auto md:w-auto md:text-sm">Você tem alterações não salvas</p>
+              <Button size="sm" variant="outline" onClick={fetchSettings} className="rounded-xl">Descartar</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold gap-2">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 {saving ? 'Salvando...' : 'Salvar Alterações'}
               </Button>

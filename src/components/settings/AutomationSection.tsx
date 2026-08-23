@@ -70,12 +70,12 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
     <div className="space-y-6">
       <Card className="rounded-2xl">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle className="text-lg flex items-center gap-2"><Zap className="h-5 w-5 text-accent-foreground" />Regras de Automação</CardTitle>
               <CardDescription>Crie regras para categorizar despesas automaticamente</CardDescription>
             </div>
-            <Button onClick={() => setModalOpen(true)} size="sm" className="gap-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            <Button onClick={() => setModalOpen(true)} size="sm" className="w-full gap-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold sm:w-auto">
               <PlusCircle className="h-4 w-4" />
               Nova Regra
             </Button>
@@ -98,7 +98,7 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
                       <p className="text-sm font-medium">
                         Se descrição <span className="text-ai font-semibold">{operatorLabel(rule.condition_operator)}</span> "{rule.condition_value}"
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">→</span>
                         <Badge variant={catInfo.variant} className="text-xs">{catInfo.label}</Badge>
                         <span className="text-xs text-muted-foreground">• {rule.applied_count}x aplicada</span>

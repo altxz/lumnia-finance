@@ -51,6 +51,16 @@ export function GeniusChatbot() {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    const toggleAi = () => setIsOpen(open => !open);
+    window.addEventListener('lumnia:toggle-ai', toggleAi);
+    return () => window.removeEventListener('lumnia:toggle-ai', toggleAi);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('lumnia:ai-state', { detail: isOpen }));
+  }, [isOpen]);
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isTyping || !user) return;
@@ -168,7 +178,7 @@ export function GeniusChatbot() {
   return (
     <>
       {isOpen && (
-        <div className="glass fixed bottom-20 left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[70vh] rounded-3xl shadow-float flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="glass fixed bottom-[calc(7.1rem+env(safe-area-inset-bottom))] left-3 z-[61] w-[calc(100vw-1.5rem)] sm:bottom-20 sm:left-6 sm:w-96 h-[500px] max-h-[68vh] rounded-3xl shadow-float flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b bg-primary text-primary-foreground">
             <div className="w-9 h-9 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
@@ -266,7 +276,7 @@ export function GeniusChatbot() {
       <Button
         onClick={() => setIsOpen(prev => !prev)}
         className={cn(
-          'fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-4 sm:left-6 z-50 rounded-full shadow-float transition-all duration-300',
+          'fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-4 sm:left-6 z-50 hidden rounded-full shadow-float transition-all duration-300 md:inline-flex',
           'h-11 w-11 md:h-14 md:w-14',
           isOpen
             ? 'bg-muted text-muted-foreground hover:bg-muted/80 scale-90'

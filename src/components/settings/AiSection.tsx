@@ -21,16 +21,16 @@ export function AiSection({ settings, onChange }: AiSectionProps) {
           <CardDescription>Configure como a IA processa suas despesas</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 space-y-0.5">
               <Label className="text-sm font-medium">IA Automática</Label>
               <p className="text-xs text-muted-foreground">Categoriza despesas automaticamente ao adicionar</p>
             </div>
-            <Switch checked={settings.ai_auto_categorize} onCheckedChange={v => onChange('ai_auto_categorize', v)} />
+            <Switch className="shrink-0" checked={settings.ai_auto_categorize} onCheckedChange={v => onChange('ai_auto_categorize', v)} />
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-medium">Confiança Mínima</Label>
                 <Tooltip>
@@ -52,8 +52,8 @@ export function AiSection({ settings, onChange }: AiSectionProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 space-y-0.5">
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-medium">Aprender com Correções</Label>
                 <Tooltip>
@@ -63,7 +63,7 @@ export function AiSection({ settings, onChange }: AiSectionProps) {
               </div>
               <p className="text-xs text-muted-foreground">Melhora a precisão baseada no seu histórico</p>
             </div>
-            <Switch checked={settings.ai_learn_corrections} onCheckedChange={v => onChange('ai_learn_corrections', v)} />
+            <Switch className="shrink-0" checked={settings.ai_learn_corrections} onCheckedChange={v => onChange('ai_learn_corrections', v)} />
           </div>
         </CardContent>
       </Card>
