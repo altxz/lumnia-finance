@@ -12,7 +12,7 @@ const AREA_COLORS = CHART_SERIES;
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-2xl px-3 py-2 shadow-card border border-border/60 bg-popover/95 backdrop-blur-xl">
+    <div className="chart-tooltip-surface">
       <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} className="text-xs font-semibold" style={{ color: p.color || 'hsl(var(--popover-foreground))' }}>

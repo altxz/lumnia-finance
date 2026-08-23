@@ -58,7 +58,22 @@ export function WeekComparisonChart({ expenses }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={v => `R$${v}`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={45} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
+            <Tooltip
+              cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                return (
+                  <div className="chart-tooltip-surface">
+                    <p className="mb-1 font-semibold text-popover-foreground">{label}</p>
+                    {payload.map((item: any) => (
+                      <p key={item.dataKey} className="font-medium" style={{ color: item.color }}>
+                        {item.name}: {formatCurrency(Number(item.value))}
+                      </p>
+                    ))}
+                  </div>
+                );
+              }}
+            />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="atual" name="Esta semana" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
             <Bar dataKey="anterior" name="Semana passada" fill="hsl(var(--muted-foreground))" opacity={0.5} radius={[8, 8, 0, 0]} />

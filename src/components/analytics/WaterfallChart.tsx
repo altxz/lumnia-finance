@@ -104,7 +104,7 @@ export function WaterfallChart({
                   if (!active || !payload?.length) return null;
                   const item = payload[0]?.payload as WaterfallItem;
                   return (
-                    <div className="glass-soft rounded-xl p-2.5 text-xs text-popover-foreground shadow-float max-w-[220px]">
+                    <div className="chart-tooltip-surface">
                       <p className="font-semibold mb-1">{item.name}</p>
                       <p style={{ color: COLORS[item.type] }}>
                         {item.amount >= 0 ? '+' : ''}

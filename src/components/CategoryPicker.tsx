@@ -107,7 +107,7 @@ export function CategoryPicker({
       </Button>
 
       {open && (
-        <div className="mt-1 rounded-xl border border-border bg-popover shadow-float max-h-[280px] overflow-y-auto overflow-x-hidden">
+        <div className="floating-glass mt-1 rounded-2xl max-h-[280px] overflow-y-auto overflow-x-hidden">
           <Accordion type="single" collapsible defaultValue={defaultAccordion}>
             {grouped.map(group => {
               const hasSubs = group.subs.length > 0;

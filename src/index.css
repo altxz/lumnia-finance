@@ -11,24 +11,31 @@
 }
 
 .recharts-default-tooltip {
-  background: hsl(var(--popover) / 0.96) !important;
-  border: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--popover) / 0.78) !important;
+  border: 1px solid hsl(var(--glass-border)) !important;
   border-radius: 1rem !important;
   box-shadow: var(--shadow-card) !important;
   color: hsl(var(--popover-foreground)) !important;
   padding: 0.65rem 0.8rem !important;
-  backdrop-filter: blur(14px);
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 .recharts-tooltip-label {
   color: hsl(var(--muted-foreground)) !important;
   font-weight: 600;
   margin-bottom: 0.25rem !important;
+  font-size: 0.75rem !important;
 }
 
 .recharts-tooltip-item {
   font-family: Inter, system-ui, sans-serif !important;
   font-weight: 600;
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
 }
 
 @layer base {
@@ -67,7 +74,7 @@
     --warning-foreground: 0 0% 100%;
 
     --ai: 263 91% 70%;
-    --ai-foreground: 0 0% 100%;
+    --ai-foreground: 240 26% 5%;
 
     --pink: 156 64% 81%;
     --pink-foreground: 255 29% 13%;
@@ -147,7 +154,7 @@
     --ai-foreground: 0 0% 100%;
 
     --pink: 156 64% 81%;
-    --pink-foreground: 0 0% 100%;
+    --pink-foreground: 240 26% 5%;
 
     --border: 255 18% 25%;
     --input: 255 18% 25%;
@@ -311,6 +318,26 @@
     box-shadow: var(--shadow-soft);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+  }
+
+  /* Shared floating surface for selects, dropdowns, category menus and charts. */
+  .floating-glass,
+  .chart-tooltip-surface {
+    background-color: hsl(var(--popover) / 0.78);
+    border: 1px solid hsl(var(--glass-border));
+    color: hsl(var(--popover-foreground));
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  .chart-tooltip-surface {
+    max-width: min(17rem, calc(100vw - 2rem));
+    border-radius: 1rem;
+    padding: 0.65rem 0.8rem;
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 0.75rem;
+    line-height: 1.35;
   }
 
   /* Sliding glass panel (Apple-like sheet that rises over the page background) */

@@ -16,7 +16,7 @@ interface Props {
 const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-2xl px-3 py-2 shadow-card border border-border/60 bg-popover/95 backdrop-blur-xl">
+    <div className="chart-tooltip-surface">
       <p className="text-xs font-semibold text-popover-foreground">{payload[0].name}</p>
       <p className="text-xs text-muted-foreground">{formatCurrency(payload[0].value)}</p>
     </div>
