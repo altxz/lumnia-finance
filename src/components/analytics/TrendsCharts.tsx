@@ -4,16 +4,10 @@ import { formatCurrency } from '@/lib/constants';
 import { MonthlyData } from '@/hooks/useAnalyticsData';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { chartAxisProps, chartGridProps } from '@/components/ui/chart';
+import { CHART_SERIES } from '@/lib/chartPalette';
 
-const AREA_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--success))',
-  'hsl(var(--chart-5))',
-  'hsl(var(--accent))',
-  'hsl(var(--destructive))',
-  'hsl(var(--chart-6))',
-  'hsl(var(--muted-foreground))',
-];
+const AREA_COLORS = CHART_SERIES;
+
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
