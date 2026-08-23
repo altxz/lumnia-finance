@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getAvatarSignedUrl } from '@/lib/avatarUrl';
 import { useUserSettingsRow } from '@/hooks/useUserSettingsRow';
-import { Logo } from '@/components/Logo';
 
 import { useTheme } from 'next-themes';
 
@@ -51,7 +50,10 @@ export function DashboardHeader() {
         <h2 className="hidden text-lg font-medium tracking-tight md:block">Painel de Despesas</h2>
       </div>
 
-      <Logo size={38} showText={false} className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:hidden" />
+      <div className="pointer-events-none absolute left-14 right-36 flex justify-center md:hidden" aria-label="Lumnia">
+        <img src="/brand-logo-black.svg" alt="Lumnia" className="h-6 w-auto dark:hidden" />
+        <img src="/brand-logo-white.svg" alt="Lumnia" className="hidden h-6 w-auto dark:block" />
+      </div>
 
       <div className="flex items-center gap-1 sm:gap-4">
         <div className="hidden items-center gap-2 md:flex sm:gap-3">

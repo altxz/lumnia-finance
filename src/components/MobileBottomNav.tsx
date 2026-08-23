@@ -61,12 +61,12 @@ export function MobileBottomNav() {
         <div className="mobile-bottom-nav grid h-[74px] grid-cols-5 items-center rounded-[27px] px-2">
           {primaryItems.map(item => (
             <button key={item.path} onClick={() => navigateTo(item.path)} className={cn('mobile-nav-item', isActive(item.path) && 'is-active')} aria-current={isActive(item.path) ? 'page' : undefined} aria-label={item.label}>
-              <item.icon className="h-[20px] w-[20px]" strokeWidth={1.8} /><span>{item.label}</span>
+              <span className="mobile-nav-icon"><item.icon className="h-[20px] w-[20px]" strokeWidth={1.8} /></span><span>{item.label}</span>
             </button>
           ))}
           <button onClick={() => window.dispatchEvent(new CustomEvent('lumnia:open-transaction'))} className="mobile-add-button" aria-label="Adicionar nova transação"><Plus className="h-7 w-7" strokeWidth={2.4} /></button>
-          <button onClick={() => window.dispatchEvent(new CustomEvent('lumnia:toggle-ai'))} className={cn('mobile-nav-item', aiOpen && 'is-active')} aria-label="Abrir inteligência artificial"><Sparkles className="h-[20px] w-[20px]" strokeWidth={1.8} /><span>IA</span></button>
-          <button onClick={() => setMoreOpen(open => !open)} className={cn('mobile-nav-item', (moreOpen || moreIsActive) && 'is-active')} aria-expanded={moreOpen} aria-label="Mais opções"><Grid2X2 className="h-[20px] w-[20px]" strokeWidth={1.8} /><span>Mais</span></button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('lumnia:toggle-ai'))} className={cn('mobile-nav-item', aiOpen && 'is-active')} aria-label="Abrir inteligência artificial"><span className="mobile-nav-icon"><Sparkles className="h-[20px] w-[20px]" strokeWidth={1.8} /></span><span>IA</span></button>
+          <button onClick={() => setMoreOpen(open => !open)} className={cn('mobile-nav-item', (moreOpen || moreIsActive) && 'is-active')} aria-expanded={moreOpen} aria-label="Mais opções"><span className="mobile-nav-icon"><Grid2X2 className="h-[20px] w-[20px]" strokeWidth={1.8} /></span><span>Mais</span></button>
         </div>
       </nav>
     </>
