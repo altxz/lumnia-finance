@@ -19,7 +19,7 @@ export function SavingsRateGauge({ totalIncome, totalExpense }: Props) {
   const offset = circumference - (rate / 100) * circumference;
 
   const ratingLabel = rate >= 30 ? 'Excelente' : rate >= 20 ? 'Bom' : rate >= 10 ? 'Atenção' : 'Crítico';
-  const ratingColor = rate >= 30 ? 'hsl(var(--success))' : rate >= 20 ? 'hsl(var(--success))' : rate >= 10 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))';
+  const ratingColor = rate >= 30 ? 'hsl(var(--success))' : rate >= 20 ? 'hsl(var(--chart-1))' : rate >= 10 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))';
 
   return (
     <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
