@@ -36,8 +36,8 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
     children: [
       { name: 'Combustível', icon: 'fuel', color: '#8B5CF6', keywords: ['Posto', 'Shell', 'Petrobrás', 'Ipiranga'] },
       { name: 'Estacionamento', icon: 'car', color: '#8B5CF6', keywords: ['Estacionamento', 'Estapar'] },
-      { name: 'Uber', icon: 'car', color: '#5447BC', keywords: ['Uber'] },
-      { name: 'Transporte Público', icon: 'bus', color: '#5447BC', keywords: ['ônibus', 'metro', 'metrô', 'bilhete', 'passagem'] },
+      { name: 'Uber', icon: 'car', color: '#612CFA', keywords: ['Uber'] },
+      { name: 'Transporte Público', icon: 'bus', color: '#612CFA', keywords: ['ônibus', 'metro', 'metrô', 'bilhete', 'passagem'] },
     ],
   },
   {
@@ -72,7 +72,7 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
   {
     name: 'Financeiro', icon: 'circle-dollar-sign', color: '#EF4444', keywords: ['despesa financeira', 'juros', 'financeiro'],
     children: [
-      { name: 'Investimentos', icon: 'trending-up', color: '#BEEE62', keywords: ['Invest'] },
+      { name: 'Investimentos', icon: 'trending-up', color: '#51D3A6', keywords: ['Invest'] },
       { name: 'Juros/Multas', icon: 'percent', color: '#EF4444', keywords: ['Juros', 'Renegociação', 'Despesa'] },
       { name: 'Empréstimos', icon: 'hand-coins', color: '#EF4444', keywords: ['Empréstimo'] },
       { name: 'Transferências', icon: 'arrow-up-down', color: '#EF4444', keywords: [] },
@@ -92,7 +92,7 @@ const DEFAULT_CATEGORIES: CategorySeed[] = [
     name: 'Compras', icon: 'shopping-bag', color: '#8B5CF6', keywords: ['compras', 'shopping'],
     children: [
       { name: 'Eletrônicos', icon: 'laptop', color: '#8B5CF6', keywords: ['Fast Shop', 'Magalu'] },
-      { name: 'Vestuário e Acessórios', icon: 'shirt', color: '#5447BC', keywords: ['Roupa', 'Zara', 'Riachuelo', 'C&A', 'Renner', 'Adidas', 'Nike', 'New Balance'] },
+      { name: 'Vestuário e Acessórios', icon: 'shirt', color: '#A36EF9', keywords: ['Roupa', 'Zara', 'Riachuelo', 'C&A', 'Renner', 'Adidas', 'Nike', 'New Balance'] },
       { name: 'Casa e Decoração', icon: 'house', color: '#8B5CF6', keywords: ['Tok & Stok', 'Mobly', 'Camicado'] },
       { name: 'Eletrodomésticos', icon: 'tv', color: '#8B5CF6', keywords: ['Fast Shop'] },
       { name: 'Pet Shop', icon: 'dog', color: '#8B5CF6', keywords: ['Pet', 'Petlove', 'Petz'] },

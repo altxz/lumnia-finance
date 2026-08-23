@@ -9,7 +9,7 @@ const THEMES = { light: "", dark: ".dark" } as const;
 const chartAxisProps = {
   axisLine: false,
   tickLine: false,
-  tick: { fontSize: 10, fill: "hsl(var(--muted-foreground))", fontFamily: "Figtree, system-ui, sans-serif" },
+  tick: { fontSize: 10, fill: "hsl(var(--muted-foreground))", fontFamily: "Inter, system-ui, sans-serif" },
 } as const;
 
 const chartGridProps = {

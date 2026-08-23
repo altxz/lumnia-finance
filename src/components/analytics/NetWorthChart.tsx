@@ -93,7 +93,7 @@ export function NetWorthChart() {
                 background: 'hsl(var(--popover) / 0.88)',
                 color: 'hsl(var(--popover-foreground))',
                 fontSize: '12px',
-                fontFamily: 'Figtree, system-ui, sans-serif',
+                fontFamily: 'Inter, system-ui, sans-serif',
                 boxShadow: 'var(--shadow-float)',
               }}
             />

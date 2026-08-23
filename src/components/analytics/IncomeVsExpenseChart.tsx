@@ -91,7 +91,7 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
             <XAxis {...chartAxisProps} dataKey="name" />
             <YAxis {...chartAxisProps} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={34} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
-            <Legend iconType="circle" wrapperStyle={{ fontSize: 11, fontFamily: 'Figtree, system-ui, sans-serif' }} />
+            <Legend iconType="circle" wrapperStyle={{ fontSize: 11, fontFamily: 'Inter, system-ui, sans-serif' }} />
             <Bar dataKey="receitas" name="Receitas" fill="url(#gradIncome)" radius={[10, 10, 0, 0]} />
             <Bar dataKey="despesas" name="Despesas" fill="url(#gradExpense)" radius={[10, 10, 0, 0]} />
           </BarChart>

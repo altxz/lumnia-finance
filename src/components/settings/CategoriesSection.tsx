@@ -29,9 +29,9 @@ interface Category {
 }
 
 const PRESET_COLORS = [
-  '#5447BC', '#4B6DFB', '#DA90FC', '#BEEE62',
-  '#F97316', '#EF4444', '#14B8A6', '#F59E0B',
-  '#EC4899', '#8B5CF6', '#06B6D4', '#84CC16',
+  '#612CFA', '#A36EF9', '#51D3A6', '#AFEFD5',
+  '#1B172A', '#7C4DFF', '#8654D8', '#38B98E',
+  '#7ADDBA', '#CBB5FA', '#4B21C9', '#2D8F70',
 ];
 
 const ICON_OPTIONS = [
@@ -78,7 +78,7 @@ export function CategoriesSection() {
   const [form, setForm] = useState({
     name: '',
     icon: 'tag',
-    color: '#5447BC',
+    color: '#612CFA',
     keywords: '',
     type: 'parent' as 'parent' | 'sub',
     parent_id: '',
@@ -98,13 +98,13 @@ export function CategoriesSection() {
 
   const openCreate = () => {
     setEditingCategory(null);
-    setForm({ name: '', icon: 'tag', color: '#5447BC', keywords: '', type: 'parent', parent_id: '' });
+    setForm({ name: '', icon: 'tag', color: '#612CFA', keywords: '', type: 'parent', parent_id: '' });
     setModalOpen(true);
   };
 
   const openAddSub = (parentId: string) => {
     setEditingCategory(null);
-    setForm({ name: '', icon: 'tag', color: '#5447BC', keywords: '', type: 'sub', parent_id: parentId });
+    setForm({ name: '', icon: 'tag', color: '#612CFA', keywords: '', type: 'sub', parent_id: parentId });
     setModalOpen(true);
   };
 
