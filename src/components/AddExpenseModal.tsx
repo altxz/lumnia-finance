@@ -509,12 +509,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               {type === 'expense' && (
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pagamento</Label>
-                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
                     <button
                       type="button"
                       onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInvoiceMonth(''); }}
                       className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        paymentMethod === 'debit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
+                        paymentMethod === 'debit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
                       }`}
                     >
                       💳 Débito
@@ -523,7 +523,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       type="button"
                       onClick={() => { setPaymentMethod('credit'); setWalletId(''); }}
                       className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        paymentMethod === 'credit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
+                        paymentMethod === 'credit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
                       }`}
                     >
                       💳 Crédito
