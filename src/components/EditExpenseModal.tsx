@@ -733,12 +733,12 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             </AlertDialogContent>
           </AlertDialog>
            <div className="flex gap-2">
-             <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
-              <Button onClick={handleSaveClick} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
-                {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
-             </Button>
-           </div>
-         </ResponsiveModalFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-white/10 bg-white/5 text-white/90 hover:bg-white/10 hover:text-white">Cancelar</Button>
+               <Button onClick={handleSaveClick} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
+                 {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
+              </Button>
+            </div>
+          </ResponsiveModalFooter>
 
          {/* Recurring edit scope confirmation dialog */}
          <AlertDialog open={showRecurringConfirm} onOpenChange={setShowRecurringConfirm}>
