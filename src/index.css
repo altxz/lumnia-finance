@@ -294,7 +294,9 @@
   }
 
   .glass-modal .text-foreground,
-  .glass-modal [class*="text-foreground"] {
+  .glass-modal [class*="text-foreground"],
+  .glass-modal .text-muted-foreground,
+  .glass-modal [class*="text-muted-foreground"] {
     color: hsl(0 0% 94%);
   }
 
@@ -313,6 +315,10 @@
 
   .glass-modal [data-state="unchecked"] {
     background-color: hsl(0 0% 32% / 0.85) !important;
+  }
+
+  .glass-modal [data-state="unchecked"] [data-state="unchecked"] {
+    background-color: hsl(0 0% 96%) !important;
   }
 
   .gradient-primary {
