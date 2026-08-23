@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, Repeat, Hash } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Trash2, Info, Repeat, Hash, Loader2 } from 'lucide-react';
 import { QuickCalculator } from '@/components/QuickCalculator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CategoryPicker } from '@/components/CategoryPicker';
@@ -734,8 +734,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           </AlertDialog>
            <div className="flex gap-2">
              <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
-             <Button onClick={handleSaveClick} disabled={saving} className={`rounded-xl font-semibold transition-colors ${style.accent}`}>
-               {saving ? 'Salvando...' : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
+              <Button onClick={handleSaveClick} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
+                {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
              </Button>
            </div>
          </ResponsiveModalFooter>

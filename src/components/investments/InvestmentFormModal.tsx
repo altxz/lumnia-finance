@@ -16,6 +16,7 @@ import {
   type Investment,
   type RateKind,
 } from '@/lib/investmentMath';
+import { Loader2 } from 'lucide-react';
 
 interface WalletOption {
   id: string;
@@ -318,8 +319,8 @@ export function InvestmentFormModal({ open, onOpenChange, wallets, investment, o
 
         <DialogFooter className="p-5 pt-3 border-t pb-[max(1.25rem,env(safe-area-inset-bottom))] gap-2">
           <Button variant="outline" className="rounded-xl h-11" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button className="rounded-xl h-11 font-semibold" onClick={handleSave} disabled={saving}>
-            {saving ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Criar investimento'}
+          <Button className="min-w-40 rounded-xl h-11 font-semibold" onClick={handleSave} disabled={saving}>
+            {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : isEdit ? 'Salvar alterações' : 'Criar investimento'}
           </Button>
         </DialogFooter>
       </DialogContent>

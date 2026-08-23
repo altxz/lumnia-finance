@@ -5,6 +5,7 @@ import { Sparkles, X, Send, Loader2, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { AiMessageSkeleton } from '@/components/ui/loading-state';
 
 
 interface Message {
@@ -167,7 +168,7 @@ export function GeniusChatbot() {
   return (
     <>
       {isOpen && (
-        <div className="fixed bottom-20 left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[70vh] rounded-2xl border bg-card shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="glass fixed bottom-20 left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] sm:w-96 h-[500px] max-h-[70vh] rounded-3xl shadow-float flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b bg-primary text-primary-foreground">
             <div className="w-9 h-9 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
@@ -211,11 +212,7 @@ export function GeniusChatbot() {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-secondary rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
+                <AiMessageSkeleton />
               </div>
             )}
           </div>
@@ -225,13 +222,16 @@ export function GeniusChatbot() {
             <div className="border-t px-3 pt-2 pb-1">
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {QUICK_SUGGESTIONS.map((s, i) => (
-                  <button
+                  <Button
                     key={i}
+                    type="button"
+                    variant="soft"
+                    size="sm"
                     onClick={() => setInput(s.message)}
-                    className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-border bg-secondary/50 text-secondary-foreground hover:bg-secondary transition-colors whitespace-nowrap"
+                    className="h-8 shrink-0 whitespace-nowrap text-xs"
                   >
                     {s.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -266,11 +266,11 @@ export function GeniusChatbot() {
       <Button
         onClick={() => setIsOpen(prev => !prev)}
         className={cn(
-          'fixed bottom-6 left-4 sm:left-6 z-50 rounded-2xl shadow-xl transition-all duration-300',
+          'fixed bottom-6 left-4 sm:left-6 z-50 rounded-full shadow-float transition-all duration-300',
           'h-11 w-11 md:h-14 md:w-14',
           isOpen
             ? 'bg-muted text-muted-foreground hover:bg-muted/80 scale-90'
-            : 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105'
+            : 'gradient-primary text-primary-foreground hover:opacity-90 hover:scale-105'
         )}
         size="icon"
       >

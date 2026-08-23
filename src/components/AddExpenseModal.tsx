@@ -806,8 +806,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
         {/* Footer */}
         <ResponsiveModalFooter className="p-3 pt-0 gap-2 flex-row justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving} className={`rounded-xl font-semibold transition-colors ${style.accent}`}>
-            {saving ? 'Salvando...' : 'Salvar'}
+          <Button onClick={handleSave} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
+            {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : 'Salvar'}
           </Button>
         </ResponsiveModalFooter>
     </ResponsiveModal>
