@@ -1,7 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, Brain, PiggyBank, Shield } from 'lucide-react';
+import { TrendingUp, Brain, PiggyBank } from 'lucide-react';
 import { formatCurrency, getCategoryLabel } from '@/lib/constants';
-import { Progress } from '@/components/ui/progress';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 
 interface Props {
@@ -9,11 +8,10 @@ interface Props {
   totalCurrent: number;
   totalPrevious: number;
   predictedNextMonth: number;
-  financialScore: number;
   biggestSaving: { category: string; potential: number } | null;
 }
 
-export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predictedNextMonth, financialScore, biggestSaving }: Props) {
+export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predictedNextMonth, biggestSaving }: Props) {
   const { projectedBalance } = useProjectedTotals();
   const changePercent = totalPrevious > 0 ? ((totalCurrent - totalPrevious) / totalPrevious * 100) : 0;
   const isNegativeBalance = projectedBalance < 0;
@@ -69,18 +67,6 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-0 shadow-card bg-pink text-pink-foreground">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center">
-              <Shield className="h-5 w-5" />
-            </div>
-            <p className="text-sm font-medium opacity-80">Score Financeiro</p>
-          </div>
-          <p className="text-2xl font-bold">{financialScore}<span className="text-sm font-normal opacity-60">/1000</span></p>
-          <Progress value={financialScore / 10} className="mt-2 h-2 bg-pink-foreground/10" />
-        </CardContent>
-      </Card>
     </div>
   );
 }
