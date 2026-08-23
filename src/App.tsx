@@ -4,7 +4,7 @@ import { queryClient, persistOptions } from "@/lib/queryClient";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateProvider } from "@/contexts/DateContext";
@@ -34,8 +34,13 @@ const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
 function PageFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <span className="text-muted-foreground font-medium animate-pulse">Carregando...</span>
+    <div className="min-h-screen flex items-center justify-center bg-background p-6" role="status" aria-label="Carregando página">
+      <div className="glass w-full max-w-sm space-y-4 rounded-3xl p-6">
+        <Skeleton className="h-10 w-2/3" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-12 w-full rounded-full" />
+      </div>
     </div>
   );
 }
@@ -44,7 +49,6 @@ const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
     <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <TooltipProvider>
-        <Toaster />
         <Sonner />
         <AuthProvider>
           <DateProvider>

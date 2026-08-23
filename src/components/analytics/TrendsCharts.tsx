@@ -3,6 +3,7 @@ import { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveCont
 import { formatCurrency } from '@/lib/constants';
 import { MonthlyData } from '@/hooks/useAnalyticsData';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { chartAxisProps, chartGridProps } from '@/components/ui/chart';
 
 const AREA_COLORS = [
   'hsl(var(--primary))',
@@ -67,11 +68,11 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
                     <stop offset="100%" stopColor="hsl(var(--chart-5))" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={48} />
+                <CartesianGrid {...chartGridProps} />
+                <XAxis {...chartAxisProps} dataKey="name" />
+                <YAxis {...chartAxisProps} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} width={48} />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="total" name="Total" stroke="url(#lineGrad)" strokeWidth={3} dot={{ r: 4, fill: 'hsl(var(--primary))', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="total" name="Total" stroke="url(#lineGrad)" strokeWidth={3} dot={{ r: 4, fill: 'hsl(var(--primary))', strokeWidth: 2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -99,11 +100,11 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={48} />
+                <CartesianGrid {...chartGridProps} />
+                <XAxis {...chartAxisProps} dataKey="name" interval="preserveStartEnd" />
+                <YAxis {...chartAxisProps} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} width={48} />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 10, fontFamily: 'Poppins, system-ui, sans-serif' }} />
                 {allCategories.map((cat, i) => (
                   <Area key={cat} type="monotone" dataKey={cat} stackId="1" fill={`url(#areaGrad${i})`} stroke={AREA_COLORS[i % AREA_COLORS.length]} strokeWidth={1.5} fillOpacity={1} />
                 ))}

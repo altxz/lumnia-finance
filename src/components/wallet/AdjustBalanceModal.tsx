@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/constants';
 import { QuickCalculator } from '@/components/QuickCalculator';
 import { BALANCE_ADJUSTMENT_CATEGORY, buildBalanceAdjustmentDescription } from '@/lib/balanceAdjustments';
+import { Loader2 } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -132,8 +133,8 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
 
         <DialogFooter className="p-6 pt-3 border-t gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button className="rounded-xl" onClick={handleSave} disabled={saving || diff === 0}>
-            {saving ? 'Salvando...' : 'Ajustar saldo'}
+          <Button className="min-w-32 rounded-xl" onClick={handleSave} disabled={saving || diff === 0}>
+            {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : 'Ajustar saldo'}
           </Button>
         </DialogFooter>
       </DialogContent>

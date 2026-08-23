@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { ChartSkeleton } from '@/components/ui/loading-state';
+import { chartAxisProps, chartGridProps } from '@/components/ui/chart';
 
 interface SnapshotRow {
   date: string;
@@ -46,7 +48,11 @@ export function NetWorthChart() {
     })();
   }, [user]);
 
-  if (loading || data.length === 0) return null;
+  if (loading) {
+    return <Card className="h-full min-h-[300px] rounded-2xl"><ChartSkeleton /></Card>;
+  }
+
+  if (data.length === 0) return null;
 
   return (
     <Card className="rounded-2xl border-border/50 h-full flex flex-col">
@@ -64,17 +70,17 @@ export function NetWorthChart() {
           <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="assetGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0.02} />
+                 <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
+                 <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="liabGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0.02} />
+                 <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
+                 <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-            <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <CartesianGrid {...chartGridProps} />
+            <XAxis dataKey="label" {...chartAxisProps} />
+            <YAxis {...chartAxisProps} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
             <Tooltip
               cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
               formatter={(value: number, name: string) => [
@@ -82,15 +88,17 @@ export function NetWorthChart() {
                 name === 'assets' ? 'Ativos' : name === 'liabilities' ? 'Passivos' : 'Patrimônio Líquido',
               ]}
               contentStyle={{
-                borderRadius: '12px',
-                border: '1px solid hsl(var(--border))',
-                background: 'hsl(var(--popover))',
+                borderRadius: '16px',
+                border: '1px solid hsl(var(--glass-border))',
+                background: 'hsl(var(--popover) / 0.88)',
                 color: 'hsl(var(--popover-foreground))',
-                fontSize: '13px',
+                fontSize: '12px',
+                fontFamily: 'Poppins, system-ui, sans-serif',
+                boxShadow: 'var(--shadow-float)',
               }}
             />
-            <Area type="monotone" dataKey="assets" stroke="#22c55e" fill="url(#assetGrad)" strokeWidth={2} />
-            <Area type="monotone" dataKey="liabilities" stroke="#ef4444" fill="url(#liabGrad)" strokeWidth={2} />
+            <Area type="monotone" dataKey="assets" stroke="hsl(var(--success))" fill="url(#assetGrad)" strokeWidth={2} />
+            <Area type="monotone" dataKey="liabilities" stroke="hsl(var(--destructive))" fill="url(#liabGrad)" strokeWidth={2} />
             <Line type="monotone" dataKey="netWorth" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: 'hsl(var(--primary))' }} />
           </ComposedChart>
         </ResponsiveContainer>

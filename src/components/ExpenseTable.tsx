@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { MobileListSkeleton, TableRowsSkeleton } from '@/components/ui/loading-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2, ChevronLeft, ChevronRight, Sparkles, CheckCircle } from 'lucide-react';
@@ -123,7 +124,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
       {/* Mobile card view */}
       <div className="md:hidden space-y-2">
         {loading ? (
-          <p className="text-center py-8 text-muted-foreground">Carregando...</p>
+          <MobileListSkeleton />
         ) : expenses.length === 0 ? (
           <p className="text-center py-8 text-muted-foreground">Nenhuma transação encontrada.</p>
         ) : expenses.map(exp => {
@@ -174,9 +175,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando despesas...</TableCell>
-              </TableRow>
+              <TableRowsSkeleton />
             ) : expenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma transação encontrada.</TableCell>

@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { chartAxisProps, chartGridProps } from '@/components/ui/chart';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -86,11 +87,11 @@ export function IncomeVsExpenseChart({ totalIncome, totalExpense }: Props) {
                 <stop offset="100%" stopColor="hsl(var(--destructive))" />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={34} />
+            <CartesianGrid {...chartGridProps} />
+            <XAxis {...chartAxisProps} dataKey="name" />
+            <YAxis {...chartAxisProps} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={34} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
-            <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+            <Legend iconType="circle" wrapperStyle={{ fontSize: 11, fontFamily: 'Poppins, system-ui, sans-serif' }} />
             <Bar dataKey="receitas" name="Receitas" fill="url(#gradIncome)" radius={[10, 10, 0, 0]} />
             <Bar dataKey="despesas" name="Despesas" fill="url(#gradExpense)" radius={[10, 10, 0, 0]} />
           </BarChart>
