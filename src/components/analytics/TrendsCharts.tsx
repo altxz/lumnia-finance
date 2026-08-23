@@ -104,7 +104,7 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
                 <XAxis {...chartAxisProps} dataKey="name" interval="preserveStartEnd" />
                 <YAxis {...chartAxisProps} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} width={48} />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 10, fontFamily: 'Poppins, system-ui, sans-serif' }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 10, fontFamily: 'Figtree, system-ui, sans-serif' }} />
                 {allCategories.map((cat, i) => (
                   <Area key={cat} type="monotone" dataKey={cat} stackId="1" fill={`url(#areaGrad${i})`} stroke={AREA_COLORS[i % AREA_COLORS.length]} strokeWidth={1.5} fillOpacity={1} />
                 ))}
