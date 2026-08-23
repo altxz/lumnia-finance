@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { formatCurrency } from '@/lib/constants';
+import { currencyFitClass } from '@/lib/textFit';
 
 interface TransactionSummaryHeaderProps {
   totalIncome: number;
@@ -44,17 +45,21 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        {cards.map(card => (
-          <div key={card.label} className="glass-soft rounded-2xl px-3 py-3 sm:px-4 sm:py-4 min-w-0">
-            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground truncate">
-              {card.label}
-            </p>
-            <p className={`mt-1 text-sm sm:text-lg font-bold tabular-nums truncate ${card.tone}`}>
-              {visible ? formatCurrency(card.value) : mask}
-            </p>
-          </div>
-        ))}
+        {cards.map(card => {
+          const text = visible ? formatCurrency(card.value) : mask;
+          return (
+            <div key={card.label} className="glass-soft rounded-2xl px-2.5 py-3 sm:px-4 sm:py-4 min-w-0">
+              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">
+                {card.label}
+              </p>
+              <p className={`mt-1 font-bold tabular-nums whitespace-nowrap ${currencyFitClass(text)} sm:text-lg ${card.tone}`}>
+                {text}
+              </p>
+            </div>
+          );
+        })}
       </div>
+
     </div>
   );
 }
