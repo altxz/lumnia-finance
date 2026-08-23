@@ -49,10 +49,10 @@ export function ExpenseTreemap({ categoryStats }: ExpenseTreemapProps) {
     const expenseStats = categoryStats.filter(s => s.total > 0);
     if (expenseStats.length === 0) return [];
 
-    return expenseStats.map(s => ({
+    return expenseStats.map((s, idx) => ({
       name: s.category,
       value: Math.round(s.total * 100) / 100,
-      fill: colorMap[s.category.toLowerCase()] || '#6366f1',
+      fill: colorMap[s.category.toLowerCase()] || seriesColor(idx),
     }));
   }, [categoryStats, categoryColors]);
 

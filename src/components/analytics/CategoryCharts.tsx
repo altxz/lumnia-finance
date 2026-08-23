@@ -9,8 +9,9 @@ import { InfoPopover } from '@/components/ui/info-popover';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
+import { CHART_SERIES } from '@/lib/chartPalette';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-4))', 'hsl(var(--chart-3))', 'hsl(var(--chart-6))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--chart-8))'];
+const COLORS = CHART_SERIES;
 
 interface Props {
   categoryStats: CategoryStats[];

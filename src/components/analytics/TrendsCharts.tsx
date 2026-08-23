@@ -59,7 +59,7 @@ export function TrendsCharts({ monthlyData, predictedNextMonth }: Props) {
                 <defs>
                   <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="hsl(var(--primary))" />
-                    <stop offset="100%" stopColor="hsl(var(--chart-5))" />
+                    <stop offset="100%" stopColor="hsl(var(--chart-2))" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid {...chartGridProps} />

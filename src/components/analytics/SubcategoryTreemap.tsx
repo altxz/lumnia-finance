@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { CHART_SERIES } from '@/lib/chartPalette';
 
 interface Props {
   expenses: any[];
   categories: any[];
 }
 
-const FALLBACK_COLORS = ['#6366f1','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+const FALLBACK_COLORS = CHART_SERIES;
 
 function CustomContent(props: any) {
   const { x, y, width, height, name, fill } = props;

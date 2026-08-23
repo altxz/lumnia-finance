@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { CHART_SERIES } from '@/lib/chartPalette';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--chart-5))', 'hsl(var(--accent))', 'hsl(var(--destructive))'];
+const COLORS = CHART_SERIES;
 
 interface Props {
   expenses: any[];
