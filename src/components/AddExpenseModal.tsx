@@ -443,7 +443,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
           </div>
 
           {/* Value field - integrated into the dark glass shell */}
-          <div className={`value-box mt-3 sm:mt-4 mb-3 rounded-2xl border bg-foreground/[0.04] backdrop-blur-sm transition-colors ${style.valueBorder}`}>
+          <div className={`value-box mt-3 sm:mt-4 mb-3 rounded-2xl border bg-transparent transition-colors ${style.valueBorder}`}>
             <div className="flex items-center px-3 sm:px-4 py-3 min-w-0">
               <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2 shrink-0">R$</span>
               <input
