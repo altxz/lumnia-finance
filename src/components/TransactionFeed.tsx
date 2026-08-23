@@ -712,12 +712,13 @@ export function TransactionFeed({
                               </>
                             ) : (walletName || exp.credit_card_id) ? (
                               <>
-                                <Wallet className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground truncate">
+                                <Wallet className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-[11px] text-muted-foreground truncate">
                                   {walletName || ''}
-                                  {walletName && exp.credit_card_id ? ' | ' : ''}
-                                  {exp.credit_card_id ? 'Cartão de crédito' : !walletName ? '' : ' | Débito em conta'}
+                                  {walletName && exp.credit_card_id ? ' • ' : ''}
+                                  {exp.credit_card_id ? 'Cartão' : !walletName ? '' : ' • Débito'}
                                 </span>
+
                               </>
                             ) : null}
                           </div>
