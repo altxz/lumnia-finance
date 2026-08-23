@@ -683,19 +683,19 @@ export function TransactionFeed({
                               <Pin className="h-3 w-3 text-muted-foreground shrink-0" />
                             )}
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 flex-nowrap overflow-hidden whitespace-nowrap">
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                             {isInvoiceItem && originalDate && (
-                              <span className="text-[11px] text-muted-foreground">
+                              <span className="text-[10px] text-muted-foreground">
                                 Compra em {formatPurchaseDate(originalDate)}
                               </span>
                             )}
                             {isInvoiceItem && originalDate && (walletName || exp.credit_card_id) && (
-                              <span className="text-[11px] text-muted-foreground">•</span>
+                              <span className="text-[10px] text-muted-foreground">•</span>
                             )}
                             {isTransfer ? (
                               <>
-                                <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground truncate">
+                                <ArrowLeftRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-[10px] sm:text-[11px] text-muted-foreground break-words">
                                   {walletName || 'Origem'} → {destWalletName || 'Destino'}
                                 </span>
                                 {transferDelta !== 0 && (
@@ -714,7 +714,7 @@ export function TransactionFeed({
                             ) : (walletName || exp.credit_card_id) ? (
                               <>
                                 <Wallet className="h-3 w-3 text-muted-foreground shrink-0" />
-                                <span className="text-[11px] text-muted-foreground truncate">
+                                <span className="text-[10px] sm:text-[11px] text-muted-foreground break-words">
                                   {walletName || ''}
                                   {walletName && exp.credit_card_id ? ' • ' : ''}
                                   {exp.credit_card_id ? 'Cartão' : !walletName ? '' : ' • Débito'}
@@ -727,7 +727,7 @@ export function TransactionFeed({
 
                         {/* Value + status */}
                         <div className="shrink-0 flex flex-col items-end justify-center min-w-fit sm:min-w-[130px] text-right whitespace-nowrap">
-                          <span className={`text-sm font-semibold tabular-nums ${
+                          <span className={`font-semibold tabular-nums ${currencyFitClass(`${isIncome ? '+' : '-'}${formatCurrency(exp.value)}`)} ${
                             isTransfer
                               ? transferDelta > 0
                                 ? 'text-emerald-600 dark:text-emerald-400'
@@ -740,6 +740,7 @@ export function TransactionFeed({
                           }`}>
                             {isIncome ? '+' : isTransfer ? transferSign : '-'}{formatCurrency(exp.value)}
                           </span>
+
                           {!isTransfer && (
                             <span className="flex items-center gap-1 mt-0.5">
                               <span aria-hidden className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
