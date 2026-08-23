@@ -406,9 +406,9 @@ export default function FinancialScorePage() {
                 ) : (
                   <Card className="border-dashed">
                     <CardContent className="py-10 text-center">
-                      <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+                      <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground/60 mb-3" />
                       <p className="text-muted-foreground font-medium">Histórico de evolução</p>
-                      <p className="text-sm text-muted-foreground/70 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         A partir do segundo mês registrado, a evolução do score aparece aqui.
                       </p>
                     </CardContent>

@@ -73,7 +73,7 @@ export function QuickCalculator({ onSelect }: QuickCalculatorProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
           aria-label="Calculadora rápida"
         >
           <Calculator className="h-5 w-5" />

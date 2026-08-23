@@ -103,7 +103,7 @@ export function PlansSection({ plan, expenseCount }: PlansSectionProps) {
                 <span>{f.name}</span>
                 <div className="text-center">
                   {f.free === true ? <CheckCircle className="h-4 w-4 text-accent-foreground mx-auto" /> :
-                   f.free === false ? <XCircle className="h-4 w-4 text-muted-foreground/40 mx-auto" /> :
+                   f.free === false ? <XCircle className="h-4 w-4 text-muted-foreground mx-auto" /> :
                    <span className="text-xs text-muted-foreground">{f.free}</span>}
                 </div>
                 <div className="text-center">
