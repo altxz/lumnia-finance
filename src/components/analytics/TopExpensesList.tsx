@@ -58,8 +58,8 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
             <YAxis
               type="category"
               dataKey="name"
-              width={80}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              width={58}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', textAnchor: 'start' }}
               axisLine={false}
               tickLine={false}
             />
@@ -75,7 +75,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
                 );
               }}
             />
-            <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={30}>
+            <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={32}>
               {data.map((_entry, index) => (
                 <Cell key={index} fill={`url(#topExpGrad${index % COLORS.length})`} />
               ))}
