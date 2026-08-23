@@ -36,7 +36,7 @@ export interface SummaryHistory {
  * já incluindo as recorrências projetadas. Assim o último ponto de cada
  * mini-gráfico é exatamente o valor exibido no card.
  */
-export function useSummaryHistory(): SummaryHistory {
+export function useSummaryHistory(startingBalance?: number): SummaryHistory {
   const { user } = useAuth();
   const { selectedYear, selectedMonth, endDate } = useSelectedDate();
 
@@ -126,17 +126,27 @@ export function useSummaryHistory(): SummaryHistory {
     });
   }, [months, rows, templates, exceptionSet, creditCards, invoiceExpenses, isCCPayment]);
 
-  const points = useMemo<SummaryHistoryPoint[]>(
-    () =>
-      monthly.map((m) => ({
-        key: m.key,
-        label: m.label,
-        income: m.totals.totalIncome,
-        expense: m.totals.totalExpense,
-        balance: m.totals.totalIncome - m.totals.totalExpense,
-      })),
-    [monthly],
-  );
+  const points = useMemo<SummaryHistoryPoint[]>(() => {
+    const base = monthly.map((m) => ({
+      key: m.key,
+      label: m.label,
+      income: m.totals.totalIncome,
+      expense: m.totals.totalExpense,
+      balance: m.totals.totalIncome - m.totals.totalExpense,
+    }));
+
+    // Quando o saldo inicial do mês selecionado é conhecido, a série de saldo passa
+    // a ser o saldo projetado acumulado: o último ponto fecha exatamente com o card.
+    if (startingBalance !== undefined && base.length > 0) {
+      const last = base.length - 1;
+      base[last].balance = startingBalance + base[last].income - base[last].expense;
+      for (let i = last - 1; i >= 0; i--) {
+        base[i].balance = base[i + 1].balance - (base[i + 1].income - base[i + 1].expense);
+      }
+    }
+
+    return base;
+  }, [monthly, startingBalance]);
 
   const categorySeries = useMemo(() => {
     return (categoryKey?: string | null): SummaryHistoryPoint[] => {

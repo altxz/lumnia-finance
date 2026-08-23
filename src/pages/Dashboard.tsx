@@ -74,7 +74,7 @@ export default function Dashboard() {
   const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
   const { settings: userSettings, loading: settingsLoading, refetch: refetchSettings } = useUserSettings();
   const projected = useProjectedTotals();
-  const summaryHistory = useSummaryHistory();
+  const summaryHistory = useSummaryHistory(projected.startingBalance);
   const anomalyAlerts = useAnomalyAlerts();
   const [modalOpen, setModalOpen] = useState(false);
   
@@ -236,9 +236,12 @@ export default function Dashboard() {
                   totalIncome={projected.totalIncome}
                   totalExpense={projected.totalExpense}
                   largestCategory={projected.largestCategory}
-                  prevBalance={prevSummary.balance}
-                  prevIncome={prevSummary.totalIncome}
-                  prevExpense={prevSummary.totalExpense}
+                  prevBalance={projected.previousMonth.balance}
+                  prevIncome={projected.previousMonth.totalIncome}
+                  prevExpense={projected.previousMonth.totalExpense}
+                  debitExpense={projected.debitExpense}
+                  invoiceExpense={projected.invoiceTotal}
+                  cardPurchases={projected.cardPurchases}
                   pendingInStartingBalance={projected.pendingInStartingBalance}
                   balanceHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.balance }))}
                   incomeHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.income }))}
