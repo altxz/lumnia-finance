@@ -23,15 +23,16 @@ import { getCreditCardPaymentCardId, isTrackedCreditCardPayment } from '@/lib/cr
 import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceMath';
 
 const CATEGORY_ICONS: Record<string, { icon: typeof Utensils; bg: string; text: string }> = {
-  alimentacao: { icon: Utensils, bg: 'bg-accent/30', text: 'text-accent-foreground' },
-  transporte: { icon: Car, bg: 'bg-ai/15', text: 'text-ai' },
-  lazer: { icon: Gamepad2, bg: 'bg-pink/30', text: 'text-pink-foreground' },
-  saude: { icon: Heart, bg: 'bg-destructive/15', text: 'text-destructive' },
-  moradia: { icon: Home, bg: 'bg-primary/15', text: 'text-primary' },
-  educacao: { icon: GraduationCap, bg: 'bg-ai/15', text: 'text-ai' },
-  outros: { icon: Tag, bg: 'bg-muted', text: 'text-muted-foreground' },
-  transferencia: { icon: ArrowLeftRight, bg: 'bg-primary/15', text: 'text-primary' },
+  alimentacao: { icon: Utensils, bg: 'bg-[hsl(var(--chart-2)/0.12)]', text: 'text-[hsl(var(--chart-2))]' },
+  transporte: { icon: Car, bg: 'bg-[hsl(var(--chart-3)/0.12)]', text: 'text-[hsl(var(--chart-3))]' },
+  lazer: { icon: Gamepad2, bg: 'bg-[hsl(var(--chart-4)/0.14)]', text: 'text-[hsl(var(--chart-4))]' },
+  saude: { icon: Heart, bg: 'bg-destructive/10', text: 'text-destructive' },
+  moradia: { icon: Home, bg: 'bg-primary/10', text: 'text-primary' },
+  educacao: { icon: GraduationCap, bg: 'bg-[hsl(var(--chart-5)/0.14)]', text: 'text-[hsl(var(--chart-5))]' },
+  outros: { icon: Tag, bg: 'bg-muted/70', text: 'text-muted-foreground' },
+  transferencia: { icon: ArrowLeftRight, bg: 'bg-primary/10', text: 'text-primary' },
 };
+
 
 const STORAGE_KEY = 'txfeed_group_cards';
 
