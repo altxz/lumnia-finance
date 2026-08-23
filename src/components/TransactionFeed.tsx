@@ -648,10 +648,11 @@ export function TransactionFeed({
                     return (
                       <div
                         key={exp.id}
-                        className="relative w-full flex items-center gap-3 px-1 sm:px-2 py-3 rounded-xl hover:bg-muted/40 transition-colors group"
+                        className="relative w-full flex items-center gap-2.5 sm:gap-3 px-1 sm:px-2 py-3 rounded-xl hover:bg-muted/40 transition-colors group"
                       >
                         {/* Category icon */}
-                        <div className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center border ${isInvoiceItem ? 'bg-primary/10 border-primary/20' : `${catData.bg} border-border/50`}`}>
+                        <div className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border ${isInvoiceItem ? 'bg-primary/10 border-primary/20' : `${catData.bg} border-border/50`}`}>
+
                           {isTransfer ? (
                             <ArrowLeftRight className="h-4.5 w-4.5 text-primary" />
                           ) : isInvoiceItem ? (
