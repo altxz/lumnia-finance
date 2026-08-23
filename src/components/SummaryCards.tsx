@@ -19,6 +19,12 @@ interface SummaryCardsProps {
   incomeHistory?: MiniAreaPoint[];
   expenseHistory?: MiniAreaPoint[];
   categoryHistory?: MiniAreaPoint[];
+  /** Despesas em débito do mês. */
+  debitExpense?: number;
+  /** Pagamentos de fatura que saem do caixa no mês. */
+  invoiceExpense?: number;
+  /** Compras feitas no cartão no mês (informativo). */
+  cardPurchases?: number;
 }
 
 function TrendBadge({ current, previous, invertColor }: { current: number; previous: number; invertColor?: boolean }) {
@@ -54,6 +60,7 @@ export function SummaryCards({
   balance, totalIncome, totalExpense, largestCategory,
   prevBalance, prevIncome, prevExpense, pendingInStartingBalance,
   balanceHistory, incomeHistory, expenseHistory, categoryHistory,
+  debitExpense, invoiceExpense, cardPurchases,
 }: SummaryCardsProps) {
   const navigate = useNavigate();
 
@@ -114,10 +121,34 @@ export function SummaryCards({
             <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           <p className="text-[10px] sm:text-xs font-medium truncate">Saídas</p>
+          {(debitExpense !== undefined || invoiceExpense !== undefined) && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3 w-3 opacity-70 cursor-help shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[240px] text-xs space-y-1">
+                  <p>Saídas = despesas em débito + pagamentos de fatura do mês.</p>
+                  {debitExpense !== undefined && <p>Débito: {formatCurrency(debitExpense)}</p>}
+                  {invoiceExpense !== undefined && <p>Fatura do cartão: {formatCurrency(invoiceExpense)}</p>}
+                  {cardPurchases !== undefined && cardPurchases > 0 && (
+                    <p className="opacity-80">Compras no cartão feitas no mês: {formatCurrency(cardPurchases)} (entram na fatura, não nas saídas).</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         <div>
           <p className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight truncate">-{formatCurrency(totalExpense)}</p>
-          {prevExpense !== undefined && <TrendBadge current={totalExpense} previous={prevExpense} invertColor />}
+          <div className="flex items-center gap-2 flex-wrap">
+            {prevExpense !== undefined && <TrendBadge current={totalExpense} previous={prevExpense} invertColor />}
+            {(debitExpense !== undefined && invoiceExpense !== undefined) && (
+              <span className="text-[9px] sm:text-[11px] opacity-80 truncate">
+                Débito {formatCurrency(debitExpense)} · Fatura {formatCurrency(invoiceExpense)}
+              </span>
+            )}
+          </div>
         </div>
         <div className="mt-auto -mx-1">
           <MiniAreaChart data={expenseHistory || []} />
