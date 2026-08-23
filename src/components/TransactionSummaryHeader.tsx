@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { formatCurrency } from '@/lib/constants';
+import { currencyFitClass } from '@/lib/textFit';
 
 interface TransactionSummaryHeaderProps {
   totalIncome: number;
