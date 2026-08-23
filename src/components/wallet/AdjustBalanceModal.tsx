@@ -85,9 +85,9 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4">
-          <div className="rounded-xl bg-muted/60 px-4 py-3">
-            <p className="text-xs text-muted-foreground">Saldo atual calculado</p>
-            <p className="text-xl font-bold">{formatCurrency(currentBalance)}</p>
+          <div className="rounded-xl bg-white/[0.04] border border-white/10 px-4 py-3">
+            <p className="text-xs text-white/55">Saldo atual calculado</p>
+            <p className="text-xl font-bold text-white/95">{formatCurrency(currentBalance)}</p>
           </div>
 
           <div className="space-y-1.5">

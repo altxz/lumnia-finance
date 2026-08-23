@@ -148,15 +148,15 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <div className="rounded-xl bg-muted/50 p-4 space-y-1">
-            <p className="text-sm font-semibold">{investment.name}</p>
-            <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="rounded-xl bg-white/[0.04] border border-white/10 p-4 space-y-1">
+            <p className="text-sm font-semibold text-white/95">{investment.name}</p>
+            <div className="flex justify-between text-xs text-white/55">
               <span>Aportado</span><span>{formatCurrency(stats.invested)}</span>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs text-white/55">
               <span>Rendimento até hoje</span><span>{formatCurrency(stats.earnings)}</span>
             </div>
-            <div className="flex justify-between text-sm font-semibold">
+            <div className="flex justify-between text-sm font-semibold text-white/95">
               <span>Valor atual</span><span>{formatCurrency(stats.currentValue)}</span>
             </div>
           </div>
@@ -194,8 +194,8 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
           )}
         </div>
 
-        <DialogFooter className="p-5 pt-3 border-t pb-[max(1.25rem,env(safe-area-inset-bottom))] gap-2">
-          <Button variant="outline" className="rounded-xl h-11" onClick={() => onOpenChange(false)}>Cancelar</Button>
+        <DialogFooter className="p-5 pt-3 border-t border-white/10 pb-[max(1.25rem,env(safe-area-inset-bottom))] gap-2">
+          <Button variant="outline" className="rounded-xl h-11 border-white/10 bg-white/5 text-white/90 hover:bg-white/10 hover:text-white" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button className="rounded-xl h-11 font-semibold" onClick={handleSave} disabled={saving}>
             {saving ? 'Salvando...' : 'Confirmar'}
           </Button>
