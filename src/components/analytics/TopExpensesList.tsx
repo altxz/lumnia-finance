@@ -37,9 +37,9 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
           <InfoPopover><p>As 5 transações individuais mais caras do período selecionado.</p></InfoPopover>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 pb-4 px-2">
+      <CardContent className="flex-1 min-h-0 pb-4 px-1">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 2, right: 70, left: 0, bottom: 2 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 2, right: 68, left: 0, bottom: 2 }}>
             <defs>
               {COLORS.map((color, i) => (
                 <linearGradient key={i} id={`topExpGrad${i}`} x1="0" y1="0" x2="1" y2="0">
@@ -58,7 +58,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
             <YAxis
               type="category"
               dataKey="name"
-              width={90}
+              width={80}
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
@@ -75,7 +75,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
                 );
               }}
             />
-            <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={28}>
+            <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={30}>
               {data.map((_entry, index) => (
                 <Cell key={index} fill={`url(#topExpGrad${index % COLORS.length})`} />
               ))}
