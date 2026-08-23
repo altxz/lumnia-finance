@@ -65,7 +65,7 @@ export function DashboardHeader() {
               <span className="sr-only">Alternar tema</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-full">
+          <DropdownMenuContent align="end" className="rounded-2xl">
             <DropdownMenuItem onClick={() => setTheme('light')} className="gap-2 cursor-pointer">
               <Sun className="h-4 w-4" /> Claro
             </DropdownMenuItem>
