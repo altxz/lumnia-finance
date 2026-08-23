@@ -33,6 +33,8 @@ export interface ProjectedTotals {
   pendingInStartingBalance: number;
   projectedBalance: number;
   largestCategory: { name: string; total: number; categoryKey: string } | null;
+  /** Totais por categoria (débito do mês + compras no cartão do mês). */
+  byCategory: Record<string, number>;
   previousMonth: { totalIncome: number; totalExpense: number; balance: number };
   loading: boolean;
   refetch: () => void;

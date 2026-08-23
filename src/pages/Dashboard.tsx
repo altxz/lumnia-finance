@@ -235,7 +235,7 @@ export default function Dashboard() {
                   <Tile size="small" mobile="full"><Suspense fallback={<ChartFallback />}><IncomeVsExpenseChart totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><DailySpendingChart expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><WaterfallChart expenses={projected.monthExpenses} startingBalance={projected.startingBalance} /></Suspense></Tile>
+                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><WaterfallChart startingBalance={projected.startingBalance} totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} debitExpense={projected.debitExpense} invoiceTotal={projected.invoiceTotal} invoicePaid={projected.invoicePaid} invoiceProjected={projected.invoiceProjected} cardPurchases={projected.cardPurchases} byCategory={projected.byCategory} projectedBalance={projected.projectedBalance} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><WeekComparisonChart expenses={projected.monthExpenses} /></Suspense></Tile>
                   <Tile size="medium" mobile="full"><Suspense fallback={<ChartFallback />}><BudgetVsActualChart budgets={budgetDataRaw as any} expenses={projected.monthExpenses} /></Suspense></Tile>

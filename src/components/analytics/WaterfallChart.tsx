@@ -1,173 +1,149 @@
 import { useMemo } from 'react';
-import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine } from 'recharts';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
-import type { Expense } from '@/components/ExpenseTable';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { buildWaterfall, type WaterfallItem } from '@/lib/waterfallMath';
 
 interface WaterfallChartProps {
-  expenses: Expense[];
   startingBalance: number;
-}
-
-interface WaterfallItem {
-  name: string;
-  base: number;
-  value: number;
-  amount: number;
-  fill: string;
-  type: 'start' | 'income' | 'expense' | 'end';
+  totalIncome: number;
+  totalExpense: number;
+  debitExpense: number;
+  invoiceTotal: number;
+  invoicePaid: number;
+  invoiceProjected: number;
+  cardPurchases: number;
+  byCategory: Record<string, number>;
+  projectedBalance: number;
 }
 
 function resolveCategoryName(cat: string): string {
   const info = getCategoryInfo(cat);
-  // If it fell back to 'Outros' but the original isn't 'outros', format the raw string
   if (info.value === 'outros' && cat.toLowerCase() !== 'outros') {
     return cat.charAt(0).toUpperCase() + cat.slice(1);
   }
   return info.label;
 }
 
-export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProps) {
-  const data = useMemo(() => {
-    const nonTransfers = expenses.filter(e => e.type !== 'transfer' && !isBalanceAdjustment(e));
-    const totalIncome = nonTransfers
-      .filter(e => e.type === 'income')
-      .reduce((s, e) => s + e.value, 0);
+const COLORS: Record<WaterfallItem['type'], string> = {
+  start: 'hsl(var(--primary))',
+  income: 'hsl(var(--success))',
+  expense: 'hsl(var(--destructive))',
+  invoice: 'hsl(var(--chart-2))',
+  end: 'hsl(var(--primary))',
+};
 
-    // Top 5 expense categories
-    const byCat: Record<string, number> = {};
-    nonTransfers
-      .filter(e => e.type === 'expense' && !e.credit_card_id && !e.description?.startsWith('Pagamento fatura'))
-      .forEach(e => {
-        byCat[e.final_category] = (byCat[e.final_category] || 0) + e.value;
-      });
-
-    const sortedCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-    const top5 = sortedCats.slice(0, 5);
-    const otherTotal = sortedCats.slice(5).reduce((s, [, v]) => s + v, 0);
-    const totalExpense = sortedCats.reduce((s, [, v]) => s + v, 0);
-    const endBalance = startingBalance + totalIncome - totalExpense;
-
-    const items: WaterfallItem[] = [];
-
-    items.push({
-      name: 'Saldo Inicial',
-      base: 0,
-      value: Math.abs(startingBalance),
-      amount: startingBalance,
-      fill: 'hsl(var(--primary))',
-      type: 'start',
-    });
-
-    let cursor = startingBalance;
-    items.push({
-      name: 'Receitas',
-      base: Math.min(cursor, cursor + totalIncome),
-      value: totalIncome,
-      amount: totalIncome,
-      fill: 'hsl(var(--success))',
-      type: 'income',
-    });
-    cursor += totalIncome;
-
-    top5.forEach(([cat, val]) => {
-      cursor -= val;
-      items.push({
-        name: resolveCategoryName(cat),
-        base: cursor,
-        value: val,
-        amount: -val,
-        fill: 'hsl(var(--destructive))',
-        type: 'expense',
-      });
-    });
-
-    if (otherTotal > 0) {
-      cursor -= otherTotal;
-      items.push({
-        name: 'Outras',
-        base: cursor,
-        value: otherTotal,
-        amount: -otherTotal,
-        fill: 'hsl(var(--destructive))',
-        type: 'expense',
-      });
-    }
-
-    items.push({
-      name: 'Saldo Final',
-      base: 0,
-      value: Math.abs(endBalance),
-      amount: endBalance,
-      fill: endBalance >= 0 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))',
-      type: 'end',
-    });
-
-    return items;
-  }, [expenses, startingBalance]);
+export function WaterfallChart({
+  startingBalance,
+  totalIncome,
+  totalExpense,
+  debitExpense,
+  invoiceTotal,
+  invoicePaid,
+  invoiceProjected,
+  cardPurchases,
+  byCategory,
+}: WaterfallChartProps) {
+  const data = useMemo(
+    () =>
+      buildWaterfall({
+        startingBalance,
+        totalIncome,
+        totalExpense,
+        debitExpense,
+        invoiceTotal,
+        byCategory,
+        resolveName: resolveCategoryName,
+      }),
+    [startingBalance, totalIncome, totalExpense, debitExpense, invoiceTotal, byCategory],
+  );
 
   return (
     <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <CardTitle className="text-base font-semibold">Cascata do Mês</CardTitle>
-          <InfoPopover><p>Explica visualmente como o seu saldo inicial se transformou no saldo atual, barra a barra.</p></InfoPopover>
+          <InfoPopover>
+            <p>
+              Mostra como o saldo inicial se transforma no saldo previsto do fim do mês: receitas somam,
+              despesas em débito e a fatura do cartão subtraem. As compras no cartão não aparecem como
+              saída direta porque saem do caixa quando a fatura é paga.
+            </p>
+          </InfoPopover>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 pb-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 5, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} vertical={false} />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-              interval={0}
-              angle={-35}
-              textAnchor="end"
-              height={70}
-            />
-            <YAxis
-              tickFormatter={(v) => {
-                if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
-                return `R$${v.toFixed(0)}`;
-              }}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-              width={40}
-            />
-            <Tooltip
-              cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const item = payload[0]?.payload as WaterfallItem;
-                return (
-                  <div className="glass-soft rounded-xl p-2.5 text-xs text-popover-foreground shadow-float">
-                    <p className="font-semibold mb-1">{item.name}</p>
-                    <p style={{
-                      color: item.type === 'income' ? 'hsl(var(--success))' :
-                        item.type === 'expense' ? 'hsl(var(--destructive))' :
-                        'hsl(var(--primary))'
-                    }}>
-                      {item.amount >= 0 ? '+' : ''}{formatCurrency(item.amount)}
-                    </p>
-                  </div>
-                );
-              }}
-            />
-            <ReferenceLine y={0} stroke="hsl(var(--border))" />
-            <Bar dataKey="base" stackId="waterfall" fill="transparent" radius={0} />
-            <Bar dataKey="value" stackId="waterfall" radius={[8, 8, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell key={index} fill={entry.fill} opacity={entry.type === 'expense' ? 0.85 : 1} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <CardContent className="flex-1 min-h-0 pb-2 flex flex-col">
+        <div className="flex-1 min-h-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 5, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+                interval={0}
+                angle={-35}
+                textAnchor="end"
+                height={70}
+              />
+              <YAxis
+                tickFormatter={(v) => {
+                  if (Math.abs(v) >= 1000) return `R$${(v / 1000).toFixed(0)}k`;
+                  return `R$${v.toFixed(0)}`;
+                }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+                width={40}
+              />
+              <Tooltip
+                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const item = payload[0]?.payload as WaterfallItem;
+                  return (
+                    <div className="glass-soft rounded-xl p-2.5 text-xs text-popover-foreground shadow-float max-w-[220px]">
+                      <p className="font-semibold mb-1">{item.name}</p>
+                      <p style={{ color: COLORS[item.type] }}>
+                        {item.amount >= 0 ? '+' : ''}
+                        {formatCurrency(item.amount)}
+                      </p>
+                      {item.type === 'invoice' && (
+                        <p className="mt-1 text-muted-foreground">
+                          Pago: {formatCurrency(invoicePaid)} · Projetado: {formatCurrency(invoiceProjected)}
+                        </p>
+                      )}
+                      {item.type === 'end' && (
+                        <p className="mt-1 text-muted-foreground">
+                          {formatCurrency(startingBalance)} + {formatCurrency(totalIncome)} −{' '}
+                          {formatCurrency(totalExpense)}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }}
+              />
+              <ReferenceLine y={0} stroke="hsl(var(--border))" />
+              <Bar dataKey="base" stackId="waterfall" fill="transparent" radius={0} />
+              <Bar dataKey="value" stackId="waterfall" radius={[8, 8, 0, 0]}>
+                {data.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={entry.type === 'end' && entry.amount < 0 ? 'hsl(var(--destructive))' : COLORS[entry.type]}
+                    opacity={entry.type === 'expense' ? 0.85 : 1}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        {cardPurchases > 0 && (
+          <p className="pt-1 text-[10px] leading-tight text-muted-foreground">
+            Compras no cartão neste mês: {formatCurrency(cardPurchases)} (entram como fatura).
+          </p>
+        )}
       </CardContent>
     </Card>
   );
