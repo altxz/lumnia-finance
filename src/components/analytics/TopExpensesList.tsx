@@ -61,7 +61,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${width}%`,
-                    backgroundImage: `linear-gradient(90deg, ${color.replace(')', ' / 0.65)')}, ${color})`,
+                    backgroundImage: `linear-gradient(90deg, color-mix(in srgb, ${color} 60%, transparent), ${color})`,
                   }}
                 />
               </div>
