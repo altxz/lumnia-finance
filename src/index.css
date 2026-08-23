@@ -541,10 +541,18 @@
     background-color: hsl(0 0% 100%) !important;
   }
 
+  .glass-modal button[role="switch"][data-state="checked"] > span {
+    background-color: hsl(0 0% 100%) !important;
+  }
+
   /* Value box inside transaction modal: no fill, border only */
   .glass-modal .value-box {
     background-color: transparent !important;
     border-width: 1px !important;
+  }
+
+  .glass-modal .value-box input {
+    background-color: transparent !important;
   }
 
   .glass-modal .value-box:focus-within {
