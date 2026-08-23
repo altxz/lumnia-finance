@@ -18,11 +18,22 @@ const EXPENSE_COLS = 'id, description, value, date, type, final_category, catego
 export interface ProjectedTotals {
   totalIncome: number;
   totalExpense: number;
+  /** Despesas em débito do mês (sem cartão). */
+  debitExpense: number;
+  /** Faturas do mês já com pagamento lançado. */
+  invoicePaid: number;
+  /** Faturas do mês ainda sem pagamento lançado (projetadas no vencimento). */
+  invoiceProjected: number;
+  /** Total de fatura que sai do caixa no mês. */
+  invoiceTotal: number;
+  /** Compras feitas no cartão dentro do mês (informativo, não soma nas saídas). */
+  cardPurchases: number;
   balance: number;
   startingBalance: number;
   pendingInStartingBalance: number;
   projectedBalance: number;
   largestCategory: { name: string; total: number; categoryKey: string } | null;
+  previousMonth: { totalIncome: number; totalExpense: number; balance: number };
   loading: boolean;
   refetch: () => void;
   monthExpenses: Expense[];
@@ -32,6 +43,7 @@ export interface ProjectedTotals {
   investmentWalletIds: string[];
   effectiveHistoricalExpenses: Expense[];
 }
+
 
 async function fetchProjectedData(userId: string, startDate: string, endDate: string) {
   const [
