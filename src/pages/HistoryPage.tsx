@@ -182,7 +182,7 @@ export default function HistoryPage() {
                   </Card>
                   <Card className="rounded-2xl border-0 shadow-card bg-success text-success-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center"><ArrowUpCircle className="h-5 w-5" /></div>
+                      <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center"><ArrowUpCircle className="h-5 w-5" /></div>
                       <div><p className="text-xs font-semibold">Entradas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyIncome)}</p></div>
                     </CardContent>
                   </Card>

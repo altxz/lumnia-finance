@@ -87,21 +87,21 @@ const TYPE_STYLES = {
     bg: 'bg-destructive/10',
     border: 'border-destructive/20',
     accent: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-    valueBorder: 'border-white/10 focus-within:border-destructive/50',
+    valueBorder: 'border-border focus-within:border-destructive/50',
     icon: ArrowDownCircle,
   },
   income: {
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/20',
     accent: 'bg-success text-success-foreground hover:bg-success/90',
-    valueBorder: 'border-white/10 focus-within:border-emerald-500/50',
+    valueBorder: 'border-border focus-within:border-emerald-500/50',
     icon: ArrowUpCircle,
   },
   transfer: {
     bg: 'bg-primary/10',
     border: 'border-primary/20',
     accent: 'bg-primary text-primary-foreground hover:bg-primary/90',
-    valueBorder: 'border-white/10 focus-within:border-primary/50',
+    valueBorder: 'border-border focus-within:border-primary/50',
     icon: ArrowLeftRight,
   },
 } as const;
@@ -403,14 +403,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
           <ResponsiveModalHeader className="pb-2 sm:pb-3">
             <ResponsiveModalTitle className="text-base sm:text-lg font-bold">Nova Transação</ResponsiveModalTitle>
           </ResponsiveModalHeader>
-          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-foreground/[0.04] border border-border backdrop-blur-sm">
             <button
               type="button"
               onClick={() => setType('expense')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'expense'
                   ? 'bg-destructive text-destructive-foreground shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <ArrowDownCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -421,8 +421,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               onClick={() => setType('income')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'income'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-emerald-600 text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <ArrowUpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -434,7 +434,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'transfer'
                   ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -443,9 +443,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
           </div>
 
           {/* Value field - integrated into the dark glass shell */}
-          <div className={`value-box mt-3 sm:mt-4 mb-3 rounded-2xl border bg-white/5 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
+          <div className={`value-box mt-3 sm:mt-4 mb-3 rounded-2xl border bg-foreground/[0.04] backdrop-blur-sm transition-colors ${style.valueBorder}`}>
             <div className="flex items-center px-3 sm:px-4 py-3 min-w-0">
-              <span className="text-base sm:text-lg font-bold text-white/60 mr-2 shrink-0">R$</span>
+              <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2 shrink-0">R$</span>
               <input
                 type="number"
                 step="0.01"
@@ -453,7 +453,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 placeholder="0,00"
                 value={value}
                 onChange={e => setValue(e.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-white/35 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="min-w-0 flex-1 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/70 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <QuickCalculator onSelect={(v) => setValue(String(v))} />
             </div>
@@ -509,12 +509,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               {type === 'expense' && (
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pagamento</Label>
-                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                     <button
                       type="button"
                       onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInvoiceMonth(''); }}
                       className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        paymentMethod === 'debit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                        paymentMethod === 'debit' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       💳 Débito
@@ -523,7 +523,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       type="button"
                       onClick={() => { setPaymentMethod('credit'); setWalletId(''); }}
                       className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        paymentMethod === 'credit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                        paymentMethod === 'credit' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       💳 Crédito
@@ -606,35 +606,35 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               </div>
 
               {/* Paid / Received toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-foreground/[0.04] p-3">
                 <div>
-                  <span className="text-sm font-medium text-white/95">{type === 'income' ? 'Recebido' : 'Pago'}</span>
-                  <p className="text-xs text-white/55">{type === 'income' ? 'Já recebeu este valor?' : 'Já efetuou o pagamento?'}</p>
+                  <span className="text-sm font-medium text-foreground">{type === 'income' ? 'Recebido' : 'Pago'}</span>
+                  <p className="text-xs text-muted-foreground">{type === 'income' ? 'Já recebeu este valor?' : 'Já efetuou o pagamento?'}</p>
                 </div>
                 <Switch checked={isPaid} onCheckedChange={setIsPaid} />
               </div>
 
               {/* Recurring / Repeat */}
-              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-foreground/[0.04] p-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <Repeat className="h-4 w-4 text-primary shrink-0" />
                   <div className="min-w-0">
-                    <span className="text-sm font-medium text-white/95">Recorrente / Repetir</span>
-                    <p className="text-xs text-white/55">Conta fixa ou parcelamento</p>
+                    <span className="text-sm font-medium text-foreground">Recorrente / Repetir</span>
+                    <p className="text-xs text-muted-foreground">Conta fixa ou parcelamento</p>
                   </div>
                 </div>
                 <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
               </div>
 
               {isRecurring && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
+                <div className="rounded-xl border border-border bg-foreground/[0.04] p-3 space-y-3">
                   {/* Mode selector */}
-                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                     <button
                       type="button"
                       onClick={() => setRecurringMode('fixed')}
                       className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        recurringMode === 'fixed' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                        recurringMode === 'fixed' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Repeat className="h-3.5 w-3.5" />
@@ -644,7 +644,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                       type="button"
                       onClick={() => setRecurringMode('limited')}
                       className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        recurringMode === 'limited' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                        recurringMode === 'limited' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       <Hash className="h-3.5 w-3.5" />
@@ -685,12 +685,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                         <>
                           <div className="space-y-1.5">
                             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tipo de Valor</Label>
-                            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+                            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                               <button
                                 type="button"
                                 onClick={() => setInstallmentValueType('total')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  installmentValueType === 'total' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                                  installmentValueType === 'total' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor Total
@@ -699,7 +699,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                                 type="button"
                                 onClick={() => setInstallmentValueType('per_installment')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  installmentValueType === 'per_installment' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                                  installmentValueType === 'per_installment' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor da Parcela
@@ -708,19 +708,19 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                           </div>
 
                           {value && parseFloat(value) > 0 && (
-                            <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 text-center">
-                              <p className="text-xs text-white/55">Resumo</p>
+                            <div className="rounded-xl bg-foreground/[0.04] border border-border p-3 text-center">
+                              <p className="text-xs text-muted-foreground">Resumo</p>
                               <p className="text-lg font-bold text-primary">
                                 {parseInt(repeatCount)}x de R$ {installmentValueType === 'total'
                                   ? (parseFloat(value) / parseInt(repeatCount)).toFixed(2)
                                   : parseFloat(value).toFixed(2)}
                               </p>
-                              <p className="text-xs text-white/55">
+                              <p className="text-xs text-muted-foreground">
                                 Total: R$ {installmentValueType === 'total'
                                   ? parseFloat(value).toFixed(2)
                                   : (parseFloat(value) * parseInt(repeatCount)).toFixed(2)}
                               </p>
-                              <p className="text-[11px] text-white/55 mt-1">
+                              <p className="text-[11px] text-muted-foreground mt-1">
                                 Isso criará {parseInt(repeatCount)} lançamentos de R$ {installmentValueType === 'total'
                                   ? (parseFloat(value) / parseInt(repeatCount)).toFixed(2)
                                   : parseFloat(value).toFixed(2)} nos próximos meses.
@@ -736,8 +736,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
               {/* More options accordion */}
               <Accordion type="single" collapsible>
-                <AccordionItem value="more" className="border border-white/10 rounded-xl px-3 bg-white/[0.02]">
-                  <AccordionTrigger className="text-sm font-medium text-white/95 hover:no-underline py-3">Mais Opções</AccordionTrigger>
+                <AccordionItem value="more" className="border border-border rounded-xl px-3 bg-foreground/[0.04]">
+                  <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-3">Mais Opções</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4 pb-1">
                       <div className="space-y-1.5">
@@ -759,14 +759,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                             className="rounded-xl h-9 text-sm"
                           />
-                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white">+</Button>
+                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3 border-border bg-foreground/[0.04] hover:bg-foreground/10 hover:text-foreground">+</Button>
                         </div>
                         {tags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-white/10 text-white/90 border-white/10 hover:bg-white/15">
+                              <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-foreground/10 text-foreground border-border hover:bg-foreground/10">
                                 {tag}
-                                <button onClick={() => handleRemoveTag(tag)} className="ml-0.5 rounded-full hover:bg-white/10 p-0.5">
+                                <button onClick={() => handleRemoveTag(tag)} className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5">
                                   <X className="h-3 w-3" />
                                 </button>
                               </Badge>
@@ -805,7 +805,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
         {/* Footer */}
         <ResponsiveModalFooter className="p-3 pt-0 gap-2 flex-row justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-white/10 bg-white/5 text-white/90 hover:bg-white/10 hover:text-white">Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-border bg-foreground/[0.04] text-foreground hover:bg-foreground/10 hover:text-foreground">Cancelar</Button>
           <Button onClick={handleSave} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
             {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : 'Salvar'}
           </Button>

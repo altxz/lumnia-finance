@@ -79,7 +79,8 @@ export function AppSidebar() {
             <img src="/logo.svg" alt="Lumnia" className="h-8 w-8 shrink-0" />
           ) : (
             <>
-              <img src="/logo-sidebar.svg" alt="Lumnia" className="shrink-0" style={{ height: 70 }} />
+              <img src="/logo-sidebar.svg" alt="Lumnia" className="shrink-0 dark:hidden" style={{ height: 70 }} />
+              <img src="/logo-sidebar-light.svg" alt="" aria-hidden className="hidden shrink-0 dark:block" style={{ height: 70 }} />
             </>
           )}
         </div>

@@ -61,9 +61,9 @@ function advanceInvoiceMonth(ym: string, months: number): string {
 }
 
 const TYPE_STYLES = {
-  expense: { bg: 'bg-destructive/10', border: 'border-destructive/20', accent: 'bg-destructive text-destructive-foreground hover:bg-destructive/90', valueBorder: 'border-white/10 focus-within:border-destructive/50' },
-  income: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', accent: 'bg-success text-success-foreground hover:bg-success/90', valueBorder: 'border-white/10 focus-within:border-emerald-500/50' },
-  transfer: { bg: 'bg-primary/10', border: 'border-primary/20', accent: 'bg-primary text-primary-foreground hover:bg-primary/90', valueBorder: 'border-white/10 focus-within:border-primary/50' },
+  expense: { bg: 'bg-destructive/10', border: 'border-destructive/20', accent: 'bg-destructive text-destructive-foreground hover:bg-destructive/90', valueBorder: 'border-border focus-within:border-destructive/50' },
+  income: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', accent: 'bg-success text-success-foreground hover:bg-success/90', valueBorder: 'border-border focus-within:border-emerald-500/50' },
+  transfer: { bg: 'bg-primary/10', border: 'border-primary/20', accent: 'bg-primary text-primary-foreground hover:bg-primary/90', valueBorder: 'border-border focus-within:border-primary/50' },
 } as const;
 
 export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated }: EditExpenseModalProps) {
@@ -471,11 +471,11 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
               Editar {type === 'income' ? 'Receita' : type === 'transfer' ? 'Transferência' : 'Despesa'}
             </ResponsiveModalTitle>
           </ResponsiveModalHeader>
-          <div className={`value-box mt-2 mb-3 rounded-2xl border bg-white/5 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
+          <div className={`value-box mt-2 mb-3 rounded-2xl border bg-foreground/[0.04] backdrop-blur-sm transition-colors ${style.valueBorder}`}>
             <div className="flex items-center px-3 sm:px-4 py-3">
-              <span className="text-base sm:text-lg font-bold text-white/60 mr-2">R$</span>
+              <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2">R$</span>
               <input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)}
-                className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-white/35 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/70 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               <QuickCalculator onSelect={(v) => setValue(String(v))} />
             </div>
           </div>
@@ -484,7 +484,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         <div className="flex-1 overflow-y-auto p-3 pt-2 space-y-3">
           {/* Existing installment alert */}
           {isExistingInstallment && expense.installment_info && (
-            <Alert className="rounded-xl border-white/10 bg-white/[0.03]">
+            <Alert className="rounded-xl border-border bg-foreground/[0.04]">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-sm">
                 Esta despesa faz parte de um parcelamento (<span className="font-bold">{expense.installment_info}</span>). As alterações feitas aqui afetarão apenas esta parcela.
@@ -543,7 +543,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
               {/* Installment / Recurring conversion section */}
               {canConvertToInstallment && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-foreground/[0.04] p-3">
                     <div className="flex items-center gap-2 min-w-0">
                       <Repeat className="h-4 w-4 text-primary shrink-0" />
                       <div className="min-w-0">
@@ -555,14 +555,14 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                   </div>
 
                   {wantInstallment && (
-                    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
+                    <div className="rounded-xl border border-border bg-foreground/[0.04] p-3 space-y-3">
                       {/* Mode selector: Fixed vs Repeat */}
-                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                         <button
                           type="button"
                           onClick={() => setInstallmentMode('fixed')}
                           className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                            installmentMode === 'fixed' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                            installmentMode === 'fixed' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                           }`}
                         >
                           <Repeat className="h-3.5 w-3.5" />
@@ -572,7 +572,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                           type="button"
                           onClick={() => setInstallmentMode('limited')}
                           className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                            installmentMode === 'limited' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                            installmentMode === 'limited' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                           }`}
                         >
                           <Hash className="h-3.5 w-3.5" />
@@ -610,12 +610,12 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
                           <div className="space-y-1.5">
                             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tipo de Valor</Label>
-                            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+                            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                               <button
                                 type="button"
                                 onClick={() => setValueMode('total')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  valueMode === 'total' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                                  valueMode === 'total' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor Total
@@ -624,7 +624,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                                 type="button"
                                 onClick={() => setValueMode('per_installment')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  valueMode === 'per_installment' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
+                                  valueMode === 'per_installment' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
                                 Valor da Parcela
@@ -633,7 +633,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                           </div>
 
                           {value && parseFloat(value) > 0 && (
-                            <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 text-center">
+                            <div className="rounded-xl bg-foreground/[0.04] border border-border p-3 text-center">
                               <p className="text-xs text-muted-foreground">Resumo</p>
                               <p className="text-lg font-bold text-primary">
                                 {numInstallments}x de R$ {valueMode === 'total'
@@ -670,7 +670,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                 />
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-foreground/[0.04] p-3">
                 <div>
                   <span className="text-sm font-medium">{type === 'income' ? 'Recebido' : 'Pago'}</span>
                   <p className="text-xs text-muted-foreground">{type === 'income' ? 'Já recebeu este valor?' : 'Já efetuou o pagamento?'}</p>
@@ -679,8 +679,8 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
               </div>
 
               <Accordion type="single" collapsible>
-                <AccordionItem value="more" className="border border-white/10 rounded-xl px-3 bg-white/[0.02]">
-                  <AccordionTrigger className="text-sm font-medium text-white/95 hover:no-underline py-3">Mais Opções</AccordionTrigger>
+                <AccordionItem value="more" className="border border-border rounded-xl px-3 bg-foreground/[0.04]">
+                  <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-3">Mais Opções</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4 pb-1">
                       <div className="space-y-1.5">
@@ -693,14 +693,14 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                           <Input placeholder="Adicionar tag..." value={tagInput} onChange={e => setTagInput(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                             className="rounded-xl h-9 text-sm" />
-                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white">+</Button>
+                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3 border-border bg-foreground/[0.04] hover:bg-foreground/10 hover:text-foreground">+</Button>
                         </div>
                         {tags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-white/10 text-white/90 border-white/10 hover:bg-white/15">
+                              <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-foreground/10 text-foreground border-border hover:bg-foreground/10">
                                 {tag}
-                                <button onClick={() => setTags(tags.filter(t => t !== tag))} className="ml-0.5 rounded-full hover:bg-white/10 p-0.5"><X className="h-3 w-3" /></button>
+                                <button onClick={() => setTags(tags.filter(t => t !== tag))} className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"><X className="h-3 w-3" /></button>
                               </Badge>
                             ))}
                           </div>
@@ -733,7 +733,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             </AlertDialogContent>
           </AlertDialog>
            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-white/10 bg-white/5 text-white/90 hover:bg-white/10 hover:text-white">Cancelar</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-border bg-foreground/[0.04] text-foreground hover:bg-foreground/10 hover:text-foreground">Cancelar</Button>
                <Button onClick={handleSaveClick} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
                  {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
               </Button>

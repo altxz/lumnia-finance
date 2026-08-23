@@ -15,7 +15,7 @@ export function BudgetSummaryCards({ totalIncome, totalAllocated, totalSpent }: 
     <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">
       <Card className="rounded-2xl border-0 shadow-card bg-success text-success-foreground">
         <CardContent className="p-3 sm:p-5 flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
             <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           <div className="min-w-0">
