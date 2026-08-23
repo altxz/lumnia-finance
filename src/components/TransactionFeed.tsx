@@ -635,36 +635,30 @@ export function TransactionFeed({
                     const transferDelta = isTransfer ? transferCashDelta(exp as any, investmentWalletSet) : 0;
                     const transferSign = transferDelta > 0 ? '+' : transferDelta < 0 ? '-' : '';
 
-                    const accentColor = isTransfer
-                      ? transferDelta > 0
-                        ? 'bg-emerald-500'
-                        : transferDelta < 0
-                          ? 'bg-destructive'
-                          : 'bg-border'
+                    const statusDot = isPending
+                      ? 'bg-muted-foreground/40'
                       : isIncome
                         ? 'bg-emerald-500'
-                        : 'bg-destructive';
+                        : isTransfer
+                          ? 'bg-primary'
+                          : 'bg-emerald-500';
 
                     return (
                       <div
                         key={exp.id}
-                        className="relative w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors group"
+                        className="relative w-full flex items-center gap-3 px-1 sm:px-2 py-3 rounded-xl hover:bg-muted/40 transition-colors group"
                       >
-                        {/* Type accent — minimal side bar */}
-                        <span
-                          aria-hidden
-                          className={`absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full ${accentColor} ${isPending ? 'opacity-30' : 'opacity-70'}`}
-                        />
                         {/* Category icon */}
-                        <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isInvoiceItem ? 'bg-accent/30' : catData.bg}`}>
+                        <div className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center border ${isInvoiceItem ? 'bg-primary/10 border-primary/20' : `${catData.bg} border-border/50`}`}>
                           {isTransfer ? (
-                            <ArrowLeftRight className="h-4.5 w-4.5" />
+                            <ArrowLeftRight className="h-4.5 w-4.5 text-primary" />
                           ) : isInvoiceItem ? (
-                            <CreditCard className={`h-4.5 w-4.5 text-accent-foreground`} />
+                            <CreditCard className="h-4.5 w-4.5 text-primary" />
                           ) : (
                             <Icon className={`h-4.5 w-4.5 ${catData.text}`} />
                           )}
                         </div>
+
 
                         {/* Description + meta */}
                          <div className="flex-1 min-w-0 overflow-hidden">
