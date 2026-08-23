@@ -736,8 +736,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
 
               {/* More options accordion */}
               <Accordion type="single" collapsible>
-                <AccordionItem value="more" className="border rounded-xl px-3">
-                  <AccordionTrigger className="text-sm font-medium hover:no-underline py-3">Mais Opções</AccordionTrigger>
+                <AccordionItem value="more" className="border border-white/10 rounded-xl px-3 bg-white/[0.02]">
+                  <AccordionTrigger className="text-sm font-medium text-white/95 hover:no-underline py-3">Mais Opções</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4 pb-1">
                       <div className="space-y-1.5">
@@ -759,7 +759,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                             className="rounded-xl h-9 text-sm"
                           />
-                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3">+</Button>
+                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white">+</Button>
                         </div>
                         {tags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
