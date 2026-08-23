@@ -220,13 +220,13 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
               </div>
 
               {/* Payment method */}
-              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
                 <button type="button" onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInstallments('1'); }}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'debit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'debit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                   💳 Débito
                 </button>
                 <button type="button" onClick={() => setPaymentMethod('credit')}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'credit' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'credit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                   <CreditCard className="h-3.5 w-3.5 inline mr-1" />Crédito
                 </button>
               </div>
