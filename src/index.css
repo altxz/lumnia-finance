@@ -394,9 +394,9 @@
     background-color: hsl(0 0% 100%) !important;
   }
 
-  /* Subtle value box used inside transaction modal */
+  /* Value box inside transaction modal: no fill, border only */
   .glass-modal .value-box {
-    background-color: hsl(var(--modal-field)) !important;
+    background-color: transparent !important;
     border-width: 1px !important;
   }
 
