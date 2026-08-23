@@ -307,6 +307,7 @@
   .glass-modal .bg-card\/70,
   .glass-modal .bg-background\/70,
   .glass-modal .bg-background,
+  .glass-modal .bg-secondary,
   .glass-modal [class*="bg-card/70"],
   .glass-modal [class*="bg-background/70"] {
     background-color: hsl(0 0% 26% / 0.92) !important;
@@ -318,6 +319,11 @@
   .glass-modal button[class*="bg-background"][class*="shadow-soft"] {
     background-color: hsl(0 0% 26% / 0.92) !important;
     color: hsl(0 0% 96%) !important;
+  }
+
+  /* Segmented toggle container should also sit above the dark shell */
+  .glass-modal .bg-secondary:has(> button) {
+    background-color: hsl(0 0% 22% / 0.92) !important;
   }
 
   .glass-modal input::placeholder,
