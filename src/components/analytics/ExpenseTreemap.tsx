@@ -6,7 +6,7 @@ import { formatCurrency } from '@/lib/constants';
 import type { CategoryStats } from '@/hooks/useAnalyticsData';
 import { useCategories } from '@/hooks/useStaticData';
 import { InfoPopover } from '@/components/ui/info-popover';
-import { seriesColor } from '@/lib/chartPalette';
+import { seriesColor, readableTextColor } from '@/lib/chartPalette';
 
 
 interface ExpenseTreemapProps {
@@ -21,16 +21,17 @@ interface CategoryColor {
 const CustomContent = (props: any) => {
   const { x, y, width, height, name, value, fill } = props;
   if (width < 30 || height < 30) return null;
+  const textColor = readableTextColor(fill);
 
   return (
     <g>
       <rect x={x} y={y} width={width} height={height} rx={6} fill={fill} stroke="hsl(var(--background))" strokeWidth={2} />
       {width > 60 && height > 40 && (
         <>
-          <text x={x + width / 2} y={y + height / 2 - 8} textAnchor="middle" fill="#fff" fontSize={width > 100 ? 13 : 11} fontWeight={600}>
+          <text x={x + width / 2} y={y + height / 2 - 8} textAnchor="middle" fill={textColor} fontSize={width > 100 ? 13 : 11} fontWeight={600}>
             {name}
           </text>
-          <text x={x + width / 2} y={y + height / 2 + 10} textAnchor="middle" fill="rgba(255,255,255,0.8)" fontSize={width > 100 ? 11 : 9}>
+          <text x={x + width / 2} y={y + height / 2 + 10} textAnchor="middle" fill={textColor} opacity={0.8} fontSize={width > 100 ? 11 : 9}>
             {formatCurrency(value)}
           </text>
         </>
