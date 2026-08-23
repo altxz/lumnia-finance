@@ -42,16 +42,16 @@ export function AnomalyInsights() {
           className={`rounded-2xl border-border/50 ${
             i.type === 'alert'
               ? 'bg-destructive/5 border-destructive/20'
-              : 'bg-emerald-500/5 border-emerald-500/20'
+              : 'bg-success/5 border-success/20'
           }`}
         >
           <CardContent className="flex items-start gap-3 p-4">
             <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
-              i.type === 'alert' ? 'bg-destructive/15' : 'bg-emerald-500/15'
+              i.type === 'alert' ? 'bg-destructive/15' : 'bg-success/15'
             }`}>
               {i.type === 'alert'
                 ? <AlertTriangle className="h-4 w-4 text-destructive" />
-                : <Trophy className="h-4 w-4 text-emerald-500" />
+                : <Trophy className="h-4 w-4 text-success" />
               }
             </div>
             <div className="min-w-0">
@@ -64,7 +64,7 @@ export function AnomalyInsights() {
                   </>
                 ) : (
                   <>
-                    <span className="font-bold text-emerald-600">Você está economizando!</span>{' '}
+                    <span className="font-bold text-success">Você está economizando!</span>{' '}
                     Gastou <span className="font-bold">{Math.abs(i.pctChange)}%</span> a menos em{' '}
                     <span className="font-semibold">{i.label}</span> este mês.
                   </>
@@ -73,7 +73,7 @@ export function AnomalyInsights() {
               <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
                 {i.type === 'alert'
                   ? <TrendingUp className="h-3 w-3 text-destructive" />
-                  : <TrendingDown className="h-3 w-3 text-emerald-500" />
+                  : <TrendingDown className="h-3 w-3 text-success" />
                 }
                 <span>{formatCurrency(i.prevAmount)} → {formatCurrency(i.currentAmount)}</span>
               </div>

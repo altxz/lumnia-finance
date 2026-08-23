@@ -149,7 +149,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
                       <p className="font-semibold text-popover-foreground">{label}</p>
                       <p className="text-muted-foreground">Planejado: {formatCurrency(row.planejado)}</p>
                       <p className="text-muted-foreground">Realizado: {formatCurrency(row.realizado)}</p>
-                      <p className={diff >= 0 ? 'text-emerald-500' : 'text-destructive'}>
+                      <p className={diff >= 0 ? 'text-success' : 'text-destructive'}>
                         {diff >= 0 ? `Resta ${formatCurrency(diff)}` : `Excedeu ${formatCurrency(Math.abs(diff))}`}
                       </p>
                     </div>
