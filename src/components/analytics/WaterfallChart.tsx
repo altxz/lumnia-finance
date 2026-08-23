@@ -146,7 +146,7 @@ export function WaterfallChart({ expenses, startingBalance }: WaterfallChartProp
                 if (!active || !payload?.length) return null;
                 const item = payload[0]?.payload as WaterfallItem;
                 return (
-                  <div className="rounded-xl border-0 p-2.5 text-xs shadow-float" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff' }}>
+                  <div className="glass-soft rounded-xl p-2.5 text-xs text-popover-foreground shadow-float">
                     <p className="font-semibold mb-1">{item.name}</p>
                     <p style={{
                       color: item.type === 'income' ? 'hsl(var(--success))' :
