@@ -15,10 +15,7 @@ export function Logo({ size = 40, className = '', showText = true }: LogoProps) 
         className="shrink-0 rounded-lg"
       />
       {showText && (
-        <>
-          <img src="/brand-logo-color.svg" alt="Lumnia" className="h-6 w-auto dark:hidden" />
-          <img src="/brand-logo-white.svg" alt="" aria-hidden className="hidden h-6 w-auto dark:block" />
-        </>
+        <img src="/brand-logo-color.svg" alt="Lumnia" className="h-6 w-auto" />
       )}
     </div>
   );

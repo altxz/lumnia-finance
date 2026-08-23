@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
+import { ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -22,17 +22,9 @@ import type { Expense } from '@/components/ExpenseTable';
 import { deleteSingleRecurringOccurrence } from '@/lib/recurringExceptions';
 import { getCreditCardPaymentCardId, isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
 import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceMath';
-
-const CATEGORY_ICONS: Record<string, { icon: typeof Utensils; bg: string; text: string }> = {
-  alimentacao: { icon: Utensils, bg: 'bg-[hsl(var(--chart-2)/0.12)]', text: 'text-[hsl(var(--chart-2))]' },
-  transporte: { icon: Car, bg: 'bg-[hsl(var(--chart-3)/0.12)]', text: 'text-[hsl(var(--chart-3))]' },
-  lazer: { icon: Gamepad2, bg: 'bg-[hsl(var(--chart-4)/0.14)]', text: 'text-[hsl(var(--chart-4))]' },
-  saude: { icon: Heart, bg: 'bg-destructive/10', text: 'text-destructive' },
-  moradia: { icon: Home, bg: 'bg-primary/10', text: 'text-primary' },
-  educacao: { icon: GraduationCap, bg: 'bg-[hsl(var(--chart-5)/0.14)]', text: 'text-[hsl(var(--chart-5))]' },
-  outros: { icon: Tag, bg: 'bg-muted/70', text: 'text-muted-foreground' },
-  transferencia: { icon: ArrowLeftRight, bg: 'bg-primary/10', text: 'text-primary' },
-};
+import { DynamicCategoryIcon } from '@/components/DynamicCategoryIcon';
+import { resolveTransactionCategory } from '@/lib/categoryMatch';
+import type { DbCategory } from '@/hooks/useStaticData';
 
 
 const STORAGE_KEY = 'txfeed_group_cards';
@@ -53,6 +45,7 @@ interface TransactionFeedProps {
   startingMonthBalance?: number;
   creditCards?: CreditCardType[];
   currentMonth?: string;
+  categories?: DbCategory[];
 }
 
 function formatGroupDate(dateStr: string): string {
@@ -104,6 +97,7 @@ export function TransactionFeed({
   startingMonthBalance = 0,
   creditCards = [],
   currentMonth,
+  categories = [],
 }: TransactionFeedProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
@@ -628,8 +622,7 @@ export function TransactionFeed({
 
                   {/* Individual transaction items */}
                   {items.map(({ expense: exp, originalDate, isInvoiceItem }) => {
-                    const catData = CATEGORY_ICONS[exp.final_category] || CATEGORY_ICONS.outros;
-                    const Icon = catData.icon;
+                    const category = resolveTransactionCategory(categories, exp);
                     const isIncome = exp.type === 'income';
                     const isTransfer = exp.type === 'transfer';
                     const isPending = !exp.is_paid;
@@ -652,14 +645,22 @@ export function TransactionFeed({
                         className="relative w-full flex items-center gap-2.5 sm:gap-3 px-1 sm:px-2 py-3 rounded-xl hover:bg-muted/40 transition-colors group"
                       >
                         {/* Category icon */}
-                        <div className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border ${isInvoiceItem ? 'bg-primary/10 border-primary/20' : `${catData.bg} border-border/50`}`}>
+                        <div
+                          className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border ${isInvoiceItem ? 'bg-primary/10 border-primary/20' : 'bg-muted/70 border-border/50'}`}
+                          style={!isInvoiceItem && category ? {
+                            color: category.color,
+                            backgroundColor: `color-mix(in srgb, ${category.color} 14%, transparent)`,
+                            borderColor: `color-mix(in srgb, ${category.color} 24%, transparent)`,
+                          } : undefined}
+                          title={category?.name || 'Sem categoria'}
+                        >
 
                           {isTransfer ? (
                             <ArrowLeftRight className="h-4.5 w-4.5 text-primary" />
                           ) : isInvoiceItem ? (
                             <CreditCard className="h-4.5 w-4.5 text-primary" />
                           ) : (
-                            <Icon className={`h-4.5 w-4.5 ${catData.text}`} />
+                            <DynamicCategoryIcon name={category?.icon} className="h-4.5 w-4.5" />
                           )}
                         </div>
 

@@ -18,6 +18,7 @@ import { TransactionFeed } from '@/components/TransactionFeed';
 import { TransactionSummaryHeader } from '@/components/TransactionSummaryHeader';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import type { Expense } from '@/components/ExpenseTable';
+import { useCategories } from '@/hooks/useStaticData';
 
 
 
@@ -28,6 +29,7 @@ export default function HistoryPage() {
   const { toast } = useToast();
 
   const projected = useProjectedTotals();
+  const { data: categories = [] } = useCategories();
 
 
   const [search, setSearch] = useState('');
@@ -190,6 +192,7 @@ export default function HistoryPage() {
                       startingMonthBalance={projected.startingBalance}
                       creditCards={projected.creditCards}
                       currentMonth={startDate}
+                      categories={categories}
                     />
 
                     {/* Saldo do mês anterior */}
