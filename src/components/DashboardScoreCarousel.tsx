@@ -47,17 +47,19 @@ function Dots({ score }: { score: number | null }) {
 }
 
 function DimensionRow({ d }: { d: ScoreDimension }) {
+  const color = d.score === null ? 'hsl(var(--muted-foreground))' : getScoreColor(d.score);
   return (
-    <div className="flex items-center gap-2 text-[11px]">
-      <span className="shrink-0 whitespace-nowrap text-muted-foreground">{d.label}</span>
-      <Dots score={d.score} />
-      <span
-        className="w-6 text-right font-semibold tabular-nums"
-        style={{ color: d.score === null ? 'hsl(var(--muted-foreground))' : getScoreColor(d.score) }}
-      >
-        {d.score === null ? '—' : d.score}
-      </span>
-      <span className="flex-1 min-w-0 truncate text-muted-foreground">{d.detail}</span>
+    <div className="flex items-center justify-between gap-2 text-[11px] leading-tight">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="shrink-0 whitespace-nowrap text-muted-foreground w-20">{d.label}</span>
+        <Dots score={d.score} />
+      </div>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="w-5 text-right font-semibold tabular-nums shrink-0" style={{ color }}>
+          {d.score === null ? '—' : d.score}
+        </span>
+        <span className="text-muted-foreground truncate max-w-[120px] hidden sm:inline">{d.detail}</span>
+      </div>
     </div>
   );
 }
