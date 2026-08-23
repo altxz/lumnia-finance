@@ -79,8 +79,8 @@ export function AppSidebar() {
             <img src="/brand-icon.png" alt="Lumnia" className="h-8 w-8 shrink-0 rounded-lg" />
           ) : (
             <>
-              <img src="/brand-logo-color.png" alt="Lumnia" className="h-10 w-auto shrink-0 dark:hidden" />
-              <img src="/brand-logo-white.png" alt="" aria-hidden className="hidden h-10 w-auto shrink-0 dark:block" />
+              <img src="/brand-logo-color.svg" alt="Lumnia" className="h-10 w-auto shrink-0 dark:hidden" />
+              <img src="/brand-logo-white.svg" alt="" aria-hidden className="hidden h-10 w-auto shrink-0 dark:block" />
             </>
           )}
         </div>
