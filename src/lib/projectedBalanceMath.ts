@@ -4,13 +4,24 @@ import type { CreditCard } from './invoiceHelpers';
 
 interface ComputeProjectedMonthResultParams {
   effectiveMonthExpenses: Expense[];
-  invoiceTotal: number;
-  invoiceByCategory: Record<string, number>;
+  /** Total de fatura que sai do caixa no mês (pago + projetado). Opcional se paid/projected vierem. */
+  invoiceTotal?: number;
+  /** Faturas com pagamento já lançado no mês. */
+  invoicePaid?: number;
+  /** Faturas do mês sem pagamento lançado (entram na data de vencimento). */
+  invoiceProjected?: number;
+  invoiceByCategory?: Record<string, number>;
+  /**
+   * Compras feitas no cartão dentro do mês. Usadas apenas para o ranking de
+   * categorias (fiel ao extrato) — não entram no total de saídas.
+   */
+  cardPurchases?: { final_category?: string | null; value: number; type?: string | null }[];
   startingBalance: number;
   isCreditCardPayment: (expense: Expense) => boolean;
   /** Carteiras de investimento: transferências para/de elas afetam o saldo em caixa. */
   investmentWalletIds?: Iterable<string>;
 }
+
 
 interface BuildDailyBalanceMapParams {
   monthExpenses: Expense[];
