@@ -162,11 +162,11 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
             </Select>
             <div className="flex items-center gap-1.5">
               {balanceChange >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <TrendingUp className="h-4 w-4 text-success" />
               ) : (
                 <TrendingDown className="h-4 w-4 text-destructive" />
               )}
-              <span className={`text-xs sm:text-sm font-bold ${balanceChange >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+              <span className={`text-xs sm:text-sm font-bold ${balanceChange >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {balanceChange >= 0 ? '+' : ''}{formatCurrency(balanceChange)}
               </span>
             </div>
@@ -174,7 +174,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
         </div>
         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Receitas
+            <span className="w-2.5 h-2.5 rounded-full bg-success" /> Receitas
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-destructive" /> Despesas
@@ -182,7 +182,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-primary" /> Saldo
           </span>
-          <span>Saldo previsto: <strong className={endBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}>{formatCurrency(endBalance)}</strong></span>
+          <span>Saldo previsto: <strong className={endBalance >= 0 ? 'text-success' : 'text-destructive'}>{formatCurrency(endBalance)}</strong></span>
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4 px-2 sm:px-6">
@@ -220,7 +220,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
                     <p className="font-semibold mb-1.5">
                       {label} {point?.projected && <span className="text-muted-foreground">(projeção)</span>}
                     </p>
-                    <p className="text-emerald-500">Entradas: +{formatCurrency(point?.receitas || 0)}</p>
+                    <p className="text-success">Entradas: +{formatCurrency(point?.receitas || 0)}</p>
                     <p className="text-destructive">Saídas: -{formatCurrency(point?.despesas || 0)}</p>
                     <hr className="my-1.5 border-border" />
                     <p className={`font-bold ${(point?.saldo || 0) >= 0 ? 'text-primary' : 'text-destructive'}`}>

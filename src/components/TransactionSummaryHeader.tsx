@@ -45,8 +45,8 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Receitas */}
         <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-            <ArrowUpCircle className="h-5 w-5 text-emerald-500" />
+          <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+            <ArrowUpCircle className="h-5 w-5 text-success" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-xs text-muted-foreground">Receitas</span>
@@ -72,14 +72,14 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
         {/* Balanço */}
         <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-            balance >= 0 ? 'bg-emerald-500/10' : 'bg-destructive/10'
+            balance >= 0 ? 'bg-success/10' : 'bg-destructive/10'
           }`}>
-            <Scale className={`h-5 w-5 ${balance >= 0 ? 'text-emerald-500' : 'text-destructive'}`} />
+            <Scale className={`h-5 w-5 ${balance >= 0 ? 'text-success' : 'text-destructive'}`} />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-xs text-muted-foreground">Balanço</span>
             <span className={`text-sm sm:text-base font-bold truncate ${
-              balance >= 0 ? 'text-emerald-500' : 'text-destructive'
+              balance >= 0 ? 'text-success' : 'text-destructive'
             }`}>
               {visible ? (balance >= 0 ? '+' : '') + formatCurrency(balance) : mask}
             </span>

@@ -54,8 +54,8 @@ export function EmergencyFundCard() {
 
   const progressPct = Math.min(100, (months / 6) * 100);
 
-  const color = months < 1 ? 'text-destructive' : months < 6 ? 'text-yellow-500' : 'text-emerald-500';
-  const barColor = months < 1 ? '[&>div]:bg-destructive' : months < 6 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-emerald-500';
+  const color = months < 1 ? 'text-destructive' : months < 6 ? 'text-warning' : 'text-success';
+  const barColor = months < 1 ? '[&>div]:bg-destructive' : months < 6 ? '[&>div]:bg-warning' : '[&>div]:bg-success';
 
   if (loading) return null;
 
