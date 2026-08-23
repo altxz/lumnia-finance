@@ -10,6 +10,8 @@ import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceM
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { format, startOfDay } from 'date-fns';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { ChartSkeleton } from '@/components/ui/loading-state';
+import { chartAxisProps, chartGridProps } from '@/components/ui/chart';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
@@ -132,8 +134,8 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
   if (loading) {
     return (
       <Card className="rounded-2xl border-0 shadow-card">
-        <CardContent className="h-[320px] flex items-center justify-center">
-          <span className="text-muted-foreground text-sm">Carregando gráfico...</span>
+        <CardContent className="h-[320px] p-0">
+          <ChartSkeleton />
         </CardContent>
       </Card>
     );
@@ -186,29 +188,23 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
       <CardContent className="flex-1 min-h-0 pb-4 px-2 sm:px-6">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 5, right: isMobile ? 0 : 10, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+            <CartesianGrid {...chartGridProps} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
+              {...chartAxisProps}
               interval={tickInterval}
             />
             <YAxis
               yAxisId="bars"
               tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v.toFixed(0)}`)}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
+              {...chartAxisProps}
               width={isMobile ? 28 : 40}
               orientation="left"
             />
             <YAxis
               yAxisId="line"
               tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v.toFixed(0)}`)}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
+              {...chartAxisProps}
               width={isMobile ? 28 : 40}
               orientation="right"
               domain={['auto', 'auto']}
@@ -220,7 +216,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
                 if (!active || !payload?.length) return null;
                 const point = payload[0]?.payload as DayData;
                 return (
-                  <div className="rounded-lg border bg-background p-2.5 text-xs shadow-float">
+                  <div className="glass-soft rounded-2xl p-3 font-sans text-xs shadow-float">
                     <p className="font-semibold mb-1.5">
                       {label} {point?.projected && <span className="text-muted-foreground">(projeção)</span>}
                     </p>

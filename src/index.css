@@ -1,12 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Purse palette: #8F41DE, #FF7535, #DAC0F4, #FFD6C2, #FFFFFF, #2C2C2C */
+    /* Paleta Lumnia: #8F41DE, #FF7535, #DAC0F4, #FFD6C2, #FFFFFF, #2C2C2C */
     --background: 275 45% 97%;
     --foreground: 0 0% 17%;
 
@@ -56,6 +54,7 @@
     --shadow-card: 0 18px 40px -24px hsl(270 45% 35% / 0.28);
     --shadow-float: 0 20px 40px -12px hsl(270 60% 45% / 0.35);
     --glass-border: 0 0% 100% / 0.6;
+    --overlay: 0 0% 17% / 0.45;
 
     /* Sidebar: dark graphite rail */
     --sidebar-background: 0 0% 12%;
@@ -125,6 +124,7 @@
     --shadow-card: 0 18px 40px -24px hsl(0 0% 0% / 0.7);
     --shadow-float: 0 20px 40px -12px hsl(0 0% 0% / 0.6);
     --glass-border: 0 0% 100% / 0.08;
+    --overlay: 0 0% 0% / 0.62;
 
     --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 85%;
@@ -290,4 +290,26 @@
     background-clip: text;
     color: transparent;
   }
+
+  .skeleton-shimmer {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, transparent, hsl(var(--card) / 0.8), transparent);
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after { animation: none; }
 }
