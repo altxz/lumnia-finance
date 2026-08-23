@@ -161,10 +161,9 @@ export function getScoreEmoji(score: number): string {
 
 /** Cor semântica do score (HSL literal usada nos anéis e barras). */
 export function getScoreColor(score: number): string {
-  if (score >= 75) return 'hsl(142, 71%, 45%)';
-  if (score >= 60) return 'hsl(45, 93%, 47%)';
-  if (score >= 45) return 'hsl(25, 95%, 53%)';
-  return 'hsl(0, 72%, 51%)';
+  if (score >= 75) return 'hsl(var(--success))';
+  if (score >= 45) return 'hsl(var(--warning))';
+  return 'hsl(var(--destructive))';
 }
 
 const money = (v: number) =>

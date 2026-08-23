@@ -270,7 +270,7 @@ export default function FinancialScorePage() {
                         {scoreDiff !== null && (
                           <div className="flex items-center justify-center gap-1 text-sm">
                             {scoreDiff > 0 ? (
-                              <><ArrowUp className="h-3.5 w-3.5 text-emerald-500" /><span className="text-emerald-500 font-medium">+{scoreDiff} pts</span></>
+                              <><ArrowUp className="h-3.5 w-3.5 text-success" /><span className="text-success font-medium">+{scoreDiff} pts</span></>
                             ) : scoreDiff < 0 ? (
                               <><ArrowDown className="h-3.5 w-3.5 text-destructive" /><span className="text-destructive font-medium">{scoreDiff} pts</span></>
                             ) : (
@@ -354,7 +354,7 @@ export default function FinancialScorePage() {
                             </span>
                           </div>
                           <Progress value={d.score ?? 0} className="h-1.5" />
-                          <p className="text-[11px] text-foreground/80">{d.detail}</p>
+                          <p className="text-[11px] text-foreground">{d.detail}</p>
                           <p className="text-[10px] text-muted-foreground">{d.action}</p>
                         </CardContent>
                       </Card>
@@ -406,7 +406,7 @@ export default function FinancialScorePage() {
                 ) : (
                   <Card className="border-dashed">
                     <CardContent className="py-10 text-center">
-                      <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground/60 mb-3" />
+                      <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                       <p className="text-muted-foreground font-medium">Histórico de evolução</p>
                       <p className="text-sm text-muted-foreground mt-1">
                         A partir do segundo mês registrado, a evolução do score aparece aqui.

@@ -7,7 +7,7 @@ const cardVariants = cva("rounded-lg text-card-foreground", {
   variants: {
     variant: {
       /* Default: Purse glassmorphism surface */
-      default: "glass",
+      default: "border border-border/70 bg-card/85 shadow-card backdrop-blur-xl",
       /* Opaque surface for dense content (tables, modals) */
       solid: "bg-card border border-border shadow-soft",
       /* Highlight card: purple to orange gradient */

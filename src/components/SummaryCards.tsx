@@ -30,9 +30,7 @@ function TrendBadge({ current, previous, invertColor }: { current: number; previ
   const isPositive = invertColor ? !isUp : isUp;
 
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[11px] font-semibold mt-0.5 ${
-      isPositive ? 'opacity-90' : 'opacity-90'
-    }`}>
+    <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[11px] font-semibold mt-0.5">
       {isUp ? <TrendingUp className="h-3 w-3 shrink-0" /> : <TrendingDown className="h-3 w-3 shrink-0" />}
       {isUp ? '+' : ''}{pct}%
     </span>
@@ -65,7 +63,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">
-                <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Saldo Projetado</p>
+                <p className="text-[10px] sm:text-xs font-medium whitespace-nowrap">Saldo Projetado</p>
                 {pendingInStartingBalance != null && pendingInStartingBalance > 0 && (
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>
@@ -79,7 +77,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
                   </TooltipProvider>
                 )}
               </div>
-              <p className={`text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate ${balance < 0 ? 'text-red-300' : ''}`}>
+              <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">
                 {balance >= 0 ? '+' : ''}{formatCurrency(balance)}
               </p>
               {prevBalance !== undefined && <TrendBadge current={balance} previous={prevBalance} />}
@@ -89,11 +87,11 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
 
         <SummaryCard className="bg-success text-success-foreground cursor-pointer hover:opacity-90 transition-opacity" onClick={() => navigate('/historico?type=income')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-success-foreground/20 flex items-center justify-center shrink-0">
               <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Entradas</p>
+              <p className="text-[10px] sm:text-xs font-medium whitespace-nowrap">Entradas</p>
               <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">+{formatCurrency(totalIncome)}</p>
               {prevIncome !== undefined && <TrendBadge current={totalIncome} previous={prevIncome} />}
             </div>
@@ -106,7 +104,7 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
               <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Saídas</p>
+              <p className="text-[10px] sm:text-xs font-medium whitespace-nowrap">Saídas</p>
               <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">-{formatCurrency(totalExpense)}</p>
               {prevExpense !== undefined && <TrendBadge current={totalExpense} previous={prevExpense} invertColor />}
             </div>
@@ -122,12 +120,12 @@ export function SummaryCards({ balance, totalIncome, totalExpense, largestCatego
               <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] sm:text-xs font-medium opacity-80 whitespace-nowrap">Maior Subcategoria</p>
+              <p className="text-[10px] sm:text-xs font-medium whitespace-nowrap">Maior Subcategoria</p>
               <p className="text-sm sm:text-lg lg:text-xl font-bold tracking-tight truncate">
                 {largestCategory ? largestCategory.name : '—'}
               </p>
               {largestCategory && (
-                <p className="text-[10px] sm:text-xs opacity-70 truncate">{formatCurrency(largestCategory.total)}</p>
+                <p className="text-[10px] sm:text-xs font-medium truncate">{formatCurrency(largestCategory.total)}</p>
               )}
             </div>
           </div>

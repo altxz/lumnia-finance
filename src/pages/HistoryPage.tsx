@@ -177,25 +177,25 @@ export default function HistoryPage() {
                   <Card className="rounded-2xl border-0 shadow-card bg-destructive text-destructive-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center"><ArrowDownCircle className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">Saídas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyExpense)}</p></div>
+                      <div><p className="text-xs font-semibold">Saídas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyExpense)}</p></div>
                     </CardContent>
                   </Card>
                   <Card className="rounded-2xl border-0 shadow-card bg-success text-success-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center"><ArrowUpCircle className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">Entradas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyIncome)}</p></div>
+                      <div><p className="text-xs font-semibold">Entradas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyIncome)}</p></div>
                     </CardContent>
                   </Card>
                   <Card className="rounded-2xl border-0 shadow-card bg-pink text-pink-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center"><CalendarClock className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">Custo anual (saídas)</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualExpense)}</p></div>
+                      <div><p className="text-xs font-semibold">Custo anual (saídas)</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualExpense)}</p></div>
                     </CardContent>
                   </Card>
                   <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
                     <CardContent className="p-5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><Wallet className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-medium opacity-80">Receita anual</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualIncome)}</p></div>
+                      <div><p className="text-xs font-semibold">Receita anual</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualIncome)}</p></div>
                     </CardContent>
                   </Card>
                 </div>
@@ -233,7 +233,7 @@ export default function HistoryPage() {
                                 </div>
                               </div>
                               <div className="text-right shrink-0">
-                                <p className={`text-lg font-bold ${isIncome ? 'text-green-600' : 'text-destructive'}`}>
+                                <p className={`text-lg font-bold ${isIncome ? 'text-success' : 'text-destructive'}`}>
                                   {isIncome ? '+' : '-'}{formatCurrency(item.value)}
                                   <span className="text-[10px] font-normal text-muted-foreground">/{item.frequency === 'annual' ? 'ano' : 'mês'}</span>
                                 </p>
@@ -262,7 +262,7 @@ export default function HistoryPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">Como você iniciou este mês</p>
                   </div>
                 </div>
-                <span className={`text-lg sm:text-xl font-bold ${projected.startingBalance >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                <span className={`text-lg sm:text-xl font-bold ${projected.startingBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {formatCurrency(projected.startingBalance)}
                 </span>
               </div>

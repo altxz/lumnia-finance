@@ -250,7 +250,7 @@ export function DashboardScoreCarousel({
                     {result.emoji} {result.label}
                   </p>
                   {diff !== null && diff !== 0 && (
-                    <span className={`flex items-center text-[10px] font-medium ${diff > 0 ? 'text-emerald-500' : 'text-destructive'}`}>
+                    <span className={`flex items-center text-[10px] font-medium ${diff > 0 ? 'text-success' : 'text-destructive'}`}>
                       {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                       {Math.abs(diff)}
                     </span>
