@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
+import { Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
