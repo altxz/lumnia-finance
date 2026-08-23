@@ -288,7 +288,7 @@ export function DashboardScoreCarousel({
             }}
           >
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="62%" margin={{ top: 8, right: 24, bottom: 8, left: 24 }}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="58%" margin={{ top: 10, right: 44, bottom: 10, left: 44 }}>
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
 
