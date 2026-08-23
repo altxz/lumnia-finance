@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
+import { Utensils, Car, Gamepad2, Heart, Home, GraduationCap, Tag, ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -23,15 +23,16 @@ import { getCreditCardPaymentCardId, isTrackedCreditCardPayment } from '@/lib/cr
 import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceMath';
 
 const CATEGORY_ICONS: Record<string, { icon: typeof Utensils; bg: string; text: string }> = {
-  alimentacao: { icon: Utensils, bg: 'bg-accent/30', text: 'text-accent-foreground' },
-  transporte: { icon: Car, bg: 'bg-ai/15', text: 'text-ai' },
-  lazer: { icon: Gamepad2, bg: 'bg-pink/30', text: 'text-pink-foreground' },
-  saude: { icon: Heart, bg: 'bg-destructive/15', text: 'text-destructive' },
-  moradia: { icon: Home, bg: 'bg-primary/15', text: 'text-primary' },
-  educacao: { icon: GraduationCap, bg: 'bg-ai/15', text: 'text-ai' },
-  outros: { icon: Tag, bg: 'bg-muted', text: 'text-muted-foreground' },
-  transferencia: { icon: ArrowLeftRight, bg: 'bg-primary/15', text: 'text-primary' },
+  alimentacao: { icon: Utensils, bg: 'bg-[hsl(var(--chart-2)/0.12)]', text: 'text-[hsl(var(--chart-2))]' },
+  transporte: { icon: Car, bg: 'bg-[hsl(var(--chart-3)/0.12)]', text: 'text-[hsl(var(--chart-3))]' },
+  lazer: { icon: Gamepad2, bg: 'bg-[hsl(var(--chart-4)/0.14)]', text: 'text-[hsl(var(--chart-4))]' },
+  saude: { icon: Heart, bg: 'bg-destructive/10', text: 'text-destructive' },
+  moradia: { icon: Home, bg: 'bg-primary/10', text: 'text-primary' },
+  educacao: { icon: GraduationCap, bg: 'bg-[hsl(var(--chart-5)/0.14)]', text: 'text-[hsl(var(--chart-5))]' },
+  outros: { icon: Tag, bg: 'bg-muted/70', text: 'text-muted-foreground' },
+  transferencia: { icon: ArrowLeftRight, bg: 'bg-primary/10', text: 'text-primary' },
 };
+
 
 const STORAGE_KEY = 'txfeed_group_cards';
 
@@ -524,9 +525,9 @@ export function TransactionFeed({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={groupCards ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
-                className="gap-2 rounded-xl text-xs"
+                className={`gap-2 rounded-full h-8 px-3 text-[11px] font-medium border ${groupCards ? 'bg-primary/10 text-primary border-primary/20' : 'bg-muted/40 text-muted-foreground border-border/60'}`}
                 onClick={() => setGroupCards(!groupCards)}
               >
                 {groupCards ? <Layers className="h-3.5 w-3.5" /> : <LayoutList className="h-3.5 w-3.5" />}
@@ -543,13 +544,14 @@ export function TransactionFeed({
       {loading ? (
         <div className="space-y-3">
           {[1,2,3,4,5].map(i => (
-            <div key={i} className="h-16 rounded-xl bg-muted/60 animate-pulse" />
+            <div key={i} className="h-16 rounded-2xl bg-muted/50 animate-pulse" />
           ))}
         </div>
+
       ) : !hasContent ? (
         <p className="text-center py-12 text-muted-foreground">Nenhuma transação encontrada.</p>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-7">
           {visibleGroups.map(({ dateKey, items, invoices, endOfDayBalance }) => {
             if (items.length === 0 && invoices.length === 0) return null;
             return (
@@ -559,20 +561,24 @@ export function TransactionFeed({
                   const todayKey = toDateKey(new Date());
                   const isToday = dateKey === todayKey;
                   return (
-                    <div className={`flex items-center justify-between px-3 py-2.5 rounded-t-xl border border-b-0 ${isToday ? 'bg-primary/10 border-primary/30 dark:bg-primary/15 dark:border-primary/40' : 'bg-muted/60 border-border'}`}>
-                      <h3 className={`text-sm font-bold capitalize ${isToday ? 'text-primary' : 'text-foreground'}`}>
+                    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 py-2 mb-1 backdrop-blur-md">
+                      <h3 className={`text-xs sm:text-sm font-semibold capitalize tracking-wide ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
                         {formatGroupDate(dateKey)}
                       </h3>
-                      <div className={`flex items-center gap-1.5 text-xs font-bold ${endOfDayBalance >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                        <Wallet className="h-3.5 w-3.5" />
-                        <span>Saldo: {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}</span>
-                      </div>
+                      <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold tabular-nums border ${
+                        endOfDayBalance >= 0
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          : 'bg-destructive/10 text-destructive border-destructive/20'
+                      }`}>
+                        {endOfDayBalance < 0 ? '-' : ''}{formatCurrency(Math.abs(endOfDayBalance))}
+                      </span>
                     </div>
                   );
                 })()}
 
                 {/* Day content */}
-                <div className="rounded-b-xl border border-t-0 bg-card overflow-hidden divide-y divide-border">
+                <div className="hairline">
+
                   {/* Invoice summaries (grouped mode) */}
                   {invoices.map(inv => {
                     const displayStatus = getInvoiceDisplayStatus(inv);
@@ -580,29 +586,30 @@ export function TransactionFeed({
                     return (
                       <div
                         key={`inv-${inv.cardId}`}
-                        className="w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-3 px-1 sm:px-2 py-3 hover:bg-muted/40 transition-colors cursor-pointer rounded-xl"
                         onClick={() => setInvoiceModal(inv)}
                       >
-                        <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-accent/30">
-                          <CreditCard className="h-4.5 w-4.5 text-accent-foreground" />
+                        <div className="shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center bg-primary/10 border border-primary/20">
+                          <CreditCard className="h-4.5 w-4.5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold truncate">Fatura {inv.cardName}</p>
+                            <p className="text-sm font-medium text-foreground truncate">Fatura {inv.cardName}</p>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                             {inv.transactions.length} transação{inv.transactions.length !== 1 ? 'ões' : ''} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                           </p>
                         </div>
-                        <div className="shrink-0 flex items-center justify-end gap-2 min-w-[90px] sm:min-w-[160px] text-right">
+                        <div className="shrink-0 flex items-center justify-end gap-2 text-right">
                           {inv.status !== 'open' && (
                             <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${displayStatus.className}`}>
                               {displayStatus.label}
                             </Badge>
                           )}
-                          <span className="text-sm font-bold text-destructive">
+                          <span className="text-sm font-semibold text-destructive tabular-nums">
                             {inv.total > 0 ? `-${formatCurrency(inv.total)}` : formatCurrency(0)}
                           </span>
+
                           {!isPaid && inv.total > 0 && (
                             <Button
                               size="sm"
@@ -630,36 +637,31 @@ export function TransactionFeed({
                     const transferDelta = isTransfer ? transferCashDelta(exp as any, investmentWalletSet) : 0;
                     const transferSign = transferDelta > 0 ? '+' : transferDelta < 0 ? '-' : '';
 
-                    const accentColor = isTransfer
-                      ? transferDelta > 0
-                        ? 'bg-emerald-500'
-                        : transferDelta < 0
-                          ? 'bg-destructive'
-                          : 'bg-border'
+                    const statusDot = isPending
+                      ? 'bg-muted-foreground/40'
                       : isIncome
                         ? 'bg-emerald-500'
-                        : 'bg-destructive';
+                        : isTransfer
+                          ? 'bg-primary'
+                          : 'bg-emerald-500';
 
                     return (
                       <div
                         key={exp.id}
-                        className="relative w-full flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-muted/50 transition-colors group"
+                        className="relative w-full flex items-center gap-2.5 sm:gap-3 px-1 sm:px-2 py-3 rounded-xl hover:bg-muted/40 transition-colors group"
                       >
-                        {/* Type accent — minimal side bar */}
-                        <span
-                          aria-hidden
-                          className={`absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full ${accentColor} ${isPending ? 'opacity-30' : 'opacity-70'}`}
-                        />
                         {/* Category icon */}
-                        <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isInvoiceItem ? 'bg-accent/30' : catData.bg}`}>
+                        <div className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border ${isInvoiceItem ? 'bg-primary/10 border-primary/20' : `${catData.bg} border-border/50`}`}>
+
                           {isTransfer ? (
-                            <ArrowLeftRight className="h-4.5 w-4.5" />
+                            <ArrowLeftRight className="h-4.5 w-4.5 text-primary" />
                           ) : isInvoiceItem ? (
-                            <CreditCard className={`h-4.5 w-4.5 text-accent-foreground`} />
+                            <CreditCard className="h-4.5 w-4.5 text-primary" />
                           ) : (
                             <Icon className={`h-4.5 w-4.5 ${catData.text}`} />
                           )}
                         </div>
+
 
                         {/* Description + meta */}
                          <div className="flex-1 min-w-0 overflow-hidden">
@@ -680,7 +682,7 @@ export function TransactionFeed({
                               <Pin className="h-3 w-3 text-muted-foreground shrink-0" />
                             )}
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          <div className="flex items-center gap-1 mt-0.5 flex-nowrap overflow-hidden whitespace-nowrap">
                             {isInvoiceItem && originalDate && (
                               <span className="text-[11px] text-muted-foreground">
                                 Compra em {formatPurchaseDate(originalDate)}
@@ -710,34 +712,43 @@ export function TransactionFeed({
                               </>
                             ) : (walletName || exp.credit_card_id) ? (
                               <>
-                                <Wallet className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground truncate">
+                                <Wallet className="h-3 w-3 text-muted-foreground shrink-0" />
+                                <span className="text-[11px] text-muted-foreground truncate">
                                   {walletName || ''}
-                                  {walletName && exp.credit_card_id ? ' | ' : ''}
-                                  {exp.credit_card_id ? 'Cartão de crédito' : !walletName ? '' : ' | Débito em conta'}
+                                  {walletName && exp.credit_card_id ? ' • ' : ''}
+                                  {exp.credit_card_id ? 'Cartão' : !walletName ? '' : ' • Débito'}
                                 </span>
+
                               </>
                             ) : null}
                           </div>
                         </div>
 
-                        {/* Value */}
-                        <div className="shrink-0 flex items-center justify-end gap-1.5 min-w-[90px] sm:min-w-[160px] text-right">
-                          {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
-                          <span className={`text-sm font-bold ${
+                        {/* Value + status */}
+                        <div className="shrink-0 flex flex-col items-end justify-center min-w-fit sm:min-w-[130px] text-right whitespace-nowrap">
+                          <span className={`text-sm font-semibold tabular-nums ${
                             isTransfer
                               ? transferDelta > 0
-                                ? 'text-emerald-600'
+                                ? 'text-emerald-600 dark:text-emerald-400'
                                 : transferDelta < 0
                                   ? 'text-destructive'
                                   : 'text-foreground'
                               : isIncome
-                                ? isPending ? 'text-emerald-600/70' : 'text-emerald-600'
+                                ? isPending ? 'text-emerald-600/70 dark:text-emerald-400/70' : 'text-emerald-600 dark:text-emerald-400'
                                 : isPending ? 'text-destructive/70' : 'text-destructive'
                           }`}>
                             {isIncome ? '+' : isTransfer ? transferSign : '-'}{formatCurrency(exp.value)}
                           </span>
+                          {!isTransfer && (
+                            <span className="flex items-center gap-1 mt-0.5">
+                              <span aria-hidden className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+                              <span className="text-[10px] text-muted-foreground">
+                                {isPending ? 'Pendente' : isIncome ? 'Recebido' : 'Pago'}
+                              </span>
+                            </span>
+                          )}
                         </div>
+
 
                         {/* Quick actions - fixed width to keep values aligned */}
                         <div className="shrink-0 flex items-center justify-end gap-0.5 w-auto sm:w-[88px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

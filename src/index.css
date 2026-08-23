@@ -285,6 +285,30 @@
     -webkit-backdrop-filter: blur(14px);
   }
 
+  /* Sliding glass panel (Apple-like sheet that rises over the page background) */
+  .glass-panel {
+    background-color: hsl(var(--card) / 0.72);
+    border-top: 1px solid hsl(var(--glass-border));
+    box-shadow: 0 -18px 50px -30px hsl(var(--primary) / 0.35);
+    backdrop-filter: blur(26px) saturate(150%);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+  }
+
+  .dark .glass-panel {
+    background-color: hsl(var(--card) / 0.55);
+    border-top: 1px solid hsl(0 0% 100% / 0.08);
+  }
+
+  /* Hairline separator (1px, subtle) */
+  .hairline > * + * {
+    border-top: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  .dark .hairline > * + * {
+    border-top: 1px solid hsl(0 0% 100% / 0.07);
+  }
+
+
   /* Modal/drawer shells: theme-aware glass with integrated fields */
   .glass-modal {
     --modal-fg: 0 0% 15%;

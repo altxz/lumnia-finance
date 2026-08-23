@@ -7,13 +7,11 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, Download, ArrowUpCircle, ArrowDownCircle, CalendarClock, Wallet, Repeat } from 'lucide-react';
+import { Search, Download, ArrowUpCircle, ArrowDownCircle, CalendarClock, Repeat } from 'lucide-react';
 import { CATEGORIES, formatCurrency } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { TransactionFeed } from '@/components/TransactionFeed';
@@ -102,174 +100,175 @@ export default function HistoryPage() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
-            <MonthSelector />
-            <TransactionSummaryHeader
-              totalIncome={projected.totalIncome}
-              totalExpense={projected.totalExpense}
-              projectedBalance={projected.projectedBalance}
-            />
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transações</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Extrato completo de lançamentos</p>
-              </div>
-              <Button onClick={exportCSV} variant="outline" size="sm" className="gap-2 rounded-xl self-start sm:self-auto">
-                <Download className="h-4 w-4" />
-                Exportar CSV
-              </Button>
+          <main className="flex-1 overflow-auto relative">
+            {/* Brand glows */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-[110px]" />
+              <div className="absolute top-40 -right-24 w-72 h-72 rounded-full bg-accent/10 blur-[110px]" />
             </div>
 
-            <Tabs defaultValue="entries" className="w-full">
-              <TabsList className="w-full max-w-md">
-                <TabsTrigger value="entries" className="flex-1 text-xs sm:text-sm">Lançamentos</TabsTrigger>
-                <TabsTrigger value="subscriptions" className="flex-1 text-xs sm:text-sm">Assinaturas Fixas</TabsTrigger>
-              </TabsList>
-
-              {/* ════════ TAB: Lançamentos ════════ */}
-              <TabsContent value="entries" className="space-y-4 sm:space-y-6">
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
-                  <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input value={search} onChange={e => { setSearch(e.target.value); }} placeholder="Buscar..." className="pl-9 rounded-xl h-10 text-sm" />
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    <Select value={filters.category} onValueChange={v => handleFilterChange('category', v)}>
-                      <SelectTrigger className="w-[120px] sm:w-[160px] rounded-xl text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas categorias</SelectItem>
-                        {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={filters.type} onValueChange={v => handleFilterChange('type', v)}>
-                      <SelectTrigger className="w-[120px] sm:w-[160px] rounded-xl text-sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos tipos</SelectItem>
-                        <SelectItem value="income">📈 Receitas</SelectItem>
-                        <SelectItem value="expense">📉 Despesas</SelectItem>
-                        <SelectItem value="transfer">🔄 Transferências</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Transaction Feed grouped by day */}
-                <TransactionFeed
-                  expenses={filteredExpenses}
-                  allExpenses={projected.monthExpenses}
-                  invoiceExpenses={projected.invoiceExpenses}
-                  loading={projected.loading}
-                  onDeleted={projected.refetch}
-                  filters={{ category: filters.category }}
-                  onFilterChange={() => {}}
-                  wallets={projected.wallets}
-                  investmentWalletIds={projected.investmentWalletIds}
-                  startingMonthBalance={projected.startingBalance}
-                  creditCards={projected.creditCards}
-                  currentMonth={startDate}
+            {/* Topo leve: mês + resumo */}
+            <div className="relative z-10 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4">
+              <MonthSelector />
+              <div className="mx-auto w-full max-w-5xl">
+                <TransactionSummaryHeader
+                  totalIncome={projected.totalIncome}
+                  totalExpense={projected.totalExpense}
+                  projectedBalance={projected.projectedBalance}
                 />
-              </TabsContent>
+              </div>
+            </div>
 
-              {/* ════════ TAB: Assinaturas Fixas ════════ */}
-              <TabsContent value="subscriptions" className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <Card className="rounded-2xl border-0 shadow-card bg-destructive text-destructive-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-destructive-foreground/20 flex items-center justify-center"><ArrowDownCircle className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-semibold">Saídas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyExpense)}</p></div>
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl border-0 shadow-card bg-success text-success-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center"><ArrowUpCircle className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-semibold">Entradas / mês</p><p className="text-xl font-bold">{formatCurrency(subStats.totalMonthlyIncome)}</p></div>
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl border-0 shadow-card bg-pink text-pink-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-pink-foreground/10 flex items-center justify-center"><CalendarClock className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-semibold">Custo anual (saídas)</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualExpense)}</p></div>
-                    </CardContent>
-                  </Card>
-                  <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
-                    <CardContent className="p-5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary-foreground/20 flex items-center justify-center"><Wallet className="h-5 w-5" /></div>
-                      <div><p className="text-xs font-semibold">Receita anual</p><p className="text-xl font-bold">{formatCurrency(subStats.totalAnnualIncome)}</p></div>
-                    </CardContent>
-                  </Card>
+            {/* Painel de vidro deslizante */}
+            <section className="relative z-10 mt-5 sm:mt-7 glass-panel rounded-t-[32px] px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-32">
+              <div className="mx-auto w-full max-w-5xl space-y-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Transações</h1>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">Extrato completo de lançamentos</p>
+                  </div>
+                  <Button
+                    onClick={exportCSV}
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Exportar CSV"
+                    className="h-10 w-10 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+                  >
+                    <Download className="h-4.5 w-4.5" />
+                  </Button>
                 </div>
 
-                {subLoading ? (
-                  <p className="text-muted-foreground text-center py-12">Carregando...</p>
-                ) : subItems.length === 0 ? (
-                  <Card className="rounded-2xl">
-                    <CardContent className="py-12 text-center text-muted-foreground">
-                      <Repeat className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                      <p className="font-medium">Nenhuma transação recorrente</p>
-                      <p className="text-sm mt-1">Marque transações como recorrentes ao criá-las.</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {subItems.map(item => {
-                      const isIncome = item.type === 'income';
-                      const annualValue = item.frequency === 'annual' ? item.value : item.value * 12;
-                      const monthlyValue = item.frequency === 'annual' ? item.value / 12 : item.value;
-                      return (
-                        <Card key={item.id} className="rounded-2xl hover:shadow-card transition-shadow">
-                          <CardContent className="p-5">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isIncome ? 'bg-green-100 text-green-700' : 'bg-destructive/10 text-destructive'}`}>
-                                  {isIncome ? <ArrowUpCircle className="h-5 w-5" /> : <ArrowDownCircle className="h-5 w-5" />}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-semibold truncate">{item.description}</p>
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">{item.frequency === 'annual' ? 'Anual' : 'Mensal'}</Badge>
-                                    <Badge variant={isIncome ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">{isIncome ? 'Receita' : 'Despesa'}</Badge>
-                                  </div>
-                                </div>
+                <Tabs defaultValue="entries" className="w-full">
+                  <TabsList className="w-full max-w-sm rounded-2xl bg-muted/50 p-1 h-auto">
+                    <TabsTrigger value="entries" className="flex-1 text-xs sm:text-sm rounded-xl py-2">Lançamentos</TabsTrigger>
+                    <TabsTrigger value="subscriptions" className="flex-1 text-xs sm:text-sm rounded-xl py-2">Assinaturas</TabsTrigger>
+                  </TabsList>
+
+                  {/* ════════ TAB: Lançamentos ════════ */}
+                  <TabsContent value="entries" className="space-y-5 mt-5">
+                    {/* Filtros como chips */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <div className="relative flex-1 min-w-[160px] sm:max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={search}
+                          onChange={e => { setSearch(e.target.value); }}
+                          placeholder="Buscar..."
+                          className="pl-9 rounded-full h-9 text-xs sm:text-sm bg-muted/40 border-border/60"
+                        />
+                      </div>
+                      <Select value={filters.category} onValueChange={v => handleFilterChange('category', v)}>
+                        <SelectTrigger className="w-[130px] sm:w-[160px] h-9 rounded-full text-xs sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas categorias</SelectItem>
+                          {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={filters.type} onValueChange={v => handleFilterChange('type', v)}>
+                        <SelectTrigger className="w-[120px] sm:w-[150px] h-9 rounded-full text-xs sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos tipos</SelectItem>
+                          <SelectItem value="income">Receitas</SelectItem>
+                          <SelectItem value="expense">Despesas</SelectItem>
+                          <SelectItem value="transfer">Transferências</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Transaction Feed grouped by day */}
+                    <TransactionFeed
+                      expenses={filteredExpenses}
+                      allExpenses={projected.monthExpenses}
+                      invoiceExpenses={projected.invoiceExpenses}
+                      loading={projected.loading}
+                      onDeleted={projected.refetch}
+                      filters={{ category: filters.category }}
+                      onFilterChange={() => {}}
+                      wallets={projected.wallets}
+                      investmentWalletIds={projected.investmentWalletIds}
+                      startingMonthBalance={projected.startingBalance}
+                      creditCards={projected.creditCards}
+                      currentMonth={startDate}
+                    />
+
+                    {/* Saldo do mês anterior */}
+                    <div className="flex items-center justify-between gap-3 pt-4 border-t border-border/60">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">Saldo do mês anterior</p>
+                          <p className="text-[11px] text-muted-foreground">Como você iniciou este mês</p>
+                        </div>
+                      </div>
+                      <span className={`text-sm sm:text-base font-bold tabular-nums shrink-0 ${projected.startingBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                        {formatCurrency(projected.startingBalance)}
+                      </span>
+                    </div>
+                  </TabsContent>
+
+                  {/* ════════ TAB: Assinaturas Fixas ════════ */}
+                  <TabsContent value="subscriptions" className="space-y-5 mt-5">
+                    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3">
+                      {[
+                        { label: 'Saídas / mês', value: subStats.totalMonthlyExpense, tone: 'text-destructive' },
+                        { label: 'Entradas / mês', value: subStats.totalMonthlyIncome, tone: 'text-emerald-600 dark:text-emerald-400' },
+                        { label: 'Custo anual', value: subStats.totalAnnualExpense, tone: 'text-destructive' },
+                        { label: 'Receita anual', value: subStats.totalAnnualIncome, tone: 'text-primary' },
+                      ].map(card => (
+                        <div key={card.label} className="glass-soft rounded-2xl px-3 py-3 sm:px-4 sm:py-4 min-w-0">
+                          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground truncate">{card.label}</p>
+                          <p className={`mt-1 text-sm sm:text-lg font-bold tabular-nums truncate ${card.tone}`}>{formatCurrency(card.value)}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {subLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3, 4].map(i => <div key={i} className="h-14 rounded-2xl bg-muted/50 animate-pulse" />)}
+                      </div>
+                    ) : subItems.length === 0 ? (
+                      <div className="py-14 text-center text-muted-foreground">
+                        <Repeat className="h-9 w-9 mx-auto mb-3 opacity-40" />
+                        <p className="font-medium text-foreground">Nenhuma transação recorrente</p>
+                        <p className="text-sm mt-1">Marque transações como recorrentes ao criá-las.</p>
+                      </div>
+                    ) : (
+                      <div className="hairline rounded-2xl overflow-hidden">
+                        {subItems.map(item => {
+                          const isIncome = item.type === 'income';
+                          const annualValue = item.frequency === 'annual' ? item.value : item.value * 12;
+                          return (
+                            <div key={item.id} className="flex items-center gap-3 py-3 px-1 sm:px-2 transition-colors hover:bg-muted/40">
+                              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${isIncome ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-destructive/10 border-destructive/20'}`}>
+                                {isIncome
+                                  ? <ArrowUpCircle className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+                                  : <ArrowDownCircle className="h-4.5 w-4.5 text-destructive" />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground truncate">{item.description}</p>
+                                <p className="text-[11px] text-muted-foreground truncate">
+                                  {item.frequency === 'annual' ? 'Anual' : 'Mensal'} • {isIncome ? 'Receita' : 'Despesa'}
+                                </p>
                               </div>
                               <div className="text-right shrink-0">
-                                <p className={`text-lg font-bold ${isIncome ? 'text-success' : 'text-destructive'}`}>
+                                <p className={`text-sm font-bold tabular-nums ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                                   {isIncome ? '+' : '-'}{formatCurrency(item.value)}
-                                  <span className="text-[10px] font-normal text-muted-foreground">/{item.frequency === 'annual' ? 'ano' : 'mês'}</span>
                                 </p>
-                                <p className="text-xs text-muted-foreground mt-0.5">≈ {formatCurrency(annualValue)}/ano</p>
-                                {item.frequency === 'annual' && <p className="text-xs text-muted-foreground">≈ {formatCurrency(monthlyValue)}/mês</p>}
+                                <p className="text-[10px] text-muted-foreground tabular-nums">≈ {formatCurrency(annualValue)}/ano</p>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-
-            {/* Saldo do mês anterior */}
-            <Card className="rounded-2xl border-0 shadow-card p-4 sm:p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <CalendarClock className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Saldo do mês anterior</span>
-                    <p className="text-xs text-muted-foreground mt-0.5">Como você iniciou este mês</p>
-                  </div>
-                </div>
-                <span className={`text-lg sm:text-xl font-bold ${projected.startingBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {formatCurrency(projected.startingBalance)}
-                </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
-            </Card>
+            </section>
           </main>
         </div>
       </div>
     </SidebarProvider>
   );
 }
+
