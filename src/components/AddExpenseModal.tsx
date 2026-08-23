@@ -764,9 +764,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                         {tags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                              <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-white/10 text-white/90 border-white/10 hover:bg-white/15">
                                 {tag}
-                                <button onClick={() => handleRemoveTag(tag)} className="ml-0.5 rounded-full hover:bg-muted p-0.5">
+                                <button onClick={() => handleRemoveTag(tag)} className="ml-0.5 rounded-full hover:bg-white/10 p-0.5">
                                   <X className="h-3 w-3" />
                                 </button>
                               </Badge>
