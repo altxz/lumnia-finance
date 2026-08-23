@@ -155,14 +155,14 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="w-[95vw] max-w-sm overflow-hidden sm:w-full p-0 gap-0 rounded-2xl">
         {/* Type toggle */}
-        <div className="grid grid-cols-2 border-b border-white/10">
+        <div className="grid grid-cols-2 border-b border-border">
           <button
             type="button"
             onClick={() => setType('expense')}
             className={`flex items-center justify-center gap-2 py-4 text-sm font-bold transition-colors ${
               isExpense
                 ? 'bg-destructive text-destructive-foreground'
-                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                : 'bg-foreground/[0.04] text-muted-foreground hover:bg-foreground/10'
             }`}
           >
             <TrendingDown className="h-5 w-5" />
@@ -174,7 +174,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
             className={`flex items-center justify-center gap-2 py-4 text-sm font-bold transition-colors ${
               !isExpense
                 ? 'bg-success text-success-foreground'
-                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                : 'bg-foreground/[0.04] text-muted-foreground hover:bg-foreground/10'
             }`}
           >
             <TrendingUp className="h-5 w-5" />
@@ -220,13 +220,13 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
               </div>
 
               {/* Payment method */}
-              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                 <button type="button" onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInstallments('1'); }}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'debit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'debit' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                   💳 Débito
                 </button>
                 <button type="button" onClick={() => setPaymentMethod('credit')}
-                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'credit' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all ${paymentMethod === 'credit' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                   <CreditCard className="h-3.5 w-3.5 inline mr-1" />Crédito
                 </button>
               </div>
@@ -250,13 +250,13 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
                   )}
                   {creditCardId && parseInt(installments) > 1 && (
                     <div className="space-y-1.5">
-                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
+                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                         <button type="button" onClick={() => setInstallmentValueType('total')}
-                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'total' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'total' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                           Valor Total
                         </button>
                         <button type="button" onClick={() => setInstallmentValueType('per_installment')}
-                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'per_installment' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'per_installment' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                           Valor da Parcela
                         </button>
                       </div>
