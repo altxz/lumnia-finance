@@ -35,7 +35,7 @@ const CreditCardSummary = lazyNamedWithRetry(() => import('@/components/analytic
 const EndOfMonthForecast = lazyNamedWithRetry(() => import('@/components/analytics/EndOfMonthForecast'), m => m.EndOfMonthForecast);
 const DailySpendingChart = lazyNamedWithRetry(() => import('@/components/analytics/DailySpendingChart'), m => m.DailySpendingChart);
 const FixedVsVariableChart = lazyNamedWithRetry(() => import('@/components/analytics/FixedVsVariableChart'), m => m.FixedVsVariableChart);
-const SubcategoryTreemap = lazyNamedWithRetry(() => import('@/components/analytics/SubcategoryTreemap'), m => m.SubcategoryTreemap);
+const SubcategoryBreakdown = lazyNamedWithRetry(() => import('@/components/analytics/SubcategoryBreakdown'), m => m.SubcategoryBreakdown);
 const SavingsRateGauge = lazyNamedWithRetry(() => import('@/components/analytics/SavingsRateGauge'), m => m.SavingsRateGauge);
 const WeekComparisonChart = lazyNamedWithRetry(() => import('@/components/analytics/WeekComparisonChart'), m => m.WeekComparisonChart);
 const IncomeSourcesPie = lazyNamedWithRetry(() => import('@/components/analytics/IncomeSourcesPie'), m => m.IncomeSourcesPie);
@@ -227,7 +227,7 @@ export default function Dashboard() {
                   <Tile size="wide" mobile="tall"><Suspense fallback={<ChartFallback />}><CashFlowChart creditCards={projected.creditCards} wallets={projected.wallets} /></Suspense></Tile>
 
                   <Tile size="medium"><Suspense fallback={<ChartFallback />}><TopExpensesList expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><SubcategoryTreemap expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
+                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><SubcategoryBreakdown expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
 
                   <Tile size="small" mobile="half"><Suspense fallback={<ChartFallback />}><FixedVsVariableChart expenses={projected.monthExpenses} /></Suspense></Tile>
                   <Tile size="small" mobile="half"><Suspense fallback={<ChartFallback />}><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
