@@ -442,10 +442,10 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
             </button>
           </div>
 
-          {/* Value field - prominent */}
-          <div className={`mt-3 sm:mt-4 mb-3 rounded-xl border-2 bg-background/80 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
+          {/* Value field - integrated into the dark glass shell */}
+          <div className={`value-box mt-3 sm:mt-4 mb-3 rounded-2xl border bg-white/5 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
             <div className="flex items-center px-3 sm:px-4 py-3 min-w-0">
-              <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2 shrink-0">R$</span>
+              <span className="text-base sm:text-lg font-bold text-white/60 mr-2 shrink-0">R$</span>
               <input
                 type="number"
                 step="0.01"
@@ -453,7 +453,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                 placeholder="0,00"
                 value={value}
                 onChange={e => setValue(e.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/70 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="min-w-0 flex-1 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-white/35 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <QuickCalculator onSelect={(v) => setValue(String(v))} />
             </div>
