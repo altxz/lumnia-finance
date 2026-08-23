@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff, ArrowUpCircle, ArrowDownCircle, Scale } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Eye, EyeOff } from 'lucide-react';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { formatCurrency } from '@/lib/constants';
 
@@ -18,73 +17,43 @@ export function TransactionSummaryHeader({ totalIncome, totalExpense, projectedB
   const isCurrentMonth = now.getMonth() === selectedMonth && now.getFullYear() === selectedYear;
   const isFutureMonth = selectedYear > now.getFullYear() || (selectedYear === now.getFullYear() && selectedMonth > now.getMonth());
 
-  const label = isFutureMonth ? 'Saldo previsto' : isCurrentMonth ? 'Saldo atual' : 'Saldo final';
-  const balance = totalIncome - totalExpense;
-  const mask = '••••••';
+  const balanceLabel = isFutureMonth ? 'Previsto' : isCurrentMonth ? 'Atual' : 'Final';
+  const mask = '••••';
+
+  const cards = [
+    { label: 'Entradas', value: totalIncome, tone: 'text-emerald-600 dark:text-emerald-400' },
+    { label: 'Saídas', value: totalExpense, tone: 'text-destructive' },
+    {
+      label: balanceLabel,
+      value: projectedBalance,
+      tone: projectedBalance < 0 ? 'text-destructive' : 'text-primary',
+    },
+  ];
 
   return (
-    <div className="w-full space-y-3 px-1">
-      {/* Saldo principal */}
-      <Card className="rounded-2xl border-0 shadow-card p-4 sm:p-5 flex flex-col items-center">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs sm:text-sm font-medium text-muted-foreground">{label}</span>
-          <button
-            onClick={() => setVisible(v => !v)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={visible ? 'Ocultar valores' : 'Mostrar valores'}
-          >
-            {visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          </button>
-        </div>
-        <p className={`text-2xl sm:text-3xl font-bold tracking-tight ${projectedBalance < 0 ? 'text-destructive' : 'text-foreground'}`}>
-          {visible ? formatCurrency(projectedBalance) : mask}
-        </p>
-      </Card>
+    <div className="w-full">
+      <div className="flex items-center justify-end mb-2">
+        <button
+          onClick={() => setVisible(v => !v)}
+          className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={visible ? 'Ocultar valores' : 'Mostrar valores'}
+        >
+          {visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          {visible ? 'Ocultar' : 'Mostrar'}
+        </button>
+      </div>
 
-      {/* Métricas em cards individuais */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Receitas */}
-        <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-            <ArrowUpCircle className="h-5 w-5 text-success" />
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {cards.map(card => (
+          <div key={card.label} className="glass-soft rounded-2xl px-3 py-3 sm:px-4 sm:py-4 min-w-0">
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground truncate">
+              {card.label}
+            </p>
+            <p className={`mt-1 text-sm sm:text-lg font-bold tabular-nums truncate ${card.tone}`}>
+              {visible ? formatCurrency(card.value) : mask}
+            </p>
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs text-muted-foreground">Receitas</span>
-            <span className="text-sm sm:text-base font-bold text-foreground truncate">
-              {visible ? formatCurrency(totalIncome) : mask}
-            </span>
-          </div>
-        </Card>
-
-        {/* Despesas */}
-        <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-            <ArrowDownCircle className="h-5 w-5 text-destructive" />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs text-muted-foreground">Despesas</span>
-            <span className="text-sm sm:text-base font-bold text-foreground truncate">
-              {visible ? formatCurrency(totalExpense) : mask}
-            </span>
-          </div>
-        </Card>
-
-        {/* Balanço */}
-        <Card className="rounded-2xl border-0 shadow-card p-4 flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-            balance >= 0 ? 'bg-success/10' : 'bg-destructive/10'
-          }`}>
-            <Scale className={`h-5 w-5 ${balance >= 0 ? 'text-success' : 'text-destructive'}`} />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs text-muted-foreground">Balanço</span>
-            <span className={`text-sm sm:text-base font-bold truncate ${
-              balance >= 0 ? 'text-success' : 'text-destructive'
-            }`}>
-              {visible ? (balance >= 0 ? '+' : '') + formatCurrency(balance) : mask}
-            </span>
-          </div>
-        </Card>
+        ))}
       </div>
     </div>
   );
