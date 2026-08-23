@@ -693,12 +693,12 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                           <Input placeholder="Adicionar tag..." value={tagInput} onChange={e => setTagInput(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                             className="rounded-xl h-9 text-sm" />
-                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3">+</Button>
+                          <Button type="button" variant="outline" size="sm" onClick={handleAddTag} className="rounded-xl h-9 px-3 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white">+</Button>
                         </div>
                         {tags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                              <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-white/10 text-white/90 border-white/10 hover:bg-white/15">
                                 {tag}
                                 <button onClick={() => setTags(tags.filter(t => t !== tag))} className="ml-0.5 rounded-full hover:bg-white/10 p-0.5"><X className="h-3 w-3" /></button>
                               </Badge>
