@@ -241,10 +241,7 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
                 <div className="relative h-full flex flex-col justify-between p-5 text-white">
                   <div className="flex items-center justify-between">
                     <CreditCard className="h-7 w-7 opacity-80" />
-                    <div className={cn(
-                      "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      statusInfo.bg, statusInfo.className
-                    )}>
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-card/90 text-card-foreground text-[10px] font-bold uppercase tracking-wider">
                       <StatusIcon className="h-3 w-3" />
                       {statusInfo.label}
                     </div>
@@ -254,18 +251,18 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
                     <p className="text-lg font-extrabold tracking-wide">
                       {formatCurrency(inv.total)}
                     </p>
-                    <p className="text-[11px] opacity-70 mt-0.5">Fatura Atual</p>
+                    <p className="text-[11px] font-semibold mt-0.5">Fatura Atual</p>
                   </div>
 
                   <div className="flex items-end justify-between">
                     <div>
                       <p className="text-sm font-bold tracking-widest">{inv.cardName}</p>
-                      <p className="text-[10px] opacity-60 mt-0.5">
+                      <p className="text-[10px] font-medium mt-0.5">
                         Fecha dia {inv.closingDay} • Vence dia {inv.dueDay}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] opacity-60 uppercase">Limite</p>
+                      <p className="text-[10px] font-medium uppercase">Limite</p>
                       <p className="text-xs font-bold">{formatCurrency(inv.limit)}</p>
                     </div>
                   </div>

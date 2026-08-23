@@ -342,7 +342,7 @@ export default function CategoriesPage() {
                             onClick={() => navigate(`/categorias/${c.id}`)}
                             className="w-full flex items-center gap-2 sm:gap-3 p-2 rounded-xl hover:bg-secondary/50 transition-colors text-left"
                           >
-                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] sm:text-xs font-bold" style={{ backgroundColor: c.color + '25', color: c.color }}>
+                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 text-[10px] sm:text-xs font-bold">
                               {idx + 1}
                             </div>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.color + '20' }}>
@@ -370,7 +370,7 @@ export default function CategoriesPage() {
                   <CardContent className="p-4 sm:p-5 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="text-sm font-semibold flex items-center gap-2 min-w-0">
-                        <TrendingUp className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <TrendingUp className="h-4 w-4 text-success shrink-0" />
                         <span className="truncate">Top receitas</span>
                       </h2>
                       <Badge variant="outline" className="rounded-lg text-[10px] shrink-0">Top {incomeTopRanking.length}</Badge>
@@ -385,7 +385,7 @@ export default function CategoriesPage() {
                             onClick={() => navigate(`/categorias/${c.id}`)}
                             className="w-full flex items-center gap-2 sm:gap-3 p-2 rounded-xl hover:bg-secondary/50 transition-colors text-left"
                           >
-                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] sm:text-xs font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] sm:text-xs font-bold bg-success/15 text-success">
                               {idx + 1}
                             </div>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.color + '20' }}>
@@ -397,7 +397,7 @@ export default function CategoriesPage() {
                                 <span className="text-muted-foreground shrink-0 tabular-nums">{formatCurrency(c.month_income_value || 0)} · {pct.toFixed(0)}%</span>
                               </div>
                               <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, pct)}%` }} />
+                                <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, pct)}%` }} />
                               </div>
                             </div>
                           </button>
@@ -495,7 +495,7 @@ export default function CategoriesPage() {
                                         {(cat.month_value || 0) > 0
                                           ? <span className="font-medium">{formatCurrency(cat.month_value || 0)}</span>
                                           : <span>0 no mês</span>}
-                                        <span className="opacity-60"> · {cat.month_count || 0} lanç.</span>
+                                        <span> · {cat.month_count || 0} lanç.</span>
                                       </p>
                                     </div>
                                     <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />

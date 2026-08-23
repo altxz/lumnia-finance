@@ -524,7 +524,7 @@ export default function CategoryDetailsPage() {
                   <Card className="rounded-2xl border-0 shadow-card">
                     <CardContent className="p-5 space-y-3">
                       <div className="flex items-center gap-2">
-                        <Crown className="h-4 w-4 text-amber-500" />
+                        <Crown className="h-4 w-4 text-warning" />
                         <h2 className="text-sm font-semibold">Top 5 maiores lançamentos</h2>
                       </div>
                       <ul className="space-y-2">
@@ -534,7 +534,7 @@ export default function CategoryDetailsPage() {
                             className="flex items-center gap-3 p-2 rounded-xl hover:bg-secondary/40 transition-colors cursor-pointer"
                             onClick={() => navigate(`/historico?expense=${e.id}`)}
                           >
-                            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{ backgroundColor: accent + '20', color: accent }}>
+                            <div className="w-7 h-7 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 text-xs font-bold">
                               {idx + 1}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -543,7 +543,7 @@ export default function CategoryDetailsPage() {
                                 {format(parseISO(e.date), "dd 'de' MMM", { locale: ptBR })} · {e.final_category}
                               </p>
                             </div>
-                            <p className="text-sm font-bold shrink-0" style={{ color: accent }}>{formatCurrency(Number(e.value))}</p>
+                            <p className="text-sm font-bold text-foreground shrink-0">{formatCurrency(Number(e.value))}</p>
                           </li>
                         ))}
                       </ul>
@@ -571,7 +571,7 @@ export default function CategoryDetailsPage() {
                             <li key={e.id} className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/40 transition-colors">
                               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                                 isIncome
-                                  ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                                  ? 'bg-success/15 text-success'
                                   : 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
                               }`}>
                                 {e.credit_card_id ? <CreditCard className="h-4 w-4" /> : isIncome ? <TrendingUp className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
@@ -591,12 +591,12 @@ export default function CategoryDetailsPage() {
                                     </Badge>
                                   )}
                                   {!e.is_paid && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-600 dark:text-amber-400">Pendente</Badge>
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-warning/50 text-warning">Pendente</Badge>
                                   )}
                                 </div>
                               </div>
                               <div className="text-right shrink-0">
-                                <p className={`text-sm font-bold ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                <p className={`text-sm font-bold ${isIncome ? 'text-success' : 'text-destructive'}`}>
                                   {sign} {formatCurrency(Number(e.value))}
                                 </p>
                               </div>
