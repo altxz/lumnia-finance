@@ -724,7 +724,7 @@ export function TransactionFeed({
                         </div>
 
                         {/* Value + status */}
-                        <div className="shrink-0 flex flex-col items-end justify-center min-w-[86px] sm:min-w-[130px] text-right">
+                        <div className="shrink-0 flex flex-col items-end justify-center min-w-fit sm:min-w-[130px] text-right whitespace-nowrap">
                           <span className={`text-sm font-semibold tabular-nums ${
                             isTransfer
                               ? transferDelta > 0
