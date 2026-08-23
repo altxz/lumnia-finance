@@ -70,14 +70,16 @@
     --sidebar-ring: 19 100% 52%;
     --sidebar-muted: 0 0% 38%;
 
+    /* Rampa de gráficos: família Lumnia (roxo / laranja / lilás / pêssego) */
     --chart-1: 270 70% 56%;
     --chart-2: 19 100% 60%;
-    --chart-3: 270 56% 43%;
-    --chart-4: 20 84% 39%;
-    --chart-5: 300 60% 62%;
-    --chart-6: 250 70% 62%;
-    --chart-7: 0 78% 58%;
-    --chart-8: 152 64% 28%;
+    --chart-3: 278 52% 70%;
+    --chart-4: 22 88% 74%;
+    --chart-5: 264 60% 38%;
+    --chart-6: 288 52% 60%;
+    --chart-7: 32 92% 52%;
+    --chart-8: 255 40% 82%;
+
   }
 
   .dark {
