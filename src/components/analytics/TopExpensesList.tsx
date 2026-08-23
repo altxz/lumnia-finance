@@ -58,8 +58,8 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
             <YAxis
               type="category"
               dataKey="name"
-              width={46}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', textAnchor: 'start', dx: -8 }}
+              width={52}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))', textAnchor: 'start', dx: -5 }}
               axisLine={false}
               tickLine={false}
             />
