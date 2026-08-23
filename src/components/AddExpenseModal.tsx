@@ -403,14 +403,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
           <ResponsiveModalHeader className="pb-2 sm:pb-3">
             <ResponsiveModalTitle className="text-base sm:text-lg font-bold">Nova Transação</ResponsiveModalTitle>
           </ResponsiveModalHeader>
-          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-background/60 backdrop-blur-sm">
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
             <button
               type="button"
               onClick={() => setType('expense')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'expense'
-                  ? 'bg-destructive text-destructive-foreground shadow-soft'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-destructive text-destructive-foreground shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <ArrowDownCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -421,8 +421,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               onClick={() => setType('income')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'income'
-                  ? 'bg-emerald-600 text-white shadow-soft'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <ArrowUpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -433,8 +433,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               onClick={() => setType('transfer')}
               className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'transfer'
-                  ? 'bg-primary text-primary-foreground shadow-soft'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
