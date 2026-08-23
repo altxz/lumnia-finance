@@ -627,28 +627,28 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               </div>
 
               {isRecurring && (
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
                   {/* Mode selector */}
-                       <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
                     <button
                       type="button"
                       onClick={() => setRecurringMode('fixed')}
                       className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        recurringMode === 'fixed' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
+                        recurringMode === 'fixed' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
                       }`}
                     >
                       <Repeat className="h-3.5 w-3.5" />
-                          Fixo (Mensal/Anual)
+                      Fixo (Mensal/Anual)
                     </button>
                     <button
                       type="button"
                       onClick={() => setRecurringMode('limited')}
                       className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                        recurringMode === 'limited' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
+                        recurringMode === 'limited' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
                       }`}
                     >
                       <Hash className="h-3.5 w-3.5" />
-                          Repetir Vezes (Parcelar)
+                      Repetir Vezes (Parcelar)
                     </button>
                   </div>
 
