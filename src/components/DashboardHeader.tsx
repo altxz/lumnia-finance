@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getAvatarSignedUrl } from '@/lib/avatarUrl';
 import { useUserSettingsRow } from '@/hooks/useUserSettingsRow';
+import { Logo } from '@/components/Logo';
 
 import { useTheme } from 'next-themes';
 
@@ -41,10 +42,19 @@ export function DashboardHeader() {
         <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden rounded-full md:inline-flex">
           <Menu className="h-5 w-5" />
         </Button>
-        <h2 className="text-lg font-medium tracking-tight hidden sm:block">Painel de Despesas</h2>
+        <Avatar className="h-10 w-10 border border-border/60 shadow-soft md:hidden">
+          <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+          <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <h2 className="hidden text-lg font-medium tracking-tight md:block">Painel de Despesas</h2>
       </div>
-      <div className="flex items-center gap-2 sm:gap-4">
-        <div className="flex items-center gap-2 sm:gap-3">
+
+      <Logo size={38} showText={false} className="pointer-events-none absolute left-1/2 -translate-x-1/2 md:hidden" />
+
+      <div className="flex items-center gap-1 sm:gap-4">
+        <div className="hidden items-center gap-2 md:flex sm:gap-3">
           <Avatar className="h-9 w-9 border-2 border-card shadow-soft">
             <AvatarImage src={avatarUrl || undefined} alt={displayName} />
             <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs sm:text-sm">
