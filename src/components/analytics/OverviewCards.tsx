@@ -17,7 +17,7 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
   const isNegativeBalance = projectedBalance < 0;
 
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
       {/* Saldo Projetado (priority card) */}
       <Card className={`rounded-2xl border-0 shadow-card ${isNegativeBalance ? 'bg-destructive text-destructive-foreground' : 'gradient-primary text-primary-foreground'}`}>
         <CardContent className="p-5">

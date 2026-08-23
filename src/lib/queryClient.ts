@@ -41,7 +41,7 @@ const PERSISTABLE_KEYS = new Set([
   "debts",
   "projects",
   "net-worth",
-  "financial-score",
+  "summary-history",
   "user-settings",
   "dashboard-extra",
   "category-details",
