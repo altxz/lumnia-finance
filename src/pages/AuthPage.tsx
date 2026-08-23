@@ -94,7 +94,7 @@ export default function AuthPage() {
       <div className="absolute inset-0 bg-background/25 backdrop-blur-[2px]" aria-hidden="true" />
       <Card className="relative w-full max-w-md rounded-3xl shadow-float">
         <CardHeader className="space-y-4 px-5 pb-3 pt-6 text-center sm:px-8 sm:pt-8">
-          <img src="/logo-purple.svg" alt="Lumnia" className="mx-auto h-24 w-auto sm:h-28" />
+          <img src="/brand-logo-color.png" alt="Lumnia" className="mx-auto h-12 w-auto sm:h-14" />
           <div className="space-y-2">
             <CardTitle className="text-2xl font-semibold sm:text-3xl">
               {isLogin ? 'Bem-vindo de volta' : 'Crie sua conta'}

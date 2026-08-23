@@ -76,11 +76,11 @@ export function AppSidebar() {
       <SidebarHeader className={collapsed ? 'p-2' : 'p-4'}>
         <div className="flex items-center justify-center gap-3">
           {collapsed ? (
-            <img src="/logo.svg" alt="Lumnia" className="h-8 w-8 shrink-0" />
+            <img src="/brand-icon.png" alt="Lumnia" className="h-8 w-8 shrink-0 rounded-lg" />
           ) : (
             <>
-              <img src="/logo-sidebar.svg" alt="Lumnia" className="shrink-0 dark:hidden" style={{ height: 70 }} />
-              <img src="/logo-sidebar-light.svg" alt="" aria-hidden className="hidden shrink-0 dark:block" style={{ height: 70 }} />
+              <img src="/brand-logo-color.png" alt="Lumnia" className="h-10 w-auto shrink-0 dark:hidden" />
+              <img src="/brand-logo-white.png" alt="" aria-hidden className="hidden h-10 w-auto shrink-0 dark:block" />
             </>
           )}
         </div>

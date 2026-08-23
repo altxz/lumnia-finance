@@ -8,22 +8,20 @@ export function Logo({ size = 40, className = '', showText = true }: LogoProps) 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <img
-        src="/logo.svg"
+        src="/brand-icon.png"
         alt="Lumnia Logo"
         width={size}
         height={size}
         className="shrink-0 rounded-lg"
       />
       {showText && (
-        <span
-          className="font-bold text-xl tracking-tight text-primary"
-        >
-          Lumnia
-        </span>
+        <>
+          <img src="/brand-logo-color.png" alt="Lumnia" className="h-6 w-auto dark:hidden" />
+          <img src="/brand-logo-white.png" alt="" aria-hidden className="hidden h-6 w-auto dark:block" />
+        </>
       )}
     </div>
   );
 }
 
-/** Inline SVG as data URI for favicon/PWA icons */
-export const LOGO_SVG_DATA_URI = `/logo.svg`;
+export const LOGO_SVG_DATA_URI = `/brand-icon.png`;
