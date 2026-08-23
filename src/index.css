@@ -282,6 +282,64 @@
     -webkit-backdrop-filter: blur(14px);
   }
 
+  /* Modal/drawer shells: dark glass background with lighter fields */
+  .glass-modal {
+    background-image: linear-gradient(150deg, hsl(0 0% 18% / 0.95), hsl(0 0% 10% / 0.92));
+    background-color: hsl(0 0% 14% / 0.92);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-float);
+    backdrop-filter: blur(22px) saturate(130%);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+    color: hsl(0 0% 94%);
+  }
+
+  .glass-modal .text-foreground,
+  .glass-modal [class*="text-foreground"],
+  .glass-modal .text-muted-foreground,
+  .glass-modal [class*="text-muted-foreground"] {
+    color: hsl(0 0% 94%);
+  }
+
+  /* Lighter-than-shell fields: inputs, textareas, selects and custom pickers */
+  .glass-modal input,
+  .glass-modal textarea,
+  .glass-modal [role="combobox"],
+  .glass-modal .bg-card\/70,
+  .glass-modal .bg-background\/70,
+  .glass-modal .bg-background,
+  .glass-modal .bg-secondary,
+  .glass-modal [class*="bg-card/70"],
+  .glass-modal [class*="bg-background/70"] {
+    background-color: hsl(0 0% 26% / 0.92) !important;
+    border-color: hsl(0 0% 38% / 0.75) !important;
+    color: hsl(0 0% 96%) !important;
+  }
+
+  /* Keep segmented toggles readable: active state uses theme accent */
+  .glass-modal button[class*="bg-background"][class*="shadow-soft"] {
+    background-color: hsl(0 0% 26% / 0.92) !important;
+    color: hsl(0 0% 96%) !important;
+  }
+
+  /* Segmented toggle container should also sit above the dark shell */
+  .glass-modal .bg-secondary:has(> button) {
+    background-color: hsl(0 0% 22% / 0.92) !important;
+  }
+
+  .glass-modal input::placeholder,
+  .glass-modal textarea::placeholder,
+  .glass-modal [role="combobox"]::placeholder {
+    color: hsl(0 0% 60%) !important;
+  }
+
+  .glass-modal [data-state="unchecked"] {
+    background-color: hsl(0 0% 32% / 0.85) !important;
+  }
+
+  .glass-modal [data-state="unchecked"] [data-state="unchecked"] {
+    background-color: hsl(0 0% 96%) !important;
+  }
+
   .gradient-primary {
     background-image: var(--gradient-primary);
   }

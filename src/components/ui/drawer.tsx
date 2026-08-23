@@ -28,14 +28,14 @@ const DrawerContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <DrawerPortal>
     <DrawerOverlay />
-    <DrawerPrimitive.Content
-      ref={ref}
-      className={cn(
-        "glass fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] h-auto flex-col overflow-y-auto rounded-t-3xl pb-safe shadow-float",
-        className,
-      )}
-      {...props}
-    >
+      <DrawerPrimitive.Content
+        ref={ref}
+        className={cn(
+          "glass-modal fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] h-auto flex-col overflow-y-auto rounded-t-3xl pb-safe shadow-float",
+          className,
+        )}
+        {...props}
+      >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
       {children}
     </DrawerPrimitive.Content>
