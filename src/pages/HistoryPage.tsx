@@ -158,14 +158,15 @@ export default function HistoryPage() {
                         />
                       </div>
                       <Select value={filters.category} onValueChange={v => handleFilterChange('category', v)}>
-                        <SelectTrigger className="w-[130px] sm:w-[160px] h-9 rounded-full text-xs sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-[142px] sm:w-[170px] h-9 rounded-full text-[11px] sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Todas categorias</SelectItem>
+                          <SelectItem value="all">Categorias</SelectItem>
                           {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <Select value={filters.type} onValueChange={v => handleFilterChange('type', v)}>
-                        <SelectTrigger className="w-[120px] sm:w-[150px] h-9 rounded-full text-xs sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-[128px] sm:w-[150px] h-9 rounded-full text-[11px] sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
+
                         <SelectContent>
                           <SelectItem value="all">Todos tipos</SelectItem>
                           <SelectItem value="income">Receitas</SelectItem>
