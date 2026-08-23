@@ -399,7 +399,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange}>
         {/* Type selector header */}
-        <div className={`p-3 pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
+        <div className="p-3 pb-0 rounded-t-2xl transition-colors duration-200">
           <ResponsiveModalHeader className="pb-2 sm:pb-3">
             <ResponsiveModalTitle className="text-base sm:text-lg font-bold">Nova Transação</ResponsiveModalTitle>
           </ResponsiveModalHeader>
