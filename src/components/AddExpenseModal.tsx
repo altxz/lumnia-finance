@@ -606,21 +606,21 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
               </div>
 
               {/* Paid / Received toggle */}
-              <div className="flex items-center justify-between rounded-xl border p-3">
+              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <div>
-                  <span className="text-sm font-medium">{type === 'income' ? 'Recebido' : 'Pago'}</span>
-                  <p className="text-xs text-muted-foreground">{type === 'income' ? 'Já recebeu este valor?' : 'Já efetuou o pagamento?'}</p>
+                  <span className="text-sm font-medium text-white/95">{type === 'income' ? 'Recebido' : 'Pago'}</span>
+                  <p className="text-xs text-white/55">{type === 'income' ? 'Já recebeu este valor?' : 'Já efetuou o pagamento?'}</p>
                 </div>
                 <Switch checked={isPaid} onCheckedChange={setIsPaid} />
               </div>
 
               {/* Recurring / Repeat */}
-              <div className="flex items-center justify-between rounded-xl border p-3">
+              <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <Repeat className="h-4 w-4 text-primary shrink-0" />
                   <div className="min-w-0">
-                    <span className="text-sm font-medium">Recorrente / Repetir</span>
-                    <p className="text-xs text-muted-foreground">Conta fixa ou parcelamento</p>
+                    <span className="text-sm font-medium text-white/95">Recorrente / Repetir</span>
+                    <p className="text-xs text-white/55">Conta fixa ou parcelamento</p>
                   </div>
                 </div>
                 <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
