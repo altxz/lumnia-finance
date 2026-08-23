@@ -720,23 +720,31 @@ export function TransactionFeed({
                           </div>
                         </div>
 
-                        {/* Value */}
-                        <div className="shrink-0 flex items-center justify-end gap-1.5 min-w-[90px] sm:min-w-[160px] text-right">
-                          {isPending && <Clock className="h-3.5 w-3.5 text-muted-foreground" />}
-                          <span className={`text-sm font-bold ${
+                        {/* Value + status */}
+                        <div className="shrink-0 flex flex-col items-end justify-center min-w-[86px] sm:min-w-[130px] text-right">
+                          <span className={`text-sm font-semibold tabular-nums ${
                             isTransfer
                               ? transferDelta > 0
-                                ? 'text-emerald-600'
+                                ? 'text-emerald-600 dark:text-emerald-400'
                                 : transferDelta < 0
                                   ? 'text-destructive'
                                   : 'text-foreground'
                               : isIncome
-                                ? isPending ? 'text-emerald-600/70' : 'text-emerald-600'
+                                ? isPending ? 'text-emerald-600/70 dark:text-emerald-400/70' : 'text-emerald-600 dark:text-emerald-400'
                                 : isPending ? 'text-destructive/70' : 'text-destructive'
                           }`}>
                             {isIncome ? '+' : isTransfer ? transferSign : '-'}{formatCurrency(exp.value)}
                           </span>
+                          {!isTransfer && (
+                            <span className="flex items-center gap-1 mt-0.5">
+                              <span aria-hidden className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+                              <span className="text-[10px] text-muted-foreground">
+                                {isPending ? 'Pendente' : isIncome ? 'Recebido' : 'Pago'}
+                              </span>
+                            </span>
+                          )}
                         </div>
+
 
                         {/* Quick actions - fixed width to keep values aligned */}
                         <div className="shrink-0 flex items-center justify-end gap-0.5 w-auto sm:w-[88px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
