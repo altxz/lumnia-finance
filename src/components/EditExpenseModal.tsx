@@ -464,7 +464,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange}>
-        <div className={`px-3 pt-3 pb-0 rounded-t-2xl transition-colors duration-200 ${style.bg}`}>
+        <div className="px-3 pt-3 pb-0 rounded-t-2xl transition-colors duration-200">
           <ResponsiveModalHeader className="pb-3">
             <ResponsiveModalTitle className="text-lg font-bold flex items-center gap-2">
               {type === 'income' ? <ArrowUpCircle className="h-5 w-5 text-emerald-600" /> : type === 'transfer' ? <ArrowLeftRight className="h-5 w-5 text-primary" /> : <ArrowDownCircle className="h-5 w-5 text-destructive" />}
