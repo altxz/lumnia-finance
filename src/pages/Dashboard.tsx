@@ -26,7 +26,7 @@ import { lazyNamedWithRetry } from '@/lib/lazyWithRetry';
 
 // Lazy load all chart/widget components
 const CashFlowChart = lazyNamedWithRetry(() => import('@/components/CashFlowChart'), m => m.CashFlowChart);
-const DashboardScoreCarousel = lazyNamedWithRetry(() => import('@/components/DashboardScoreCarousel'), m => m.DashboardScoreCarousel);
+
 const CalendarView = lazyNamedWithRetry(() => import('@/components/CalendarView'), m => m.CalendarView);
 const IncomeVsExpenseChart = lazyNamedWithRetry(() => import('@/components/analytics/IncomeVsExpenseChart'), m => m.IncomeVsExpenseChart);
 const TopExpensesList = lazyNamedWithRetry(() => import('@/components/analytics/TopExpensesList'), m => m.TopExpensesList);
