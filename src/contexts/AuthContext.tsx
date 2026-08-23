@@ -12,7 +12,14 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Contexto guardado em escopo global: evita "useAuth must be used within AuthProvider"
+// quando o HMR (ou dois chunks lazy) criam instâncias duplicadas deste módulo.
+const globalScope = globalThis as typeof globalThis & {
+  __lumniaAuthContext?: React.Context<AuthContextType | undefined>;
+};
+const AuthContext =
+  globalScope.__lumniaAuthContext ??
+  (globalScope.__lumniaAuthContext = createContext<AuthContextType | undefined>(undefined));
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
