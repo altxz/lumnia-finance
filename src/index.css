@@ -282,25 +282,47 @@
     -webkit-backdrop-filter: blur(14px);
   }
 
-  /* Modal/drawer shells: cohesive dark glass with integrated fields */
+  /* Modal/drawer shells: theme-aware glass with integrated fields */
   .glass-modal {
-    background-image: linear-gradient(150deg, hsl(0 0% 14% / 0.96), hsl(0 0% 10% / 0.94));
-    background-color: hsl(0 0% 12% / 0.94);
-    border: 1px solid hsl(0 0% 100% / 0.08);
+    --modal-fg: 0 0% 15%;
+    --modal-muted: 0 0% 38%;
+    --modal-placeholder: 0 0% 48%;
+    --modal-field: 275 40% 97%;
+    --modal-field-border: 275 25% 87%;
+    --modal-field-border-hover: 275 30% 78%;
+    --modal-pill: 0 0% 100%;
+
+    background-image: linear-gradient(150deg, hsl(0 0% 100% / 0.96), hsl(275 45% 98% / 0.94));
+    background-color: hsl(0 0% 100% / 0.96);
+    border: 1px solid hsl(275 30% 90%);
     box-shadow: var(--shadow-float);
     backdrop-filter: blur(24px) saturate(140%);
     -webkit-backdrop-filter: blur(24px) saturate(140%);
-    color: hsl(0 0% 96%);
+    color: hsl(var(--modal-fg));
+  }
+
+  .dark .glass-modal {
+    --modal-fg: 0 0% 96%;
+    --modal-muted: 0 0% 68%;
+    --modal-placeholder: 0 0% 60%;
+    --modal-field: 0 0% 100% / 0.05;
+    --modal-field-border: 0 0% 100% / 0.12;
+    --modal-field-border-hover: 0 0% 100% / 0.2;
+    --modal-pill: 0 0% 100% / 0.1;
+
+    background-image: linear-gradient(150deg, hsl(0 0% 14% / 0.96), hsl(0 0% 10% / 0.94));
+    background-color: hsl(0 0% 12% / 0.94);
+    border: 1px solid hsl(0 0% 100% / 0.08);
   }
 
   .glass-modal .text-foreground,
   .glass-modal [class*="text-foreground"] {
-    color: hsl(0 0% 96%);
+    color: hsl(var(--modal-fg));
   }
 
   .glass-modal .text-muted-foreground,
   .glass-modal [class*="text-muted-foreground"] {
-    color: hsl(0 0% 68%);
+    color: hsl(var(--modal-muted));
   }
 
   /* Integrated fields: inputs, textareas, selects and custom pickers blend into the shell */
@@ -313,9 +335,9 @@
   .glass-modal .bg-secondary,
   .glass-modal [class*="bg-card/70"],
   .glass-modal [class*="bg-background/70"] {
-    background-color: hsl(0 0% 100% / 0.05) !important;
-    border-color: hsl(0 0% 100% / 0.12) !important;
-    color: hsl(0 0% 98%) !important;
+    background-color: hsl(var(--modal-field)) !important;
+    border-color: hsl(var(--modal-field-border)) !important;
+    color: hsl(var(--modal-fg)) !important;
   }
 
   .glass-modal input:hover,
@@ -325,7 +347,7 @@
   .glass-modal .bg-background\/70:hover,
   .glass-modal .bg-background:hover,
   .glass-modal .bg-secondary:hover {
-    border-color: hsl(0 0% 100% / 0.2) !important;
+    border-color: hsl(var(--modal-field-border-hover)) !important;
   }
 
   .glass-modal input:focus,
@@ -344,37 +366,37 @@
 
   /* Segmented toggles: container and active pill blend into the shell */
   .glass-modal .bg-secondary:has(> button) {
-    background-color: hsl(0 0% 100% / 0.05) !important;
-    border: 1px solid hsl(0 0% 100% / 0.1) !important;
+    background-color: hsl(var(--modal-field)) !important;
+    border: 1px solid hsl(var(--modal-field-border)) !important;
   }
 
   .glass-modal button[class*="bg-background"][class*="shadow-soft"] {
-    background-color: hsl(0 0% 100% / 0.1) !important;
-    color: hsl(0 0% 98%) !important;
-    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.2) !important;
+    background-color: hsl(var(--modal-pill)) !important;
+    color: hsl(var(--modal-fg)) !important;
+    box-shadow: var(--shadow-soft) !important;
   }
 
   .glass-modal button[class*="bg-background"][class*="shadow-soft"]:hover {
-    background-color: hsl(0 0% 100% / 0.14) !important;
+    border-color: hsl(var(--modal-field-border-hover)) !important;
   }
 
   .glass-modal input::placeholder,
   .glass-modal textarea::placeholder,
   .glass-modal [role="combobox"] [class*="text-muted-foreground"] {
-    color: hsl(0 0% 60%) !important;
+    color: hsl(var(--modal-placeholder)) !important;
   }
 
   .glass-modal [data-state="unchecked"] {
-    background-color: hsl(0 0% 100% / 0.12) !important;
+    background-color: hsl(var(--modal-field-border-hover)) !important;
   }
 
   .glass-modal [data-state="unchecked"] [data-state="unchecked"] {
-    background-color: hsl(0 0% 96%) !important;
+    background-color: hsl(0 0% 100%) !important;
   }
 
   /* Subtle value box used inside transaction modal */
   .glass-modal .value-box {
-    background-color: hsl(0 0% 100% / 0.04) !important;
+    background-color: hsl(var(--modal-field)) !important;
     border-width: 1px !important;
   }
 
