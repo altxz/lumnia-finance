@@ -1,11 +1,15 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Mail, Smartphone, BellRing, BellOff } from 'lucide-react';
+import { Bell, Mail, Smartphone, BellRing, BellOff, Landmark, ShieldCheck } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
+import { BankNotificationCapture } from '@/lib/bankNotificationCapture';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface NotificationsSectionProps {
   settings: any;
@@ -14,6 +18,30 @@ interface NotificationsSectionProps {
 
 export function NotificationsSection({ settings, onChange }: NotificationsSectionProps) {
   const { isSupported, permission, isSubscribed, subscribe, unsubscribe } = usePushNotifications();
+  const [bankCaptureEnabled, setBankCaptureEnabled] = useState(false);
+  const [disclosureOpen, setDisclosureOpen] = useState(false);
+  const isAndroidApp = Capacitor.getPlatform() === 'android';
+
+  const refreshBankCapture = async () => {
+    if (!isAndroidApp) return;
+    try { setBankCaptureEnabled((await BankNotificationCapture.isEnabled()).enabled); } catch {}
+  };
+
+  useEffect(() => {
+    void refreshBankCapture();
+    window.addEventListener('focus', refreshBankCapture);
+    return () => window.removeEventListener('focus', refreshBankCapture);
+  }, [isAndroidApp]);
+
+  const enableBankCapture = async () => {
+    setDisclosureOpen(false);
+    try {
+      await BankNotificationCapture.requestNotificationPermission();
+      await BankNotificationCapture.openSettings();
+    } catch {
+      toast.error('Não foi possível abrir as configurações de acesso às notificações.');
+    }
+  };
 
   const handleTogglePush = async () => {
     if (isSubscribed) {
@@ -33,6 +61,52 @@ export function NotificationsSection({ settings, onChange }: NotificationsSectio
 
   return (
     <div className="space-y-6">
+      {isAndroidApp && (
+        <Card className="rounded-2xl border-ai/25">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Landmark className="h-5 w-5 text-ai" />
+              Detecção de Transações Bancárias
+              <Badge variant="outline" className="text-[10px] ml-1">Android</Badge>
+            </CardTitle>
+            <CardDescription>Identifica valores em notificações de bancos e pede sua confirmação antes de registrar.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+              <p className="text-xs text-muted-foreground">
+                O processamento ocorre no aparelho. O Lumnia ignora notificações sem valor e não cria transações automaticamente.
+              </p>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label className="text-sm font-medium">Acesso às notificações bancárias</Label>
+                <p className="text-xs text-muted-foreground">{bankCaptureEnabled ? 'Ativado no Android' : 'Desativado no Android'}</p>
+              </div>
+              <Button variant={bankCaptureEnabled ? 'outline' : 'default'} onClick={() => bankCaptureEnabled ? BankNotificationCapture.openSettings() : setDisclosureOpen(true)}>
+                {bankCaptureEnabled ? 'Gerenciar' : 'Ativar'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <AlertDialog open={disclosureOpen} onOpenChange={setDisclosureOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permitir leitura de notificações bancárias?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">O Android permitirá que o Lumnia veja o texto das notificações. O aplicativo filtrará bancos compatíveis e procurará valor, tipo e descrição da transação.</span>
+              <span className="block">Os dados são processados localmente e só entram na sua conta depois que você tocar em “Registrar” e confirmar o formulário.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Agora não</AlertDialogCancel>
+            <AlertDialogAction onClick={enableBankCapture}>Continuar para o Android</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Push Notifications Card */}
       <Card className="rounded-2xl border-primary/20">
         <CardHeader>

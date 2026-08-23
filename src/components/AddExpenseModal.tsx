@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { showFriendlyError } from '@/lib/errorHandler';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserSettings } from '@/contexts/UserSettingsContext';
+import type { DetectedBankTransaction } from '@/lib/bankNotificationCapture';
 
 interface CreditCardOption {
   id: string;
@@ -41,6 +42,7 @@ interface AddExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onExpenseAdded: () => void;
+  initialData?: DetectedBankTransaction;
 }
 
 function calcInvoiceMonth(card: CreditCardOption, expenseDate: string): string {
@@ -106,7 +108,7 @@ const TYPE_STYLES = {
   },
 } as const;
 
-export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpenseModalProps) {
+export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialData }: AddExpenseModalProps) {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [description, setDescription] = useState('');
@@ -140,6 +142,17 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
   const { settings: moduleSettings } = useUserSettings();
 
   const style = TYPE_STYLES[type];
+
+  useEffect(() => {
+    if (!open || !initialData) return;
+    setDate(initialData.date || format(new Date(), 'yyyy-MM-dd'));
+    setDescription(initialData.description || `${initialData.type === 'income' ? 'Recebimento' : 'Transação'} ${initialData.bank}`);
+    setValue(String(initialData.value));
+    setType(initialData.type);
+    setPaymentMethod('debit');
+    setIsPaid(true);
+    setNotes(`Detectado localmente em uma notificação do ${initialData.bank}.`);
+  }, [open, initialData]);
 
   useEffect(() => {
     if (!user || !open) return;
