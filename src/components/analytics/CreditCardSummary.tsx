@@ -15,6 +15,7 @@ import { getInvoicePeriod, matchExpensesToInvoice, formatInvoiceDate } from '@/l
 import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
 import { InvoiceDetailsModal } from '@/components/modals/InvoiceDetailsModal';
+import { CreditCardStack } from '@/components/analytics/CreditCardStack';
 import { EditExpenseModal } from '@/components/EditExpenseModal';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -183,92 +184,50 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
   }
 
   const inv = activeInvoice;
-  const statusInfo = STATUS_MAP[inv.status];
-  const StatusIcon = statusInfo.icon;
   const usagePct = inv.limit > 0 ? Math.min((inv.total / inv.limit) * 100, 100) : 0;
   const available = Math.max(inv.limit - inv.total, 0);
   const bestDay = getBestPurchaseDay(inv.closingDay);
   const last3 = inv.transactions.slice(0, 3);
   const canPay = inv.total > 0 && (inv.status === 'closed' || inv.status === 'overdue');
-  const gradient = getCardGradient(inv.cardName);
 
   return (
     <>
       <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col overflow-hidden">
-        {/* Header with multi-card tabs */}
+        {/* Header */}
         <div className="bg-primary px-4 py-3 flex items-center gap-3">
           <CreditCard className="h-4 w-4 text-primary-foreground shrink-0" />
-          <h3 className="text-sm font-bold text-primary-foreground">Centro de Crédito</h3>
-          
-          {/* Card tabs - only show if multiple cards */}
+          <h3 className="text-sm font-bold text-primary-foreground">Meus cartões</h3>
           {cards.length > 1 && (
-            <div className="ml-auto flex items-center gap-1">
-              {cards.map((card, idx) => (
-                <button
-                  key={card.id}
-                  onClick={() => setSelectedCardIdx(idx)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-semibold transition-all",
-                    idx === safeIdx
-                      ? "bg-primary-foreground text-primary shadow-soft"
-                      : "bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
-                  )}
-                >
-                  {card.name}
-                </button>
-              ))}
-            </div>
+            <span className="ml-auto text-[11px] font-medium text-primary-foreground/80">
+              Arraste para alternar • {safeIdx + 1}/{cards.length}
+            </span>
           )}
         </div>
 
         <CardContent className="flex-1 p-4 md:p-5">
           {/* Desktop: side by side | Mobile: stacked */}
           <div className="flex flex-col lg:flex-row gap-5">
-            
-            {/* LEFT: Virtual Card */}
-            <div className="lg:w-[280px] shrink-0">
-              <div className={cn(
-                "relative w-full aspect-[1.586/1] rounded-2xl bg-gradient-to-br shadow-float overflow-hidden",
-                gradient
-              )}>
-                {/* Card pattern overlay */}
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute top-6 right-6 w-20 h-20 rounded-full border-2 border-white/40" />
-                  <div className="absolute top-8 right-10 w-16 h-16 rounded-full border-2 border-white/30" />
-                </div>
 
-                {/* Card content */}
-                <div className="relative h-full flex flex-col justify-between p-5 text-white">
-                  <div className="flex items-center justify-between">
-                    <CreditCard className="h-7 w-7 opacity-80" />
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-card/90 text-card-foreground text-[10px] font-bold uppercase tracking-wider">
-                      <StatusIcon className="h-3 w-3" />
-                      {statusInfo.label}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <p className="text-lg font-extrabold tracking-wide">
-                      {formatCurrency(inv.total)}
-                    </p>
-                    <p className="text-[11px] font-semibold mt-0.5">Fatura Atual</p>
-                  </div>
-
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-sm font-bold tracking-widest">{inv.cardName}</p>
-                      <p className="text-[10px] font-medium mt-0.5">
-                        Fecha dia {inv.closingDay} • Vence dia {inv.dueDay}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-medium uppercase">Limite</p>
-                      <p className="text-xs font-bold">{formatCurrency(inv.limit)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* LEFT: Card stack */}
+            <div className="lg:w-[300px] shrink-0">
+              <CreditCardStack
+                invoices={invoices}
+                activeIndex={safeIdx}
+                onChange={setSelectedCardIdx}
+                gradientFor={getCardGradient}
+                statusLabel={(i) => {
+                  const info = STATUS_MAP[i.status];
+                  const Icon = info.icon;
+                  return (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-card/90 text-card-foreground text-[10px] font-bold uppercase tracking-wider shrink-0">
+                      <Icon className="h-3 w-3" />
+                      {info.label}
+                    </span>
+                  );
+                }}
+              />
             </div>
+
 
             {/* RIGHT: Details Grid */}
             <div className="flex-1 flex flex-col gap-4 min-w-0">
