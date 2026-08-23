@@ -37,7 +37,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4 px-4 flex flex-col justify-center gap-3">
         {data.map((item, index) => {
-          const color = BAR_COLORS[index % BAR_COLORS.length];
+          const color = seriesColor(index);
           const width = maxValue > 0 ? Math.max((item.value / maxValue) * 100, 4) : 0;
           return (
             <div key={`${item.name}-${index}`} className="min-w-0">
