@@ -238,20 +238,14 @@ export default function Dashboard() {
                   prevIncome={prevSummary.totalIncome}
                   prevExpense={prevSummary.totalExpense}
                   pendingInStartingBalance={projected.pendingInStartingBalance}
-                  healthScore={
-                    <Suspense fallback={<Skeleton className="h-16 w-full rounded-xl" />}>
-                      <DashboardScoreCarousel
-                        totalIncome={projected.totalIncome}
-                        totalExpense={projected.totalExpense}
-                        totalBudget={budgetTotals.totalBudget}
-                        totalSpentInBudget={budgetTotals.totalSpent}
-                        hasOverdueCards={hasOverdueCardsComputed}
-                        creditCards={projected.creditCards}
-                        monthExpenses={projected.monthExpenses}
-                      />
-                    </Suspense>
-                  }
+                  balanceHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.balance }))}
+                  incomeHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.income }))}
+                  expenseHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.expense }))}
+                  categoryHistory={summaryHistory
+                    .categorySeries(projected.largestCategory?.categoryKey)
+                    .map(p => ({ label: p.label, value: p.expense }))}
                 />
+
 
                 {/* Painel de Gráficos */}
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>
