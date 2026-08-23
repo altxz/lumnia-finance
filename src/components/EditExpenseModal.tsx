@@ -471,11 +471,11 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
               Editar {type === 'income' ? 'Receita' : type === 'transfer' ? 'Transferência' : 'Despesa'}
             </ResponsiveModalTitle>
           </ResponsiveModalHeader>
-          <div className={`mt-2 mb-3 rounded-xl border-2 bg-background/80 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
+          <div className={`value-box mt-2 mb-3 rounded-2xl border bg-white/5 backdrop-blur-sm transition-colors ${style.valueBorder}`}>
             <div className="flex items-center px-3 sm:px-4 py-3">
-              <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2">R$</span>
+              <span className="text-base sm:text-lg font-bold text-white/60 mr-2">R$</span>
               <input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)}
-                className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/70 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-white/35 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               <QuickCalculator onSelect={(v) => setValue(String(v))} />
             </div>
           </div>
