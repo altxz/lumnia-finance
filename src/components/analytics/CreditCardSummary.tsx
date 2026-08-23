@@ -211,7 +211,7 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
                     "px-3 py-1 rounded-full text-xs font-semibold transition-all",
                     idx === safeIdx
                       ? "bg-primary-foreground text-primary shadow-soft"
-                      : "bg-primary-foreground/20 text-primary-foreground/80 hover:bg-primary-foreground/30"
+                      : "bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
                   )}
                 >
                   {card.name}

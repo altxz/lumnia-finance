@@ -475,7 +475,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
             <div className="flex items-center px-3 sm:px-4 py-3">
               <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2">R$</span>
               <input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)}
-                className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                className="flex-1 min-w-0 bg-transparent text-2xl sm:text-3xl font-bold outline-none placeholder:text-muted-foreground/70 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               <QuickCalculator onSelect={(v) => setValue(String(v))} />
             </div>
           </div>

@@ -19,10 +19,10 @@
     --primary-glow: 270 70% 85%;
 
     --secondary: 270 55% 96%;
-    --secondary-foreground: 270 70% 40%;
+    --secondary-foreground: 270 70% 32%;
 
     --muted: 275 25% 95%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 36%;
 
     --accent: 19 100% 60%;
     --accent-foreground: 0 0% 100%;
@@ -31,7 +31,7 @@
     --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 55% 42%;
+    --success: 152 60% 33%;
     --success-foreground: 0 0% 100%;
 
     --ai: 270 70% 56%;

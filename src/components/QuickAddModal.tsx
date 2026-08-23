@@ -195,7 +195,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
                 onChange={(e) => setValue(e.target.value.replace(/[^0-9.,]/g, ''))}
                 placeholder="0,00"
                 autoFocus
-                className={`text-4xl font-bold bg-transparent border-none outline-none text-center w-40 placeholder:text-muted-foreground/30 ${
+                className={`text-4xl font-bold bg-transparent border-none outline-none text-center w-40 placeholder:text-muted-foreground/70 ${
                   isExpense ? 'text-destructive' : 'text-emerald-600'
                 }`}
               />
