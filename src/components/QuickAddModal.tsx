@@ -155,14 +155,14 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="w-[95vw] max-w-sm overflow-hidden sm:w-full p-0 gap-0 rounded-2xl">
         {/* Type toggle */}
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-2 border-b border-white/10">
           <button
             type="button"
             onClick={() => setType('expense')}
             className={`flex items-center justify-center gap-2 py-4 text-sm font-bold transition-colors ${
               isExpense
                 ? 'bg-destructive text-destructive-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
             }`}
           >
             <TrendingDown className="h-5 w-5" />
@@ -174,7 +174,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
             className={`flex items-center justify-center gap-2 py-4 text-sm font-bold transition-colors ${
               !isExpense
                 ? 'bg-success text-success-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
             }`}
           >
             <TrendingUp className="h-5 w-5" />
