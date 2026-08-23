@@ -6,6 +6,8 @@ import { formatCurrency } from '@/lib/constants';
 import type { CategoryStats } from '@/hooks/useAnalyticsData';
 import { useCategories } from '@/hooks/useStaticData';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { seriesColor } from '@/lib/chartPalette';
+
 
 interface ExpenseTreemapProps {
   categoryStats: CategoryStats[];
