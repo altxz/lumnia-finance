@@ -525,9 +525,9 @@ export function TransactionFeed({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={groupCards ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
-                className="gap-2 rounded-xl text-xs"
+                className={`gap-2 rounded-full h-8 px-3 text-[11px] font-medium border ${groupCards ? 'bg-primary/10 text-primary border-primary/20' : 'bg-muted/40 text-muted-foreground border-border/60'}`}
                 onClick={() => setGroupCards(!groupCards)}
               >
                 {groupCards ? <Layers className="h-3.5 w-3.5" /> : <LayoutList className="h-3.5 w-3.5" />}
@@ -544,9 +544,10 @@ export function TransactionFeed({
       {loading ? (
         <div className="space-y-3">
           {[1,2,3,4,5].map(i => (
-            <div key={i} className="h-16 rounded-xl bg-muted/60 animate-pulse" />
+            <div key={i} className="h-16 rounded-2xl bg-muted/50 animate-pulse" />
           ))}
         </div>
+
       ) : !hasContent ? (
         <p className="text-center py-12 text-muted-foreground">Nenhuma transação encontrada.</p>
       ) : (
