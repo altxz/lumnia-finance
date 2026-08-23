@@ -49,20 +49,21 @@ function Dots({ score }: { score: number | null }) {
 function DimensionRow({ d }: { d: ScoreDimension }) {
   const color = d.score === null ? 'hsl(var(--muted-foreground))' : getScoreColor(d.score);
   return (
-    <div className="flex items-center justify-between gap-2 text-[11px] leading-tight">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="shrink-0 whitespace-nowrap text-muted-foreground w-20">{d.label}</span>
-        <Dots score={d.score} />
-      </div>
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="w-5 text-right font-semibold tabular-nums shrink-0" style={{ color }}>
-          {d.score === null ? '—' : d.score}
-        </span>
-        <span className="text-muted-foreground truncate max-w-[120px] hidden sm:inline">{d.detail}</span>
-      </div>
+    <div className="flex items-center gap-2 py-[5px] min-w-0">
+      <span className="text-[11px] leading-tight text-muted-foreground truncate flex-1 min-w-0">
+        {d.label}
+      </span>
+      <Dots score={d.score} />
+      <span
+        className="w-6 text-right text-[11px] font-semibold tabular-nums shrink-0"
+        style={{ color }}
+      >
+        {d.score === null ? '—' : d.score}
+      </span>
     </div>
   );
 }
+
 
 export function DashboardScoreCarousel({
   totalIncome, totalExpense, hasOverdueCards, creditCards, monthExpenses,
@@ -215,7 +216,8 @@ export function DashboardScoreCarousel({
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-0 overflow-hidden">
-        <div className="w-full relative flex-1" style={{ minHeight: 210 }}>
+        <div className="w-full relative flex-1 min-h-[300px]">
+
           {/* Slide 0: nota + dimensões com números reais + próximo passo */}
           <div
             className="absolute inset-0 flex flex-col gap-2 transition-all duration-400 ease-in-out"
@@ -225,8 +227,8 @@ export function DashboardScoreCarousel({
               pointerEvents: slide === 0 ? 'auto' : 'none',
             }}
           >
-            <div className="flex items-center gap-3">
-              <div className="relative w-16 h-16 shrink-0">
+            <div className="flex items-start gap-3">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
                 <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
                   <circle cx="60" cy="60" r={50} fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
                   <circle
@@ -241,28 +243,29 @@ export function DashboardScoreCarousel({
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-base font-bold leading-none" style={{ color: scoreColor }}>{result.overall}</span>
-                  <span className="text-[8px] text-muted-foreground">/100</span>
+                  <span className="text-[8px] text-muted-foreground leading-none mt-0.5">/100</span>
                 </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-sm font-semibold" style={{ color: scoreColor }}>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: scoreColor }}>
                     {result.emoji} {result.label}
                   </p>
                   {diff !== null && diff !== 0 && (
-                    <span className={`flex items-center text-[10px] font-medium ${diff > 0 ? 'text-success' : 'text-destructive'}`}>
+                    <span className={`flex items-center text-[10px] font-medium shrink-0 ${diff > 0 ? 'text-success' : 'text-destructive'}`}>
                       {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                       {Math.abs(diff)}
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">{result.headline}</p>
+                <p className="text-[11px] text-muted-foreground leading-snug mt-1 line-clamp-3 sm:line-clamp-2">{result.headline}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border/50 pt-2">
+            <div className="flex flex-col border-t border-border/50 pt-1 divide-y divide-border/40">
               {result.dimensions.map(d => <DimensionRow key={d.key} d={d} />)}
             </div>
+
 
             {result.nextStep && (
               <div className="mt-auto flex items-start gap-2 rounded-xl bg-muted/60 px-3 py-2">
@@ -284,10 +287,11 @@ export function DashboardScoreCarousel({
               pointerEvents: slide === 1 ? 'auto' : 'none',
             }}
           >
-            <ResponsiveContainer width="100%" height={200}>
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="68%">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="58%" margin={{ top: 10, right: 44, bottom: 10, left: 44 }}>
                 <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+
                 <Radar
                   name="Score"
                   dataKey="score"
