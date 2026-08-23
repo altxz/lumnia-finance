@@ -22,7 +22,6 @@ import { Navigate } from 'react-router-dom';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { useSummaryHistory } from '@/hooks/useSummaryHistory';
 import { GuidedTour } from '@/components/GuidedTour';
-import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import { lazyNamedWithRetry } from '@/lib/lazyWithRetry';
 
 // Lazy load all chart/widget components
