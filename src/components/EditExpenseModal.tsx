@@ -471,7 +471,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
               Editar {type === 'income' ? 'Receita' : type === 'transfer' ? 'Transferência' : 'Despesa'}
             </ResponsiveModalTitle>
           </ResponsiveModalHeader>
-          <div className={`value-box mt-2 mb-3 rounded-2xl border bg-foreground/[0.04] backdrop-blur-sm transition-colors ${style.valueBorder}`}>
+          <div className={`value-box mt-2 mb-3 rounded-2xl border bg-transparent transition-colors ${style.valueBorder}`}>
             <div className="flex items-center px-3 sm:px-4 py-3">
               <span className="text-base sm:text-lg font-bold text-muted-foreground mr-2">R$</span>
               <input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)}
