@@ -204,6 +204,7 @@ export function computeProjectedMonthResult({
     invoiceProjected: projected,
     invoiceTotal: invoiceCash,
     cardPurchases: cardPurchasesTotal,
+    byCategory,
     balance: totalIncome - totalExpense,
     projectedBalance: startingBalance + totalIncome - totalExpense,
     largestCategory: largest ? { name: largest[0], total: largest[1], categoryKey: largest[0] } : null,
