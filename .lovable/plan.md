@@ -13,6 +13,10 @@ Objetivo: concluir a aplicação do novo design system nos cards, janelas, auten
 
 ## 1. Superfícies de vidro
 
+- Substituir a paleta atual pelas seis cores exatas da referência: roxo `#8F41DE`, laranja `#FF7535`, lilás `#DAC0F4`, pêssego `#FFD6C2`, branco `#FFFFFF` e grafite `#2C2C2C`.
+- Distribuir essas cores em tokens semânticos: roxo como ação principal e identidade, laranja como destaque/ação secundária, lilás e pêssego como superfícies suaves, branco como superfície clara e grafite como texto e base escura.
+- Derivar estados de hover, foco, seleção, borda e transparência a partir dessas seis cores, sem introduzir novas cores dominantes; manter apenas os tokens funcionais indispensáveis de sucesso, aviso e erro.
+- No modo escuro, usar grafite como base, branco para conteúdo principal e versões dessaturadas do roxo, laranja, lilás e pêssego para preservar contraste e identidade.
 - Consolidar tokens de vidro, borda, overlay e sombras no tema global para modo claro e escuro.
 - Aplicar a mesma linguagem visual aos primitives de `Card`, `Dialog`, `Drawer`, `Sheet`, `AlertDialog`, `Popover`, `Tooltip`, menus e selects.
 - Preservar legibilidade em conteúdos densos com variantes `glass`, `glass-soft` e `solid`, evitando transparência excessiva em tabelas e formulários extensos.
