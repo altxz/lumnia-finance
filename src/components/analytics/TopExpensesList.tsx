@@ -37,9 +37,9 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
           <InfoPopover><p>As 5 transações individuais mais caras do período selecionado.</p></InfoPopover>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 pb-4">
+      <CardContent className="flex-1 min-h-0 pb-4 px-2">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 50, left: 20, bottom: 5 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 2, right: 70, left: 0, bottom: 2 }}>
             <defs>
               {COLORS.map((color, i) => (
                 <linearGradient key={i} id={`topExpGrad${i}`} x1="0" y1="0" x2="1" y2="0">
@@ -51,15 +51,15 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
             <XAxis
               type="number"
               tickFormatter={(v: number) => { if (v >= 1000) return `R$${(v/1000).toFixed(0)}k`; return `R$${v.toFixed(0)}`; }}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               type="category"
               dataKey="name"
-              width={120}
-              tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+              width={90}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
             />
@@ -75,7 +75,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
                 );
               }}
             />
-            <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={20}>
+            <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={28}>
               {data.map((_entry, index) => (
                 <Cell key={index} fill={`url(#topExpGrad${index % COLORS.length})`} />
               ))}
@@ -83,7 +83,7 @@ export function TopExpensesList({ expenses }: { expenses: any[] }) {
                 dataKey="value"
                 position="right"
                 formatter={(v: number) => formatCurrency(v)}
-                style={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                style={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               />
             </Bar>
           </BarChart>
