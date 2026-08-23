@@ -216,7 +216,8 @@ export function DashboardScoreCarousel({
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col px-4 pb-4 pt-0 overflow-hidden">
-        <div className="w-full relative flex-1" style={{ minHeight: 210 }}>
+        <div className="w-full relative flex-1 min-h-[290px] sm:min-h-[250px]">
+
           {/* Slide 0: nota + dimensões com números reais + próximo passo */}
           <div
             className="absolute inset-0 flex flex-col gap-2 transition-all duration-400 ease-in-out"
