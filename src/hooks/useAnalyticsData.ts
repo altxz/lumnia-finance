@@ -210,14 +210,6 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
     return predicted > 0 ? Math.round(predicted) : avgMonthly;
   }, [expenses, monthlyData, avgMonthly]);
 
-  const financialScore = useMemo(() => {
-    if (expenses.length === 0) return 500;
-    const consistency = Math.min(monthlyData.length * 50, 300);
-    const savingsRatio = Math.max(0, (5000 - avgMonthly) / 5000) * 400;
-    const diversity = Math.min(Object.keys(categoryStats).length * 30, 300);
-    return Math.min(1000, Math.round(consistency + savingsRatio + diversity));
-  }, [expenses, monthlyData, avgMonthly, categoryStats]);
-
   const weekdayAnalysis = useMemo(() => {
     const weekday: Record<number, number[]> = {};
     expenses.forEach(e => {
@@ -242,7 +234,7 @@ export function useAnalyticsData(filters: AnalyticsFilters) {
   return {
     expenses, loading, monthlyData, categoryStats,
     totalCurrentPeriod, totalPreviousPeriod, avgMonthly,
-    predictedNextMonth, financialScore, weekdayAnalysis,
+    predictedNextMonth, weekdayAnalysis,
     biggestSavingOpportunity, refetch: fetchExpenses,
   };
 }

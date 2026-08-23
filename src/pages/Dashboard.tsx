@@ -20,13 +20,14 @@ import { supabase } from '@/lib/supabase';
 import { getCategoryInfo } from '@/lib/constants';
 import { Navigate } from 'react-router-dom';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
+import { useSummaryHistory } from '@/hooks/useSummaryHistory';
 import { GuidedTour } from '@/components/GuidedTour';
 import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import { lazyNamedWithRetry } from '@/lib/lazyWithRetry';
 
 // Lazy load all chart/widget components
 const CashFlowChart = lazyNamedWithRetry(() => import('@/components/CashFlowChart'), m => m.CashFlowChart);
-const DashboardScoreCarousel = lazyNamedWithRetry(() => import('@/components/DashboardScoreCarousel'), m => m.DashboardScoreCarousel);
+
 const CalendarView = lazyNamedWithRetry(() => import('@/components/CalendarView'), m => m.CalendarView);
 const IncomeVsExpenseChart = lazyNamedWithRetry(() => import('@/components/analytics/IncomeVsExpenseChart'), m => m.IncomeVsExpenseChart);
 const TopExpensesList = lazyNamedWithRetry(() => import('@/components/analytics/TopExpensesList'), m => m.TopExpensesList);
@@ -73,6 +74,7 @@ export default function Dashboard() {
   const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
   const { settings: userSettings, loading: settingsLoading, refetch: refetchSettings } = useUserSettings();
   const projected = useProjectedTotals();
+  const summaryHistory = useSummaryHistory();
   const anomalyAlerts = useAnomalyAlerts();
   const [modalOpen, setModalOpen] = useState(false);
   
@@ -238,20 +240,14 @@ export default function Dashboard() {
                   prevIncome={prevSummary.totalIncome}
                   prevExpense={prevSummary.totalExpense}
                   pendingInStartingBalance={projected.pendingInStartingBalance}
-                  healthScore={
-                    <Suspense fallback={<Skeleton className="h-16 w-full rounded-xl" />}>
-                      <DashboardScoreCarousel
-                        totalIncome={projected.totalIncome}
-                        totalExpense={projected.totalExpense}
-                        totalBudget={budgetTotals.totalBudget}
-                        totalSpentInBudget={budgetTotals.totalSpent}
-                        hasOverdueCards={hasOverdueCardsComputed}
-                        creditCards={projected.creditCards}
-                        monthExpenses={projected.monthExpenses}
-                      />
-                    </Suspense>
-                  }
+                  balanceHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.balance }))}
+                  incomeHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.income }))}
+                  expenseHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.expense }))}
+                  categoryHistory={summaryHistory
+                    .categorySeries(projected.largestCategory?.categoryKey)
+                    .map(p => ({ label: p.label, value: p.expense }))}
                 />
+
 
                 {/* Painel de Gráficos */}
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>

@@ -80,7 +80,6 @@ export default function AnalyticsPage() {
                   totalCurrent={data.totalCurrentPeriod}
                   totalPrevious={data.totalPreviousPeriod}
                   predictedNextMonth={data.predictedNextMonth}
-                  financialScore={data.financialScore}
                   biggestSaving={data.biggestSavingOpportunity}
                 />
                 <CategoryCharts categoryStats={data.categoryStats} compare={filters.compare} />
