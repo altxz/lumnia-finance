@@ -15,6 +15,7 @@ import { getInvoicePeriod, matchExpensesToInvoice, formatInvoiceDate } from '@/l
 import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
 import { InvoiceDetailsModal } from '@/components/modals/InvoiceDetailsModal';
+import { CreditCardStack } from '@/components/analytics/CreditCardStack';
 import { EditExpenseModal } from '@/components/EditExpenseModal';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -183,14 +184,11 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
   }
 
   const inv = activeInvoice;
-  const statusInfo = STATUS_MAP[inv.status];
-  const StatusIcon = statusInfo.icon;
   const usagePct = inv.limit > 0 ? Math.min((inv.total / inv.limit) * 100, 100) : 0;
   const available = Math.max(inv.limit - inv.total, 0);
   const bestDay = getBestPurchaseDay(inv.closingDay);
   const last3 = inv.transactions.slice(0, 3);
   const canPay = inv.total > 0 && (inv.status === 'closed' || inv.status === 'overdue');
-  const gradient = getCardGradient(inv.cardName);
 
   return (
     <>
