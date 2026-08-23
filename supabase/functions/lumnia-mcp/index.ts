@@ -969,13 +969,15 @@ function buildInvoiceCashEvents(creditCards, expenses) {
     Array.from(labels).sort().forEach((label) => {
       const { year, month } = parseMonthLabel(label);
       const invoice = matchExpensesToInvoice(typedExpenses, getInvoicePeriod(card, year, month));
-      if (invoice.total <= 0) return;
       const paymentRecord = findInvoicePaymentRecord(expenses, invoice);
+      const amount = paymentRecord ? Number(paymentRecord.value) || 0 : invoice.total;
+      if (amount <= 0) return;
       events.push({
-        amount: invoice.total,
+        amount,
         cardId,
         date: paymentRecord?.date ?? toDateKey(invoice.dueDate),
-        monthLabel: invoice.monthLabel
+        monthLabel: invoice.monthLabel,
+        paid: !!paymentRecord
       });
     });
   });
@@ -1062,7 +1064,10 @@ function buildDailyBalanceMap({
 function computeProjectedMonthResult({
   effectiveMonthExpenses,
   invoiceTotal,
+  invoicePaid,
+  invoiceProjected,
   invoiceByCategory,
+  cardPurchases,
   startingBalance,
   isCreditCardPayment,
   investmentWalletIds = []
@@ -1073,23 +1078,39 @@ function computeProjectedMonthResult({
   const investmentInflow = investmentTransfers.filter((d) => d > 0).reduce((s, d) => s + d, 0);
   const investmentOutflow = investmentTransfers.filter((d) => d < 0).reduce((s, d) => s - d, 0);
   const totalIncome = nonTransfers.filter((expense) => expense.type === "income").reduce((sum, expense) => sum + expense.value, 0) + investmentInflow;
-  const debitExpense = nonTransfers.filter(
+  const debitOnly = nonTransfers.filter(
     (expense) => expense.type !== "income" && !expense.credit_card_id && !isCreditCardPayment(expense)
-  ).reduce((sum, expense) => sum + expense.value, 0) + investmentOutflow;
-  const totalExpense = debitExpense + invoiceTotal;
-  const byCategory = { ...invoiceByCategory };
+  );
+  const debitExpense = debitOnly.reduce((sum, expense) => sum + expense.value, 0) + investmentOutflow;
+  const paid = invoicePaid ?? 0;
+  const projected = invoiceProjected ?? 0;
+  const invoiceCash = invoiceTotal ?? paid + projected;
+  const totalExpense = debitExpense + invoiceCash;
+  const purchasesInMonth = (cardPurchases ?? []).filter(
+    (purchase) => purchase.type !== "income" && purchase.type !== "transfer"
+  );
+  const cardPurchasesTotal = purchasesInMonth.reduce((sum, p) => sum + (Number(p.value) || 0), 0);
+  const byCategory = cardPurchases !== void 0 ? {} : { ...invoiceByCategory ?? {} };
   if (investmentOutflow > 0) {
     byCategory.investimentos = (byCategory.investimentos || 0) + investmentOutflow;
   }
-  nonTransfers.filter(
-    (expense) => expense.type !== "income" && !expense.credit_card_id && !isCreditCardPayment(expense)
-  ).forEach((expense) => {
+  debitOnly.forEach((expense) => {
     byCategory[expense.final_category] = (byCategory[expense.final_category] || 0) + expense.value;
+  });
+  purchasesInMonth.forEach((purchase) => {
+    const key = purchase.final_category || "outros";
+    byCategory[key] = (byCategory[key] || 0) + (Number(purchase.value) || 0);
   });
   const largest = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
   return {
     totalIncome,
     totalExpense,
+    debitExpense,
+    invoicePaid: paid,
+    invoiceProjected: projected,
+    invoiceTotal: invoiceCash,
+    cardPurchases: cardPurchasesTotal,
+    byCategory,
     balance: totalIncome - totalExpense,
     projectedBalance: startingBalance + totalIncome - totalExpense,
     largestCategory: largest ? { name: largest[0], total: largest[1], categoryKey: largest[0] } : null
@@ -1108,13 +1129,15 @@ function computeInvoiceTotalsForCashWindow({
   endDate
 }) {
   if (creditCards.length === 0 || expenses.length === 0) {
-    return { total: 0, byCategory: {} };
+    return { total: 0, paid: 0, projected: 0, byCategory: {} };
   }
   const cardsById = new Map(creditCards.map((card) => [card.id, card]));
   const events = buildInvoiceCashEvents(creditCards, expenses).filter(
     (event) => event.date >= startDate && event.date < endDate
   );
   let total = 0;
+  let paid = 0;
+  let projected = 0;
   const byCategory = {};
   const seenInvoices = /* @__PURE__ */ new Set();
   events.forEach((event) => {
@@ -1125,13 +1148,14 @@ function computeInvoiceTotalsForCashWindow({
     if (!card) return;
     const { year, month } = parseMonthLabel2(event.monthLabel);
     const invoice = matchExpensesToInvoice(expenses, getInvoicePeriod(card, year, month));
-    if (invoice.total <= 0) return;
-    total += invoice.total;
+    total += event.amount;
+    if (event.paid) paid += event.amount;
+    else projected += event.amount;
     invoice.transactions.forEach((tx) => {
       byCategory[tx.final_category] = (byCategory[tx.final_category] || 0) + tx.value;
     });
   });
-  return { total, byCategory };
+  return { total, paid, projected, byCategory };
 }
 
 // src/lib/mcp/monthProjection.ts

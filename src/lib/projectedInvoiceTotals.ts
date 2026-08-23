@@ -25,7 +25,7 @@ export function computeInvoiceTotalsForCashWindow({
   endDate,
 }: ComputeInvoiceTotalsParams) {
   if (creditCards.length === 0 || expenses.length === 0) {
-    return { total: 0, byCategory: {} as Record<string, number> };
+    return { total: 0, paid: 0, projected: 0, byCategory: {} as Record<string, number> };
   }
 
   const cardsById = new Map(creditCards.map((card) => [card.id, card]));
@@ -34,6 +34,8 @@ export function computeInvoiceTotalsForCashWindow({
   );
 
   let total = 0;
+  let paid = 0;
+  let projected = 0;
   const byCategory: Record<string, number> = {};
   const seenInvoices = new Set<string>();
 
@@ -47,13 +49,15 @@ export function computeInvoiceTotalsForCashWindow({
 
     const { year, month } = parseMonthLabel(event.monthLabel);
     const invoice = matchExpensesToInvoice(expenses, getInvoicePeriod(card, year, month));
-    if (invoice.total <= 0) return;
 
-    total += invoice.total;
+    total += event.amount;
+    if (event.paid) paid += event.amount;
+    else projected += event.amount;
+
     invoice.transactions.forEach((tx) => {
       byCategory[tx.final_category] = (byCategory[tx.final_category] || 0) + tx.value;
     });
   });
 
-  return { total, byCategory };
+  return { total, paid, projected, byCategory };
 }

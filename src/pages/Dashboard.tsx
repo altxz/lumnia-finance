@@ -22,7 +22,6 @@ import { Navigate } from 'react-router-dom';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { useSummaryHistory } from '@/hooks/useSummaryHistory';
 import { GuidedTour } from '@/components/GuidedTour';
-import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import { lazyNamedWithRetry } from '@/lib/lazyWithRetry';
 
 // Lazy load all chart/widget components
@@ -71,22 +70,14 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
-  const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
+  const { startDate } = useSelectedDate();
   const { settings: userSettings, loading: settingsLoading, refetch: refetchSettings } = useUserSettings();
   const projected = useProjectedTotals();
-  const summaryHistory = useSummaryHistory();
+  const summaryHistory = useSummaryHistory(projected.startingBalance);
   const anomalyAlerts = useAnomalyAlerts();
   const [modalOpen, setModalOpen] = useState(false);
   
   const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
-
-  // Previous month date range
-  const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
-  const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
-  const prevStartDate = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-01`;
-  const prevNextM = prevMonth === 11 ? 0 : prevMonth + 1;
-  const prevNextY = prevMonth === 11 ? prevYear + 1 : prevYear;
-  const prevEndDate = `${prevNextY}-${String(prevNextM + 1).padStart(2, '0')}-01`;
 
   const [budgetAlerts, setBudgetAlerts] = useState<string[]>([]);
 
@@ -95,11 +86,9 @@ export default function Dashboard() {
 
   // Mês anterior + orçamentos do mês: cacheados por chave estável
   const { data: extra, isLoading: extraLoading } = useQuery({
-    queryKey: ['dashboard-extra', user?.id, startDate, prevStartDate],
+    queryKey: ['dashboard-extra', user?.id, startDate],
     queryFn: async () => {
-      const [{ data: prevExpData }, { data: budgetData }, { data: recurringBudgetData }] = await Promise.all([
-        supabase.from('expenses').select('id, value, type, credit_card_id, final_category').eq('user_id', user!.id)
-          .gte('date', prevStartDate).lt('date', prevEndDate),
+      const [{ data: budgetData }, { data: recurringBudgetData }] = await Promise.all([
         supabase.from('budgets').select('category, category_id, allocated_amount')
           .eq('user_id', user!.id).eq('month_year', startDate),
         // Orçamentos recorrentes de meses anteriores (herdados quando não há orçamento no mês)
@@ -117,12 +106,11 @@ export default function Dashboard() {
         seen.add(key);
         inherited.push({ category: b.category, category_id: b.category_id, allocated_amount: b.allocated_amount });
       });
-      return { prevExpenses: prevExpData || [], budgets: [...current, ...inherited] };
+      return { budgets: [...current, ...inherited] };
     },
     enabled: !!user,
   });
 
-  const prevExpenses = extra?.prevExpenses ?? [];
   const budgetDataRaw = extra?.budgets ?? [];
   const dataLoading = categoriesLoading || extraLoading;
 
@@ -166,28 +154,6 @@ export default function Dashboard() {
     projected.creditCards.map(c => ({ id: c.id, name: c.name, limit_amount: c.limit_amount })),
     [projected.creditCards]
   );
-
-  // Previous month summary including CC invoices
-  const prevSummary = useMemo(() => {
-    const nonTransfers = prevExpenses.filter((e: any) => e.type !== 'transfer');
-    const income = nonTransfers.filter((e: any) => e.type === 'income').reduce((s: number, e: any) => s + e.value, 0);
-    const cashExpenses = nonTransfers.filter((e: any) => e.type !== 'income' && !e.credit_card_id);
-    const expenseTotal = cashExpenses.reduce((s: number, e: any) => s + e.value, 0);
-
-    // Include CC invoice totals for previous month
-    let ccTotal = 0;
-    if (projected.creditCards.length > 0) {
-      const ccPool = projected.invoiceExpenses;
-      projected.creditCards.forEach((card: any) => {
-        const period = getInvoicePeriod(card, prevYear, prevMonth);
-        const invoice = matchExpensesToInvoice(ccPool, period);
-        ccTotal += invoice.total;
-      });
-    }
-
-    const totalExp = expenseTotal + ccTotal;
-    return { totalIncome: income, totalExpense: totalExp, balance: income - totalExp };
-  }, [prevExpenses, projected.creditCards, projected.invoiceExpenses, prevYear, prevMonth]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
   if (!user) return <Navigate to="/auth" replace />;
@@ -236,9 +202,12 @@ export default function Dashboard() {
                   totalIncome={projected.totalIncome}
                   totalExpense={projected.totalExpense}
                   largestCategory={projected.largestCategory}
-                  prevBalance={prevSummary.balance}
-                  prevIncome={prevSummary.totalIncome}
-                  prevExpense={prevSummary.totalExpense}
+                  prevBalance={projected.previousMonth.balance}
+                  prevIncome={projected.previousMonth.totalIncome}
+                  prevExpense={projected.previousMonth.totalExpense}
+                  debitExpense={projected.debitExpense}
+                  invoiceExpense={projected.invoiceTotal}
+                  cardPurchases={projected.cardPurchases}
                   pendingInStartingBalance={projected.pendingInStartingBalance}
                   balanceHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.balance }))}
                   incomeHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.income }))}
