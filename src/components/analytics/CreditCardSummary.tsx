@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 const STATUS_MAP = {
-  open: { label: 'Aberta', icon: Clock, className: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+  open: { label: 'Aberta', icon: Clock, className: 'text-success', bg: 'bg-success/15' },
   closed: { label: 'Fechada', icon: Lock, className: 'text-muted-foreground', bg: 'bg-muted' },
   overdue: { label: 'Vencida', icon: AlertTriangle, className: 'text-destructive', bg: 'bg-destructive/15' },
   paid: { label: 'Paga', icon: CheckCircle2, className: 'text-primary', bg: 'bg-primary/15' },
