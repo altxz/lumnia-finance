@@ -250,13 +250,13 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
                   )}
                   {creditCardId && parseInt(installments) > 1 && (
                     <div className="space-y-1.5">
-                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
                         <button type="button" onClick={() => setInstallmentValueType('total')}
-                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'total' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'total' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                           Valor Total
                         </button>
                         <button type="button" onClick={() => setInstallmentValueType('per_installment')}
-                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground'}`}>
+                          className={`rounded-lg py-1.5 text-xs font-semibold transition-all ${installmentValueType === 'per_installment' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'}`}>
                           Valor da Parcela
                         </button>
                       </div>
