@@ -148,15 +148,15 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <div className="rounded-xl bg-muted/50 p-4 space-y-1">
-            <p className="text-sm font-semibold">{investment.name}</p>
-            <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="rounded-xl bg-white/[0.04] border border-white/10 p-4 space-y-1">
+            <p className="text-sm font-semibold text-white/95">{investment.name}</p>
+            <div className="flex justify-between text-xs text-white/55">
               <span>Aportado</span><span>{formatCurrency(stats.invested)}</span>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs text-white/55">
               <span>Rendimento até hoje</span><span>{formatCurrency(stats.earnings)}</span>
             </div>
-            <div className="flex justify-between text-sm font-semibold">
+            <div className="flex justify-between text-sm font-semibold text-white/95">
               <span>Valor atual</span><span>{formatCurrency(stats.currentValue)}</span>
             </div>
           </div>
