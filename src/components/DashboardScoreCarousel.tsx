@@ -226,13 +226,13 @@ export function DashboardScoreCarousel({
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="relative w-[68px] h-[68px] shrink-0">
+              <div className="relative w-16 h-16 shrink-0">
                 <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-                  <circle cx="60" cy="60" r={50} fill="none" stroke="hsl(var(--muted))" strokeWidth="9" />
+                  <circle cx="60" cy="60" r={50} fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
                   <circle
                     cx="60" cy="60" r={50} fill="none"
                     stroke={scoreColor}
-                    strokeWidth="9"
+                    strokeWidth="10"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 50}
                     strokeDashoffset={2 * Math.PI * 50 - (result.overall / 100) * 2 * Math.PI * 50}
@@ -240,8 +240,8 @@ export function DashboardScoreCarousel({
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-lg font-bold leading-none" style={{ color: scoreColor }}>{result.overall}</span>
-                  <span className="text-[8px] text-muted-foreground">/ 100</span>
+                  <span className="text-base font-bold leading-none" style={{ color: scoreColor }}>{result.overall}</span>
+                  <span className="text-[8px] text-muted-foreground">/100</span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
@@ -252,7 +252,7 @@ export function DashboardScoreCarousel({
                   {diff !== null && diff !== 0 && (
                     <span className={`flex items-center text-[10px] font-medium ${diff > 0 ? 'text-emerald-500' : 'text-destructive'}`}>
                       {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                      {Math.abs(diff)} vs. mês anterior
+                      {Math.abs(diff)}
                     </span>
                   )}
                 </div>
@@ -260,16 +260,16 @@ export function DashboardScoreCarousel({
               </div>
             </div>
 
-            <div className="space-y-1 border-t border-border/50 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border/50 pt-2">
               {result.dimensions.map(d => <DimensionRow key={d.key} d={d} />)}
             </div>
 
             {result.nextStep && (
-              <div className="mt-auto flex items-start gap-1.5 rounded-xl bg-muted/60 px-2.5 py-2">
-                <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                <p className="text-[10px] leading-snug text-muted-foreground">
+              <div className="mt-auto flex items-start gap-2 rounded-xl bg-muted/60 px-3 py-2">
+                <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-snug text-muted-foreground">
                   <span className="font-semibold text-foreground">Próximo passo: </span>
-                  {result.nextStep.action} (+{result.nextStep.potentialGain} pts)
+                  {result.nextStep.action} <span className="text-primary font-medium">(+{result.nextStep.potentialGain} pts)</span>
                 </p>
               </div>
             )}
