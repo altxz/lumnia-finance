@@ -685,12 +685,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                         <>
                           <div className="space-y-1.5">
                             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tipo de Valor</Label>
-                            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-secondary">
+                            <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/5 border border-white/10">
                               <button
                                 type="button"
                                 onClick={() => setInstallmentValueType('total')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  installmentValueType === 'total' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
+                                  installmentValueType === 'total' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
                                 }`}
                               >
                                 Valor Total
@@ -699,7 +699,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                                 type="button"
                                 onClick={() => setInstallmentValueType('per_installment')}
                                 className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
-                                  installmentValueType === 'per_installment' ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
+                                  installmentValueType === 'per_installment' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
                                 }`}
                               >
                                 Valor da Parcela
@@ -708,19 +708,19 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded }: AddExpen
                           </div>
 
                           {value && parseFloat(value) > 0 && (
-                            <div className="rounded-lg bg-background/80 border p-2.5 text-center">
-                              <p className="text-xs text-muted-foreground">Resumo</p>
+                            <div className="rounded-xl bg-white/[0.03] border border-white/10 p-3 text-center">
+                              <p className="text-xs text-white/55">Resumo</p>
                               <p className="text-lg font-bold text-primary">
                                 {parseInt(repeatCount)}x de R$ {installmentValueType === 'total'
                                   ? (parseFloat(value) / parseInt(repeatCount)).toFixed(2)
                                   : parseFloat(value).toFixed(2)}
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-white/55">
                                 Total: R$ {installmentValueType === 'total'
                                   ? parseFloat(value).toFixed(2)
                                   : (parseFloat(value) * parseInt(repeatCount)).toFixed(2)}
                               </p>
-                              <p className="text-[11px] text-muted-foreground mt-1">
+                              <p className="text-[11px] text-white/55 mt-1">
                                 Isso criará {parseInt(repeatCount)} lançamentos de R$ {installmentValueType === 'total'
                                   ? (parseFloat(value) / parseInt(repeatCount)).toFixed(2)
                                   : parseFloat(value).toFixed(2)} nos próximos meses.
