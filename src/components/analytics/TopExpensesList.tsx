@@ -3,14 +3,8 @@ import { isBalanceAdjustment } from '@/lib/balanceAdjustments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { seriesColor } from '@/lib/chartPalette';
 
-const BAR_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--destructive))',
-  'hsl(var(--success))',
-  'hsl(var(--accent))',
-  'hsl(var(--chart-5))',
-];
 
 export function TopExpensesList({ expenses }: { expenses: any[] }) {
   const data = useMemo(() => {
