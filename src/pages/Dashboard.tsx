@@ -70,7 +70,7 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
-  const { startDate, endDate } = useSelectedDate();
+  const { startDate } = useSelectedDate();
   const { settings: userSettings, loading: settingsLoading, refetch: refetchSettings } = useUserSettings();
   const projected = useProjectedTotals();
   const summaryHistory = useSummaryHistory(projected.startingBalance);
