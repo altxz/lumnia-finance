@@ -211,27 +211,51 @@ export function useProjectedTotals(): ProjectedTotals {
   }, [wallets, historicalExpenses, recurringTemplates, creditCards, invoiceExpenses, startDate, selectedMonth, selectedYear, exceptionSet, isCCPayment, investmentWalletIds]);
 
 
-  // Invoice totals
-  const invoiceTotals = useMemo(() => {
-    return computeInvoiceTotalsForCashWindow({
-      creditCards,
-      expenses: invoiceExpenses.length > 0 ? invoiceExpenses : visibleMonthExpenses,
-      startDate,
-      endDate,
-    });
-  }, [creditCards, invoiceExpenses, visibleMonthExpenses, startDate, endDate]);
+  // Totais do mês (base caixa: débito + pagamentos de fatura) — motor único
+  const result = useMemo(
+    () =>
+      computeMonthTotals({
+        year: selectedYear,
+        month: selectedMonth,
+        monthRows: monthExpenses as any[],
+        recurringTemplates: recurringTemplates as any[],
+        exceptionSet,
+        creditCards,
+        invoiceExpenses: invoiceExpenses as any[],
+        isCreditCardPayment: isCCPayment,
+        investmentWalletIds,
+        startingBalance,
+      }),
+    [selectedYear, selectedMonth, monthExpenses, recurringTemplates, exceptionSet, creditCards, invoiceExpenses, isCCPayment, investmentWalletIds, startingBalance],
+  );
 
-  // Compute totals
-  const result = useMemo(() => {
-    return computeProjectedMonthResult({
-      effectiveMonthExpenses,
-      invoiceTotal: invoiceTotals.total,
-      invoiceByCategory: invoiceTotals.byCategory,
-      startingBalance,
+  // Mês anterior calculado pelo MESMO motor (sem cálculo paralelo no Dashboard)
+  const previousMonth = useMemo(() => {
+    const prevMonthIndex = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+    const { startDate: prevStart, endDate: prevEnd } = monthWindow(prevYear, prevMonthIndex);
+    const prevRows = historicalExpenses.filter(
+      (e: any) => e.date && e.date >= prevStart && e.date < prevEnd,
+    );
+
+    const totals = computeMonthTotals({
+      year: prevYear,
+      month: prevMonthIndex,
+      monthRows: prevRows,
+      recurringTemplates: recurringTemplates as any[],
+      exceptionSet,
+      creditCards,
+      invoiceExpenses: invoiceExpenses as any[],
       isCreditCardPayment: isCCPayment,
       investmentWalletIds,
     });
-  }, [effectiveMonthExpenses, invoiceTotals, startingBalance, isCCPayment, investmentWalletIds]);
+
+    return {
+      totalIncome: totals.totalIncome,
+      totalExpense: totals.totalExpense,
+      balance: totals.balance,
+    };
+  }, [selectedMonth, selectedYear, historicalExpenses, recurringTemplates, exceptionSet, creditCards, invoiceExpenses, isCCPayment, investmentWalletIds]);
 
   const refetch = () => {
     queryClient.invalidateQueries({ queryKey });
@@ -241,9 +265,10 @@ export function useProjectedTotals(): ProjectedTotals {
     ...result,
     startingBalance,
     pendingInStartingBalance,
+    previousMonth,
     loading: isLoading,
     refetch,
-    monthExpenses: effectiveMonthExpenses,
+    monthExpenses: result.effectiveMonthExpenses as Expense[],
     invoiceExpenses,
     creditCards,
     wallets,
@@ -251,3 +276,4 @@ export function useProjectedTotals(): ProjectedTotals {
     effectiveHistoricalExpenses,
   };
 }
+
