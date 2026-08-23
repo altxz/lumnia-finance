@@ -969,13 +969,15 @@ function buildInvoiceCashEvents(creditCards, expenses) {
     Array.from(labels).sort().forEach((label) => {
       const { year, month } = parseMonthLabel(label);
       const invoice = matchExpensesToInvoice(typedExpenses, getInvoicePeriod(card, year, month));
-      if (invoice.total <= 0) return;
       const paymentRecord = findInvoicePaymentRecord(expenses, invoice);
+      const amount = paymentRecord ? Number(paymentRecord.value) || 0 : invoice.total;
+      if (amount <= 0) return;
       events.push({
-        amount: invoice.total,
+        amount,
         cardId,
         date: paymentRecord?.date ?? toDateKey(invoice.dueDate),
-        monthLabel: invoice.monthLabel
+        monthLabel: invoice.monthLabel,
+        paid: !!paymentRecord
       });
     });
   });
@@ -1108,13 +1110,15 @@ function computeInvoiceTotalsForCashWindow({
   endDate
 }) {
   if (creditCards.length === 0 || expenses.length === 0) {
-    return { total: 0, byCategory: {} };
+    return { total: 0, paid: 0, projected: 0, byCategory: {} };
   }
   const cardsById = new Map(creditCards.map((card) => [card.id, card]));
   const events = buildInvoiceCashEvents(creditCards, expenses).filter(
     (event) => event.date >= startDate && event.date < endDate
   );
   let total = 0;
+  let paid = 0;
+  let projected = 0;
   const byCategory = {};
   const seenInvoices = /* @__PURE__ */ new Set();
   events.forEach((event) => {
@@ -1125,13 +1129,14 @@ function computeInvoiceTotalsForCashWindow({
     if (!card) return;
     const { year, month } = parseMonthLabel2(event.monthLabel);
     const invoice = matchExpensesToInvoice(expenses, getInvoicePeriod(card, year, month));
-    if (invoice.total <= 0) return;
-    total += invoice.total;
+    total += event.amount;
+    if (event.paid) paid += event.amount;
+    else projected += event.amount;
     invoice.transactions.forEach((tx) => {
       byCategory[tx.final_category] = (byCategory[tx.final_category] || 0) + tx.value;
     });
   });
-  return { total, byCategory };
+  return { total, paid, projected, byCategory };
 }
 
 // src/lib/mcp/monthProjection.ts

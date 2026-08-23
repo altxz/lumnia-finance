@@ -18,6 +18,8 @@ export interface InvoiceCashEvent {
   cardId: string;
   date: string;
   monthLabel: string;
+  /** true quando existe um lançamento real de "Pagamento fatura" para esta fatura. */
+  paid?: boolean;
 }
 
 function toMonthLabel(year: number, month: number) {
@@ -121,14 +123,19 @@ export function buildInvoiceCashEvents(
       .forEach((label) => {
         const { year, month } = parseMonthLabel(label);
         const invoice = matchExpensesToInvoice(typedExpenses, getInvoicePeriod(card, year, month));
-        if (invoice.total <= 0) return;
-
         const paymentRecord = findInvoicePaymentRecord(expenses, invoice);
+
+        // Regra: quando existe pagamento lançado, o caixa do mês é o valor pago.
+        // Sem pagamento, a fatura entra projetada na data de vencimento.
+        const amount = paymentRecord ? Number(paymentRecord.value) || 0 : invoice.total;
+        if (amount <= 0) return;
+
         events.push({
-          amount: invoice.total,
+          amount,
           cardId,
           date: paymentRecord?.date ?? toDateKey(invoice.dueDate),
           monthLabel: invoice.monthLabel,
+          paid: !!paymentRecord,
         });
       });
   });
