@@ -1064,7 +1064,10 @@ function buildDailyBalanceMap({
 function computeProjectedMonthResult({
   effectiveMonthExpenses,
   invoiceTotal,
+  invoicePaid,
+  invoiceProjected,
   invoiceByCategory,
+  cardPurchases,
   startingBalance,
   isCreditCardPayment,
   investmentWalletIds = []
@@ -1075,23 +1078,38 @@ function computeProjectedMonthResult({
   const investmentInflow = investmentTransfers.filter((d) => d > 0).reduce((s, d) => s + d, 0);
   const investmentOutflow = investmentTransfers.filter((d) => d < 0).reduce((s, d) => s - d, 0);
   const totalIncome = nonTransfers.filter((expense) => expense.type === "income").reduce((sum, expense) => sum + expense.value, 0) + investmentInflow;
-  const debitExpense = nonTransfers.filter(
+  const debitOnly = nonTransfers.filter(
     (expense) => expense.type !== "income" && !expense.credit_card_id && !isCreditCardPayment(expense)
-  ).reduce((sum, expense) => sum + expense.value, 0) + investmentOutflow;
-  const totalExpense = debitExpense + invoiceTotal;
-  const byCategory = { ...invoiceByCategory };
+  );
+  const debitExpense = debitOnly.reduce((sum, expense) => sum + expense.value, 0) + investmentOutflow;
+  const paid = invoicePaid ?? 0;
+  const projected = invoiceProjected ?? 0;
+  const invoiceCash = invoiceTotal ?? paid + projected;
+  const totalExpense = debitExpense + invoiceCash;
+  const purchasesInMonth = (cardPurchases ?? []).filter(
+    (purchase) => purchase.type !== "income" && purchase.type !== "transfer"
+  );
+  const cardPurchasesTotal = purchasesInMonth.reduce((sum, p) => sum + (Number(p.value) || 0), 0);
+  const byCategory = cardPurchases !== void 0 ? {} : { ...invoiceByCategory ?? {} };
   if (investmentOutflow > 0) {
     byCategory.investimentos = (byCategory.investimentos || 0) + investmentOutflow;
   }
-  nonTransfers.filter(
-    (expense) => expense.type !== "income" && !expense.credit_card_id && !isCreditCardPayment(expense)
-  ).forEach((expense) => {
+  debitOnly.forEach((expense) => {
     byCategory[expense.final_category] = (byCategory[expense.final_category] || 0) + expense.value;
+  });
+  purchasesInMonth.forEach((purchase) => {
+    const key = purchase.final_category || "outros";
+    byCategory[key] = (byCategory[key] || 0) + (Number(purchase.value) || 0);
   });
   const largest = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
   return {
     totalIncome,
     totalExpense,
+    debitExpense,
+    invoicePaid: paid,
+    invoiceProjected: projected,
+    invoiceTotal: invoiceCash,
+    cardPurchases: cardPurchasesTotal,
     balance: totalIncome - totalExpense,
     projectedBalance: startingBalance + totalIncome - totalExpense,
     largestCategory: largest ? { name: largest[0], total: largest[1], categoryKey: largest[0] } : null
