@@ -2,7 +2,11 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSelectedDate } from '@/contexts/DateContext';
 
-export function MonthSelector() {
+interface MonthSelectorProps {
+  showTodayButton?: boolean;
+}
+
+export function MonthSelector({ showTodayButton = true }: MonthSelectorProps) {
   const { label, goToPrevMonth, goToNextMonth, goToCurrentMonth, isCurrentMonth } = useSelectedDate();
 
   return (
@@ -11,14 +15,14 @@ export function MonthSelector() {
         <Button variant="ghost" size="icon" onClick={goToPrevMonth} className="rounded-full h-9 w-9">
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <span className="text-sm sm:text-base font-semibold capitalize min-w-[140px] text-center">
+        <span className="min-w-[140px] text-center text-sm font-semibold first-letter:uppercase sm:text-base">
           {label}
         </span>
         <Button variant="ghost" size="icon" onClick={goToNextMonth} className="rounded-full h-9 w-9">
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
-      {!isCurrentMonth && (
+      {showTodayButton && !isCurrentMonth && (
         <Button
           variant="ghost"
           size="sm"

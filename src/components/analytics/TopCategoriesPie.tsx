@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { CHART_SERIES } from '@/lib/chartPalette';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 const COLORS = CHART_SERIES;
 
@@ -30,7 +31,7 @@ export function TopCategoriesPie({ expenses, categories }: Props) {
       if (e.type === 'income' || e.type === 'transfer') return;
       if (e.description?.startsWith('Pagamento fatura')) return;
       if (isBalanceAdjustment(e)) return;
-      map[e.final_category] = (map[e.final_category] || 0) + e.value;
+      map[e.final_category] = (map[e.final_category] || 0) + transactionAmount(e.value);
     });
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
     return sorted.map(([cat, total]) => {

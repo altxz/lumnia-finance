@@ -19,7 +19,7 @@ export function InvoiceHeader({ invoice }: InvoiceHeaderProps) {
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="bg-primary rounded-2xl p-4 text-primary-foreground">
+    <div className="rounded-2xl border border-border bg-muted/40 p-4 text-foreground">
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <CreditCard className="h-4 w-4 shrink-0" />
@@ -32,10 +32,10 @@ export function InvoiceHeader({ invoice }: InvoiceHeaderProps) {
       </div>
 
       <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div className="text-2xl sm:text-3xl font-extrabold tracking-tight break-words">
+        <div className="text-2xl sm:text-3xl font-semibold tracking-[-0.03em] break-words">
           {formatCurrency(invoice.total)}
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] opacity-80">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3 shrink-0" />
             <span>Fecha {formatInvoiceDate(invoice.periodEnd)}</span>

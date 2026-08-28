@@ -77,13 +77,16 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const handleDelete = async (expense: Expense, mode: 'single' | 'all') => {
+    if (!user) return;
     try {
       if (mode === 'all' && expense.installment_group_id) {
-        const { error } = await supabase.from('expenses').delete().eq('installment_group_id', expense.installment_group_id);
+        const { error } = await supabase.from('expenses').delete()
+          .eq('installment_group_id', expense.installment_group_id)
+          .eq('user_id', user.id);
         if (error) throw error;
         toast({ title: 'Parcelas excluídas', description: 'Todas as parcelas foram removidas.' });
       } else {
-        const { error } = await supabase.from('expenses').delete().eq('id', expense.id);
+        const { error } = await supabase.from('expenses').delete().eq('id', expense.id).eq('user_id', user.id);
         if (error) throw error;
         toast({ title: 'Transação excluída' });
       }
@@ -112,6 +115,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
         .from('expenses')
         .delete()
         .eq('user_id', user.id)
+        .eq('credit_card_id', activeInvoice.cardId)
         .eq('invoice_month', activeInvoice.monthLabel)
         .ilike('description', 'Pagamento fatura%')
         .not('wallet_id', 'is', null)
@@ -135,6 +139,23 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
     setPaying(true);
 
     try {
+      const { data: existingPayment, error: existingPaymentError } = await supabase
+        .from('expenses')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('credit_card_id', activeInvoice.cardId)
+        .eq('invoice_month', activeInvoice.monthLabel)
+        .ilike('description', 'Pagamento fatura%')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPaymentError) throw existingPaymentError;
+      if (existingPayment) {
+        toast({ title: 'Fatura já paga', description: 'Já existe um pagamento registrado para esta fatura.' });
+        refetch?.();
+        return;
+      }
+
       const dateStr = (() => {
         if (dateMode === 'today') {
           const today = new Date();
@@ -233,10 +254,10 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85dvh] px-0 flex flex-col overflow-hidden">
+      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+        <DrawerContent className="max-h-[92dvh] px-0 flex flex-col overflow-hidden !bg-popover rounded-t-[28px] border-border/80">
           <DrawerHeader className="pb-1 shrink-0 px-5">
-            <DrawerTitle className="text-lg font-bold">Detalhes da Fatura</DrawerTitle>
+            <DrawerTitle className="text-lg font-semibold">Detalhes da fatura</DrawerTitle>
             <DrawerDescription className="sr-only">
               Visualize as transações da fatura, valores por categoria e ações de pagamento.
             </DrawerDescription>
@@ -249,9 +270,9 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85dvh] gap-0 p-0 rounded-2xl overflow-hidden flex flex-col">
+      <DialogContent className="max-w-lg max-h-[90dvh] gap-0 p-0 rounded-2xl overflow-hidden flex flex-col">
         <DialogHeader className="p-5 pb-1 shrink-0">
-          <DialogTitle className="text-lg font-bold">Detalhes da Fatura</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">Detalhes da fatura</DialogTitle>
           <DialogDescription className="sr-only">
             Visualize as transações da fatura, valores por categoria e ações de pagamento.
           </DialogDescription>

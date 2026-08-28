@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Bell, CreditCard, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import type { Database } from '@/integrations/supabase/types';
+
+type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
 
 interface Notification {
   id: string;
@@ -47,7 +50,7 @@ export function NotificationBell() {
   const [quickPayApplyScope, setQuickPayApplyScope] = useState<'single' | 'all' | null>(null);
   const [quickPaying, setQuickPaying] = useState(false);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
     const [{ data }, { data: w }] = await Promise.all([
       supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
@@ -55,9 +58,9 @@ export function NotificationBell() {
     ]);
     setNotifications(data || []);
     setWallets(w || []);
-  };
+  }, [user]);
 
-  useEffect(() => { fetchNotifications(); }, [user]);
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
   useEffect(() => {
     if (!user) return;
@@ -71,7 +74,7 @@ export function NotificationBell() {
       }, () => fetchNotifications())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, fetchNotifications]);
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
@@ -206,7 +209,7 @@ export function NotificationBell() {
 
         const dateChanged = payDate !== quickPayExpense.date;
         if ((valueChanged || dateChanged) && quickPayApplyScope === 'all') {
-          const tplUpdate: Record<string, unknown> = {};
+          const tplUpdate: ExpenseUpdate = {};
           if (valueChanged) tplUpdate.value = newValue;
           if (dateChanged) {
             const newDay = String(new Date(payDate + 'T12:00:00').getDate()).padStart(2, '0');
@@ -218,7 +221,7 @@ export function NotificationBell() {
           }
         }
       } else {
-        const updateFields: Record<string, unknown> = { is_paid: true, date: payDate };
+        const updateFields: ExpenseUpdate = { is_paid: true, date: payDate };
         if (valueChanged) updateFields.value = newValue;
         const { error } = await supabase.from('expenses').update(updateFields).eq('id', quickPayExpense.id);
         if (error) throw error;

@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { seriesColor } from '@/lib/chartPalette';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 
 export function TopExpensesList({ expenses }: { expenses: any[] }) {
   const data = useMemo(() => {
     const validExpenses = expenses.filter(e => e.type === 'expense' && !isBalanceAdjustment(e));
-    const sorted = [...validExpenses].sort((a, b) => b.value - a.value).slice(0, 5);
+    const sorted = [...validExpenses].sort((a, b) => transactionAmount(b.value) - transactionAmount(a.value)).slice(0, 5);
     return sorted.map(e => ({
       name: e.description || 'Sem descrição',
-      value: e.value,
+      value: transactionAmount(e.value),
     }));
   }, [expenses]);
 

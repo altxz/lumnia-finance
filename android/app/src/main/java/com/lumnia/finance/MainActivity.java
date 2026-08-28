@@ -16,6 +16,8 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         registerPlugin(BankNotificationCapturePlugin.class);
+        registerPlugin(SystemBarsPlugin.class);
+        registerPlugin(BackupImportFilePickerPlugin.class);
         PendingBankTransactionStore.saveFromIntent(this, getIntent());
         super.onCreate(savedInstanceState);
 

@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface BudgetItem {
   category: string;
@@ -24,7 +25,7 @@ export function BudgetVsActualChart({ budgets, expenses }: Props) {
       if (e.type === 'income' || e.type === 'transfer') return;
       if (e.description?.startsWith('Pagamento fatura')) return;
       if (isBalanceAdjustment(e)) return;
-      spent[e.final_category] = (spent[e.final_category] || 0) + Number(e.value || 0);
+      spent[e.final_category] = (spent[e.final_category] || 0) + transactionAmount(e.value);
     });
 
     const merged: Record<string, number> = {};

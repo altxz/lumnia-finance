@@ -53,7 +53,7 @@ export function QuickAddModal({ open, onOpenChange, onCreated }: QuickAddModalPr
     const year = d.getFullYear();
     const month = d.getMonth();
     const day = d.getDate();
-    let closingDay = card.closing_strategy === 'relative'
+    const closingDay = card.closing_strategy === 'relative'
       ? (card.due_day - card.closing_days_before_due <= 0 ? card.due_day - card.closing_days_before_due + 30 : card.due_day - card.closing_days_before_due)
       : card.closing_day;
     if (day < closingDay) {

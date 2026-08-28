@@ -188,7 +188,7 @@ export function buildGrowthSeries(
   if (active.length === 0) return [];
 
   const starts = active.map(i => toDate(i.inv.start_date).getTime());
-  let start = startOfMonth(new Date(Math.min(...starts)));
+  const start = startOfMonth(new Date(Math.min(...starts)));
 
   const ends = active.map(i =>
     i.inv.maturity_date ? toDate(i.inv.maturity_date).getTime() : addMonths(today, 12).getTime(),

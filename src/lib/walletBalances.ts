@@ -1,6 +1,7 @@
 import type { Expense } from '../components/ExpenseTable';
 import { buildInvoiceCashEvents, findInvoicePaymentRecord } from './invoiceCashFlow';
 import { getInvoicePeriod, type CreditCard } from './invoiceHelpers';
+import { transactionAmount } from './transactionAmount';
 
 export interface WalletLike {
   id: string;
@@ -60,7 +61,7 @@ export function resolveWalletFlows(
   if (expense.credit_card_id) return [];
   if (isCreditCardPayment(expense)) return [];
 
-  const value = Number(expense.value) || 0;
+  const value = transactionAmount(expense.value);
   const origin = expense.wallet_id || defaultWalletId;
 
   if (expense.type === 'transfer') {

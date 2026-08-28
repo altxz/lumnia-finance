@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon } from 'lucide-react';
+import { ArrowLeftRight, Wallet, Pencil, Trash2, CreditCard, Layers, LayoutList, Receipt, Pin, Check, Undo2, CalendarIcon, MoreHorizontal, SearchX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/constants';
 import { currencyFitClass, labelFitClass } from '@/lib/textFit';
@@ -25,7 +26,9 @@ import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceM
 import { DynamicCategoryIcon } from '@/components/DynamicCategoryIcon';
 import { resolveTransactionCategory } from '@/lib/categoryMatch';
 import type { DbCategory } from '@/hooks/useStaticData';
+import type { Database } from '@/integrations/supabase/types';
 
+type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
 
 const STORAGE_KEY = 'txfeed_group_cards';
 
@@ -46,6 +49,10 @@ interface TransactionFeedProps {
   creditCards?: CreditCardType[];
   currentMonth?: string;
   categories?: DbCategory[];
+  invoiceDisplayFilter?: (expense: Expense) => boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  onClearFilters?: () => void;
 }
 
 function formatGroupDate(dateStr: string): string {
@@ -98,6 +105,10 @@ export function TransactionFeed({
   creditCards = [],
   currentMonth,
   categories = [],
+  invoiceDisplayFilter,
+  emptyTitle = 'Nenhuma transação neste período',
+  emptyDescription = 'Os lançamentos aparecerão aqui quando forem registrados.',
+  onClearFilters,
 }: TransactionFeedProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
@@ -117,7 +128,7 @@ export function TransactionFeed({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, String(groupCards)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, String(groupCards)); } catch { /* Storage may be unavailable in private contexts. */ }
   }, [groupCards]);
 
   const openPayDialog = (exp: Expense) => {
@@ -130,8 +141,9 @@ export function TransactionFeed({
   };
 
   const handleMarkAsUnpaid = async (exp: Expense) => {
+    if (!user) return;
     try {
-      const { error } = await supabase.from('expenses').update({ is_paid: false }).eq('id', exp.id);
+      const { error } = await supabase.from('expenses').update({ is_paid: false }).eq('id', exp.id).eq('user_id', user.id);
       if (error) throw error;
       toast({ title: exp.type === 'income' ? 'Recebimento desmarcado' : 'Pagamento desmarcado' });
       queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
@@ -142,6 +154,7 @@ export function TransactionFeed({
   };
 
   const handleMarkAsPaid = async (exp: Expense) => {
+    if (!user) return;
     try {
       const newValue = parseFloat(payValue);
       const valueChanged = !isNaN(newValue) && newValue !== exp.value;
@@ -199,7 +212,7 @@ export function TransactionFeed({
 
         // If user opted to apply changes to all future occurrences, update the template
         if ((valueChanged || dateChanged) && payApplyScope === 'all') {
-          const templateUpdate: Record<string, unknown> = {};
+          const templateUpdate: ExpenseUpdate = {};
           if (valueChanged) templateUpdate.value = newValue;
           if (dateChanged) {
             // Update the template's day-of-month so future projections use the new day
@@ -212,15 +225,16 @@ export function TransactionFeed({
             const { error: tplErr } = await supabase
               .from('expenses')
               .update(templateUpdate)
-              .eq('id', templateId);
+              .eq('id', templateId)
+              .eq('user_id', user.id);
             if (tplErr) throw tplErr;
           }
         }
       } else {
         // Normal (non-recurring) transaction: update in place
-        const updateFields: Record<string, unknown> = { is_paid: true, date: payDate };
+        const updateFields: ExpenseUpdate = { is_paid: true, date: payDate };
         if (valueChanged) updateFields.value = newValue;
-        const { error } = await supabase.from('expenses').update(updateFields).eq('id', exp.id);
+        const { error } = await supabase.from('expenses').update(updateFields).eq('id', exp.id).eq('user_id', user.id);
         if (error) throw error;
 
         // If value changed and user chose to apply to all installments
@@ -229,6 +243,7 @@ export function TransactionFeed({
             .from('expenses')
             .update({ value: newValue })
             .eq('installment_group_id', exp.installment_group_id)
+            .eq('user_id', user.id)
             .neq('id', exp.id);
           if (groupErr) throw groupErr;
         }
@@ -258,15 +273,15 @@ export function TransactionFeed({
   };
 
   const handleDelete = async (mode: 'single' | 'all') => {
-    if (!deletingExpense) return;
+    if (!deletingExpense || !user) return;
     setDeleting(true);
     try {
       if (mode === 'all') {
-        // Delete all recurring entries with same description, type, and value
+        // A recurring series is represented by one template row. Delete by its
+        // stable id so unrelated series with the same description/value survive.
         const { error } = await supabase.from('expenses').delete()
-          .eq('description', deletingExpense.description)
-          .eq('type', deletingExpense.type)
-          .eq('value', deletingExpense.value)
+          .eq('id', deletingExpense.id)
+          .eq('user_id', user.id)
           .eq('is_recurring', true);
         if (error) throw error;
         toast({ title: 'Todas as recorrências excluídas', description: 'Todos os lançamentos recorrentes foram removidos.' });
@@ -282,7 +297,7 @@ export function TransactionFeed({
         });
         toast({ title: 'Ocorrência excluída', description: 'Apenas este lançamento foi removido. A recorrência continua nos próximos meses.' });
       } else {
-        const { error } = await supabase.from('expenses').delete().eq('id', deletingExpense.id);
+        const { error } = await supabase.from('expenses').delete().eq('id', deletingExpense.id).eq('user_id', user.id);
         if (error) throw error;
         toast({ title: 'Transação excluída' });
       }
@@ -382,14 +397,26 @@ export function TransactionFeed({
         const displayKey = (inv.status === 'paid' && paymentDate) ? paymentDate : dueKey;
         if (!isInSelectedMonth(displayKey)) return;
 
+        const visibleTransactions = invoiceDisplayFilter
+          ? inv.transactions.filter(invoiceDisplayFilter)
+          : inv.transactions;
+        if (visibleTransactions.length === 0) return;
+        const displayInvoice = invoiceDisplayFilter
+          ? {
+              ...inv,
+              transactions: visibleTransactions,
+              total: visibleTransactions.reduce((sum, transaction) => sum + transaction.value, 0),
+            }
+          : inv;
+
         if (groupCards) {
           // Grouped mode: show summary item only
           ensureDay(displayKey);
           if (!invoicesByDay[displayKey]) invoicesByDay[displayKey] = [];
-          invoicesByDay[displayKey].push(inv);
+          invoicesByDay[displayKey].push(displayInvoice);
         } else {
           // Ungrouped: show each CC expense individually on the display date
-          inv.transactions.forEach(tx => {
+          visibleTransactions.forEach(tx => {
             if (addedIds.has(tx.id)) return;
             addedIds.add(tx.id);
             ensureDay(displayKey);
@@ -431,7 +458,7 @@ export function TransactionFeed({
       invoices: invoicesByDay[dateKey] || [],
       endOfDayBalance: balanceMap[dateKey] ?? startingMonthBalance,
     }));
-  }, [expenses, allExpenses, invoiceExpenses, startingMonthBalance, groupCards, invoicePeriods, monthStart, monthEnd, creditCards, investmentWalletIds]);
+  }, [expenses, allExpenses, invoiceExpenses, startingMonthBalance, groupCards, invoicePeriods, monthStart, monthEnd, creditCards, investmentWalletIds, invoiceDisplayFilter]);
 
   const statusConfig: Record<string, { label: string; className: string }> = {
     open: { label: 'Aberta', className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
@@ -544,9 +571,20 @@ export function TransactionFeed({
         </div>
 
       ) : !hasContent ? (
-        <p className="text-center py-12 text-muted-foreground">Nenhuma transação encontrada.</p>
+        <div role="status" className="flex min-h-52 flex-col items-center justify-center rounded-3xl border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
+          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <SearchX className="h-5 w-5" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground">{emptyTitle}</h3>
+          <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{emptyDescription}</p>
+          {onClearFilters && (
+            <Button type="button" variant="outline" className="mt-5 rounded-full" onClick={onClearFilters}>
+              Limpar busca e filtros
+            </Button>
+          )}
+        </div>
       ) : (
-        <div className="space-y-7">
+        <div className="space-y-5">
           {visibleGroups.map(({ dateKey, items, invoices, endOfDayBalance }) => {
             if (items.length === 0 && invoices.length === 0) return null;
             return (
@@ -556,7 +594,7 @@ export function TransactionFeed({
                   const todayKey = toDateKey(new Date());
                   const isToday = dateKey === todayKey;
                   return (
-                    <div className="sticky top-0 z-10 flex items-center justify-between gap-2 py-2 mb-1 backdrop-blur-md">
+                    <div className="flex items-center justify-between gap-2 py-2 mb-1">
                       <h3 className={`text-xs sm:text-sm font-semibold capitalize tracking-wide ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
                         {formatGroupDate(dateKey)}
                       </h3>
@@ -592,7 +630,7 @@ export function TransactionFeed({
                             <p className="text-sm font-medium text-foreground truncate">Fatura {inv.cardName}</p>
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                            {inv.transactions.length} transação{inv.transactions.length !== 1 ? 'ões' : ''} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                            {inv.transactions.length} {inv.transactions.length === 1 ? 'transação' : 'transações'} • Vence {inv.dueDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                           </p>
                         </div>
                         <div className="shrink-0 flex items-center justify-end gap-2 text-right">
@@ -642,7 +680,7 @@ export function TransactionFeed({
                     return (
                       <div
                         key={exp.id}
-                        className="relative w-full flex items-center gap-2.5 sm:gap-3 px-1 sm:px-2 py-3 rounded-xl hover:bg-muted/40 transition-colors group"
+                        className="relative w-full flex items-center gap-2.5 sm:gap-3 px-1 sm:px-2 py-2.5 rounded-xl hover:bg-muted/40 transition-colors group"
                       >
                         {/* Category icon */}
                         <div
@@ -754,45 +792,41 @@ export function TransactionFeed({
                         </div>
 
 
-                        {/* Quick actions - fixed width to keep values aligned */}
-                        <div className="shrink-0 flex items-center justify-end gap-0.5 w-auto sm:w-[88px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          {isPending && !isTransfer && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-600"
-                                  onClick={() => openPayDialog(exp)}
-                                >
-                                  <Check className="h-3.5 w-3.5 text-emerald-600" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>{isIncome ? 'Confirmar recebimento' : 'Confirmar pagamento'}</TooltipContent>
-                            </Tooltip>
-                          )}
-                          {!isPending && !isTransfer && !exp.is_recurring && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 rounded-lg hover:bg-amber-500/10 hover:text-amber-600"
-                                  onClick={() => handleMarkAsUnpaid(exp)}
-                                >
-                                  <Undo2 className="h-3.5 w-3.5 text-amber-600" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Desfazer pagamento</TooltipContent>
-                            </Tooltip>
-                          )}
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setEditingExpense(exp)}>
-                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteClick(exp)}>
-                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                              aria-label={`Ações de ${exp.description}`}
+                            >
+                              <MoreHorizontal className="h-4.5 w-4.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="floating-glass w-56 rounded-2xl p-2">
+                            {isPending && !isTransfer && (
+                              <DropdownMenuItem className="gap-2 rounded-xl" onClick={() => openPayDialog(exp)}>
+                                <Check className="h-4 w-4 text-emerald-600" />
+                                {isIncome ? 'Confirmar recebimento' : 'Confirmar pagamento'}
+                              </DropdownMenuItem>
+                            )}
+                            {!isPending && !isTransfer && !exp.is_recurring && (
+                              <DropdownMenuItem className="gap-2 rounded-xl" onClick={() => handleMarkAsUnpaid(exp)}>
+                                <Undo2 className="h-4 w-4 text-amber-600" />
+                                Desfazer pagamento
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem className="gap-2 rounded-xl" onClick={() => setEditingExpense(exp)}>
+                              <Pencil className="h-4 w-4" />
+                              Editar transação
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="gap-2 rounded-xl text-destructive focus:text-destructive" onClick={() => handleDeleteClick(exp)}>
+                              <Trash2 className="h-4 w-4" />
+                              Excluir transação
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     );
                   })}

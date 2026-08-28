@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
@@ -13,6 +13,7 @@ import { InfoPopover } from '@/components/ui/info-popover';
 import { ChartSkeleton } from '@/components/ui/loading-state';
 import { chartAxisProps, chartGridProps } from '@/components/ui/chart';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 
 type TimeFilter = 'month' | 'past15' | 'next15';
@@ -84,7 +85,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
 
       if (isTrackedCreditCardPayment(e, creditCards)) return;
 
-      const value = Number(e.value) || 0;
+      const value = transactionAmount(e.value);
       if (e.type === 'income') incomeByDay[e.date] = (incomeByDay[e.date] || 0) + value;
       else expenseByDay[e.date] = (expenseByDay[e.date] || 0) + value;
     });
@@ -129,11 +130,12 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
 
   const isMobile = useIsMobile();
   const tickInterval = Math.max(1, Math.floor(chartData.length / (isMobile ? 5 : 8)));
+  const hasMovement = chartData.some(point => point.receitas !== 0 || point.despesas !== 0 || point.saldo !== 0);
 
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border-0 shadow-card">
+      <Card className="surface-base h-full rounded-xl">
         <CardContent className="h-[320px] p-0">
           <ChartSkeleton />
         </CardContent>
@@ -142,16 +144,16 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
   }
 
   return (
-    <Card className="rounded-2xl border-0 shadow-card h-full flex flex-col">
-      <CardHeader className="pb-2">
+    <Card className="surface-base h-full rounded-xl flex flex-col overflow-hidden">
+      <CardHeader className="pb-2 pt-5 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold">Fluxo de Caixa</CardTitle>
+            <CardTitle className="type-title-3">Evolução diária</CardTitle>
             <InfoPopover><p>Saldo dia a dia do mês selecionado com o mesmo cálculo da página de Transações: receitas, despesas em débito (pagas e pendentes), recorrências projetadas e o pagamento das faturas no vencimento.</p></InfoPopover>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Select value={timeFilter} onValueChange={v => setTimeFilter(v as TimeFilter)}>
-              <SelectTrigger className="h-8 w-[130px] sm:w-[160px] rounded-xl text-xs">
+              <SelectTrigger className="h-9 w-[138px] rounded-full text-xs sm:w-[160px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -166,13 +168,13 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
               ) : (
                 <TrendingDown className="h-4 w-4 text-destructive" />
               )}
-              <span className={`text-xs sm:text-sm font-bold ${balanceChange >= 0 ? 'text-success' : 'text-destructive'}`}>
+              <span className={`text-xs font-semibold tabular-nums sm:text-sm ${balanceChange >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {balanceChange >= 0 ? '+' : ''}{formatCurrency(balanceChange)}
               </span>
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-success" /> Receitas
           </span>
@@ -186,7 +188,13 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 pb-4 px-2 sm:px-6">
-        <ResponsiveContainer width="100%" height="100%">
+        {!hasMovement ? (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-muted-foreground"><Activity className="h-5 w-5" /></span>
+            <p className="mt-3 text-sm font-semibold">Sem fluxo para exibir</p>
+            <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground">Entradas e saídas aparecerão aqui conforme forem registradas.</p>
+          </div>
+        ) : <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 5, right: isMobile ? 0 : 10, left: 0, bottom: 0 }}>
             <CartesianGrid {...chartGridProps} />
             <XAxis
@@ -195,28 +203,19 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
               interval={tickInterval}
             />
             <YAxis
-              yAxisId="bars"
+              yAxisId="value"
               tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v.toFixed(0)}`)}
               {...chartAxisProps}
               width={isMobile ? 28 : 40}
               orientation="left"
             />
-            <YAxis
-              yAxisId="line"
-              tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v.toFixed(0)}`)}
-              {...chartAxisProps}
-              width={isMobile ? 28 : 40}
-              orientation="right"
-              domain={['auto', 'auto']}
-            />
-
             <Tooltip
               cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }}
               content={({ active, payload, label }) => {
                 if (!active || !payload?.length) return null;
                 const point = payload[0]?.payload as DayData;
                 return (
-                  <div className="glass-soft rounded-2xl p-3 font-sans text-xs shadow-float">
+                  <div className="chart-tooltip-surface rounded-xl font-sans text-xs">
                     <p className="font-semibold mb-1.5">
                       {label} {point?.projected && <span className="text-muted-foreground">(projeção)</span>}
                     </p>
@@ -232,7 +231,7 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
             />
             {isCurrentMonth && (
               <ReferenceLine
-                yAxisId="bars"
+                yAxisId="value"
                 x={todayLabel}
                 stroke="hsl(var(--muted-foreground))"
                 strokeDasharray="4 4"
@@ -240,19 +239,19 @@ export function CashFlowChart(_props: CashFlowChartProps = {}) {
                 label={{ value: 'Hoje', position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
               />
             )}
-            <Bar yAxisId="bars" dataKey="receitas" fill="hsl(var(--success))" radius={[8, 8, 0, 0]} barSize={8} opacity={0.85} />
-            <Bar yAxisId="bars" dataKey="despesas" fill="hsl(var(--destructive))" radius={[8, 8, 0, 0]} barSize={8} opacity={0.85} />
+            <Bar yAxisId="value" dataKey="receitas" fill="hsl(var(--success))" radius={[6, 6, 0, 0]} barSize={7} opacity={0.58} />
+            <Bar yAxisId="value" dataKey="despesas" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} barSize={7} opacity={0.52} />
             <Line
-              yAxisId="line"
+              yAxisId="value"
               type="monotone"
               dataKey="saldo"
               stroke="hsl(var(--primary))"
-              strokeWidth={2.5}
+              strokeWidth={2.25}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0, fill: 'hsl(var(--primary))' }}
             />
           </ComposedChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer>}
       </CardContent>
     </Card>
   );

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, Download, ArrowUpCircle, ArrowDownCircle, CalendarClock, Repeat } from 'lucide-react';
+import { Search, Download, ArrowUpCircle, ArrowDownCircle, CalendarClock, Repeat, TriangleAlert, WifiOff } from 'lucide-react';
 import { CATEGORIES, formatCurrency } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { TransactionFeed } from '@/components/TransactionFeed';
@@ -19,6 +19,8 @@ import { TransactionSummaryHeader } from '@/components/TransactionSummaryHeader'
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import type { Expense } from '@/components/ExpenseTable';
 import { useCategories } from '@/hooks/useStaticData';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
+import { StatePanel } from '@/components/ui/state-panel';
 
 
 
@@ -30,6 +32,7 @@ export default function HistoryPage() {
 
   const projected = useProjectedTotals();
   const { data: categories = [] } = useCategories();
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
 
 
   const [search, setSearch] = useState('');
@@ -41,15 +44,71 @@ export default function HistoryPage() {
   // Subscriptions state
   const [subItems, setSubItems] = useState<Expense[]>([]);
   const [subLoading, setSubLoading] = useState(true);
+  const [subError, setSubError] = useState<string | null>(null);
+
+  const checkConnectivity = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setIsOnline(false);
+      return;
+    }
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      setIsOnline(typeof navigator === 'undefined' || navigator.onLine);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 5000);
+
+    try {
+      await fetch(`${supabaseUrl}/auth/v1/health`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      setIsOnline(true);
+    } catch {
+      setIsOnline(false);
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => { void checkConnectivity(); };
+    const handleOffline = () => setIsOnline(false);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void checkConnectivity();
+    };
+
+    void checkConnectivity();
+    const interval = window.setInterval(() => { void checkConnectivity(); }, 15000);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [checkConnectivity]);
 
   const fetchSubscriptions = useCallback(async () => {
     if (!user) return;
     setSubLoading(true);
-    const { data } = await supabase
-      .from('expenses').select('id, description, value, date, type, final_category, is_recurring, frequency, is_paid, wallet_id, credit_card_id').eq('user_id', user.id)
-      .eq('is_recurring', true).order('value', { ascending: false });
-    setSubItems((data || []) as Expense[]);
-    setSubLoading(false);
+    setSubError(null);
+    try {
+      const { data, error } = await supabase
+        .from('expenses').select('id, description, value, date, type, final_category, is_recurring, frequency, is_paid, wallet_id, credit_card_id').eq('user_id', user.id)
+        .eq('is_recurring', true).order('value', { ascending: false });
+      if (error) throw error;
+      setSubItems((data || []) as Expense[]);
+    } catch (error) {
+      setSubError(error instanceof Error ? error.message : 'Não foi possível carregar as recorrências.');
+    } finally {
+      setSubLoading(false);
+    }
   }, [user]);
 
   useEffect(() => { fetchSubscriptions(); }, [fetchSubscriptions]);
@@ -66,6 +125,19 @@ export default function HistoryPage() {
     if (search.trim()) result = result.filter(e => e.description.toLowerCase().includes(search.toLowerCase()));
     return result;
   }, [projected.monthExpenses, filters, search]);
+
+  const hasActiveFilters = search.trim().length > 0 || filters.category !== 'all' || filters.type !== 'all';
+  const invoiceDisplayFilter = useCallback((expense: Expense) => {
+    if (filters.type !== 'all' && expense.type !== filters.type) return false;
+    if (filters.category !== 'all' && expense.final_category !== filters.category) return false;
+    if (search.trim() && !expense.description.toLowerCase().includes(search.trim().toLowerCase())) return false;
+    return true;
+  }, [filters.category, filters.type, search]);
+
+  const clearFilters = useCallback(() => {
+    setSearch('');
+    setFilters({ category: 'all', type: 'all' });
+  }, []);
 
   const exportCSV = () => {
     const headers = 'Data,Descrição,Valor,Tipo,Categoria\n';
@@ -93,7 +165,7 @@ export default function HistoryPage() {
     };
   }, [subItems]);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
+  if (authLoading) return <PageLoadingSkeleton title="Carregando transações" />;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
@@ -102,72 +174,94 @@ export default function HistoryPage() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
-          <main className="flex-1 overflow-auto relative">
-            {/* Brand glows */}
-            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute -top-24 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-[110px]" />
-              <div className="absolute top-40 -right-24 w-72 h-72 rounded-full bg-accent/10 blur-[110px]" />
-            </div>
+          <main className="flex-1 overflow-auto bg-background">
+            <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-32 space-y-7 sm:space-y-8">
+              {!isOnline && (
+                <StatePanel
+                  tone="offline"
+                  icon={<WifiOff className="h-5 w-5" />}
+                  title="Você está offline"
+                  description="Os dados já carregados continuam visíveis, mas alterações e atualizações exigem conexão."
+                  className="min-h-0 rounded-3xl py-6"
+                />
+              )}
 
-            {/* Topo leve: mês + resumo */}
-            <div className="relative z-10 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4">
-              <MonthSelector />
-              <div className="mx-auto w-full max-w-5xl">
+              {projected.error && (
+                <StatePanel
+                  tone="error"
+                  icon={<TriangleAlert className="h-5 w-5" />}
+                  title="Não foi possível atualizar as transações"
+                  description="Os dados exibidos podem estar desatualizados. Tente novamente quando a conexão estiver estável."
+                  actionLabel="Tentar novamente"
+                  onAction={projected.refetch}
+                  className="min-h-0 rounded-3xl py-6"
+                />
+              )}
+
+              <header className="space-y-5">
+                <div>
+                  <p className="text-sm font-semibold text-primary">Atividade</p>
+                  <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-[-0.04em] text-foreground">
+                    Movimentações do mês
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm sm:text-base text-muted-foreground">
+                    Consulte, encontre e ajuste cada lançamento em um único lugar.
+                  </p>
+                </div>
+                <MonthSelector />
                 <TransactionSummaryHeader
                   totalIncome={projected.totalIncome}
                   totalExpense={projected.totalExpense}
                   projectedBalance={projected.projectedBalance}
+                  loading={projected.loading}
                 />
-              </div>
-            </div>
+              </header>
 
-            {/* Painel de vidro deslizante */}
-            <section className="relative z-10 mt-5 sm:mt-7 glass-panel rounded-t-[32px] px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 pb-32">
-              <div className="mx-auto w-full max-w-5xl space-y-6">
+            <section className="surface-card p-4 sm:p-6 space-y-6">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Transações</h1>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">Extrato completo de lançamentos</p>
+                    <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Transações</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">Extrato completo do período</p>
                   </div>
                   <Button
                     onClick={exportCSV}
                     variant="ghost"
                     size="icon"
                     aria-label="Exportar CSV"
-                    className="h-10 w-10 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+                    className="h-10 w-10 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
                   >
                     <Download className="h-4.5 w-4.5" />
                   </Button>
                 </div>
 
                 <Tabs defaultValue="entries" className="w-full">
-                  <TabsList className="w-full max-w-sm rounded-2xl bg-muted/50 p-1 h-auto">
-                    <TabsTrigger value="entries" className="flex-1 text-xs sm:text-sm rounded-xl py-2">Lançamentos</TabsTrigger>
-                    <TabsTrigger value="subscriptions" className="flex-1 text-xs sm:text-sm rounded-xl py-2">Assinaturas</TabsTrigger>
+                  <TabsList className="w-full rounded-2xl bg-muted p-1 h-auto">
+                    <TabsTrigger value="entries" className="flex-1 text-sm rounded-xl py-2.5">Lançamentos</TabsTrigger>
+                    <TabsTrigger value="subscriptions" className="flex-1 text-sm rounded-xl py-2.5">Recorrentes</TabsTrigger>
                   </TabsList>
 
                   {/* ════════ TAB: Lançamentos ════════ */}
                   <TabsContent value="entries" className="space-y-5 mt-5">
                     {/* Filtros como chips */}
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <div className="relative flex-1 min-w-[160px] sm:max-w-sm">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative col-span-2">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           value={search}
                           onChange={e => { setSearch(e.target.value); }}
-                          placeholder="Buscar..."
-                          className="pl-9 rounded-full h-9 text-xs sm:text-sm bg-muted/40 border-border/60"
+                          placeholder="Buscar por descrição"
+                          className="pl-10 rounded-2xl h-11 text-sm bg-muted/50 border-border"
                         />
                       </div>
                       <Select value={filters.category} onValueChange={v => handleFilterChange('category', v)}>
-                        <SelectTrigger className="w-[142px] sm:w-[170px] h-9 rounded-full text-[11px] sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-full h-11 rounded-2xl text-sm bg-muted/50 border-border"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Categorias</SelectItem>
                           {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <Select value={filters.type} onValueChange={v => handleFilterChange('type', v)}>
-                        <SelectTrigger className="w-[128px] sm:w-[150px] h-9 rounded-full text-[11px] sm:text-sm bg-muted/40 border-border/60"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-full h-11 rounded-2xl text-sm bg-muted/50 border-border"><SelectValue /></SelectTrigger>
 
                         <SelectContent>
                           <SelectItem value="all">Todos tipos</SelectItem>
@@ -193,6 +287,12 @@ export default function HistoryPage() {
                       creditCards={projected.creditCards}
                       currentMonth={startDate}
                       categories={categories}
+                      invoiceDisplayFilter={hasActiveFilters ? invoiceDisplayFilter : undefined}
+                      emptyTitle={hasActiveFilters ? 'Nenhum resultado para estes filtros' : 'Nenhuma transação neste período'}
+                      emptyDescription={hasActiveFilters
+                        ? 'Ajuste a busca, categoria ou tipo para ampliar os resultados.'
+                        : 'Os lançamentos aparecerão aqui quando forem registrados.'}
+                      onClearFilters={hasActiveFilters ? clearFilters : undefined}
                     />
 
                     {/* Saldo do mês anterior */}
@@ -230,6 +330,16 @@ export default function HistoryPage() {
                       <div className="space-y-3">
                         {[1, 2, 3, 4].map(i => <div key={i} className="h-14 rounded-2xl bg-muted/50 animate-pulse" />)}
                       </div>
+                    ) : subError ? (
+                      <StatePanel
+                        tone={isOnline ? 'error' : 'offline'}
+                        icon={isOnline ? <TriangleAlert className="h-5 w-5" /> : <WifiOff className="h-5 w-5" />}
+                        title={isOnline ? 'Não foi possível carregar as recorrências' : 'Recorrências indisponíveis offline'}
+                        description={isOnline ? 'Tente novamente para recuperar seus lançamentos recorrentes.' : 'Reconecte-se para atualizar esta lista.'}
+                        actionLabel="Tentar novamente"
+                        onAction={fetchSubscriptions}
+                        className="min-h-52 border-0 bg-transparent shadow-none"
+                      />
                     ) : subItems.length === 0 ? (
                       <div className="py-14 text-center text-muted-foreground">
                         <Repeat className="h-9 w-9 mx-auto mb-3 opacity-40" />
@@ -267,8 +377,8 @@ export default function HistoryPage() {
                     )}
                   </TabsContent>
                 </Tabs>
-              </div>
             </section>
+            </div>
           </main>
         </div>
       </div>

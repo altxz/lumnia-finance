@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -29,9 +28,8 @@ interface Category {
 }
 
 const PRESET_COLORS = [
-  '#612CFA', '#A36EF9', '#51D3A6', '#AFEFD5',
-  '#1B172A', '#7C4DFF', '#8654D8', '#38B98E',
-  '#7ADDBA', '#CBB5FA', '#4B21C9', '#2D8F70',
+  '#7447FF', '#9B6CFF', '#51D3A6', '#AFEFD5',
+  '#DB5360', '#FF7A66', '#4B6DFB', '#1B172A',
 ];
 
 const ICON_OPTIONS = [
@@ -78,7 +76,7 @@ export function CategoriesSection() {
   const [form, setForm] = useState({
     name: '',
     icon: 'tag',
-    color: '#612CFA',
+    color: '#7447FF',
     keywords: '',
     type: 'parent' as 'parent' | 'sub',
     parent_id: '',
@@ -98,13 +96,13 @@ export function CategoriesSection() {
 
   const openCreate = () => {
     setEditingCategory(null);
-    setForm({ name: '', icon: 'tag', color: '#612CFA', keywords: '', type: 'parent', parent_id: '' });
+    setForm({ name: '', icon: 'tag', color: '#7447FF', keywords: '', type: 'parent', parent_id: '' });
     setModalOpen(true);
   };
 
   const openAddSub = (parentId: string) => {
     setEditingCategory(null);
-    setForm({ name: '', icon: 'tag', color: '#612CFA', keywords: '', type: 'sub', parent_id: parentId });
+    setForm({ name: '', icon: 'tag', color: '#7447FF', keywords: '', type: 'sub', parent_id: parentId });
     setModalOpen(true);
   };
 
@@ -232,7 +230,7 @@ export function CategoriesSection() {
                               <AlertDialogTitle>Excluir "{parent.name}"?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 {subs.length > 0
-                                  ? `Esta ação irá excluir a categoria e as suas ${subs.length} subcategoria(s). Não pode ser desfeita.`
+                                  ? `Esta ação excluirá a categoria e ${subs.length} subcategoria(s). Não pode ser desfeita.`
                                   : 'Esta ação não pode ser desfeita.'}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
@@ -267,11 +265,6 @@ export function CategoriesSection() {
                               </div>
                               <span className="min-w-0 flex-1 truncate text-sm">{sub.name}</span>
                               <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: sub.color }} />
-                              {sub.keywords && sub.keywords.length > 0 && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">
-                                  {sub.keywords.length} keywords
-                                </Badge>
-                              )}
                               <div className="flex shrink-0 gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover/sub:opacity-100">
                                 <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg" onClick={() => openEdit(sub)}>
                                   <Pencil className="h-2.5 w-2.5" />
@@ -408,18 +401,6 @@ export function CategoriesSection() {
                   />
                 ))}
               </div>
-            </div>
-
-            {/* Keywords */}
-            <div className="space-y-2">
-              <Label>Palavras-chave para IA</Label>
-              <Textarea
-                value={form.keywords}
-                onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))}
-                placeholder="restaurante, lanche, comida"
-                className="rounded-xl min-h-[60px]"
-              />
-              <p className="text-xs text-muted-foreground">Separe por vírgula.</p>
             </div>
 
             {/* Preview */}

@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Sparkles, Loader2, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Repeat, Hash } from 'lucide-react';
+import { Sparkles, Loader2, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Repeat, Hash, CreditCard, WalletCards } from 'lucide-react';
 import { QuickCalculator } from '@/components/QuickCalculator';
 import { DescriptionAutocomplete } from '@/components/DescriptionAutocomplete';
 import type { DescriptionSuggestion } from '@/hooks/useDescriptionSuggestions';
@@ -20,6 +20,7 @@ import { getPaymentDate } from '@/lib/invoiceHelpers';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { showFriendlyError } from '@/lib/errorHandler';
+import { distributeInstallmentValues } from '@/lib/installmentMath';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserSettings } from '@/contexts/UserSettingsContext';
 import type { DetectedBankTransaction } from '@/lib/bankNotificationCapture';
@@ -258,6 +259,16 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
     const isCredit = type === 'expense' && paymentMethod === 'credit';
     const isRepeatMode = isRecurring && recurringMode === 'limited';
     const numRepeats = isRepeatMode ? Math.max(2, Math.min(72, parseInt(repeatCount) || 2)) : 1;
+    const numericValue = Number(value);
+
+    if (!date) {
+      toast({ title: 'Informe a data', description: 'A transação precisa de uma data válida.', variant: 'destructive' });
+      return;
+    }
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      toast({ title: 'Informe um valor válido', description: 'O valor da transação deve ser maior que zero.', variant: 'destructive' });
+      return;
+    }
 
     if (isTransfer) {
       if (!value || !walletId || !destinationWalletId) {
@@ -292,17 +303,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
     if (isRepeatMode && numRepeats > 1) {
       // Generate multiple records with installment_group_id
       const groupId = crypto.randomUUID();
-      const inputValue = parseFloat(value);
-      const perUnit = installmentValueType === 'total'
-        ? Math.round((inputValue / numRepeats) * 100) / 100
-        : inputValue;
+      const installmentValues = distributeInstallmentValues(numericValue, numRepeats, installmentValueType);
       const baseInvoice = isCredit && invoiceMonth ? invoiceMonth : null;
 
       const rows = Array.from({ length: numRepeats }, (_, i) => {
         const row: Record<string, unknown> = {
           user_id: user?.id,
           description: description.trim(),
-          value: perUnit,
+          value: installmentValues[i],
           category_ai: categoryAi || null,
           final_category: finalCategory,
           type,
@@ -336,7 +344,12 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
       if (error) {
         showFriendlyError(error, 'Erro ao salvar');
       } else {
-        toast({ title: 'Lançamentos criados!', description: `${numRepeats} lançamentos de R$ ${perUnit.toFixed(2)} salvos.` });
+        toast({
+          title: 'Parcelamento criado',
+          description: installmentValueType === 'total'
+            ? `${numRepeats} parcelas somando exatamente R$ ${numericValue.toFixed(2)}.`
+            : `${numRepeats} parcelas de R$ ${numericValue.toFixed(2)} salvas.`,
+        });
         resetForm();
         onOpenChange(false);
         queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
@@ -348,7 +361,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
         user_id: user?.id,
         date,
         description: isTransfer ? 'Transferência entre contas' : description.trim(),
-        value: parseFloat(value),
+        value: numericValue,
         category_ai: isTransfer ? null : (categoryAi || null),
         final_category: isTransfer ? 'transferencia' : finalCategory,
         type,
@@ -405,22 +418,29 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
     setProjectId('');
   };
 
+  const handleModalOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) resetForm();
+    onOpenChange(nextOpen);
+  };
+
   const aiCategoryInfo = categoryAi ? getCategoryInfo(categoryAi) : null;
   const isTransfer = type === 'transfer';
   const isCredit = type === 'expense' && paymentMethod === 'credit';
 
   return (
-    <ResponsiveModal open={open} onOpenChange={onOpenChange}>
+    <ResponsiveModal open={open} onOpenChange={handleModalOpenChange}>
         {/* Type selector header */}
         <div className="p-3 pb-0 rounded-t-2xl transition-colors duration-200">
           <ResponsiveModalHeader className="pb-2 sm:pb-3">
-            <ResponsiveModalTitle className="text-base sm:text-lg font-bold">Nova Transação</ResponsiveModalTitle>
+            <ResponsiveModalTitle className="text-base sm:text-lg font-semibold tracking-tight">
+              {type === 'income' ? 'Nova receita' : type === 'transfer' ? 'Nova transferência' : 'Nova despesa'}
+            </ResponsiveModalTitle>
           </ResponsiveModalHeader>
           <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-foreground/[0.04] border border-border backdrop-blur-sm">
             <button
               type="button"
               onClick={() => setType('expense')}
-              className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+              className={`min-w-0 flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-1 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'expense'
                   ? 'bg-destructive text-destructive-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -432,9 +452,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
             <button
               type="button"
               onClick={() => setType('income')}
-              className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+              className={`min-w-0 flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-1 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'income'
-                  ? 'bg-emerald-600 text-foreground shadow-sm'
+                  ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -444,7 +464,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
             <button
               type="button"
               onClick={() => setType('transfer')}
-              className={`min-w-0 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+              className={`min-w-0 flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-1 text-xs sm:text-sm font-semibold transition-all ${
                 type === 'transfer'
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -474,7 +494,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
         </div>
 
         {/* Form body */}
-        <div className="flex-1 overflow-y-auto p-3 pt-2 space-y-3 overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 overflow-x-hidden">
           {/* Date row */}
           <div className="space-y-1.5">
             <Label htmlFor="expense-date" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Data</Label>
@@ -526,20 +546,20 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                     <button
                       type="button"
                       onClick={() => { setPaymentMethod('debit'); setCreditCardId(''); setInvoiceMonth(''); }}
-                      className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                      className={`min-h-11 rounded-lg px-2 text-xs sm:text-sm font-semibold transition-all ${
                         paymentMethod === 'debit' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      💳 Débito
+                      <WalletCards className="mr-1.5 inline h-4 w-4" />Débito
                     </button>
                     <button
                       type="button"
                       onClick={() => { setPaymentMethod('credit'); setWalletId(''); }}
-                      className={`rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all ${
+                      className={`min-h-11 rounded-lg px-2 text-xs sm:text-sm font-semibold transition-all ${
                         paymentMethod === 'credit' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      💳 Crédito
+                      <CreditCard className="mr-1.5 inline h-4 w-4" />Crédito
                     </button>
                   </div>
                 </div>
@@ -632,8 +652,8 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                 <div className="flex items-center gap-2 min-w-0">
                   <Repeat className="h-4 w-4 text-primary shrink-0" />
                   <div className="min-w-0">
-                    <span className="text-sm font-medium text-foreground">Recorrente / Repetir</span>
-                    <p className="text-xs text-muted-foreground">Conta fixa ou parcelamento</p>
+                    <span className="text-sm font-medium text-foreground">Repetir transação</span>
+                    <p className="text-xs text-muted-foreground">Recorrência ou parcelamento</p>
                   </div>
                 </div>
                 <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
@@ -651,7 +671,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                       }`}
                     >
                       <Repeat className="h-3.5 w-3.5" />
-                      Fixo (Mensal/Anual)
+                      Recorrente
                     </button>
                     <button
                       type="button"
@@ -661,7 +681,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                       }`}
                     >
                       <Hash className="h-3.5 w-3.5" />
-                      Repetir Vezes (Parcelar)
+                      Parcelar
                     </button>
                   </div>
 
@@ -682,7 +702,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                   ) : (
                     <div className="space-y-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número de Repetições</Label>
+                        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Número de parcelas</Label>
                         <Input
                           type="number"
                           inputMode="numeric"
@@ -697,7 +717,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                       {(parseInt(repeatCount) || 0) > 1 && (
                         <>
                           <div className="space-y-1.5">
-                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tipo de Valor</Label>
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Valor informado</Label>
                             <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-foreground/[0.04] border border-border">
                               <button
                                 type="button"
@@ -706,7 +726,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                                   installmentValueType === 'total' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
-                                Valor Total
+                                Total da compra
                               </button>
                               <button
                                 type="button"
@@ -715,7 +735,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                                   installmentValueType === 'per_installment' ? 'bg-foreground/10 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               >
-                                Valor da Parcela
+                                Cada parcela
                               </button>
                             </div>
                           </div>
@@ -750,7 +770,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
               {/* More options accordion */}
               <Accordion type="single" collapsible>
                 <AccordionItem value="more" className="border border-border rounded-xl px-3 bg-foreground/[0.04]">
-                  <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-3">Mais Opções</AccordionTrigger>
+                  <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-3">Mais opções</AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4 pb-1">
                       <div className="space-y-1.5">
@@ -817,9 +837,9 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
         </div>
 
         {/* Footer */}
-        <ResponsiveModalFooter className="p-3 pt-0 gap-2 flex-row justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-border bg-foreground/[0.04] text-foreground hover:bg-foreground/10 hover:text-foreground">Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
+        <ResponsiveModalFooter className="border-t border-border bg-card/95 p-4 gap-2 flex-row backdrop-blur-xl">
+          <Button variant="ghost" onClick={() => handleModalOpenChange(false)} className="h-11 flex-1 rounded-xl text-foreground hover:bg-muted">Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving} className={`h-11 flex-1 rounded-xl font-semibold transition-colors ${style.accent}`}>
             {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : 'Salvar'}
           </Button>
         </ResponsiveModalFooter>

@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -92,7 +94,7 @@ export default function InvestmentsPage() {
     }
   };
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground">Carregando...</span></div>;
+  if (authLoading) return <PageLoadingSkeleton title="Carregando investimentos" />;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
@@ -102,16 +104,15 @@ export default function InvestmentsPage() {
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Investimentos</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Caixinhas, CDBs e aplicações com rendimento projetado</p>
-              </div>
-              <Button onClick={() => { setEditing(null); setFormOpen(true); }} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            <PageHeader
+              eyebrow="Patrimônio"
+              title="Investimentos"
+              description="Aplicações, rendimentos e projeções de vencimento."
+              actions={<Button onClick={() => { setEditing(null); setFormOpen(true); }} className="gap-2 rounded-full h-11 px-5 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
                 <PlusCircle className="h-5 w-5" />
-                Novo Investimento
-              </Button>
-            </div>
+                Novo investimento
+              </Button>}
+            />
 
             {/* Resumo */}
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">

@@ -49,7 +49,7 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
       setAmount('');
       setCloseInvestment(false);
     }
-  }, [open, mode, investment.id]);
+  }, [open, mode, investment.id, investment.wallet_id, stats.currentValue, wallets]);
 
   const handleSave = async () => {
     const value = parseFloat(amount.replace(',', '.'));

@@ -19,22 +19,19 @@ const ICON_MAP = {
 
 const TYPE_STYLES = {
   critical: {
-    bg: 'bg-destructive/8',
-    border: 'border-destructive/20',
-    iconBg: 'bg-destructive/15',
+    iconBg: 'bg-destructive/10',
     iconColor: 'text-destructive',
+    label: 'Requer atenção',
   },
   warning: {
-    bg: 'bg-amber-500/8',
-    border: 'border-amber-500/20',
-    iconBg: 'bg-amber-500/15',
-    iconColor: 'text-amber-600',
+    iconBg: 'bg-warning/10',
+    iconColor: 'text-warning',
+    label: 'Acompanhe',
   },
   positive: {
-    bg: 'bg-emerald-500/8',
-    border: 'border-emerald-500/20',
-    iconBg: 'bg-emerald-500/15',
-    iconColor: 'text-emerald-600',
+    iconBg: 'bg-success/10',
+    iconColor: 'text-success',
+    label: 'Boa evolução',
   },
 } as const;
 
@@ -72,7 +69,11 @@ export function SmartAlertsCarousel({ alerts }: Props) {
   if (alerts.length === 0) return null;
 
   return (
-    <div className="relative group">
+    <section className="relative group" aria-labelledby="smart-alerts-title">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h2 id="smart-alerts-title" className="type-title-2">Para sua atenção</h2>
+        {alerts.length > 1 && <span className="type-caption shrink-0">{alerts.length} insights</span>}
+      </div>
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-3">
           {alerts.map(alert => {
@@ -81,15 +82,16 @@ export function SmartAlertsCarousel({ alerts }: Props) {
             return (
               <div
                 key={alert.id}
-                className={`flex-[0_0_auto] w-[85%] sm:w-[45%] lg:w-[32%] min-w-0 rounded-2xl border ${style.bg} ${style.border} p-3 sm:p-4 transition-shadow hover:shadow-card`}
+                className="surface-base min-w-0 flex-[0_0_auto] w-[92%] rounded-xl p-4 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-card sm:w-[48%] lg:w-[36%]"
               >
                 <div className="flex items-start gap-3">
                   <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${style.iconBg}`}>
                     <IconComp className={`h-4 w-4 ${style.iconColor}`} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold leading-snug truncate">{alert.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{alert.description}</p>
+                    <p className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${style.iconColor}`}>{style.label}</p>
+                    <p className="mt-1 text-sm font-semibold leading-snug">{alert.title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">{alert.description}</p>
                   </div>
                 </div>
               </div>
@@ -102,7 +104,8 @@ export function SmartAlertsCarousel({ alerts }: Props) {
       {canScrollPrev && (
         <button
           onClick={() => emblaApi?.scrollPrev()}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-background border shadow-card opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          aria-label="Insight anterior"
+          className="absolute left-0 top-[68%] -translate-y-1/2 -translate-x-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-card opacity-0 group-hover:opacity-100 transition-opacity z-10"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -110,11 +113,12 @@ export function SmartAlertsCarousel({ alerts }: Props) {
       {canScrollNext && (
         <button
           onClick={() => emblaApi?.scrollNext()}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 hidden sm:flex h-8 w-8 items-center justify-center rounded-full bg-background border shadow-card opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          aria-label="Próximo insight"
+          className="absolute right-0 top-[68%] -translate-y-1/2 translate-x-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-background border shadow-card opacity-0 group-hover:opacity-100 transition-opacity z-10"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       )}
-    </div>
+    </section>
   );
 }

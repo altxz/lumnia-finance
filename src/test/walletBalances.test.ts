@@ -106,4 +106,14 @@ describe('buildWalletBalances', () => {
     expect(res.find(r => r.walletId === 'w1')!.paidBalanceToday).toBe(750);
     expect(res.find(r => r.walletId === 'w2')!.paidBalanceToday).toBe(750);
   });
+
+  it('uma despesa legada com valor negativo continua debitando a carteira', () => {
+    const res = buildWalletBalances({
+      ...base,
+      monthExpenses: [exp({ wallet_id: 'w1', value: -41.9 })],
+    });
+
+    expect(res.find(r => r.walletId === 'w1')!.paidBalanceToday).toBe(958.1);
+    expect(res.find(r => r.walletId === 'w1')!.projectedEndOfMonth).toBe(958.1);
+  });
 });

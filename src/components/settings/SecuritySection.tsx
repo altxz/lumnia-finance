@@ -4,12 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Shield, Key, Download, Trash2, Loader2, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { Shield, Key, Download, Trash2, Loader2, FileSpreadsheet, RefreshCw, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { exportFinancialWorkbook } from '@/lib/exportToExcel';
+import { exportAllUserData } from '@/lib/exportAllUserData';
 import { BUILD_ID, clearPersistedCache } from '@/lib/queryClient';
 import { forceAppUpdate } from '@/lib/registerServiceWorker';
+import { ImportLumniaBackupDialog } from '@/components/settings/ImportLumniaBackupDialog';
 
 
 
@@ -26,6 +28,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
   const [changingPassword, setChangingPassword] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const handleExportExcel = async () => {
@@ -66,14 +69,17 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
   const handleExportData = async () => {
     if (!user) return;
     setExporting(true);
-    const { data: expenses } = await supabase.from('expenses').select('*').eq('user_id', user.id);
-    const blob = new Blob([JSON.stringify({ expenses, exported_at: new Date().toISOString(), user_email: user.email }, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'meus-dados-lumnia.json'; a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: 'Dados exportados!', description: 'Arquivo JSON baixado com sucesso.' });
-    setExporting(false);
+    try {
+      const result = await exportAllUserData(user);
+      toast({
+        title: 'Backup completo exportado!',
+        description: `${result.records} registros em ${result.tables} conjuntos de dados${result.avatars ? ` e ${result.avatars} avatar(es)` : ''}.`,
+      });
+    } catch (e: any) {
+      toast({ title: 'Erro ao exportar', description: e?.message ?? 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -108,6 +114,19 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
 
       <Card className="rounded-2xl">
         <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2"><Upload className="h-5 w-5 text-primary" />Importar Dados</CardTitle>
+          <CardDescription>Restaure um backup JSON ou uma planilha Excel exportados pelo Lumnia.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">A planilha restaura transações e os cadastros incluídos nela. O JSON antigo restaura as transações que ele contém. O app valida o arquivo antes de gravar qualquer dado.</p>
+          <Button onClick={() => setImportOpen(true)} variant="outline" className="gap-2 rounded-xl w-full sm:w-auto">
+            <Upload className="h-4 w-4" />Importar backup
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl">
+        <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2"><Download className="h-5 w-5 text-ai" />Exportar Dados</CardTitle>
           <CardDescription>Baixe suas informações financeiras completas</CardDescription>
         </CardHeader>
@@ -134,17 +153,19 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
             <div className="flex items-start gap-3">
               <Download className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="min-w-0 space-y-1">
-                <p className="text-sm font-semibold">Backup JSON (LGPD)</p>
-                <p className="text-xs text-muted-foreground">Arquivo bruto com suas transações, para portabilidade de dados.</p>
+                <p className="text-sm font-semibold">Backup completo JSON</p>
+                <p className="text-xs text-muted-foreground">Cópia importável de transações, contas, cartões, categorias, orçamentos, projetos, dívidas, automações, notificações, investimentos e avatar.</p>
               </div>
             </div>
             <Button onClick={handleExportData} disabled={exporting} variant="outline" className="gap-2 rounded-xl w-full sm:w-auto">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {exporting ? 'Exportando...' : 'Baixar Meus Dados'}
+              {exporting ? 'Exportando...' : 'Baixar backup completo'}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {user?.id && <ImportLumniaBackupDialog userId={user.id} open={importOpen} onOpenChange={setImportOpen} />}
 
       <Card className="rounded-2xl">
         <CardHeader>

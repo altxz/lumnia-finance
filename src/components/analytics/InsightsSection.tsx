@@ -1,101 +1,137 @@
+import { AlertTriangle, CalendarDays, CircleGauge, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Brain, AlertTriangle, Lightbulb } from 'lucide-react';
-import { formatCurrency, getCategoryInfo } from '@/lib/constants';
-import { CategoryStats } from '@/hooks/useAnalyticsData';
-import { InfoPopover } from '@/components/ui/info-popover';
+import { formatCurrency, getCategoryLabel } from '@/lib/constants';
+import type { CategoryStats } from '@/hooks/useAnalyticsData';
 
 interface Props {
+  totalCurrentPeriod: number;
   avgMonthly: number;
   categoryStats: CategoryStats[];
   weekdayAnalysis: { day: number; avg: number; count: number }[];
-  predictedNextMonth: number;
+  predictedNextMonth: number | null;
 }
 
-const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+interface Insight {
+  key: string;
+  title: string;
+  description: string;
+  tone: 'primary' | 'destructive' | 'success';
+  icon: typeof CircleGauge;
+}
 
-export function InsightsSection({ avgMonthly, categoryStats, weekdayAnalysis, predictedNextMonth }: Props) {
-  const weekendAvg = weekdayAnalysis.filter(d => d.day === 0 || d.day === 6).reduce((s, d) => s + d.avg, 0) / 2;
-  const weekdayAvg = weekdayAnalysis.filter(d => d.day > 0 && d.day < 6).reduce((s, d) => s + d.avg, 0) / 5;
-  const weekendDiff = weekdayAvg > 0 ? Math.round(((weekendAvg - weekdayAvg) / weekdayAvg) * 100) : 0;
+function weightedAverage(days: { avg: number; count: number }[]) {
+  const totalCount = days.reduce((sum, day) => sum + day.count, 0);
+  if (totalCount === 0) return null;
+  return days.reduce((sum, day) => sum + day.avg * day.count, 0) / totalCount;
+}
 
-  const peakDay = weekdayAnalysis.sort((a, b) => b.avg - a.avg)[0];
+function formatPercentage(value: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 0 }).format(value);
+}
+
+function formatChange(value: number) {
+  return `${value > 0 ? '+' : ''}${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%`;
+}
+
+function categoryIncreaseTitle(category: CategoryStats) {
+  const label = getCategoryLabel(category.category);
+  const increase = category.total - category.previousTotal;
+
+  if ((category.change ?? 0) > 250) {
+    return `${label} teve um aumento de ${formatCurrency(increase)}`;
+  }
+
+  return `${label} ficou ${formatChange(category.change ?? 0)} acima do período anterior`;
+}
+
+export function InsightsSection({ totalCurrentPeriod, avgMonthly, categoryStats, weekdayAnalysis, predictedNextMonth }: Props) {
   const topCategory = categoryStats[0];
+  const topCategoryShare = topCategory && totalCurrentPeriod > 0 ? topCategory.total / totalCurrentPeriod : null;
+  const weekendAverage = weightedAverage(weekdayAnalysis.filter((day) => day.day === 0 || day.day === 6));
+  const weekdayAverage = weightedAverage(weekdayAnalysis.filter((day) => day.day > 0 && day.day < 6));
+  const weekendDifference = weekendAverage !== null && weekdayAverage !== null && weekdayAverage > 0
+    ? (weekendAverage - weekdayAverage) / weekdayAverage
+    : null;
 
-  const patterns = [
-    weekendDiff > 10 && `Você gasta mais nos finais de semana (+${weekendDiff}%)`,
-    peakDay && `Dia com maior gasto médio: ${DAY_NAMES[peakDay.day]}`,
-    topCategory && `${getCategoryInfo(topCategory.category).label} representa ${(topCategory.total / (avgMonthly * 3) * 100).toFixed(0)}% dos gastos`,
-  ].filter(Boolean);
+  const insights: Insight[] = [
+    topCategory && topCategoryShare !== null && topCategoryShare >= 0.2
+      ? {
+          key: 'concentration',
+          title: `${getCategoryLabel(topCategory.category)} concentra ${formatPercentage(topCategoryShare)} das despesas`,
+          description: `${formatCurrency(topCategory.total)} distribuídos em ${topCategory.count} ${topCategory.count === 1 ? 'lançamento' : 'lançamentos'} no período.`,
+          tone: 'primary',
+          icon: CircleGauge,
+        }
+      : null,
+    topCategory?.change !== null && topCategory && topCategory.change >= 15
+      ? {
+          key: 'category-increase',
+          title: categoryIncreaseTitle(topCategory),
+          description: `O gasto passou de ${formatCurrency(topCategory.previousTotal)} para ${formatCurrency(topCategory.total)}.`,
+          tone: 'destructive',
+          icon: TrendingUp,
+        }
+      : null,
+    weekendDifference !== null && weekendDifference >= 0.15
+      ? {
+          key: 'weekend',
+          title: `O gasto médio no fim de semana está ${formatPercentage(weekendDifference)} acima dos dias úteis`,
+          description: `Média de ${formatCurrency(weekendAverage ?? 0)} no fim de semana, frente a ${formatCurrency(weekdayAverage ?? 0)} nos dias úteis.`,
+          tone: 'destructive',
+          icon: CalendarDays,
+        }
+      : null,
+    predictedNextMonth !== null && avgMonthly > 0 && predictedNextMonth >= avgMonthly * 1.1
+      ? {
+          key: 'forecast',
+          title: 'A previsão do próximo mês está acima da média observada',
+          description: `${formatCurrency(predictedNextMonth)} estimados, frente a uma média de ${formatCurrency(avgMonthly)} por mês.`,
+          tone: 'destructive',
+          icon: AlertTriangle,
+        }
+      : null,
+  ].filter((insight): insight is Insight => insight !== null).slice(0, 3);
 
-  const alerts = [
-    predictedNextMonth > avgMonthly * 1.1 && `Projeção de ${formatCurrency(predictedNextMonth)} está acima da média`,
-    topCategory && topCategory.change > 15 && `${getCategoryInfo(topCategory.category).label} subiu ${topCategory.change.toFixed(0)}% vs. período anterior`,
-  ].filter(Boolean);
-
-  const recommendations = [
-    topCategory && `Revise gastos com ${getCategoryInfo(topCategory.category).label} — economia potencial de ${formatCurrency(topCategory.total * 0.15)}/período`,
-    weekendDiff > 20 && `Planeje atividades de fim de semana com antecedência para reduzir gastos impulsivos`,
-    `Defina metas mensais por categoria para manter controle`,
-  ].filter(Boolean);
+  const toneClasses: Record<Insight['tone'], { icon: string; title: string }> = {
+    primary: { icon: 'bg-primary/12 text-primary', title: 'text-foreground' },
+    destructive: { icon: 'bg-destructive/12 text-destructive', title: 'text-foreground' },
+    success: { icon: 'bg-success/12 text-success', title: 'text-foreground' },
+  };
 
   return (
-    <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-      <Card className="rounded-2xl border-0 shadow-card">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Brain className="h-4 w-4 text-ai" /> Padrões Descobertos
-            </CardTitle>
-            <InfoPopover><p>Padrões de comportamento financeiro identificados automaticamente com base nos seus dados.</p></InfoPopover>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {patterns.length > 0 ? patterns.map((p, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-ai font-bold mt-0.5">•</span>
-              <span className="text-muted-foreground">{p}</span>
-            </div>
-          )) : <p className="text-sm text-muted-foreground">Adicione mais despesas para descobrir padrões.</p>}
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-2xl border-0 shadow-card">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive" /> Alertas Inteligentes
-            </CardTitle>
-            <InfoPopover><p>Avisos automáticos quando seus gastos fogem do padrão habitual.</p></InfoPopover>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {alerts.length > 0 ? alerts.map((a, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-destructive font-bold mt-0.5">⚠</span>
-              <span className="text-muted-foreground">{a}</span>
-            </div>
-          )) : <p className="text-sm text-muted-foreground">Nenhum alerta no momento. Tudo dentro do esperado!</p>}
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-2xl border-0 shadow-card">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-accent" /> Recomendações
-            </CardTitle>
-            <InfoPopover><p>Sugestões personalizadas para melhorar suas finanças com base nos seus hábitos.</p></InfoPopover>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {recommendations.map((r, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-accent font-bold mt-0.5">💡</span>
-              <span className="text-muted-foreground">{r}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
+    <section className="space-y-5" aria-labelledby="insights-title">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-primary">Leitura do período</p>
+        <h2 id="insights-title" className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">O que merece atenção</h2>
+      </div>
+      {insights.length > 0 ? (
+        <div className="grid items-stretch gap-4 lg:grid-cols-3">
+          {insights.map((insight) => {
+            const Icon = insight.icon;
+            const tone = toneClasses[insight.tone];
+            return (
+              <Card key={insight.key} className="rounded-3xl border-border/80 shadow-card">
+                <CardContent className="flex h-full flex-col p-5 sm:p-6">
+                  <div className={`mb-5 flex h-10 w-10 items-center justify-center rounded-full ${tone.icon}`}>
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <p className={`break-words text-base font-semibold leading-6 ${tone.title}`}>{insight.title}</p>
+                  <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">{insight.description}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="rounded-3xl border-border/80 shadow-card">
+          <CardHeader className="px-5 pb-2 pt-5 sm:px-6">
+            <CardTitle className="text-lg font-semibold tracking-tight">Sem variações relevantes por enquanto</CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5 text-sm leading-6 text-muted-foreground sm:px-6 sm:pb-6">
+            Continue registrando seus lançamentos para que comparações entre categorias e períodos se tornem mais representativas.
+          </CardContent>
+        </Card>
+      )}
+    </section>
   );
 }

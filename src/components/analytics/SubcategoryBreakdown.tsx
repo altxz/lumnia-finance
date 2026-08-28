@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { seriesColor } from '@/lib/chartPalette';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Props {
   expenses: any[];
@@ -28,7 +29,7 @@ export function SubcategoryBreakdown({ expenses }: Props) {
       if (e.description?.startsWith('Pagamento fatura')) return;
       if (isBalanceAdjustment(e)) return;
       const key = e.final_category || 'Sem categoria';
-      map[key] = (map[key] || 0) + e.value;
+      map[key] = (map[key] || 0) + transactionAmount(e.value);
     });
 
     const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);

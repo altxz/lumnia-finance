@@ -51,7 +51,7 @@ export function EndOfMonthForecast(_props: EndOfMonthForecastProps = {}) {
     }
 
     return points;
-  }, [monthExpenses, invoiceExpenses, creditCards, startingBalance, startDate, endDate, selectedMonth, selectedYear, daysInMonth, investmentWalletIds]);
+  }, [monthExpenses, invoiceExpenses, creditCards, startingBalance, startDate, selectedMonth, selectedYear, daysInMonth, investmentWalletIds]);
 
   const endBalance = projectedBalance;
   const todayPoint = todayDay ? chartData.find(p => p.day === todayDay) : undefined;

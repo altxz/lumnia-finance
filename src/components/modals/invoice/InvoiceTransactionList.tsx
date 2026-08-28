@@ -1,8 +1,10 @@
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { formatCurrency, getCategoryLabel } from '@/lib/constants';
 import type { Expense } from '@/components/ExpenseTable';
 import { useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface InvoiceTransactionListProps {
   transactions: Expense[];
@@ -51,7 +53,9 @@ export function InvoiceTransactionList({ transactions, onEdit, onDelete }: Invoi
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <Badge variant="secondary" className="text-xs shrink-0">{data.label}</Badge>
-                <span className="text-xs text-muted-foreground">{data.items.length} transações</span>
+                <span className="text-xs text-muted-foreground">
+                  {data.items.length} {data.items.length === 1 ? 'transação' : 'transações'}
+                </span>
               </div>
               <span className="text-sm font-bold shrink-0">{formatCurrency(data.total)}</span>
             </div>
@@ -81,22 +85,24 @@ export function InvoiceTransactionList({ transactions, onEdit, onDelete }: Invoi
                 <span className="text-sm font-bold text-destructive whitespace-nowrap">
                   -{formatCurrency(tx.value)}
                 </span>
-                <div className="flex items-center gap-0.5">
-                  <button
-                    onClick={() => onEdit(tx)}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    title="Editar"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => onDelete(tx)}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted-foreground" aria-label={`Ações de ${tx.description}`}>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="floating-glass w-52 rounded-2xl p-2">
+                    <DropdownMenuItem className="gap-2 rounded-xl" onClick={() => onEdit(tx)}>
+                      <Pencil className="h-4 w-4" />
+                      Editar transação
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="gap-2 rounded-xl text-destructive focus:text-destructive" onClick={() => onDelete(tx)}>
+                      <Trash2 className="h-4 w-4" />
+                      Excluir transação
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))}

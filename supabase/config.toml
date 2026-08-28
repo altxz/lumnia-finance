@@ -1,4 +1,4 @@
-project_id = "nvskvrgsfzaynotdgzoy"
+project_id = "ulszjqppxceqbeoyyqbb"
 
 [functions.categorize-expense]
 verify_jwt = false
@@ -7,4 +7,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.generate-recurring]
+verify_jwt = false
+
+[functions.lumnia-mcp]
+# O endpoint MCP precisa expor os metadados OAuth antes do login. Cada
+# ferramenta valida o bearer token no handler OAuth do MCP e aplica RLS.
 verify_jwt = false

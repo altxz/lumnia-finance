@@ -63,7 +63,7 @@ export default defineTool({
       const project = await resolveProject(sb, { id: input.project_id, name: input.project });
       const category = await resolveCategory(sb, { id: input.category_id, name: input.category });
 
-      let wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
+      const wallet = await resolveWallet(sb, { id: input.wallet_id, name: input.wallet });
       let walletId: string | null = wallet?.id ?? null;
       if (!card && !walletId) walletId = await defaultWalletId(sb);
 

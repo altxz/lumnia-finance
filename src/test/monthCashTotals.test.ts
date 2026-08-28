@@ -136,4 +136,20 @@ describe('Totais do mês — Saídas = débito + pagamentos de fatura', () => {
 
     expect(setembro.projectedBalance).toBe(agosto.projectedBalance - 3000);
   });
+
+  it('preserva o sentido financeiro quando dados legados chegam com sinal negativo', () => {
+    const totals = computeMonthTotals({
+      ...base,
+      monthRows: [
+        row({ id: 'income-signed', type: 'income', value: -5000, date: '2026-08-05' }),
+        row({ id: 'expense-signed', value: -1500, date: '2026-08-10' }),
+      ],
+      invoiceExpenses: [],
+      startingBalance: 1000,
+    });
+
+    expect(totals.totalIncome).toBe(5000);
+    expect(totals.debitExpense).toBe(1500);
+    expect(totals.projectedBalance).toBe(4500);
+  });
 });

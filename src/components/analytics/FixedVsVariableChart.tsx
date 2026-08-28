@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Props {
   expenses: any[];
@@ -21,8 +22,8 @@ export function FixedVsVariableChart({ expenses }: Props) {
     expenses.forEach(e => {
       if (e.type === 'income' || e.type === 'transfer') return;
       if (isBalanceAdjustment(e)) return;
-      if (e.is_recurring) fixed += e.value;
-      else variable += e.value;
+      if (e.is_recurring) fixed += transactionAmount(e.value);
+      else variable += transactionAmount(e.value);
     });
     if (fixed === 0 && variable === 0) return [];
     return [

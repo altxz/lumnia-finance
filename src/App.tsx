@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { queryClient, persistOptions } from "@/lib/queryClient";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +10,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DateProvider } from "@/contexts/DateContext";
 import { UserSettingsProvider } from "@/contexts/UserSettingsContext";
 import { AuthenticatedExtras } from "@/components/AuthenticatedExtras";
+import { SystemBarsSync } from "@/components/SystemBarsSync";
 import { AnimatedRoutes } from "@/components/AnimatedRoute";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
@@ -22,7 +23,6 @@ const HistoryPage = lazyWithRetry(() => import("./pages/HistoryPage"));
 const SettingsPage = lazyWithRetry(() => import("./pages/SettingsPage"));
 const AnalyticsPage = lazyWithRetry(() => import("./pages/AnalyticsPage"));
 const WalletPage = lazyWithRetry(() => import("./pages/WalletPage"));
-const BudgetPage = lazyWithRetry(() => import("./pages/BudgetPage"));
 const ProjectsPage = lazyWithRetry(() => import("./pages/ProjectsPage"));
 const InvestmentsPage = lazyWithRetry(() => import("./pages/InvestmentsPage"));
 
@@ -47,6 +47,7 @@ function PageFallback() {
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+    <SystemBarsSync />
     <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <TooltipProvider>
         <Sonner />
@@ -65,11 +66,12 @@ const App = () => (
                       <Route path="/configuracoes" element={<SettingsPage />} />
                       <Route path="/analytics" element={<AnalyticsPage />} />
                       <Route path="/wallet" element={<WalletPage />} />
-                      <Route path="/orcamento" element={<BudgetPage />} />
+                      <Route path="/orcamento" element={<Navigate to="/categorias" replace />} />
                       <Route path="/projetos" element={<ProjectsPage />} />
                       <Route path="/investimentos" element={<InvestmentsPage />} />
                       
                       <Route path="/atualizar" element={<ForceUpdatePage />} />
+                      <Route path="/oauth/consent" element={<OAuthConsentPage />} />
                       <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
 
                       <Route path="*" element={<NotFound />} />

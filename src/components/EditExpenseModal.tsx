@@ -21,6 +21,7 @@ import { showFriendlyError } from '@/lib/errorHandler';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Expense } from '@/components/ExpenseTable';
 import { buildFutureRecurringExceptionDates, resolveRecurringEditAction } from '@/lib/recurringProjection';
+import { distributeInstallmentValues } from '@/lib/installmentMath';
 
 interface EditExpenseModalProps {
   open: boolean;
@@ -162,6 +163,15 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
       toast({ title: 'Erro', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
       return;
     }
+    const parsedValue = Number(value);
+    if (!date) {
+      toast({ title: 'Informe a data', description: 'A transação precisa de uma data válida.', variant: 'destructive' });
+      return;
+    }
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      toast({ title: 'Informe um valor válido', description: 'O valor da transação deve ser maior que zero.', variant: 'destructive' });
+      return;
+    }
     if (wantInstallment && numInstallments < 2) {
       toast({ title: 'Erro', description: 'Mínimo de 2 parcelas.', variant: 'destructive' });
       return;
@@ -171,7 +181,6 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
     setShowRecurringConfirm(false);
 
     try {
-      const parsedValue = parseFloat(value);
       const baseFields = {
         date, description: description.trim(),
         final_category: finalCategory, wallet_id: walletId || null,
@@ -235,9 +244,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
       if (editAction === 'convert-to-installments') {
         // Convert single expense to installment/repeat plan
-        const installmentValue = valueMode === 'total'
-          ? Math.round((parsedValue / numInstallments) * 100) / 100
-          : parsedValue;
+        const installmentValues = distributeInstallmentValues(parsedValue, numInstallments, valueMode);
 
         const groupId = crypto.randomUUID();
         const baseInvoice = isCredit
@@ -247,7 +254,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         // Update existing expense as installment 1
         const { error: updateError } = await supabase.from('expenses').update({
           ...baseFields,
-          value: installmentValue,
+          value: installmentValues[0],
           installment_group_id: groupId,
           installment_info: `1/${numInstallments}`,
           is_recurring: false,
@@ -263,7 +270,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           const row: Record<string, unknown> = {
             user_id: user!.id,
             description: description.trim(),
-            value: installmentValue,
+            value: installmentValues[i - 1],
             type: expense.type,
             final_category: finalCategory,
             category_ai: expense.category_ai,
@@ -293,7 +300,12 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         const { error: insertError } = await supabase.from('expenses').insert(newInstallments);
         if (insertError) throw insertError;
 
-        toast({ title: 'Parcelamento criado!', description: `Transação dividida em ${numInstallments}x de R$ ${installmentValue.toFixed(2)}` });
+        toast({
+          title: 'Parcelamento criado',
+          description: valueMode === 'total'
+            ? `${numInstallments} parcelas somando exatamente R$ ${parsedValue.toFixed(2)}.`
+            : `${numInstallments} parcelas de R$ ${parsedValue.toFixed(2)}.`,
+        });
       } else if (editAction === 'activate-recurring') {
         // ATIVAR recorrência numa transação avulsa (nunca reescreve um molde existente)
         const { error } = await supabase.from('expenses').update({
@@ -466,7 +478,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
     <ResponsiveModal open={open} onOpenChange={onOpenChange}>
         <div className="px-3 pt-3 pb-0 rounded-t-2xl transition-colors duration-200">
           <ResponsiveModalHeader className="pb-3">
-            <ResponsiveModalTitle className="text-lg font-bold flex items-center gap-2">
+            <ResponsiveModalTitle className="text-lg font-semibold flex items-center gap-2">
               {type === 'income' ? <ArrowUpCircle className="h-5 w-5 text-emerald-600" /> : type === 'transfer' ? <ArrowLeftRight className="h-5 w-5 text-primary" /> : <ArrowDownCircle className="h-5 w-5 text-destructive" />}
               Editar {type === 'income' ? 'Receita' : type === 'transfer' ? 'Transferência' : 'Despesa'}
             </ResponsiveModalTitle>
@@ -481,7 +493,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 pt-2 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
           {/* Existing installment alert */}
           {isExistingInstallment && expense.installment_info && (
             <Alert className="rounded-xl border-border bg-foreground/[0.04]">
@@ -714,7 +726,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
           )}
         </div>
 
-        <ResponsiveModalFooter className="p-3 pt-0 gap-2 flex-row justify-between">
+        <ResponsiveModalFooter className="border-t border-border bg-card/95 p-4 gap-2 flex-row items-center backdrop-blur-xl">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive rounded-xl">
@@ -732,9 +744,9 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-           <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-border bg-foreground/[0.04] text-foreground hover:bg-foreground/10 hover:text-foreground">Cancelar</Button>
-               <Button onClick={handleSaveClick} disabled={saving} className={`min-w-28 rounded-xl font-semibold transition-colors ${style.accent}`}>
+           <div className="flex flex-1 gap-2">
+              <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-11 flex-1 rounded-xl text-foreground hover:bg-muted">Cancelar</Button>
+               <Button onClick={handleSaveClick} disabled={saving} className={`h-11 flex-1 rounded-xl font-semibold transition-colors ${style.accent}`}>
                  {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : wantInstallment ? (installmentMode === 'fixed' ? 'Ativar Recorrência' : `Parcelar em ${numInstallments}x`) : 'Salvar'}
               </Button>
             </div>

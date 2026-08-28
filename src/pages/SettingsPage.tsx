@@ -10,36 +10,31 @@ import { supabase } from '@/lib/supabase';
 import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileSection } from '@/components/settings/ProfileSection';
-import { AiSection } from '@/components/settings/AiSection';
 import { AutomationSection } from '@/components/settings/AutomationSection';
 import { NotificationsSection } from '@/components/settings/NotificationsSection';
 import { SecuritySection } from '@/components/settings/SecuritySection';
-import { PlansSection } from '@/components/settings/PlansSection';
 import { CategoriesSection } from '@/components/settings/CategoriesSection';
-import { ModulesSection } from '@/components/settings/ModulesSection';
-import { getCategoryLabel } from '@/lib/constants';
-import { Loader2, Save, User, Sparkles, Zap, Bell, Shield, Crown, Tag, ToggleRight } from 'lucide-react';
+import { Loader2, Save, User, Zap, Bell, Shield, Tag } from 'lucide-react';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
+import { PageHeader } from '@/components/ui/page-header';
 
 const DEFAULT_SETTINGS = {
   full_name: '',
   avatar_url: '',
-  bio: '',
-  timezone: 'America/Sao_Paulo',
-  currency: 'BRL',
   default_wallet_id: null as string | null,
-  ai_auto_categorize: true,
-  ai_min_confidence: 70,
-  ai_learn_corrections: true,
-  ai_model: 'gemini-flash',
-  ai_personal_context: '',
-  notify_email_weekly: true,
-  notify_email_alerts: true,
-  notify_email_news: false,
-  notify_app_suggestions: true,
-  notify_app_reminders: true,
-  notify_app_achievements: true,
-  plan: 'free',
 };
+
+type SettingsState = typeof DEFAULT_SETTINGS;
+
+interface AutomationRule {
+  id: string;
+  condition_field: string;
+  condition_operator: string;
+  condition_value: string;
+  target_category: string;
+  active: boolean;
+  applied_count: number;
+}
 
 export default function SettingsPage() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -48,8 +43,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [rules, setRules] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalExpenses: 0, mostActiveMonth: '', favoriteCategory: '' });
+  const [rules, setRules] = useState<AutomationRule[]>([]);
 
   // A linha `user_settings` vem do cache partilhado (mesma chave do cabeçalho,
   // do tour e do contexto de módulos) — sem requisição duplicada.
@@ -78,31 +72,12 @@ export default function SettingsPage() {
     const { data: rulesData } = await supabase.from('automation_rules').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
     setRules(rulesData || []);
 
-    // Fetch stats
-    const { data: expenses } = await supabase.from('expenses').select('date, final_category').eq('user_id', user.id);
-    if (expenses) {
-      const monthCounts: Record<string, number> = {};
-      const catCounts: Record<string, number> = {};
-      expenses.forEach(e => {
-        const month = e.date.slice(0, 7);
-        monthCounts[month] = (monthCounts[month] || 0) + 1;
-        catCounts[e.final_category] = (catCounts[e.final_category] || 0) + 1;
-      });
-      const topMonth = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0];
-      const topCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0];
-      setStats({
-        totalExpenses: expenses.length,
-        mostActiveMonth: topMonth ? new Date(topMonth[0] + '-01').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : '',
-        favoriteCategory: topCat ? getCategoryLabel(topCat[0]) : '',
-      });
-    }
-
     setLoading(false);
   }, [user]);
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
-  const handleChange = (key: string, value: any) => {
+  const handleChange = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     setDirty(true);
   };
@@ -113,26 +88,20 @@ export default function SettingsPage() {
     const { error } = await supabase.from('user_settings').update({
       full_name: settings.full_name,
       avatar_url: settings.avatar_url,
-      bio: settings.bio,
-      timezone: settings.timezone,
-      currency: settings.currency,
       default_wallet_id: settings.default_wallet_id || null,
-      ai_auto_categorize: settings.ai_auto_categorize,
-      ai_min_confidence: settings.ai_min_confidence,
-      ai_learn_corrections: settings.ai_learn_corrections,
-      ai_model: settings.ai_model,
-      ai_personal_context: settings.ai_personal_context,
-      notify_email_weekly: settings.notify_email_weekly,
-      notify_email_alerts: settings.notify_email_alerts,
-      notify_email_news: settings.notify_email_news,
-      notify_app_suggestions: settings.notify_app_suggestions,
-      notify_app_reminders: settings.notify_app_reminders,
-      notify_app_achievements: settings.notify_app_achievements,
       updated_at: new Date().toISOString(),
     }).eq('user_id', user.id);
 
     if (error) toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     else {
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { ...user.user_metadata, full_name: settings.full_name },
+      });
+      if (metadataError) {
+        toast({ title: 'Perfil salvo parcialmente', description: metadataError.message, variant: 'destructive' });
+        setSaving(false);
+        return;
+      }
       toast({ title: 'Configurações salvas!' });
       setDirty(false);
       invalidateSettings(); // mantém o cache partilhado atualizado (avatar, módulos…)
@@ -141,14 +110,24 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    // Delete user data then sign out
     if (!user) return;
-    await supabase.from('expenses').delete().eq('user_id', user.id);
-    await supabase.from('automation_rules').delete().eq('user_id', user.id);
-    await supabase.from('user_settings').delete().eq('user_id', user.id);
-    await supabase.from('categories').delete().eq('user_id', user.id);
-    toast({ title: 'Conta excluída', description: 'Seus dados foram removidos.' });
-    signOut();
+    const { error } = await supabase.functions.invoke('delete-account');
+    if (error) {
+      toast({ title: 'Não foi possível excluir a conta', description: error.message, variant: 'destructive' });
+      throw error;
+    }
+    toast({ title: 'Conta excluída', description: 'A conta e os dados associados foram removidos.' });
+    await signOut();
+  };
+
+  const handleAvatarSaved = (avatarUrl: string) => {
+    setSettings(prev => ({ ...prev, avatar_url: avatarUrl }));
+    invalidateSettings();
+  };
+
+  const handleDiscard = () => {
+    setSettings({ ...DEFAULT_SETTINGS, ...(settingsRow || {}) });
+    setDirty(false);
   };
 
   if (!authLoading && !user) return <Navigate to="/auth" replace />;
@@ -160,52 +139,41 @@ export default function SettingsPage() {
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 space-y-4 sm:space-y-6 overflow-auto pb-40 md:pb-24">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Configurações</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Personalize sua experiência na Lumnia</p>
-            </div>
+            <PageHeader
+              eyebrow="Sua conta"
+              title="Configurações"
+              description="Preferências, automações, notificações e privacidade."
+            />
 
             {(loading || authLoading) ? (
-              <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              <PageLoadingSkeleton title="Carregando configurações" compact />
             ) : (
-              <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
-                <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 pb-1 -webkit-overflow-scrolling-touch">
-                  <TabsList className="floating-glass rounded-2xl p-1 h-auto gap-1 w-max sm:w-auto sm:flex-wrap">
-                    <TabsTrigger value="profile" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Perfil</TabsTrigger>
-                    <TabsTrigger value="ai" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />IA</TabsTrigger>
-                    <TabsTrigger value="automation" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Auto</TabsTrigger>
-                    <TabsTrigger value="notifications" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Notif.</TabsTrigger>
-                    <TabsTrigger value="security" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Seg.</TabsTrigger>
-                    <TabsTrigger value="categories" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Cat.</TabsTrigger>
-                    <TabsTrigger value="modules" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><ToggleRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Mód.</TabsTrigger>
-                    <TabsTrigger value="plans" className="rounded-xl gap-1 sm:gap-1.5 text-xs sm:text-sm min-h-[44px]"><Crown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Planos</TabsTrigger>
-                  </TabsList>
-                </div>
+              <Tabs defaultValue="profile" orientation="vertical" className="grid items-start gap-4 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-6">
+                <TabsList className="floating-glass grid h-auto grid-cols-2 gap-2 rounded-3xl p-2 md:sticky md:top-24 md:grid-cols-1">
+                  <TabsTrigger value="profile" className="min-h-[48px] justify-start gap-2 rounded-full px-4 text-sm"><User className="h-4 w-4" />Conta</TabsTrigger>
+                  <TabsTrigger value="automation" className="min-h-[48px] justify-start gap-2 rounded-full px-4 text-sm"><Zap className="h-4 w-4" />Automação</TabsTrigger>
+                  <TabsTrigger value="notifications" className="min-h-[48px] justify-start gap-2 rounded-full px-4 text-sm"><Bell className="h-4 w-4" />Notificações</TabsTrigger>
+                  <TabsTrigger value="categories" className="min-h-[48px] justify-start gap-2 rounded-full px-4 text-sm"><Tag className="h-4 w-4" />Categorias</TabsTrigger>
+                  <TabsTrigger value="security" className="col-span-2 min-h-[48px] justify-start gap-2 rounded-full px-4 text-sm md:col-span-1"><Shield className="h-4 w-4" />Dados e segurança</TabsTrigger>
+                </TabsList>
 
-                <TabsContent value="profile" className="settings-pane">
-                  <ProfileSection settings={settings} onChange={handleChange} user={user} stats={stats} />
+                <div className="min-w-0">
+                <TabsContent value="profile" className="settings-pane mt-0">
+                  <ProfileSection settings={settings} onChange={handleChange} onAvatarSaved={handleAvatarSaved} user={user} />
                 </TabsContent>
-                <TabsContent value="ai" className="settings-pane">
-                  <AiSection settings={settings} onChange={handleChange} />
-                </TabsContent>
-                <TabsContent value="automation" className="settings-pane">
+                <TabsContent value="automation" className="settings-pane mt-0">
                   <AutomationSection rules={rules} onRulesChange={fetchSettings} userId={user.id} />
                 </TabsContent>
-                <TabsContent value="notifications" className="settings-pane">
-                  <NotificationsSection settings={settings} onChange={handleChange} />
+                <TabsContent value="notifications" className="settings-pane mt-0">
+                  <NotificationsSection />
                 </TabsContent>
-                <TabsContent value="security" className="settings-pane">
+                <TabsContent value="security" className="settings-pane mt-0">
                   <SecuritySection user={user} onDeleteAccount={handleDeleteAccount} />
                 </TabsContent>
-                <TabsContent value="categories" className="settings-pane">
+                <TabsContent value="categories" className="settings-pane mt-0">
                   <CategoriesSection />
                 </TabsContent>
-                <TabsContent value="modules" className="settings-pane">
-                  <ModulesSection />
-                </TabsContent>
-                <TabsContent value="plans" className="settings-pane">
-                  <PlansSection plan={settings.plan} expenseCount={stats.totalExpenses} />
-                </TabsContent>
+                </div>
               </Tabs>
             )}
           </main>
@@ -214,7 +182,7 @@ export default function SettingsPage() {
           {dirty && (
             <div className="fixed bottom-[calc(7.2rem+env(safe-area-inset-bottom))] left-3 right-3 z-50 floating-glass rounded-2xl p-3 flex flex-wrap items-center justify-end gap-2 md:bottom-0 md:left-0 md:right-0 md:rounded-none md:border-x-0 md:border-b-0 md:p-4">
               <p className="w-full text-xs text-muted-foreground md:mr-auto md:w-auto md:text-sm">Você tem alterações não salvas</p>
-              <Button size="sm" variant="outline" onClick={fetchSettings} className="rounded-xl">Descartar</Button>
+              <Button size="sm" variant="outline" onClick={handleDiscard} className="rounded-xl">Descartar</Button>
               <Button size="sm" onClick={handleSave} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold gap-2">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 {saving ? 'Salvando...' : 'Salvar Alterações'}

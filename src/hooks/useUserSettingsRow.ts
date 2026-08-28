@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,13 +46,21 @@ export function useUserSettingsRow() {
 export function useInvalidateUserSettings() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return {
-    invalidate: () =>
-      queryClient.invalidateQueries({ queryKey: [USER_SETTINGS_QUERY_KEY, user?.id] }),
-    patch: (partial: Partial<UserSettingsRow>) =>
+  const userId = user?.id;
+
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: [USER_SETTINGS_QUERY_KEY, userId] }),
+    [queryClient, userId],
+  );
+
+  const patch = useCallback(
+    (partial: Partial<UserSettingsRow>) =>
       queryClient.setQueryData(
-        [USER_SETTINGS_QUERY_KEY, user?.id],
+        [USER_SETTINGS_QUERY_KEY, userId],
         (prev: UserSettingsRow | null | undefined) => ({ ...(prev || {}), ...partial }),
       ),
-  };
+    [queryClient, userId],
+  );
+
+  return useMemo(() => ({ invalidate, patch }), [invalidate, patch]);
 }

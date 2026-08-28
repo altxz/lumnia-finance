@@ -5,6 +5,7 @@ import {
   type CreditCard,
 } from './invoiceHelpers';
 import { buildInvoiceCashEvents } from './invoiceCashFlow';
+import { transactionAmount } from './transactionAmount';
 
 interface ComputeInvoiceTotalsParams {
   creditCards: CreditCard[];
@@ -55,7 +56,7 @@ export function computeInvoiceTotalsForCashWindow({
     else projected += event.amount;
 
     invoice.transactions.forEach((tx) => {
-      byCategory[tx.final_category] = (byCategory[tx.final_category] || 0) + tx.value;
+      byCategory[tx.final_category] = (byCategory[tx.final_category] || 0) + transactionAmount(tx.value);
     });
   });
 

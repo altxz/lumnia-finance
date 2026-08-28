@@ -1,5 +1,6 @@
 import type { Expense } from '../components/ExpenseTable';
 import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
+import { transactionAmount } from './transactionAmount';
 
 export interface CreditCard {
   id: string;
@@ -177,7 +178,7 @@ export function matchExpensesToInvoice(
   // Um registro recorrente de cartão é a ocorrência da sua própria fatura, não
   // uma autorização para criar cobranças virtuais nos meses seguintes.
   const transactions = matched;
-  const total = transactions.reduce((s, e) => s + e.value, 0);
+  const total = transactions.reduce((s, e) => s + transactionAmount(e.value), 0);
 
   // Check if there's a payment record for this specific card + invoice
   const normalizedCardName = period.cardName.trim().toLowerCase();

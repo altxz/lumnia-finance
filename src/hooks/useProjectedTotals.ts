@@ -9,6 +9,7 @@ import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
 import { computeMonthCashFlow } from '@/lib/projectedBalanceMath';
 import { computeMonthTotals, monthWindow } from '@/lib/monthCashTotals';
 import { buildEffectiveMonthExpenses, buildRecurringExceptionSignature, hideMaterializedRecurringTemplates } from '@/lib/recurringProjection';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 import type { CreditCard as CreditCardType } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
@@ -37,6 +38,7 @@ export interface ProjectedTotals {
   byCategory: Record<string, number>;
   previousMonth: { totalIncome: number; totalExpense: number; balance: number };
   loading: boolean;
+  error: Error | null;
   refetch: () => void;
   monthExpenses: Expense[];
   invoiceExpenses: Expense[];
@@ -48,6 +50,26 @@ export interface ProjectedTotals {
 
 
 async function fetchProjectedData(userId: string, startDate: string, endDate: string) {
+  const results = await Promise.all([
+    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
+      .gte('date', startDate).lt('date', endDate).order('date', { ascending: false }),
+    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
+      .eq('is_recurring', true).lt('date', endDate),
+    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
+      .not('credit_card_id', 'is', null),
+    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
+      .is('credit_card_id', null).not('invoice_month', 'is', null).like('description', 'Pagamento fatura%'),
+    supabase.from('expenses').select('id, description, date, value, type, credit_card_id, is_paid, final_category, is_recurring, wallet_id, destination_wallet_id, invoice_month, payment_method, project_id')
+      .eq('user_id', userId).lt('date', startDate).is('credit_card_id', null),
+    supabase.from('credit_cards').select('*').eq('user_id', userId),
+    supabase.from('wallets').select('id, name, initial_balance, asset_type').eq('user_id', userId).order('name'),
+    (supabase.from as any)('recurring_exceptions').select('template_id, occurrence_date').eq('user_id', userId),
+    supabase.from('expenses').select('*').eq('user_id', userId).eq('is_recurring', true),
+  ]);
+
+  const failedRequest = results.find(result => result.error);
+  if (failedRequest?.error) throw failedRequest.error;
+
   const [
     { data: expData },
     { data: recurringData },
@@ -58,23 +80,7 @@ async function fetchProjectedData(userId: string, startDate: string, endDate: st
     { data: walletsData },
     { data: exceptionsData },
     { data: recurringTemplatesData },
-  ] = await Promise.all([
-    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
-      .gte('date', startDate).lt('date', endDate).order('date', { ascending: false }),
-    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
-      .eq('is_recurring', true).lt('date', endDate),
-    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
-      .not('credit_card_id', 'is', null),
-    // Also fetch invoice payment records (no credit_card_id but have invoice_month and start with "Pagamento fatura")
-    supabase.from('expenses').select(EXPENSE_COLS).eq('user_id', userId)
-      .is('credit_card_id', null).not('invoice_month', 'is', null).like('description', 'Pagamento fatura%'),
-    supabase.from('expenses').select('id, description, date, value, type, credit_card_id, is_paid, final_category, is_recurring, wallet_id, destination_wallet_id, invoice_month, payment_method, project_id')
-      .eq('user_id', userId).lt('date', startDate).is('credit_card_id', null),
-    supabase.from('credit_cards').select('*').eq('user_id', userId),
-    supabase.from('wallets').select('id, name, initial_balance, asset_type').eq('user_id', userId).order('name'),
-    (supabase.from as any)('recurring_exceptions').select('template_id, occurrence_date').eq('user_id', userId),
-    supabase.from('expenses').select('*').eq('user_id', userId).eq('is_recurring', true),
-  ]);
+  ] = results;
 
   // Merge CC expenses + invoice payment records (deduped)
   const ccExps = (ccExpData || []) as Expense[];
@@ -101,7 +107,7 @@ export function useProjectedTotals(): ProjectedTotals {
 
   const queryKey = ['projected-totals', user?.id, startDate, endDate];
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey,
     queryFn: () => fetchProjectedData(user!.id, startDate, endDate),
     enabled: !!user,
@@ -129,19 +135,22 @@ export function useProjectedTotals(): ProjectedTotals {
     });
   }, [user, isLoading, selectedMonth, selectedYear, queryClient]);
 
-  const monthExpenses = data?.monthExpenses ?? [];
+  const monthExpenses = useMemo(() => data?.monthExpenses ?? [], [data?.monthExpenses]);
   const visibleMonthExpenses = useMemo(() => hideMaterializedRecurringTemplates(monthExpenses), [monthExpenses]);
-  const recurringExpenses = data?.recurringExpenses ?? [];
-  const recurringTemplates = data?.recurringTemplates ?? recurringExpenses;
-  const invoiceExpenses = data?.invoiceExpenses ?? [];
-  const historicalExpenses = data?.historicalExpenses ?? [];
+  const recurringExpenses = useMemo(() => data?.recurringExpenses ?? [], [data?.recurringExpenses]);
+  const recurringTemplates = useMemo(
+    () => data?.recurringTemplates ?? recurringExpenses,
+    [data?.recurringTemplates, recurringExpenses],
+  );
+  const invoiceExpenses = useMemo(() => data?.invoiceExpenses ?? [], [data?.invoiceExpenses]);
+  const historicalExpenses = useMemo(() => data?.historicalExpenses ?? [], [data?.historicalExpenses]);
   const visibleHistoricalExpenses = useMemo(
     () => hideMaterializedRecurringTemplates(historicalExpenses),
     [historicalExpenses],
   );
-  const creditCards = data?.creditCards ?? [];
-  const wallets = data?.wallets ?? [];
-  const recurringExceptions = data?.recurringExceptions ?? [];
+  const creditCards = useMemo(() => data?.creditCards ?? [], [data?.creditCards]);
+  const wallets = useMemo(() => data?.wallets ?? [], [data?.wallets]);
+  const recurringExceptions = useMemo(() => data?.recurringExceptions ?? [], [data?.recurringExceptions]);
   const exceptionSet = useMemo(
     () => new Set(recurringExceptions.map(e => buildRecurringExceptionSignature(e.template_id, e.occurrence_date))),
     [recurringExceptions]
@@ -173,8 +182,8 @@ export function useProjectedTotals(): ProjectedTotals {
     const nonTransfers = historicalExpenses.filter((e: any) => e.type !== 'transfer');
     const pendingExpenses = nonTransfers.filter((e: any) => e.type !== 'income' && !e.is_paid);
     const pendingIncome = nonTransfers.filter((e: any) => e.type === 'income' && !e.is_paid);
-    const pendingAmount = pendingExpenses.reduce((s: number, e: any) => s + e.value, 0)
-      - pendingIncome.reduce((s: number, e: any) => s + e.value, 0);
+    const pendingAmount = pendingExpenses.reduce((s: number, e: any) => s + transactionAmount(e.value), 0)
+      - pendingIncome.reduce((s: number, e: any) => s + transactionAmount(e.value), 0);
 
     const selectedMonthIndex = selectedYear * 12 + selectedMonth;
 
@@ -270,7 +279,7 @@ export function useProjectedTotals(): ProjectedTotals {
       totalExpense: totals.totalExpense,
       balance: totals.balance,
     };
-  }, [selectedMonth, selectedYear, historicalExpenses, recurringTemplates, exceptionSet, creditCards, invoiceExpenses, isCCPayment, investmentWalletIds]);
+  }, [selectedMonth, selectedYear, historicalExpenses, recurringTemplates, exceptionSet, creditCards, invoiceExpenses, isCCPayment, investmentWalletIds, startingBalance]);
 
   const refetch = () => {
     queryClient.invalidateQueries({ queryKey });
@@ -282,6 +291,7 @@ export function useProjectedTotals(): ProjectedTotals {
     pendingInStartingBalance,
     previousMonth,
     loading: isLoading,
+    error: error instanceof Error ? error : null,
     refetch,
     monthExpenses: result.effectiveMonthExpenses as Expense[],
     invoiceExpenses,

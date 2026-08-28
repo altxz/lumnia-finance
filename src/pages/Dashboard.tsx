@@ -1,265 +1,235 @@
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useCategories } from '@/hooks/useStaticData';
+import { BarChart3, CircleAlert } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
 
-import { useUserSettings } from '@/contexts/UserSettingsContext';
-
-import { SummaryCards } from '@/components/SummaryCards';
-const AddExpenseModal = lazyNamedWithRetry(() => import('@/components/AddExpenseModal'), m => m.AddExpenseModal);
-import { DashboardHeader } from '@/components/DashboardHeader';
-import { InstallPwaPrompt } from '@/components/InstallPwaPrompt';
-import { SmartAlertsCarousel, SmartAlert } from '@/components/SmartAlertsCarousel';
-import { useAnomalyAlerts } from '@/hooks/useAnomalyAlerts';
 import { AppSidebar } from '@/components/AppSidebar';
+import { DashboardHeader } from '@/components/DashboardHeader';
+import { DashboardInsight, type BudgetCategoryStatus } from '@/components/dashboard/DashboardInsight';
+import { DashboardRecentActivity } from '@/components/dashboard/DashboardRecentActivity';
+import { GuidedTour } from '@/components/GuidedTour';
+import { InstallPwaPrompt } from '@/components/InstallPwaPrompt';
 import { MonthSelector } from '@/components/MonthSelector';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SmartAlertsCarousel, type SmartAlert } from '@/components/SmartAlertsCarousel';
+import { SummaryCards } from '@/components/SummaryCards';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { StatePanel } from '@/components/ui/state-panel';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
-import { supabase } from '@/lib/supabase';
-import { getCategoryInfo } from '@/lib/constants';
-import { Navigate } from 'react-router-dom';
+import { useAnomalyAlerts } from '@/hooks/useAnomalyAlerts';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
+import { useCategories } from '@/hooks/useStaticData';
 import { useSummaryHistory } from '@/hooks/useSummaryHistory';
-import { GuidedTour } from '@/components/GuidedTour';
+import { normalizeCategoryKey } from '@/lib/categoryMatch';
+import { getCategoryLabel } from '@/lib/constants';
 import { lazyNamedWithRetry } from '@/lib/lazyWithRetry';
+import { supabase } from '@/lib/supabase';
+import { transactionAmount } from '@/lib/transactionAmount';
 
-// Lazy load all chart/widget components
-const CashFlowChart = lazyNamedWithRetry(() => import('@/components/CashFlowChart'), m => m.CashFlowChart);
-
-const CalendarView = lazyNamedWithRetry(() => import('@/components/CalendarView'), m => m.CalendarView);
-const IncomeVsExpenseChart = lazyNamedWithRetry(() => import('@/components/analytics/IncomeVsExpenseChart'), m => m.IncomeVsExpenseChart);
-const TopExpensesList = lazyNamedWithRetry(() => import('@/components/analytics/TopExpensesList'), m => m.TopExpensesList);
-const CreditUsageChart = lazyNamedWithRetry(() => import('@/components/analytics/CreditUsageChart'), m => m.CreditUsageChart);
-const CreditCardSummary = lazyNamedWithRetry(() => import('@/components/analytics/CreditCardSummary'), m => m.CreditCardSummary);
-const EndOfMonthForecast = lazyNamedWithRetry(() => import('@/components/analytics/EndOfMonthForecast'), m => m.EndOfMonthForecast);
-const DailySpendingChart = lazyNamedWithRetry(() => import('@/components/analytics/DailySpendingChart'), m => m.DailySpendingChart);
-const FixedVsVariableChart = lazyNamedWithRetry(() => import('@/components/analytics/FixedVsVariableChart'), m => m.FixedVsVariableChart);
-const SubcategoryBreakdown = lazyNamedWithRetry(() => import('@/components/analytics/SubcategoryBreakdown'), m => m.SubcategoryBreakdown);
-const SavingsRateGauge = lazyNamedWithRetry(() => import('@/components/analytics/SavingsRateGauge'), m => m.SavingsRateGauge);
-const WeekComparisonChart = lazyNamedWithRetry(() => import('@/components/analytics/WeekComparisonChart'), m => m.WeekComparisonChart);
-const IncomeSourcesPie = lazyNamedWithRetry(() => import('@/components/analytics/IncomeSourcesPie'), m => m.IncomeSourcesPie);
-const WaterfallChart = lazyNamedWithRetry(() => import('@/components/analytics/WaterfallChart'), m => m.WaterfallChart);
-const SpendingHeatmap = lazyNamedWithRetry(() => import('@/components/analytics/SpendingHeatmap'), m => m.SpendingHeatmap);
-const BudgetVsActualChart = lazyNamedWithRetry(() => import('@/components/analytics/BudgetVsActualChart'), m => m.BudgetVsActualChart);
-const NetWorthChart = lazyNamedWithRetry(() => import('@/components/analytics/NetWorthChart'), m => m.NetWorthChart);
-import { TileGrid, Tile } from '@/components/analytics/TileGrid';
-
-function ChartFallback() {
-  return <Skeleton className="h-full w-full rounded-2xl" />;
-}
+const CashFlowChart = lazyNamedWithRetry(() => import('@/components/CashFlowChart'), module => module.CashFlowChart);
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map(i => (
-          <Skeleton key={i} className="h-[88px] rounded-2xl" />
-        ))}
+    <div className="space-y-4 animate-in fade-in duration-200" aria-label="Carregando painel financeiro">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <Skeleton className="h-[280px] rounded-xl" />
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+          {[1, 2, 3].map(item => <Skeleton key={item} className="h-[152px] rounded-xl" />)}
+        </div>
       </div>
-      <Skeleton className="h-[340px] rounded-2xl" />
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        {[1, 2, 3, 4, 5, 6].map(i => (
-          <Skeleton key={i} className="h-[300px] rounded-2xl" />
-        ))}
+      <Skeleton className="h-[92px] rounded-xl" />
+      <Skeleton className="h-[410px] rounded-xl" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
+        <Skeleton className="h-[230px] rounded-xl" />
+        <Skeleton className="h-[300px] rounded-xl" />
       </div>
-      <Skeleton className="h-[320px] rounded-2xl" />
     </div>
   );
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { startDate } = useSelectedDate();
-  const { settings: userSettings, loading: settingsLoading, refetch: refetchSettings } = useUserSettings();
+  const { startDate, label: selectedPeriodLabel } = useSelectedDate();
   const projected = useProjectedTotals();
   const summaryHistory = useSummaryHistory(projected.startingBalance);
   const anomalyAlerts = useAnomalyAlerts();
-  const [modalOpen, setModalOpen] = useState(false);
-  
-  const [budgetTotals, setBudgetTotals] = useState({ totalBudget: 0, totalSpent: 0 });
+  const { data: dbCategories = [], isLoading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories();
 
-  const [budgetAlerts, setBudgetAlerts] = useState<string[]>([]);
-
-  // Categorias vêm do cache compartilhado (30 min)
-  const { data: dbCategories = [], isLoading: categoriesLoading } = useCategories();
-
-  // Mês anterior + orçamentos do mês: cacheados por chave estável
-  const { data: extra, isLoading: extraLoading } = useQuery({
+  const { data: extra, isLoading: extraLoading, error: extraError, refetch: refetchExtra } = useQuery({
     queryKey: ['dashboard-extra', user?.id, startDate],
     queryFn: async () => {
-      const [{ data: budgetData }, { data: recurringBudgetData }] = await Promise.all([
+      const [{ data: budgetData, error: budgetError }, { data: recurringBudgetData, error: recurringBudgetError }] = await Promise.all([
         supabase.from('budgets').select('category, category_id, allocated_amount')
           .eq('user_id', user!.id).eq('month_year', startDate),
-        // Orçamentos recorrentes de meses anteriores (herdados quando não há orçamento no mês)
         supabase.from('budgets').select('category, category_id, allocated_amount, month_year')
           .eq('user_id', user!.id).eq('is_recurring', true).lt('month_year', startDate)
           .order('month_year', { ascending: false }),
       ]);
+      if (budgetError) throw budgetError;
+      if (recurringBudgetError) throw recurringBudgetError;
+
       const current = budgetData || [];
-      const existing = new Set(current.map((b: any) => b.category_id ?? b.category));
+      const existing = new Set(current.map((budget: any) => budget.category_id ?? budget.category));
       const inherited: any[] = [];
       const seen = new Set<string>();
-      (recurringBudgetData || []).forEach((b: any) => {
-        const key = b.category_id ?? b.category;
+      (recurringBudgetData || []).forEach((budget: any) => {
+        const key = budget.category_id ?? budget.category;
         if (!key || existing.has(key) || seen.has(key)) return;
         seen.add(key);
-        inherited.push({ category: b.category, category_id: b.category_id, allocated_amount: b.allocated_amount });
+        inherited.push({ category: budget.category, category_id: budget.category_id, allocated_amount: budget.allocated_amount });
       });
       return { budgets: [...current, ...inherited] };
     },
     enabled: !!user,
   });
 
-  const budgetDataRaw = extra?.budgets ?? [];
-  const dataLoading = categoriesLoading || extraLoading;
-
-  // Compute budget alerts and spending from projected.monthExpenses (avoid duplicate query)
-  useEffect(() => {
-    if (projected.loading || budgetDataRaw.length === 0) return;
-    const spent: Record<string, number> = {};
-    projected.monthExpenses.forEach((e: any) => {
-      if (e.type !== 'income' && !e.description?.startsWith('Pagamento fatura')) spent[e.final_category] = (spent[e.final_category] || 0) + e.value;
+  const budgetData = useMemo(() => extra?.budgets ?? [], [extra?.budgets]);
+  const budgetSummary = useMemo(() => {
+    const spentByCategory: Record<string, number> = {};
+    projected.monthExpenses.forEach(expense => {
+      if (expense.type === 'income' || expense.type === 'transfer' || expense.description?.startsWith('Pagamento fatura')) return;
+      const key = normalizeCategoryKey(expense.final_category);
+      spentByCategory[key] = (spentByCategory[key] || 0) + transactionAmount(expense.value);
     });
-    const warnings: string[] = [];
-    budgetDataRaw.forEach((b: any) => {
-      if (b.allocated_amount > 0) {
-        const pct = (spent[b.category] || 0) / b.allocated_amount * 100;
-        if (pct >= 80) warnings.push(getCategoryInfo(b.category).label);
-      }
+    const statuses = budgetData.flatMap((budget: any): BudgetCategoryStatus[] => {
+      if (!budget.allocated_amount) return [];
+      const categoryName = dbCategories.find(category => category.id === budget.category_id)?.name || budget.category;
+      const spent = spentByCategory[normalizeCategoryKey(categoryName)] || 0;
+      const limit = Number(budget.allocated_amount) || 0;
+      return [{ name: getCategoryLabel(categoryName), spent, limit, ratio: limit > 0 ? spent / limit : 0 }];
     });
-    setBudgetAlerts(warnings);
-    setBudgetTotals({
-      totalBudget: budgetDataRaw.reduce((s: number, b: any) => s + (b.allocated_amount || 0), 0),
-      totalSpent: Object.values(spent).reduce((s: number, v: number) => s + v, 0),
+    return {
+      statuses,
+      exceeded: statuses.filter(status => status.ratio >= 1),
+    };
+  }, [budgetData, dbCategories, projected.monthExpenses]);
+
+  const alerts = useMemo<SmartAlert[]>(() => {
+    const result = [...anomalyAlerts];
+    if (projected.projectedBalance < 0) {
+      result.unshift({
+        id: 'negative-balance',
+        type: 'critical',
+        icon: 'wallet',
+        title: 'Saldo projetado negativo',
+        description: 'As saídas previstas superam o caixa do período. Revise os próximos compromissos.',
+      });
+    }
+    budgetSummary.exceeded.forEach((status, index) => {
+      result.push({
+        id: `budget-${index}`,
+        type: status.ratio >= 1.2 ? 'critical' : 'warning',
+        icon: 'budget',
+        title: `${status.name} ultrapassou o orçamento`,
+        description: `A categoria chegou a ${Math.round(status.ratio * 100)}% do orçamento definido.`,
+      });
     });
-  }, [projected.monthExpenses, projected.loading, budgetDataRaw]);
+    return result;
+  }, [anomalyAlerts, budgetSummary.exceeded, projected.projectedBalance]);
 
-  // Compute hasOverdueCards from projected.creditCards (avoid duplicate query)
-  const hasOverdueCardsComputed = useMemo(() => {
-    const today = new Date();
-    return projected.creditCards.some((c: any) => c.due_day < today.getDate());
-  }, [projected.creditCards]);
-
-  // Derive unpaid CC expenses for CreditUsageChart
-  const unpaidCCExpenses = useMemo(() =>
-    projected.invoiceExpenses
-      .filter(e => !e.is_paid)
-      .map(e => ({ value: e.value, credit_card_id: e.credit_card_id! })),
-    [projected.invoiceExpenses]
-  );
-
-  // Cards with limit info for CreditUsageChart
-  const cardsForUsage = useMemo(() =>
-    projected.creditCards.map(c => ({ id: c.id, name: c.name, limit_amount: c.limit_amount })),
-    [projected.creditCards]
-  );
-
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
+  if (authLoading) return <PageLoadingSkeleton title="Carregando resumo financeiro" />;
   if (!user) return <Navigate to="/auth" replace />;
 
-  const isLoading = dataLoading || projected.loading;
+  const isLoading = categoriesLoading || extraLoading || projected.loading || summaryHistory.loading;
+  const loadError = projected.error || categoriesError || extraError;
+  const retry = () => {
+    projected.refetch();
+    void refetchCategories();
+    void refetchExtra();
+  };
+  const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário';
+  const firstName = displayName.trim().split(/\s+/)[0];
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? 'Bom dia' : currentHour < 18 ? 'Boa tarde' : 'Boa noite';
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-1 flex-col">
           <DashboardHeader />
-          <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
-            <InstallPwaPrompt />
-            <MonthSelector />
+          <main className="flex-1 overflow-auto px-3 pb-32 pt-4 sm:px-5 lg:px-8 lg:pb-12 lg:pt-7">
+            <div className="mx-auto w-full max-w-[1440px] space-y-4 sm:space-y-5">
+              <InstallPwaPrompt />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="type-title-1">{greeting}, {firstName}</h1>
+                  <p className="mt-1 text-sm text-muted-foreground">Confira o resumo de {selectedPeriodLabel}.</p>
+                </div>
+                <MonthSelector />
+              </div>
 
-            {isLoading ? (
-              <DashboardSkeleton />
-            ) : (
-              <>
-                {(() => {
-                  const allAlerts: SmartAlert[] = [...anomalyAlerts];
-                  if (projected.projectedBalance < 0) {
-                    allAlerts.unshift({
-                      id: 'negative-balance',
-                      type: 'critical',
-                      icon: 'wallet',
-                      title: 'Saldo previsto negativo',
-                      description: `${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(projected.projectedBalance)}. Revise suas despesas.`,
-                    });
-                  }
-                  budgetAlerts.forEach((label, i) => {
-                    allAlerts.push({
-                      id: `budget-${i}`,
-                      type: 'warning',
-                      icon: 'budget',
-                      title: `Orçamento: ${label}`,
-                      description: 'Você está próximo de ultrapassar o limite definido para esta categoria.',
-                    });
-                  });
-                  return <SmartAlertsCarousel alerts={allAlerts} />;
-                })()}
-
-                <SummaryCards
-                  balance={projected.projectedBalance}
-                  totalIncome={projected.totalIncome}
-                  totalExpense={projected.totalExpense}
-                  largestCategory={projected.largestCategory}
-                  prevBalance={projected.previousMonth.balance}
-                  prevIncome={projected.previousMonth.totalIncome}
-                  prevExpense={projected.previousMonth.totalExpense}
-                  debitExpense={projected.debitExpense}
-                  invoiceExpense={projected.invoiceTotal}
-                  cardPurchases={projected.cardPurchases}
-                  pendingInStartingBalance={projected.pendingInStartingBalance}
-                  balanceHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.balance }))}
-                  incomeHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.income }))}
-                  expenseHistory={summaryHistory.points.map(p => ({ label: p.label, value: p.expense }))}
-                  categoryHistory={summaryHistory
-                    .categorySeries(projected.largestCategory?.categoryKey)
-                    .map(p => ({ label: p.label, value: p.expense }))}
+              {loadError ? (
+                <StatePanel
+                  tone="error"
+                  icon={<CircleAlert className="h-5 w-5" />}
+                  title="Não foi possível carregar seu resumo"
+                  description="Os dados financeiros não foram alterados. Tente carregar novamente quando a conexão estiver estável."
+                  actionLabel="Tentar novamente"
+                  onAction={retry}
+                  className="min-h-[360px]"
                 />
+              ) : isLoading ? (
+                <DashboardSkeleton />
+              ) : (
+                <div className="space-y-7 sm:space-y-8 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                  <SummaryCards
+                    balance={projected.projectedBalance}
+                    totalIncome={projected.totalIncome}
+                    totalExpense={projected.totalExpense}
+                    largestCategory={projected.largestCategory}
+                    prevBalance={projected.startingBalance}
+                    prevIncome={projected.previousMonth.totalIncome}
+                    prevExpense={projected.previousMonth.totalExpense}
+                    debitExpense={projected.debitExpense}
+                    invoiceExpense={projected.invoiceTotal}
+                    cardPurchases={projected.cardPurchases}
+                    pendingInStartingBalance={projected.pendingInStartingBalance}
+                    balanceHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.balance }))}
+                    incomeHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.income }))}
+                    expenseHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.expense }))}
+                    categoryHistory={summaryHistory.categorySeries(projected.largestCategory?.categoryKey).map(point => ({ label: point.label, value: point.expense }))}
+                  />
 
+                  <SmartAlertsCarousel alerts={alerts} />
 
-                {/* Painel de Gráficos */}
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Painel de Análises</h2>
+                  <section aria-labelledby="cash-flow-title" className="space-y-3">
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <h2 id="cash-flow-title" className="type-title-2">Ritmo do caixa</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Realizado e previsto ao longo do mês.</p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => navigate('/analytics')} className="rounded-full text-primary">
+                        <BarChart3 className="mr-1.5 h-4 w-4" /> Análises
+                      </Button>
+                    </div>
+                    <div className="h-[390px] sm:h-[430px]">
+                      <Suspense fallback={<Skeleton className="h-full rounded-xl" />}>
+                        <CashFlowChart />
+                      </Suspense>
+                    </div>
+                  </section>
 
-                <Suspense fallback={<TileGrid><Tile size="wide"><ChartFallback /></Tile><Tile size="medium"><ChartFallback /></Tile><Tile size="medium"><ChartFallback /></Tile></TileGrid>}>
-                <TileGrid>
-                  <Tile size="wide"><Suspense fallback={<ChartFallback />}><CreditCardSummary cards={projected.creditCards} allExpenses={projected.invoiceExpenses} wallets={projected.wallets} refetch={projected.refetch} /></Suspense></Tile>
-                  <Tile size="wide" mobile="tall"><Suspense fallback={<ChartFallback />}><CashFlowChart creditCards={projected.creditCards} wallets={projected.wallets} /></Suspense></Tile>
+                  <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,.78fr)_minmax(0,1.22fr)]">
+                    <DashboardInsight categories={budgetSummary.statuses} />
+                    <DashboardRecentActivity expenses={projected.monthExpenses} categories={dbCategories} />
+                  </div>
 
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><TopExpensesList expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><SubcategoryBreakdown expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
-
-                  <Tile size="small" mobile="half"><Suspense fallback={<ChartFallback />}><FixedVsVariableChart expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="small" mobile="half"><Suspense fallback={<ChartFallback />}><SavingsRateGauge totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
-                  <Tile size="small" mobile="full"><Suspense fallback={<ChartFallback />}><IncomeSourcesPie expenses={projected.monthExpenses} categories={dbCategories} /></Suspense></Tile>
-                  <Tile size="small" mobile="full"><Suspense fallback={<ChartFallback />}><IncomeVsExpenseChart totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} /></Suspense></Tile>
-
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><DailySpendingChart expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><WaterfallChart startingBalance={projected.startingBalance} totalIncome={projected.totalIncome} totalExpense={projected.totalExpense} debitExpense={projected.debitExpense} invoiceTotal={projected.invoiceTotal} invoicePaid={projected.invoicePaid} invoiceProjected={projected.invoiceProjected} cardPurchases={projected.cardPurchases} byCategory={projected.byCategory} projectedBalance={projected.projectedBalance} /></Suspense></Tile>
-
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><WeekComparisonChart expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium" mobile="full"><Suspense fallback={<ChartFallback />}><BudgetVsActualChart budgets={budgetDataRaw as any} expenses={projected.monthExpenses} /></Suspense></Tile>
-
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><EndOfMonthForecast /></Suspense></Tile>
-                  <Tile size="medium" mobile="tall"><Suspense fallback={<ChartFallback />}><CalendarView expenses={projected.monthExpenses} wallets={projected.wallets} /></Suspense></Tile>
-
-                  <Tile size="medium"><Suspense fallback={<ChartFallback />}><SpendingHeatmap expenses={projected.monthExpenses} /></Suspense></Tile>
-                  <Tile size="medium" mobile="full"><Suspense fallback={<ChartFallback />}><CreditUsageChart cards={cardsForUsage} unpaidExpenses={unpaidCCExpenses} /></Suspense></Tile>
-
-                  <Tile size="wide" mobile="tall"><Suspense fallback={<ChartFallback />}><NetWorthChart /></Suspense></Tile>
-
-                </TileGrid>
-                </Suspense>
-              </>
-            )}
+                  <div className="flex justify-center pt-1">
+                    <Button variant="outline" className="rounded-full" onClick={() => navigate('/analytics')}>
+                      Explorar todas as análises <BarChart3 className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </main>
         </div>
       </div>
-      {modalOpen && (
-        <Suspense fallback={null}>
-          <AddExpenseModal open={modalOpen} onOpenChange={setModalOpen} onExpenseAdded={projected.refetch} />
-        </Suspense>
-      )}
       <GuidedTour />
     </SidebarProvider>
   );

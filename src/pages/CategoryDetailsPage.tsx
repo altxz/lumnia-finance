@@ -9,7 +9,10 @@ import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { MonthSelector } from '@/components/MonthSelector';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import {
   ArrowLeft,
   Loader2,
@@ -27,6 +30,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  TriangleAlert,
+  Check,
 } from 'lucide-react';
 import { icons } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
@@ -34,6 +39,10 @@ import { format, parseISO, startOfMonth, endOfMonth, subMonths, eachDayOfInterva
 import { ptBR } from 'date-fns/locale';
 import { hideMaterializedRecurringTemplates } from '@/lib/recurringProjection';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, LineChart, Line, CartesianGrid } from 'recharts';
+import { StatePanel } from '@/components/ui/state-panel';
+import { useBudgetData } from '@/hooks/useBudgetData';
+import { cn } from '@/lib/utils';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Category {
   id: string;
@@ -79,39 +88,97 @@ export default function CategoryDetailsPage() {
   const [previousExpenses, setPreviousExpenses] = useState<Expense[]>([]);
   const [trendData, setTrendData] = useState<{ month: string; total: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [budgetDraft, setBudgetDraft] = useState('');
+  const { tree: budgetTree, saveBudget, savingId } = useBudgetData();
+
+  const budgetContext = useMemo(() => {
+    if (!id) return null;
+    const parentNode = budgetTree.find(node => node.category.id === id);
+    if (parentNode) {
+      const childAllocated = Object.values(parentNode.childBudgets)
+        .reduce((sum, budget) => sum + Number(budget?.allocated_amount || 0), 0);
+      return {
+        allocated: Number(parentNode.budget?.allocated_amount || 0),
+        totalAllocated: Number(parentNode.budget?.allocated_amount || 0) + childAllocated,
+        spent: Number(parentNode.spent || 0),
+        directSpent: Math.max(0, Number(parentNode.spent || 0) - Object.values(parentNode.childSpent).reduce((sum, amount) => sum + Number(amount || 0), 0)),
+        prevBudget: Number(parentNode.prevBudget || 0),
+        isRecurring: Boolean(parentNode.budget?.is_recurring),
+        children: parentNode.children.map(child => ({
+          ...child,
+          allocated: Number(parentNode.childBudgets[child.id]?.allocated_amount || 0),
+          spent: Number(parentNode.childSpent[child.id] || 0),
+        })),
+      };
+    }
+
+    const childParent = budgetTree.find(node => node.children.some(child => child.id === id));
+    if (!childParent) return null;
+    return {
+      allocated: Number(childParent.childBudgets[id]?.allocated_amount || 0),
+      totalAllocated: Number(childParent.childBudgets[id]?.allocated_amount || 0),
+      spent: Number(childParent.childSpent[id] || 0),
+      directSpent: Number(childParent.childSpent[id] || 0),
+      prevBudget: Number(childParent.childPrevBudgets[id] || 0),
+      isRecurring: Boolean(childParent.childBudgets[id]?.is_recurring),
+      children: [],
+    };
+  }, [budgetTree, id]);
+
+  useEffect(() => {
+    setBudgetDraft(budgetContext?.allocated ? String(budgetContext.allocated) : '');
+  }, [budgetContext?.allocated]);
 
   const fetchData = useCallback(async () => {
     if (!user || !id) return;
     setLoading(true);
+    setError(null);
 
-    const { data: cat } = await supabase
+    const { data: cat, error: categoryError } = await supabase
       .from('categories')
       .select('id, name, icon, color, parent_id')
       .eq('id', id)
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (categoryError) {
+      setError(categoryError.message || 'Não foi possível carregar a categoria.');
+      setLoading(false);
+      return;
+    }
+
     if (!cat) { setLoading(false); return; }
     setCategory(cat as Category);
 
     // Parent category info (if this is a subcategory)
     if (cat.parent_id) {
-      const { data: p } = await supabase
+      const { data: p, error: parentError } = await supabase
         .from('categories')
         .select('id, name, icon, color, parent_id')
         .eq('id', cat.parent_id)
         .maybeSingle();
+      if (parentError) {
+        setError(parentError.message || 'Não foi possível carregar a categoria principal.');
+        setLoading(false);
+        return;
+      }
       setParentCategory((p as Category) || null);
     } else {
       setParentCategory(null);
     }
 
     // Subcategories so we can also include their transactions
-    const { data: subs } = await supabase
+    const { data: subs, error: subcategoriesError } = await supabase
       .from('categories')
       .select('id, name, icon, color, parent_id')
       .eq('user_id', user.id)
       .eq('parent_id', cat.id);
+    if (subcategoriesError) {
+      setError(subcategoriesError.message || 'Não foi possível carregar as subcategorias.');
+      setLoading(false);
+      return;
+    }
     setSubCategories((subs || []) as Category[]);
 
     const namesToMatch = [cat.name, ...(subs || []).map(s => s.name)];
@@ -121,7 +188,7 @@ export default function CategoryDetailsPage() {
     const select = 'id, description, date, value, type, final_category, is_paid, credit_card_id, is_recurring, wallet_id, payment_method, project_id';
 
     // Current period
-    const { data: exps } = await supabase
+    const { data: exps, error: expensesError } = await supabase
       .from('expenses')
       .select(select)
       .eq('user_id', user.id)
@@ -133,7 +200,7 @@ export default function CategoryDetailsPage() {
     // Previous period (same month, last year-month)
     const prevStart = format(startOfMonth(subMonths(selectedDate, 1)), 'yyyy-MM-dd');
     const prevEnd = format(endOfMonth(subMonths(selectedDate, 1)), 'yyyy-MM-dd');
-    const { data: prevExps } = await supabase
+    const { data: prevExps, error: previousExpensesError } = await supabase
       .from('expenses')
       .select(select)
       .eq('user_id', user.id)
@@ -144,13 +211,20 @@ export default function CategoryDetailsPage() {
     // Last 6 months trend
     const sixMonthsAgoStart = format(startOfMonth(subMonths(selectedDate, 5)), 'yyyy-MM-dd');
     const trendEnd = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
-    const { data: trendExps } = await supabase
+    const { data: trendExps, error: trendExpensesError } = await supabase
       .from('expenses')
       .select(select)
       .eq('user_id', user.id)
       .gte('date', sixMonthsAgoStart)
       .lte('date', trendEnd)
       .in('final_category', allNames);
+
+    const requestError = expensesError || previousExpensesError || trendExpensesError;
+    if (requestError) {
+      setError(requestError.message || 'Não foi possível carregar os lançamentos desta categoria.');
+      setLoading(false);
+      return;
+    }
 
     const dedupedCurrent = hideMaterializedRecurringTemplates((exps || []) as Expense[]);
     const dedupedPrev = hideMaterializedRecurringTemplates((prevExps || []) as Expense[]);
@@ -169,7 +243,7 @@ export default function CategoryDetailsPage() {
       if (e.type === 'transfer') return;
       const monthKey = e.date.slice(0, 7);
       const m = months.find(x => x.key === monthKey);
-      if (m) m.total += Number(e.value);
+      if (m) m.total += transactionAmount(e.value);
     });
     setTrendData(months.map(m => ({ month: m.label, total: m.total })));
 
@@ -181,11 +255,12 @@ export default function CategoryDetailsPage() {
   const totals = useMemo(() => {
     let income = 0, expense = 0, paid = 0, pending = 0, recurringCount = 0;
     expenses.forEach(e => {
-      if (e.type === 'income') income += Number(e.value);
+      const amount = transactionAmount(e.value);
+      if (e.type === 'income') income += amount;
       else if (e.type !== 'transfer') {
-        expense += Number(e.value);
-        if (e.is_paid) paid += Number(e.value);
-        else pending += Number(e.value);
+        expense += amount;
+        if (e.is_paid) paid += amount;
+        else pending += amount;
       }
       if (e.is_recurring) recurringCount += 1;
     });
@@ -197,7 +272,7 @@ export default function CategoryDetailsPage() {
 
   // Monthly comparison
   const previousExpense = useMemo(() => {
-    return previousExpenses.reduce((s, e) => e.type === 'expense' ? s + Number(e.value) : s, 0);
+    return previousExpenses.reduce((s, e) => e.type === 'expense' ? s + transactionAmount(e.value) : s, 0);
   }, [previousExpenses]);
 
   const variation = useMemo(() => {
@@ -205,22 +280,11 @@ export default function CategoryDetailsPage() {
     return ((totals.expense - previousExpense) / previousExpense) * 100;
   }, [totals.expense, previousExpense]);
 
-  // Group by sub-category for the breakdown panel
-  const breakdown = useMemo(() => {
-    const map: Record<string, number> = {};
-    expenses.forEach(e => {
-      if (e.type === 'transfer') return;
-      const key = e.final_category;
-      map[key] = (map[key] || 0) + Number(e.value);
-    });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [expenses]);
-
   // Top 5 largest transactions
   const topTransactions = useMemo(() => {
     return [...expenses]
       .filter(e => e.type !== 'transfer')
-      .sort((a, b) => Number(b.value) - Number(a.value))
+      .sort((a, b) => transactionAmount(b.value) - transactionAmount(a.value))
       .slice(0, 5);
   }, [expenses]);
 
@@ -230,7 +294,7 @@ export default function CategoryDetailsPage() {
     return days.map(d => {
       const total = expenses
         .filter(e => e.type === 'expense' && isSameDay(parseISO(e.date), d))
-        .reduce((s, e) => s + Number(e.value), 0);
+        .reduce((s, e) => s + transactionAmount(e.value), 0);
       return { day: format(d, 'dd'), total };
     });
   }, [expenses, selectedDate]);
@@ -242,7 +306,7 @@ export default function CategoryDetailsPage() {
     expenses.forEach(e => {
       if (e.type !== 'expense') return;
       const dow = parseISO(e.date).getDay();
-      totals[dow] += Number(e.value);
+      totals[dow] += transactionAmount(e.value);
     });
     const max = Math.max(...totals);
     const peakIdx = totals.indexOf(max);
@@ -256,7 +320,7 @@ export default function CategoryDetailsPage() {
     return peak.total > 0 ? peak : null;
   }, [dailyData]);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
+  if (authLoading) return <PageLoadingSkeleton title="Carregando categoria" />;
   if (!user) return <Navigate to="/auth" replace />;
 
   const accent = category?.color || 'hsl(var(--primary))';
@@ -283,17 +347,17 @@ export default function CategoryDetailsPage() {
                       <LucideIcon name={category.icon || 'tag'} className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">{category.name}</h1>
+                      <h1 className="break-words text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">{category.name}</h1>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {parentCategory && (
-                          <Badge variant="secondary" className="rounded-lg text-[10px] px-1.5 py-0 max-w-[140px] truncate">
+                          <Badge variant="secondary" className="h-auto whitespace-normal break-words rounded-lg px-1.5 py-0 text-[10px]">
                             ↳ {parentCategory.name}
                           </Badge>
                         )}
                         {subCategories.length > 0 && (
                           <Badge variant="outline" className="rounded-lg text-[10px] px-1.5 py-0">{subCategories.length} subs</Badge>
                         )}
-                        <p className="text-[10px] sm:text-xs text-muted-foreground capitalize truncate">{label}</p>
+                        <p className="text-[10px] text-muted-foreground capitalize sm:text-xs">{label}</p>
                       </div>
                     </div>
                   </div>
@@ -310,64 +374,99 @@ export default function CategoryDetailsPage() {
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : error ? (
+              <StatePanel
+                tone="error"
+                icon={<TriangleAlert className="h-5 w-5" />}
+                title="Não foi possível carregar a categoria"
+                description="Os indicadores não foram atualizados. Verifique a conexão e tente novamente."
+                actionLabel="Tentar novamente"
+                onAction={fetchData}
+              />
+            ) : !category ? (
+              <StatePanel
+                icon={<Tag className="h-5 w-5" />}
+                title="Categoria não encontrada"
+                description="Ela pode ter sido removida ou não estar disponível nesta conta."
+                actionLabel="Voltar para categorias"
+                onAction={() => navigate('/categorias')}
+              />
             ) : (
               <>
-                {/* Hero KPI banner */}
-                <Card className="rounded-2xl border-0 shadow-card overflow-hidden">
-                  <CardContent
-                    className="p-4 sm:p-6 lg:p-8 relative"
-                    style={{ background: `linear-gradient(135deg, ${accent}15, ${accent}05)` }}
-                  >
-                    <div className="grid gap-4 sm:gap-6 md:grid-cols-3 items-center">
+                <Card className="overflow-hidden rounded-3xl border shadow-card">
+                  <CardContent className="space-y-5 p-5 sm:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Total gasto no período</p>
-                        <p className="text-2xl sm:text-3xl lg:text-4xl font-bold mt-1 break-words" style={{ color: accent }}>
-                          {formatCurrency(totals.expense)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          {variation === null ? (
-                            <Badge variant="secondary" className="rounded-lg text-xs">
-                              <Minus className="h-3 w-3 mr-1" /> Sem dados anteriores
-                            </Badge>
-                          ) : variation > 0 ? (
-                            <Badge variant="secondary" className="rounded-lg text-xs bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300">
-                              <ArrowUpRight className="h-3 w-3 mr-1" /> +{variation.toFixed(1)}% vs mês anterior
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="rounded-lg text-xs bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
-                              <ArrowDownRight className="h-3 w-3 mr-1" /> {variation.toFixed(1)}% vs mês anterior
-                            </Badge>
-                          )}
-                        </div>
+                        <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Visão do período</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Gastos e orçamento de {label}.</p>
                       </div>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Ticket médio</p>
-                          <p className="text-xl font-bold">{formatCurrency(totals.avgTicket)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Lançamentos</p>
-                          <p className="text-xl font-bold">{totals.count}</p>
-                        </div>
+                      {variation === null ? (
+                        <Badge variant="secondary" className="h-auto whitespace-normal rounded-full px-3 py-1.5 text-xs"><Minus className="mr-1 h-3.5 w-3.5" />Sem base comparável</Badge>
+                      ) : (
+                        <Badge variant="secondary" className={cn('h-auto whitespace-normal rounded-full px-3 py-1.5 text-xs', variation > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300')}>
+                          {variation > 0 ? <ArrowUpRight className="mr-1 h-3.5 w-3.5" /> : <ArrowDownRight className="mr-1 h-3.5 w-3.5" />}
+                          {Math.abs(variation).toFixed(1)}% em relação ao mês anterior
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div className="min-w-0">
+                        <p className="text-sm text-muted-foreground">Gasto no período</p>
+                        <p className="mt-1 break-words text-3xl font-semibold tracking-tight sm:text-4xl" style={{ color: accent }}>{formatCurrency(totals.expense)}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">{totals.count} lançamento{totals.count === 1 ? '' : 's'} neste período.</p>
                       </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                          <p className="text-xs text-muted-foreground flex-1">Pago</p>
-                          <p className="text-sm font-semibold">{formatCurrency(totals.paid)}</p>
+                      <div className="rounded-2xl border bg-muted/35 p-4">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="text-sm font-medium">Orçamento monitorado</p>
+                          <p className="whitespace-nowrap text-lg font-semibold tabular-nums">{budgetContext && budgetContext.totalAllocated > 0 ? formatCurrency(budgetContext.totalAllocated) : 'Não definido'}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-amber-500" />
-                          <p className="text-xs text-muted-foreground flex-1">Pendente</p>
-                          <p className="text-sm font-semibold">{formatCurrency(totals.pending)}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Repeat className="h-3 w-3 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground flex-1">Recorrentes</p>
-                          <p className="text-sm font-semibold">{totals.recurringCount}</p>
-                        </div>
+                        {budgetContext && budgetContext.totalAllocated > 0 ? (
+                          <>
+                            <Progress value={Math.min(100, (budgetContext.spent / budgetContext.totalAllocated) * 100)} className={cn('mt-3 h-2.5', budgetContext.spent >= budgetContext.totalAllocated && '[&>div]:bg-destructive', budgetContext.spent >= budgetContext.totalAllocated * 0.8 && budgetContext.spent < budgetContext.totalAllocated && '[&>div]:bg-amber-500')} />
+                            <p className={cn('mt-2 text-sm', budgetContext.spent >= budgetContext.totalAllocated ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+                              {((budgetContext.spent / budgetContext.totalAllocated) * 100).toFixed(0)}% utilizado, {formatCurrency(Math.max(0, budgetContext.totalAllocated - budgetContext.spent))} disponível.
+                            </p>
+                          </>
+                        ) : <p className="mt-2 text-sm text-muted-foreground">Defina um orçamento para acompanhar este grupo.</p>}
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-3xl border shadow-soft">
+                  <CardContent className="space-y-4 p-5 sm:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold">Orçamento desta categoria</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Este valor é independente dos orçamentos das subcategorias.</p>
+                      </div>
+                      {budgetContext?.isRecurring && <Badge variant="secondary" className="rounded-full"><Repeat className="mr-1 h-3.5 w-3.5" />Repete mensalmente</Badge>}
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                      <label className="grid gap-2 text-sm font-medium">
+                        Valor mensal
+                        <Input
+                          inputMode="decimal"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={budgetDraft}
+                          onChange={event => setBudgetDraft(event.target.value)}
+                          placeholder="0,00"
+                          className="h-12 rounded-2xl text-base tabular-nums"
+                        />
+                      </label>
+                      <Button
+                        type="button"
+                        onClick={() => id && saveBudget(id, Number(budgetDraft) || 0, budgetContext?.isRecurring)}
+                        disabled={!id || savingId === id}
+                        className="h-12 rounded-full px-5"
+                      >
+                        <Check className="mr-2 h-4 w-4" />{savingId === id ? 'Salvando' : 'Salvar orçamento'}
+                      </Button>
+                    </div>
+                    {budgetContext?.prevBudget && !budgetContext.allocated ? <p className="text-sm text-muted-foreground">No mês anterior, o orçamento foi {formatCurrency(budgetContext.prevBudget)}.</p> : null}
                   </CardContent>
                 </Card>
 
@@ -380,7 +479,7 @@ export default function CategoryDetailsPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase">Entradas</p>
-                        <p className="text-base font-bold truncate">{formatCurrency(totals.income)}</p>
+                        <p className="break-words text-base font-bold">{formatCurrency(totals.income)}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -391,7 +490,7 @@ export default function CategoryDetailsPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase">Saídas</p>
-                        <p className="text-base font-bold truncate">{formatCurrency(totals.expense)}</p>
+                        <p className="break-words text-base font-bold">{formatCurrency(totals.expense)}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -402,10 +501,10 @@ export default function CategoryDetailsPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase">Maior dia</p>
-                        <p className="text-base font-bold truncate">
+                        <p className="break-words text-base font-bold">
                           {heaviestDay ? `Dia ${heaviestDay.day}` : '—'}
                         </p>
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="break-words text-[10px] text-muted-foreground">
                           {heaviestDay ? formatCurrency(heaviestDay.total) : 'Sem gastos'}
                         </p>
                       </div>
@@ -418,8 +517,8 @@ export default function CategoryDetailsPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase">Dia + ativo</p>
-                        <p className="text-base font-bold truncate">{weekdayStats.peakDay}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="break-words text-base font-bold">{weekdayStats.peakDay}</p>
+                        <p className="break-words text-[10px] text-muted-foreground">
                           {weekdayStats.peakValue > 0 ? formatCurrency(weekdayStats.peakValue) : '—'}
                         </p>
                       </div>
@@ -479,44 +578,54 @@ export default function CategoryDetailsPage() {
                   </Card>
                 </div>
 
-                {/* Breakdown by subcategory */}
-                {subCategories.length > 0 && breakdown.length > 0 && (
-                  <Card className="rounded-2xl border-0 shadow-card">
-                    <CardContent className="p-5 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-semibold">Distribuição por subcategoria</h2>
-                        <Badge variant="outline" className="rounded-lg text-[10px]">{breakdown.length} grupos</Badge>
+                {subCategories.length > 0 && (
+                  <section className="space-y-3" aria-labelledby="subcategories-title">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <div>
+                        <h2 id="subcategories-title" className="text-xl font-semibold">Subcategorias</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Cada orçamento é acompanhado de forma independente.</p>
                       </div>
-                      <div className="space-y-2.5">
-                        {breakdown.map(([name, value]) => {
-                          const pct = totals.expense + totals.income > 0
-                            ? (value / (totals.expense + totals.income)) * 100
-                            : 0;
-                          const sub = subCategories.find(s => s.name.toLowerCase() === name.toLowerCase());
-                          return (
-                            <button
-                              type="button"
-                              key={name}
-                              onClick={() => sub && navigate(`/categorias/${sub.id}`)}
-                              className={`w-full text-left space-y-1 p-2 rounded-xl transition-colors ${sub ? 'hover:bg-secondary/60 cursor-pointer' : ''}`}
-                              disabled={!sub}
-                            >
-                              <div className="flex items-center justify-between text-xs gap-2">
-                                <span className="font-medium capitalize truncate flex-1">{name}</span>
-                                <span className="text-muted-foreground shrink-0">{formatCurrency(value)} · {pct.toFixed(0)}%</span>
+                      <Badge variant="secondary" className="rounded-full">{subCategories.length} cadastrada{subCategories.length === 1 ? '' : 's'}</Badge>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {subCategories.map(subcategory => {
+                        const budget = budgetContext?.children.find(child => child.id === subcategory.id);
+                        const allocated = Number(budget?.allocated || 0);
+                        const spent = Number(budget?.spent || 0);
+                        const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
+                        const isOver = allocated > 0 && percentage >= 100;
+                        const isWarning = allocated > 0 && percentage >= 80 && percentage < 100;
+                        return (
+                          <button
+                            type="button"
+                            key={subcategory.id}
+                            onClick={() => navigate(`/categorias/${subcategory.id}`)}
+                            className={cn('w-full rounded-2xl border p-4 text-left transition-colors hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', isOver && 'border-destructive/40')}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${subcategory.color}20` }}>
+                                <LucideIcon name={subcategory.icon} className="h-4 w-4" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block break-words text-base font-semibold leading-tight">{subcategory.name}</span>
+                                <span className="mt-1 block text-sm text-muted-foreground">Gasto: <span className={cn('whitespace-nowrap font-medium tabular-nums', isOver && 'text-destructive')}>{formatCurrency(spent)}</span></span>
+                              </span>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
+                                <span className="text-muted-foreground">Orçamento</span>
+                                <span className="whitespace-nowrap font-semibold tabular-nums">{allocated > 0 ? formatCurrency(allocated) : 'Não definido'}</span>
                               </div>
-                              <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{ width: `${Math.min(100, pct)}%`, backgroundColor: sub?.color || accent }}
-                                />
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                              <Progress value={Math.min(100, percentage)} className={cn('h-2', isOver && '[&>div]:bg-destructive', isWarning && '[&>div]:bg-amber-500')} />
+                              <span className={cn('block text-xs', isOver ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+                                {allocated > 0 ? `${percentage.toFixed(0)}% utilizado` : 'Orçamento não definido'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
                 )}
 
                 {/* Top 5 transactions */}
@@ -538,12 +647,12 @@ export default function CategoryDetailsPage() {
                               {idx + 1}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate">{e.description}</p>
+                              <p className="break-words text-sm font-medium">{e.description}</p>
                               <p className="text-[11px] text-muted-foreground">
                                 {format(parseISO(e.date), "dd 'de' MMM", { locale: ptBR })} · {e.final_category}
                               </p>
                             </div>
-                            <p className="text-sm font-bold text-foreground shrink-0">{formatCurrency(Number(e.value))}</p>
+                            <p className="text-sm font-bold text-foreground shrink-0">{formatCurrency(transactionAmount(e.value))}</p>
                           </li>
                         ))}
                       </ul>
@@ -577,7 +686,7 @@ export default function CategoryDetailsPage() {
                                 {e.credit_card_id ? <CreditCard className="h-4 w-4" /> : isIncome ? <TrendingUp className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium truncate">{e.description}</p>
+                                <p className="break-words text-sm font-medium">{e.description}</p>
                                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                   <p className="text-xs text-muted-foreground">
                                     {format(parseISO(e.date), "dd 'de' MMM", { locale: ptBR })}
@@ -597,7 +706,7 @@ export default function CategoryDetailsPage() {
                               </div>
                               <div className="text-right shrink-0">
                                 <p className={`text-sm font-bold ${isIncome ? 'text-success' : 'text-destructive'}`}>
-                                  {sign} {formatCurrency(Number(e.value))}
+                                  {sign} {formatCurrency(transactionAmount(e.value))}
                                 </p>
                               </div>
                               <Button

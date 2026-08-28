@@ -66,7 +66,7 @@ function ProgressRow({
       </div>
 
       <div className="flex items-center gap-1 sm:w-52 shrink-0">
-        <span className="text-xs text-muted-foreground whitespace-nowrap">Meta:</span>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">Orçamento:</span>
         <Input
           type="number"
           step="50"
@@ -84,7 +84,9 @@ function ProgressRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={handleToggleRecurring}
+              aria-label={isRecurring ? `Desativar repetição mensal do orçamento de ${label}` : `Repetir mensalmente o orçamento de ${label}`}
               className={`shrink-0 p-1 rounded-md transition-colors ${
                 isRecurring
                   ? 'text-primary bg-primary/10'
@@ -102,7 +104,12 @@ function ProgressRow({
         {prevBudget > 0 && allocated === 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button onClick={handleApplySuggestion} className="text-amber-500 hover:text-amber-600 shrink-0">
+              <button
+                type="button"
+                onClick={handleApplySuggestion}
+                aria-label={`Usar orçamento do mês anterior para ${label}`}
+                className="text-amber-500 hover:text-amber-600 shrink-0"
+              >
                 <Lightbulb className="h-4 w-4" />
               </button>
             </TooltipTrigger>
@@ -141,32 +148,47 @@ function ProgressRow({
 }
 
 export function BudgetCategoryRow({ node, saveBudget, savingId }: Props) {
+  const [open, setOpen] = useState(false);
   const { category, children, budget, childBudgets, spent, childSpent, prevBudget, childPrevBudgets } = node;
   const totalAllocated = (budget?.allocated_amount || 0) + children.reduce((s, ch) => s + (childBudgets[ch.id]?.allocated_amount || 0), 0);
   const hasChildren = children.length > 0;
+  const directParentSpent = Math.max(0, spent - Object.values(childSpent).reduce((sum, value) => sum + value, 0));
 
   return (
-    <Card className="rounded-2xl">
+    <Card className={`h-full min-h-28 min-w-0 rounded-2xl ${hasChildren && open ? 'col-span-2' : ''}`}>
       <CardContent className="p-3 sm:p-4">
         {hasChildren ? (
-          <Collapsible>
+          <Collapsible open={open} onOpenChange={setOpen}>
             <CollapsibleTrigger className="w-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: category.color }} />
-                  <span className="font-semibold text-sm">{category.name}</span>
-                  <Badge variant="secondary" className="text-[10px]">{children.length} sub</Badge>
+              <div className="flex min-w-0 items-start justify-between gap-2 text-left">
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: category.color }} />
+                    <span className="break-words text-sm font-semibold leading-tight">{category.name}</span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Badge variant="secondary" className="shrink-0 whitespace-nowrap px-2 text-[10px]">{children.length} sub</Badge>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                      {formatCurrency(spent)} / {totalAllocated > 0 ? formatCurrency(totalAllocated) : '—'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">
-                    {formatCurrency(spent)} / {totalAllocated > 0 ? formatCurrency(totalAllocated) : '—'}
-                  </span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
-                </div>
+                <ChevronDown className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
               </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="mt-3 pl-2 sm:pl-4 border-l-2 border-muted space-y-1">
+                <ProgressRow
+                  label={`${category.name} geral`}
+                  color={category.color}
+                  allocated={budget?.allocated_amount || 0}
+                  spent={directParentSpent}
+                  prevBudget={prevBudget}
+                  categoryId={category.id}
+                  isRecurring={budget?.is_recurring || false}
+                  saveBudget={saveBudget}
+                  savingId={savingId}
+                />
                 {children.map(ch => (
                   <ProgressRow
                     key={ch.id}

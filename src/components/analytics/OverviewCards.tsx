@@ -1,40 +1,38 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, Brain, PiggyBank } from 'lucide-react';
+import { Brain, PiggyBank, TrendingUp } from 'lucide-react';
 import { formatCurrency, getCategoryLabel } from '@/lib/constants';
-import { useProjectedTotals } from '@/hooks/useProjectedTotals';
+import type { AnalyticsForecast } from '@/hooks/useAnalyticsData';
 
 interface Props {
-  avgMonthly: number;
   totalCurrent: number;
   totalPrevious: number;
-  predictedNextMonth: number;
-  biggestSaving: { category: string; potential: number } | null;
+  comparisonAvailable: boolean;
+  forecast: AnalyticsForecast;
+  biggestSpending: { category: string; total: number } | null;
 }
 
-export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predictedNextMonth, biggestSaving }: Props) {
-  const { projectedBalance } = useProjectedTotals();
-  const changePercent = totalPrevious > 0 ? ((totalCurrent - totalPrevious) / totalPrevious * 100) : 0;
-  const isNegativeBalance = projectedBalance < 0;
+export function OverviewCards({ totalCurrent, totalPrevious, comparisonAvailable, forecast, biggestSpending }: Props) {
+  const changePercent = comparisonAvailable && totalPrevious > 0
+    ? ((totalCurrent - totalPrevious) / totalPrevious) * 100
+    : null;
 
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-      {/* Saldo Projetado (priority card) */}
-      <Card className={`rounded-2xl border-0 shadow-card ${isNegativeBalance ? 'bg-destructive text-destructive-foreground' : 'gradient-primary text-primary-foreground'}`}>
+      <Card className="rounded-2xl border-0 shadow-card gradient-primary text-primary-foreground">
         <CardContent className="p-5">
           <div className="flex items-center gap-3 mb-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isNegativeBalance ? 'bg-destructive-foreground/20' : 'bg-primary-foreground/20'}`}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary-foreground/20">
               <TrendingUp className="h-5 w-5" />
             </div>
-            <p className="text-sm font-medium opacity-80">Saldo Projetado (Fim do Mês)</p>
+            <p className="text-sm font-medium opacity-80">Gastos no período</p>
           </div>
-          <p className="text-2xl font-bold">{formatCurrency(projectedBalance)}</p>
-          {isNegativeBalance && (
-            <p className="text-xs mt-1 opacity-90">⚠️ Atenção: saldo negativo projetado</p>
-          )}
-          {!isNegativeBalance && totalPrevious > 0 && (
-            <p className={`text-xs mt-1 ${changePercent > 0 ? 'opacity-90' : 'opacity-70'}`}>
-              {changePercent > 0 ? '↑' : '↓'} {Math.abs(changePercent).toFixed(1)}% vs. período anterior
+          <p className="text-2xl font-bold">{formatCurrency(totalCurrent)}</p>
+          {changePercent !== null ? (
+            <p className="text-xs mt-1 opacity-80">
+              {changePercent >= 0 ? '↑' : '↓'} {Math.abs(changePercent).toFixed(1)}% em gastos versus o período anterior
             </p>
+          ) : (
+            <p className="text-xs mt-1 opacity-80">Ative a comparação para avaliar a variação.</p>
           )}
         </CardContent>
       </Card>
@@ -45,10 +43,19 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
             <div className="w-10 h-10 rounded-xl bg-ai-foreground/20 flex items-center justify-center">
               <Brain className="h-5 w-5" />
             </div>
-            <p className="text-sm font-medium opacity-80">Previsão Próx. Mês</p>
+            <p className="text-sm font-medium opacity-80">Previsão para o próximo mês</p>
           </div>
-          <p className="text-2xl font-bold">{formatCurrency(predictedNextMonth)}</p>
-          <p className="text-xs mt-1 opacity-70">Fixos + Parcelas + Média variável</p>
+          {forecast.value !== null ? (
+            <>
+              <p className="text-2xl font-bold">{formatCurrency(forecast.value)}</p>
+              <p className="text-xs mt-1 opacity-75">Baseada em {forecast.basisMonths} meses com movimentação, recorrências e parcelas.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-base font-semibold">Base ainda insuficiente</p>
+              <p className="text-xs mt-1 opacity-75">Registre movimentações em pelo menos dois meses para liberar uma previsão responsável.</p>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -58,15 +65,14 @@ export function OverviewCards({ avgMonthly, totalCurrent, totalPrevious, predict
             <div className="w-10 h-10 rounded-xl bg-accent-foreground/10 flex items-center justify-center">
               <PiggyBank className="h-5 w-5" />
             </div>
-            <p className="text-sm font-medium opacity-80">Oportunidade de Economia</p>
+            <p className="text-sm font-medium opacity-80">Maior gasto do período</p>
           </div>
-          <p className="text-2xl font-bold">{biggestSaving ? formatCurrency(biggestSaving.potential) : '—'}</p>
-          {biggestSaving && (
-            <p className="text-xs mt-1 opacity-70">{getCategoryLabel(biggestSaving.category)} • Potencial mensal</p>
+          <p className="text-2xl font-bold">{biggestSpending ? formatCurrency(biggestSpending.total) : 'Sem dados'}</p>
+          {biggestSpending && (
+            <p className="text-xs mt-1 opacity-75">{getCategoryLabel(biggestSpending.category)}</p>
           )}
         </CardContent>
       </Card>
-
     </div>
   );
 }

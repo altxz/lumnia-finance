@@ -54,12 +54,20 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
   };
 
   const toggleRule = async (id: string, active: boolean) => {
-    await supabase.from('automation_rules').update({ active }).eq('id', id);
+    const { error } = await supabase.from('automation_rules').update({ active }).eq('id', id);
+    if (error) {
+      toast({ title: 'Não foi possível atualizar a regra', description: error.message, variant: 'destructive' });
+      return;
+    }
     onRulesChange();
   };
 
   const deleteRule = async (id: string) => {
-    await supabase.from('automation_rules').delete().eq('id', id);
+    const { error } = await supabase.from('automation_rules').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Não foi possível excluir a regra', description: error.message, variant: 'destructive' });
+      return;
+    }
     toast({ title: 'Regra excluída' });
     onRulesChange();
   };
@@ -72,8 +80,8 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <CardTitle className="text-lg flex items-center gap-2"><Zap className="h-5 w-5 text-accent-foreground" />Regras de Automação</CardTitle>
-              <CardDescription>Crie regras para categorizar despesas automaticamente</CardDescription>
+              <CardTitle className="text-lg flex items-center gap-2"><Zap className="h-5 w-5 text-primary" />Regras de Importação</CardTitle>
+              <CardDescription>Classifique transações automaticamente durante a importação de arquivos</CardDescription>
             </div>
             <Button onClick={() => setModalOpen(true)} size="sm" className="w-full gap-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold sm:w-auto">
               <PlusCircle className="h-4 w-4" />
@@ -85,7 +93,7 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
           {rules.length === 0 ? (
             <div className="text-center py-8">
               <Zap className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-              <p className="text-sm text-muted-foreground">Nenhuma regra criada. Crie uma para automatizar categorizações.</p>
+              <p className="text-sm text-muted-foreground">Nenhuma regra criada. As regras serão aplicadas durante a importação de transações.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -101,7 +109,6 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">→</span>
                         <Badge variant={catInfo.variant} className="text-xs">{catInfo.label}</Badge>
-                        <span className="text-xs text-muted-foreground">• {rule.applied_count}x aplicada</span>
                       </div>
                     </div>
                     <AlertDialog>
@@ -130,7 +137,7 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Nova Regra de Automação</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Nova Regra de Importação</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">

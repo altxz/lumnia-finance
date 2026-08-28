@@ -23,6 +23,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { CHART_SERIES } from '@/lib/chartPalette';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { useExchangeRates, convertToBRL, formatForeignCurrency, type ExchangeRates } from '@/hooks/useExchangeRates';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { useSelectedDate } from '@/contexts/DateContext';
@@ -31,6 +32,7 @@ import { isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
 import { getInvoicePeriod, matchExpensesToInvoice, type InvoicePeriod } from '@/lib/invoiceHelpers';
 import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSettingsRow';
 import { MonthSelector } from '@/components/MonthSelector';
+import { PageHeader } from '@/components/ui/page-header';
 import { AdjustBalanceModal } from '@/components/wallet/AdjustBalanceModal';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -485,28 +487,28 @@ export default function WalletPage() {
   };
 
   // ─── Computed data ───
-  const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValueBRL(w, rates), 0), [wallets, rates, walletBalances]);
+  const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValueBRL(w, rates), 0), [wallets, rates]);
 
   const liquidBalance = useMemo(
     () => wallets.filter(w => w.asset_type !== 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
-    [wallets, rates, walletBalances],
+    [wallets, rates],
   );
 
   const investedBalance = useMemo(
     () => wallets.filter(w => w.asset_type === 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
-    [wallets, rates, walletBalances],
+    [wallets, rates],
   );
 
   const projectedTotalWealth = useMemo(
     () => wallets.reduce((s, w) => s + getWalletProjectedBRL(w, rates), 0),
-    [wallets, rates, walletBalances],
+    [wallets, rates],
   );
 
   const byType = useMemo(() => {
     const map: Record<string, number> = {};
     wallets.forEach(w => { map[w.asset_type] = (map[w.asset_type] || 0) + getWalletValueBRL(w, rates); });
     return Object.entries(map).map(([type, value]) => ({ name: ASSET_LABELS[type] || type, value }));
-  }, [wallets, rates, walletBalances]);
+  }, [wallets, rates]);
 
   const grouped = useMemo(() => {
     const g: Record<string, WalletRow[]> = {};
@@ -522,7 +524,7 @@ export default function WalletPage() {
     return map;
   }, [cards, buildInvoice, selectedMonth, selectedYear]);
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground">Carregando...</span></div>;
+  if (authLoading) return <PageLoadingSkeleton title="Carregando patrimônio" />;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
@@ -532,15 +534,16 @@ export default function WalletPage() {
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Minha Carteira</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Contas, ativos e cartões de crédito</p>
-            </div>
+            <PageHeader
+              eyebrow="Patrimônio"
+              title="Carteira"
+              description="Contas, saldos e cartões de crédito em uma visão consolidada."
+            />
 
             <Tabs defaultValue="accounts" className="w-full">
               <TabsList className="w-full max-w-md">
-                <TabsTrigger value="accounts" className="flex-1 text-xs sm:text-sm">Minhas Contas</TabsTrigger>
-                <TabsTrigger value="cards" className="flex-1 text-xs sm:text-sm">Cartões de Crédito</TabsTrigger>
+                <TabsTrigger value="accounts" className="flex-1 text-xs sm:text-sm">Contas</TabsTrigger>
+                <TabsTrigger value="cards" className="flex-1 text-xs sm:text-sm">Cartões</TabsTrigger>
               </TabsList>
 
               {/* ════════ TAB: Minhas Contas ════════ */}
@@ -568,7 +571,7 @@ export default function WalletPage() {
                   </div>
                   <Button onClick={() => setWalletModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
                     <PlusCircle className="h-5 w-5" />
-                    Novo Ativo
+                    Novo ativo
                   </Button>
                 </div>
 

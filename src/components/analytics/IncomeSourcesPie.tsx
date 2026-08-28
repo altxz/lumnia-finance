@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { CHART_SERIES } from '@/lib/chartPalette';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Props {
   expenses: any[];
@@ -22,7 +23,7 @@ export function IncomeSourcesPie({ expenses, categories }: Props) {
     expenses.forEach(e => {
       if (e.type !== 'income') return;
       if (isBalanceAdjustment(e)) return;
-      map[e.final_category] = (map[e.final_category] || 0) + e.value;
+      map[e.final_category] = (map[e.final_category] || 0) + transactionAmount(e.value);
     });
     if (Object.keys(map).length === 0) return [];
     return Object.entries(map)

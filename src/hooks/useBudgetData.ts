@@ -15,6 +15,7 @@ import {
   shouldProjectRecurringInMonth,
 } from '@/lib/recurringProjection';
 import { isCreditCardPaymentLabel } from '@/lib/creditCardPayments';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 
 export interface DbCategory {
@@ -53,7 +54,7 @@ export function useBudgetData() {
   const { startDate, endDate, monthKey } = useSelectedDate();
   const { toast } = useToast();
   // Categorias vêm do cache partilhado (30 min) — sem busca própria.
-  const { data: allCategories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: allCategories = [], isLoading: categoriesLoading, error: categoriesError } = useCategories();
   const categories = useMemo(
     () => allCategories.filter(c => c.active !== false) as unknown as DbCategory[],
     [allCategories],
@@ -61,9 +62,9 @@ export function useBudgetData() {
   const [budgets, setBudgets] = useState<BudgetRow[]>([]);
   const [prevBudgets, setPrevBudgets] = useState<BudgetRow[]>([]);
   const [spentMap, setSpentMap] = useState<Record<string, number>>({});
-  const [totalIncome, setTotalIncome] = useState(0);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Previous month key
   const prevMonthKey = useMemo(() => {
@@ -75,17 +76,18 @@ export function useBudgetData() {
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    setError(null);
 
     const EXPENSE_COLS =
       'id, description, value, date, type, final_category, credit_card_id, wallet_id, payment_method, project_id, invoice_month, is_recurring, is_paid, frequency';
 
     const [
-      { data: budgetData },
-      { data: recurringData },
-      { data: prevBudgetData },
-      { data: expenseData },
-      { data: templatesData },
-      { data: exceptionsData },
+      { data: budgetData, error: budgetError },
+      { data: recurringData, error: recurringError },
+      { data: prevBudgetData, error: prevBudgetError },
+      { data: expenseData, error: expenseError },
+      { data: templatesData, error: templatesError },
+      { data: exceptionsData, error: exceptionsError },
     ] = await Promise.all([
       supabase.from('budgets').select('*').eq('user_id', user.id).eq('month_year', startDate),
       // Fetch all recurring budgets to propagate to months without explicit budgets
@@ -96,8 +98,13 @@ export function useBudgetData() {
       supabase.from('recurring_exceptions').select('template_id, occurrence_date').eq('user_id', user.id),
     ]);
 
-    
-    
+    const requestError = budgetError || recurringError || prevBudgetError || expenseError || templatesError || exceptionsError;
+    if (requestError) {
+      setError(requestError.message || 'Não foi possível carregar o orçamento deste mês.');
+      setLoading(false);
+      return;
+    }
+
     // Merge: for categories without a budget this month, use the latest recurring budget
     const currentBudgets = (budgetData || []) as BudgetRow[];
     const existingCatIds = new Set(currentBudgets.map(b => b.category_id));
@@ -163,16 +170,14 @@ export function useBudgetData() {
 
     // Build spent map by final_category (name-based)
     const spent: Record<string, number> = {};
-    let income = 0;
     [...effective, ...virtualCardRows].forEach((e: any) => {
-      if (e.type === 'income') { income += Number(e.value || 0); return; }
+      if (e.type === 'income') return;
       if (e.type === 'transfer') return;
       if (isBalanceAdjustment(e)) return;
       if (isCreditCardPaymentLabel(e.description) || e.description?.startsWith('Pagamento fatura')) return;
-      spent[e.final_category] = (spent[e.final_category] || 0) + Number(e.value || 0);
+      spent[e.final_category] = (spent[e.final_category] || 0) + transactionAmount(e.value);
     });
     setSpentMap(spent);
-    setTotalIncome(income);
     setLoading(false);
 
   }, [user, startDate, endDate, prevMonthKey]);
@@ -230,7 +235,33 @@ export function useBudgetData() {
   }, [categories, budgets, prevBudgets, spentMap]);
 
   const totalAllocated = useMemo(() => budgets.reduce((s, b) => s + b.allocated_amount, 0), [budgets]);
-  const totalSpent = useMemo(() => Object.values(spentMap).reduce((s, v) => s + v, 0), [spentMap]);
+  const monitoring = useMemo(() => {
+    let monitoredSpent = 0;
+    let monitoredCount = 0;
+    let exceededCount = 0;
+
+    tree.forEach(node => {
+      const childSpentTotal = Object.values(node.childSpent).reduce((sum, value) => sum + value, 0);
+      const directParentSpent = Math.max(0, node.spent - childSpentTotal);
+      const parentLimit = Number(node.budget?.allocated_amount || 0);
+      if (parentLimit > 0) {
+        monitoredCount += 1;
+        monitoredSpent += directParentSpent;
+        if (directParentSpent >= parentLimit) exceededCount += 1;
+      }
+
+      node.children.forEach(child => {
+        const childLimit = Number(node.childBudgets[child.id]?.allocated_amount || 0);
+        if (childLimit <= 0) return;
+        const childSpent = Number(node.childSpent[child.id] || 0);
+        monitoredCount += 1;
+        monitoredSpent += childSpent;
+        if (childSpent >= childLimit) exceededCount += 1;
+      });
+    });
+
+    return { monitoredSpent, monitoredCount, exceededCount };
+  }, [tree]);
 
   const saveBudget = useCallback(async (categoryId: string, amount: number, isRecurring?: boolean) => {
     if (!user) return;
@@ -271,5 +302,16 @@ export function useBudgetData() {
     setSavingId(null);
   }, [user, budgets, categories, monthKey, toast]);
 
-  return { tree, totalAllocated, totalSpent, totalIncome, loading: loading || categoriesLoading, savingId, saveBudget, budgets, spentMap };
+  return {
+    tree,
+    totalAllocated,
+    ...monitoring,
+    loading: loading || categoriesLoading,
+    error: categoriesError instanceof Error ? categoriesError.message : error,
+    refetch: fetchData,
+    savingId,
+    saveBudget,
+    budgets,
+    spentMap,
+  };
 }

@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { formatCurrency } from '@/lib/constants';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -37,7 +38,7 @@ export function DailySpendingChart({ expenses }: Props) {
       const d = new Date(e.date + 'T12:00:00');
       if (d.getMonth() !== selectedMonth || d.getFullYear() !== selectedYear) return;
       const day = d.getDate();
-      byDay[day] = (byDay[day] || 0) + e.value;
+      byDay[day] = (byDay[day] || 0) + transactionAmount(e.value);
     });
 
     const points: { day: number; gasto: number; media: number }[] = [];

@@ -1,6 +1,26 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+function PageLoadingSkeleton({ title = "Carregando conteúdo", compact = false }: { title?: string; compact?: boolean }) {
+  return (
+    <div
+      className={cn("w-full space-y-4", compact ? "py-2" : "min-h-screen bg-background p-4 sm:p-6")}
+      aria-label={title}
+      role="status"
+    >
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-44 rounded-lg" />
+        <Skeleton className="h-4 w-64 max-w-[75vw] rounded-md" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[0, 1, 2, 3].map(item => <Skeleton key={item} className="h-28 rounded-lg" />)}
+      </div>
+      <Skeleton className="h-72 rounded-xl" />
+      <span className="sr-only">{title}</span>
+    </div>
+  );
+}
+
 function ChartSkeleton({ className }: { className?: string }) {
   const heights = [38, 62, 48, 76, 58, 88, 70, 52, 82, 66, 92, 72];
 
@@ -40,7 +60,7 @@ function MobileListSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div className="space-y-2" aria-label="Carregando transações" role="status">
       {Array.from({ length: rows }, (_, index) => (
-        <div key={index} className="glass-soft flex min-h-[76px] items-center justify-between gap-4 rounded-2xl p-4">
+        <div key={index} className="surface-base flex min-h-[76px] items-center justify-between gap-4 rounded-lg p-4">
           <div className="min-w-0 flex-1 space-y-2">
             <Skeleton className="h-4 w-3/5" />
             <Skeleton className="h-3 w-2/5" />
@@ -55,7 +75,7 @@ function MobileListSkeleton({ rows = 5 }: { rows?: number }) {
 
 function AiMessageSkeleton() {
   return (
-    <div className="glass-soft flex w-fit items-center gap-2 rounded-2xl rounded-bl-md px-4 py-3" aria-label="A inteligência está respondendo" role="status">
+    <div className="surface-base flex w-fit items-center gap-2 rounded-lg rounded-bl-sm px-4 py-3" aria-label="A inteligência está respondendo" role="status">
       {[0, 1, 2].map((index) => (
         <Skeleton key={index} className="h-2 w-2 rounded-full" style={{ animationDelay: `${index * 150}ms` }} />
       ))}
@@ -64,4 +84,4 @@ function AiMessageSkeleton() {
   );
 }
 
-export { AiMessageSkeleton, ChartSkeleton, MobileListSkeleton, TableRowsSkeleton };
+export { AiMessageSkeleton, ChartSkeleton, MobileListSkeleton, PageLoadingSkeleton, TableRowsSkeleton };

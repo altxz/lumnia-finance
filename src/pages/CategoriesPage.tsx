@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FINANCIAL_STALE_TIME } from '@/lib/queryClient';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -9,20 +9,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PlusCircle, Pencil, BarChart3, Trash2, Tag, Loader2, TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
+import { PlusCircle, Tag, TrendingUp, TrendingDown, Search, TriangleAlert } from 'lucide-react';
 import { MonthSelector } from '@/components/MonthSelector';
+import { PageHeader } from '@/components/ui/page-header';
 import { hideMaterializedRecurringTemplates } from '@/lib/recurringProjection';
 import { formatCurrency } from '@/lib/constants';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { useToast } from '@/hooks/use-toast';
 import { icons } from 'lucide-react';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StatePanel } from '@/components/ui/state-panel';
+import { Progress } from '@/components/ui/progress';
+import { useBudgetData } from '@/hooks/useBudgetData';
+import { cn } from '@/lib/utils';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Category {
   id: string;
@@ -82,9 +87,11 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [form, setForm] = useState({ name: '', icon: 'tag', color: '#612CFA', keywords: '', parent_id: '' });
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
+  const budgetData = useBudgetData();
 
   const buildCategories = useCallback(async (): Promise<Category[]> => {
-    const { data: allCats } = await supabase
+    const { data: allCats, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
       .eq('user_id', user!.id)
@@ -92,10 +99,13 @@ export default function CategoriesPage() {
 
     // Fetch ALL expenses with the fields needed for proper deduplication of recurring templates
     const select = 'id, type, value, final_category, category_ai, date, is_recurring, is_paid, description, wallet_id, credit_card_id, payment_method, project_id';
-    const { data: allExpenses } = await supabase
+    const { data: allExpenses, error: expensesError } = await supabase
       .from('expenses')
       .select(select)
       .eq('user_id', user!.id);
+
+    const requestError = categoriesError || expensesError;
+    if (requestError) throw requestError;
 
 
     // Apply the same deduplication used elsewhere so recurring TEMPLATES that have a real
@@ -122,16 +132,16 @@ export default function CategoriesPage() {
       const key = (e.final_category || '').toLowerCase();
       countMap[key] = (countMap[key] || 0) + 1;
       if (e.type === 'expense') {
-        valueMap[key] = (valueMap[key] || 0) + Number(e.value || 0);
+        valueMap[key] = (valueMap[key] || 0) + transactionAmount(e.value);
       }
       if (e.date >= startStr && e.date < endStr) {
         monthCountMap[key] = (monthCountMap[key] || 0) + 1;
         if (e.type === 'expense') {
-          monthValueMap[key] = (monthValueMap[key] || 0) + Number(e.value || 0);
-          monthExpenseValueMap[key] = (monthExpenseValueMap[key] || 0) + Number(e.value || 0);
+          monthValueMap[key] = (monthValueMap[key] || 0) + transactionAmount(e.value);
+          monthExpenseValueMap[key] = (monthExpenseValueMap[key] || 0) + transactionAmount(e.value);
           monthExpenseCountMap[key] = (monthExpenseCountMap[key] || 0) + 1;
         } else if (e.type === 'income') {
-          monthIncomeValueMap[key] = (monthIncomeValueMap[key] || 0) + Number(e.value || 0);
+          monthIncomeValueMap[key] = (monthIncomeValueMap[key] || 0) + transactionAmount(e.value);
           monthIncomeCountMap[key] = (monthIncomeCountMap[key] || 0) + 1;
         }
       }
@@ -163,7 +173,7 @@ export default function CategoriesPage() {
     return mapped;
   }, [user, startDate, endDate]);
 
-  const { data: categories = [], isLoading: loading, refetch } = useQuery({
+  const { data: categories = [], isLoading: loading, error: queryError, refetch } = useQuery({
     queryKey: ['categories', 'page', user?.id, startDate, endDate],
     queryFn: buildCategories,
     enabled: !!user,
@@ -176,18 +186,6 @@ export default function CategoriesPage() {
   const openCreateModal = () => {
     setEditingCategory(null);
     setForm({ name: '', icon: 'tag', color: '#612CFA', keywords: '', parent_id: '' });
-    setModalOpen(true);
-  };
-
-  const openAddSubModal = (parentId: string) => {
-    setEditingCategory(null);
-    setForm({ name: '', icon: 'tag', color: '#612CFA', keywords: '', parent_id: parentId });
-    setModalOpen(true);
-  };
-
-  const openEditModal = (cat: Category) => {
-    setEditingCategory(cat);
-    setForm({ name: cat.name, icon: cat.icon, color: cat.color, keywords: (cat.keywords || []).join(', '), parent_id: cat.parent_id || '' });
     setModalOpen(true);
   };
 
@@ -227,31 +225,35 @@ export default function CategoriesPage() {
     fetchCategories();
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('categories').delete().eq('id', id);
-    if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Categoria excluída' }); fetchCategories(); }
-  };
-
   // Stats
   const totalCats = categories.length;
-  const parentCount = categories.filter(c => !c.parent_id).length;
-  const subCount = categories.filter(c => c.parent_id).length;
-  const monthSpend = categories.reduce((s, c) => s + (c.month_expense_value || 0), 0);
-  const monthIncome = categories.reduce((s, c) => s + (c.month_income_value || 0), 0);
-  const monthSpendCount = categories.reduce((s, c) => s + (c.month_expense_count || 0), 0);
-  const monthIncomeCount = categories.reduce((s, c) => s + (c.month_income_count || 0), 0);
-  const expenseTopRanking = [...categories]
-    .filter(c => (c.month_expense_value || 0) > 0)
-    .sort((a, b) => (b.month_expense_value || 0) - (a.month_expense_value || 0))
-    .slice(0, 5);
-  const incomeTopRanking = [...categories]
-    .filter(c => (c.month_income_value || 0) > 0)
-    .sort((a, b) => (b.month_income_value || 0) - (a.month_income_value || 0))
-    .slice(0, 5);
-  const topCategory = expenseTopRanking[0];
+  const parentCategories = categories.filter(category => !category.parent_id);
+  const childCategories = categories.filter(category => Boolean(category.parent_id));
+  const parentCount = parentCategories.length;
+  const subCount = childCategories.length;
+  // Expenses are linked by category name. If the user has two category rows
+  // with the same name, both rows receive the same totals from the database.
+  // Use one representative per normalized name for summaries and rankings so
+  // the interface never doubles the user's real values.
+  const uniqueCategoriesForStats = Array.from(
+    new Map(categories.map(category => [category.name.trim().toLocaleLowerCase('pt-BR'), category])).values(),
+  );
+  const monthSpend = uniqueCategoriesForStats.reduce((s, c) => s + (c.month_expense_value || 0), 0);
+  const monthIncome = uniqueCategoriesForStats.reduce((s, c) => s + (c.month_income_value || 0), 0);
+  const monthSpendCount = uniqueCategoriesForStats.reduce((s, c) => s + (c.month_expense_count || 0), 0);
+  const monthIncomeCount = uniqueCategoriesForStats.reduce((s, c) => s + (c.month_income_count || 0), 0);
+  const budgetByParentId = useMemo(
+    () => new Map(budgetData.tree.map(node => [node.category.id, node])),
+    [budgetData.tree],
+  );
+  const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
+  const visibleParentCategories = parentCategories.filter(parent => {
+    if (!normalizedQuery) return true;
+    return parent.name.toLocaleLowerCase('pt-BR').includes(normalizedQuery)
+      || childCategories.some(child => child.parent_id === parent.id && child.name.toLocaleLowerCase('pt-BR').includes(normalizedQuery));
+  });
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground font-medium">Carregando...</span></div>;
+  if (authLoading) return <PageLoadingSkeleton title="Carregando categorias" />;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
@@ -261,287 +263,155 @@ export default function CategoriesPage() {
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
-            <div className="flex items-start justify-between flex-wrap gap-3">
-              <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Categorias</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1 capitalize">Visão geral · {label}</p>
-              </div>
-              <div className="flex items-center gap-2 ml-auto flex-wrap">
-                <MonthSelector />
-                <Button onClick={openCreateModal} className="gap-2 rounded-xl h-10 sm:h-11 px-3 sm:px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-sm">
+            <PageHeader
+              eyebrow="Organização"
+              title="Categorias"
+              description={<>Visão geral de receitas e despesas em <span className="first-letter:uppercase">{label}</span>.</>}
+              actions={<>
+                <MonthSelector showTodayButton={false} />
+                <Button onClick={openCreateModal} className="gap-2 rounded-full h-10 sm:h-11 px-4 sm:px-5 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-sm">
                   <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="hidden sm:inline">Nova Categoria</span>
+                  <span className="hidden sm:inline">Nova categoria</span>
                   <span className="sm:hidden">Nova</span>
                 </Button>
-              </div>
-            </div>
+              </>}
+            />
+
+            {queryError && (
+              <StatePanel
+                tone="error"
+                icon={<TriangleAlert className="h-5 w-5" />}
+                title="Não foi possível carregar as categorias"
+                description="Os dados podem estar desatualizados. Tente novamente quando a conexão estiver estável."
+                actionLabel="Tentar novamente"
+                onAction={() => refetch()}
+                className="min-h-0 rounded-3xl py-6"
+              />
+            )}
 
             {/* Stats Cards */}
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-              <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Card className="surface-card rounded-2xl">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary-foreground/20 flex items-center justify-center shrink-0"><Tag className="h-5 w-5" /></div>
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Tag className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium opacity-80">Categorias</p>
-                    <p className="text-base sm:text-xl font-bold">{totalCats}</p>
-                    <p className="text-[10px] opacity-70 truncate">{parentCount} principais · {subCount} subs</p>
+                    <p className="text-[11px] font-medium text-muted-foreground">Categorias</p>
+                    <p className="text-base font-bold sm:text-xl">{loading ? '—' : totalCats}</p>
+                    <p className="text-[9px] leading-tight text-muted-foreground sm:text-[10px]">
+                      {loading ? 'Sincronizando' : <><span className="block">{parentCount} principais</span><span className="block">{subCount} subcategorias</span></>}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-2xl border-0 shadow-card">
+              <Card className="surface-base rounded-2xl">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"><TrendingDown className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-medium text-muted-foreground">Despesas no mês</p>
-                    <p className="text-base sm:text-xl font-bold truncate">{formatCurrency(monthSpend)}</p>
+                    <p className="whitespace-nowrap text-[clamp(0.875rem,3.8vw,1.25rem)] font-bold tracking-tight tabular-nums">{loading ? '—' : formatCurrency(monthSpend)}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{monthSpendCount} lançamentos</p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-2xl border-0 shadow-card">
+              <Card className="surface-base rounded-2xl">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"><TrendingUp className="h-5 w-5" /></div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-medium text-muted-foreground">Receitas no mês</p>
-                    <p className="text-base sm:text-xl font-bold truncate">{formatCurrency(monthIncome)}</p>
+                    <p className="whitespace-nowrap text-[clamp(0.875rem,3.8vw,1.25rem)] font-bold tracking-tight tabular-nums">{loading ? '—' : formatCurrency(monthIncome)}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{monthIncomeCount} lançamentos</p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-2xl border-0 shadow-card">
-                <CardContent className="p-4 sm:p-5 flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"><ArrowUpRight className="h-5 w-5" /></div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-muted-foreground">Top categoria</p>
-                    <p className="text-sm sm:text-base font-bold truncate">{topCategory?.name || '—'}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{topCategory ? formatCurrency(topCategory.month_expense_value || 0) : 'Sem gastos'}</p>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
-            {/* Top Rankings: Despesas e Receitas separados */}
-            <div className="grid gap-4 lg:grid-cols-2">
-              {expenseTopRanking.length > 0 && (
-                <Card className="rounded-2xl border-0 shadow-card">
-                  <CardContent className="p-4 sm:p-5 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <h2 className="text-sm font-semibold flex items-center gap-2 min-w-0">
-                        <TrendingDown className="h-4 w-4 text-rose-500 shrink-0" />
-                        <span className="truncate">Top despesas</span>
-                      </h2>
-                      <Badge variant="outline" className="rounded-lg text-[10px] shrink-0">Top {expenseTopRanking.length}</Badge>
-                    </div>
-                    <div className="space-y-2">
-                      {expenseTopRanking.map((c, idx) => {
-                        const pct = monthSpend > 0 ? ((c.month_expense_value || 0) / monthSpend) * 100 : 0;
-                        return (
-                          <button
-                            type="button"
-                            key={c.id}
-                            onClick={() => navigate(`/categorias/${c.id}`)}
-                            className="w-full flex items-center gap-2 sm:gap-3 p-2 rounded-xl hover:bg-secondary/50 transition-colors text-left"
-                          >
-                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 text-[10px] sm:text-xs font-bold">
-                              {idx + 1}
-                            </div>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.color + '20' }}>
-                              <LucideIcon name={c.icon} className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0 space-y-1">
-                              <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
-                                <span className="font-medium truncate">{c.name}</span>
-                                <span className="text-muted-foreground shrink-0 tabular-nums">{formatCurrency(c.month_expense_value || 0)} · {pct.toFixed(0)}%</span>
-                              </div>
-                              <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                                <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, backgroundColor: c.color }} />
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {incomeTopRanking.length > 0 && (
-                <Card className="rounded-2xl border-0 shadow-card">
-                  <CardContent className="p-4 sm:p-5 space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <h2 className="text-sm font-semibold flex items-center gap-2 min-w-0">
-                        <TrendingUp className="h-4 w-4 text-success shrink-0" />
-                        <span className="truncate">Top receitas</span>
-                      </h2>
-                      <Badge variant="outline" className="rounded-lg text-[10px] shrink-0">Top {incomeTopRanking.length}</Badge>
-                    </div>
-                    <div className="space-y-2">
-                      {incomeTopRanking.map((c, idx) => {
-                        const pct = monthIncome > 0 ? ((c.month_income_value || 0) / monthIncome) * 100 : 0;
-                        return (
-                          <button
-                            type="button"
-                            key={c.id}
-                            onClick={() => navigate(`/categorias/${c.id}`)}
-                            className="w-full flex items-center gap-2 sm:gap-3 p-2 rounded-xl hover:bg-secondary/50 transition-colors text-left"
-                          >
-                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] sm:text-xs font-bold bg-success/15 text-success">
-                              {idx + 1}
-                            </div>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.color + '20' }}>
-                              <LucideIcon name={c.icon} className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0 space-y-1">
-                              <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
-                                <span className="font-medium truncate">{c.name}</span>
-                                <span className="text-muted-foreground shrink-0 tabular-nums">{formatCurrency(c.month_income_value || 0)} · {pct.toFixed(0)}%</span>
-                              </div>
-                              <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                                <div className="h-full rounded-full bg-success" style={{ width: `${Math.min(100, pct)}%` }} />
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            <section className="space-y-4" aria-labelledby="category-structure-title">
+              <div>
+                <h2 id="category-structure-title" className="type-title-2">Estrutura de categorias</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Organize categorias principais e subcategorias sem perder o histórico dos lançamentos.</p>
+              </div>
+              <div className="surface-base rounded-3xl p-3 sm:p-4">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={query}
+                    onChange={event => setQuery(event.target.value)}
+                    placeholder="Buscar categoria ou subcategoria"
+                    aria-label="Buscar categoria ou subcategoria"
+                    className="h-12 rounded-full pl-11"
+                  />
+                </div>
+              </div>
 
             {/* Categories Grid */}
             {loading ? (
-              <div className="flex items-center justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              <div className="grid gap-3 sm:grid-cols-2" role="status" aria-label="Sincronizando categorias">
+                {[0, 1, 2, 3].map(item => <Skeleton key={item} className="h-28 rounded-2xl" />)}
+                <span className="sr-only">Sincronizando categorias</span>
+              </div>
             ) : (
-              <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 {/* Parent categories */}
-                {categories.filter(c => !c.sort_order || !categories.some(p => p.id !== c.id && categories.some(ch => ch.id === c.id))).length === 0 && (
-                  <p className="text-muted-foreground text-center py-8">Nenhuma categoria encontrada.</p>
+                {visibleParentCategories.length === 0 && (
+                  <StatePanel
+                    icon={<Search className="h-5 w-5" />}
+                    title={categories.length === 0 ? 'Nenhuma categoria cadastrada' : 'Nenhuma categoria encontrada'}
+                    description={categories.length === 0 ? 'Crie a primeira categoria para organizar seus lançamentos.' : 'Altere a busca para visualizar outros resultados.'}
+                    actionLabel={normalizedQuery ? 'Limpar busca' : undefined}
+                    onAction={normalizedQuery ? () => setQuery('') : undefined}
+                  />
                 )}
-                {(() => {
-                  const parents = categories.filter(c => {
-                    // Find items where no other category has this as child (parent_id match)
-                    // Since we don't have parent_id in our Category interface yet, use the DB data directly
-                    return !(c as any).parent_id;
-                  });
-                  const children = categories.filter(c => !!(c as any).parent_id);
+                {visibleParentCategories.map(parent => {
+                  const node = budgetByParentId.get(parent.id);
+                  const subcategories = childCategories.filter(category => category.parent_id === parent.id);
+                  const allocated = node
+                    ? Number(node.budget?.allocated_amount || 0) + Object.values(node.childBudgets).reduce((sum, budget) => sum + Number(budget?.allocated_amount || 0), 0)
+                    : 0;
+                  const spent = Number(node?.spent || parent.month_expense_value || 0);
+                  const usage = allocated > 0 ? (spent / allocated) * 100 : 0;
+                  const isOver = allocated > 0 && usage >= 100;
+                  const isWarning = allocated > 0 && usage >= 80 && usage < 100;
 
-                  return parents.map(parent => {
-                    const subs = children.filter(c => (c as any).parent_id === parent.id);
-                    return (
-                      <div key={parent.id} className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/categorias/${parent.id}`)}
-                            className="flex items-center gap-3 min-w-0 flex-1 text-left rounded-xl -mx-1 px-1 py-1 hover:bg-secondary/50 transition-colors"
-                          >
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: parent.color + '20' }}>
+                  return (
+                    <Card key={parent.id} className={cn('h-full min-w-0 rounded-2xl', isOver && 'border-destructive/35')}>
+                      <CardContent className="flex h-full flex-col gap-3 p-3 sm:p-4">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/categorias/${parent.id}`)}
+                          className="flex min-w-0 flex-1 flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <div className="flex min-w-0 items-start gap-2">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: parent.color + '20' }}>
                               <LucideIcon name={parent.icon} className="h-4 w-4" />
                             </div>
-                            <h2 className="text-lg font-bold truncate">{parent.name}</h2>
-                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: parent.color }} />
-                            <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{parent.month_count || 0} no mês</span>
-                            {(parent.month_value || 0) > 0 && (
-                              <Badge variant="secondary" className="rounded-lg text-[10px] shrink-0">{formatCurrency(parent.month_value || 0)}</Badge>
-                            )}
-                          </button>
-                          <div className="flex gap-1 ml-auto">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-primary" onClick={() => openAddSubModal(parent.id)}><PlusCircle className="h-3.5 w-3.5" /></Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Adicionar subcategoria</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={() => openEditModal(parent)}><Pencil className="h-3.5 w-3.5" /></Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Editar</TooltipContent>
-                            </Tooltip>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="rounded-2xl">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir categoria?</AlertDialogTitle>
-                                  <AlertDialogDescription>Todas as subcategorias também serão removidas.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(parent.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <div className="min-w-0 flex-1">
+                              <h2 className="break-words text-sm font-semibold leading-tight">{parent.name}</h2>
+                              <p className="mt-1 text-[10px] leading-tight text-muted-foreground">{subcategories.length} subcategoria{subcategories.length === 1 ? '' : 's'}</p>
+                            </div>
                           </div>
-                        </div>
-                        {subs.length > 0 && (
-                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pl-4 border-l-2" style={{ borderColor: parent.color + '40' }}>
-                            {subs.map(cat => (
-                              <Card key={cat.id} className="rounded-2xl border shadow-soft hover:shadow-card transition-shadow">
-                                <CardContent className="p-4 space-y-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => navigate(`/categorias/${cat.id}`)}
-                                    className="flex items-center gap-3 w-full text-left rounded-xl -m-1 p-1 hover:bg-secondary/50 transition-colors"
-                                  >
-                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cat.color + '20' }}>
-                                      <LucideIcon name={cat.icon} className="h-4 w-4" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <h3 className="font-semibold text-sm truncate">{cat.name}</h3>
-                                      <p className="text-xs text-muted-foreground">
-                                        {(cat.month_value || 0) > 0
-                                          ? <span className="font-medium">{formatCurrency(cat.month_value || 0)}</span>
-                                          : <span>0 no mês</span>}
-                                        <span> · {cat.month_count || 0} lanç.</span>
-                                      </p>
-                                    </div>
-                                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                                  </button>
-                                  {cat.keywords && cat.keywords.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                      {cat.keywords.slice(0, 3).map(k => (
-                                        <Badge key={k} variant="secondary" className="text-[10px] px-1.5 py-0">{k}</Badge>
-                                      ))}
-                                      {cat.keywords.length > 3 && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">+{cat.keywords.length - 3}</Badge>}
-                                    </div>
-                                  )}
-                                  <div className="flex gap-1 pt-1">
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-xl" onClick={() => openEditModal(cat)}><Pencil className="h-3 w-3" /></Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>Editar</TooltipContent>
-                                    </Tooltip>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-xl text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent className="rounded-2xl">
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Excluir subcategoria?</AlertDialogTitle>
-                                          <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                                          <AlertDialogAction onClick={() => handleDelete(cat.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Excluir</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
+
+                          <div className="mt-4 w-full space-y-2">
+                            <div className="flex items-baseline justify-between gap-3 text-xs">
+                              <p className="shrink-0 text-muted-foreground">Gasto</p>
+                              <p className={cn('whitespace-nowrap text-right font-semibold tabular-nums', isOver && 'text-destructive')}>{formatCurrency(spent)}</p>
+                            </div>
+                            <div className="flex items-baseline justify-between gap-3 text-xs">
+                              <p className="shrink-0 text-muted-foreground">Orçamento</p>
+                              <p className="whitespace-nowrap text-right font-semibold tabular-nums">{allocated > 0 ? formatCurrency(allocated) : 'Não definido'}</p>
+                            </div>
+                            <Progress value={Math.min(100, usage)} className={cn('h-2', isOver && '[&>div]:bg-destructive', isWarning && '[&>div]:bg-amber-500')} />
+                            <p className={cn('text-[10px] text-muted-foreground', isOver && 'font-medium text-destructive')}>
+                              {allocated > 0 ? `${usage.toFixed(0)}% utilizado` : 'Orçamento não definido'}
+                            </p>
                           </div>
-                        )}
-                      </div>
-                    );
-                  });
-                })()}
+                        </button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
+            </section>
           </main>
         </div>
       </div>

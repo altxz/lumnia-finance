@@ -176,6 +176,7 @@ export default defineTool({
         const { error: cleanupError } = await sb
           .from("expenses")
           .delete()
+          .eq("user_id", userId)
           .eq("description", row.description)
           .eq("type", row.type)
           .eq("is_recurring", false)

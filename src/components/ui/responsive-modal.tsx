@@ -16,7 +16,7 @@ export function ResponsiveModal({ open, onOpenChange, children }: ResponsiveModa
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85dvh] overflow-hidden flex flex-col">
+        <DrawerContent className="max-h-[92dvh] overflow-hidden flex flex-col">
           {children}
         </DrawerContent>
       </Drawer>

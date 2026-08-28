@@ -28,7 +28,7 @@ export function InvoicePaymentFooter({
 
   if (isPaid) {
     return (
-      <div className="border-t border-border shrink-0 bg-background px-4 py-3 pb-safe sm:pb-3">
+      <div className="border-t border-border shrink-0 bg-card/95 px-4 py-3 pb-safe sm:pb-3 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-primary flex-1">
             <CheckCircle2 className="h-4 w-4" />
@@ -50,7 +50,7 @@ export function InvoicePaymentFooter({
 
   if (total <= 0.01 || !hasTransactions) {
     return (
-      <div className="border-t border-border shrink-0 bg-background px-4 py-3 pb-safe sm:pb-3">
+      <div className="border-t border-border shrink-0 bg-card/95 px-4 py-3 pb-safe sm:pb-3 backdrop-blur-xl">
         <div className="text-center text-muted-foreground text-sm font-medium">
           Nenhum valor a pagar
         </div>
@@ -65,7 +65,7 @@ export function InvoicePaymentFooter({
     : 'Escolher data...';
 
   return (
-    <div className="border-t border-border shrink-0 bg-background px-4 py-3 pb-safe sm:pb-3">
+    <div className="border-t border-border shrink-0 bg-card/95 px-4 py-3 pb-safe sm:pb-3 backdrop-blur-xl">
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
           {wallets.length > 0 && (

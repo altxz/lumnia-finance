@@ -1,4 +1,4 @@
-import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, Tag, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Settings, Wallet, PiggyBank, ArrowLeftRight, FolderKanban, TrendingUp } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 
 import { useUserSettings } from '@/contexts/UserSettingsContext';
@@ -26,8 +26,7 @@ export function AppSidebar() {
   const items = [
     { title: 'Dashboard', url: '/', icon: LayoutDashboard, visible: true, badge: false },
     { title: 'Transações', url: '/historico', icon: ArrowLeftRight, visible: true, badge: false },
-    { title: 'Categorias', url: '/categorias', icon: Tag, visible: true, badge: false },
-    { title: 'Orçamento', url: '/orcamento', icon: PiggyBank, visible: settings.enable_budget_module, badge: false },
+    { title: 'Planejamento', url: '/categorias', icon: PiggyBank, visible: true, badge: false },
     { title: 'Projetos', url: '/projetos', icon: FolderKanban, visible: settings.enable_projects_module, badge: false },
     { title: 'Minha Carteira', url: '/wallet', icon: Wallet, visible: true, badge: false },
     { title: 'Investimentos', url: '/investimentos', icon: TrendingUp, visible: true, badge: false },

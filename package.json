@@ -5,12 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "mcp:build": "node scripts/build-lumnia-mcp.mjs",
+    "build": "node scripts/build-lumnia-mcp.mjs && vite build",
     "android:prepare": "npm run build && cap sync android",
     "android:open": "cap open android",
     "android:sync": "cap sync android",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "lint:critical": "eslint src --quiet",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "quality": "npm run typecheck && npm run lint:critical && npm run test && npm run build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"

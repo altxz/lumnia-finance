@@ -35,7 +35,7 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
     setRealBalance(currentBalance.toFixed(2));
     setDate(format(new Date(), 'yyyy-MM-dd'));
     setNotes('');
-  }, [open, wallet?.id]);
+  }, [open, wallet?.id, currentBalance]);
 
   const parsed = parseFloat((realBalance || '').replace(',', '.'));
   const diff = Number.isFinite(parsed) ? Math.round((parsed - currentBalance) * 100) / 100 : 0;

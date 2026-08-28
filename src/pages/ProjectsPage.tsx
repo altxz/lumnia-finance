@@ -14,9 +14,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { PlusCircle, Trash2, FolderKanban, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Trash2, FolderKanban, AlertTriangle, Search } from 'lucide-react';
 import { formatCurrency, formatDate, getCategoryLabel } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
+import { PageLoadingSkeleton } from '@/components/ui/loading-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatePanel } from '@/components/ui/state-panel';
+import { Skeleton } from '@/components/ui/skeleton';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Project {
   id: string;
@@ -37,6 +42,7 @@ interface ProjectExpense {
 }
 
 const COLOR_OPTIONS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
+type ProjectFilter = 'all' | 'attention' | 'without-limit';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -46,6 +52,9 @@ export default function ProjectsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', budget: '', color: '#6366f1' });
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<ProjectFilter>('all');
 
   // Sheet state
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -59,16 +68,23 @@ export default function ProjectsPage() {
   const fetchProjects = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: projectsData }, { data: expData }] = await Promise.all([
+    setError(null);
+    const [{ data: projectsData, error: projectsError }, { data: expData, error: expensesError }] = await Promise.all([
       supabase.from('projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('expenses').select('project_id, value, type').eq('user_id', user.id).not('project_id', 'is', null),
     ]);
+    const requestError = projectsError || expensesError;
+    if (requestError) {
+      setError(requestError.message || 'Não foi possível carregar os projetos.');
+      setLoading(false);
+      return;
+    }
     setProjects((projectsData || []) as Project[]);
 
     const map: Record<string, number> = {};
     (expData || []).forEach((e: any) => {
       if (e.project_id && e.type !== 'income' && e.type !== 'transfer') {
-        map[e.project_id] = (map[e.project_id] || 0) + e.value;
+        map[e.project_id] = (map[e.project_id] || 0) + transactionAmount(e.value);
       }
     });
     setSpentMap(map);
@@ -126,7 +142,27 @@ export default function ProjectsPage() {
     else { toast({ title: 'Projeto removido' }); fetchProjects(); }
   };
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><span className="text-muted-foreground">Carregando...</span></div>;
+  const visibleProjects = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
+    return projects
+      .filter(project => {
+        const spent = spentMap[project.id] || 0;
+        const hasLimit = project.budget !== null && project.budget > 0;
+        const ratio = hasLimit ? spent / project.budget! : 0;
+        const matchesQuery = !normalizedQuery || project.name.toLocaleLowerCase('pt-BR').includes(normalizedQuery);
+        const matchesFilter = filter === 'all'
+          || (filter === 'attention' && hasLimit && ratio >= 0.8)
+          || (filter === 'without-limit' && !hasLimit);
+        return matchesQuery && matchesFilter;
+      })
+      .sort((a, b) => {
+        const ratioA = a.budget && a.budget > 0 ? (spentMap[a.id] || 0) / a.budget : -1;
+        const ratioB = b.budget && b.budget > 0 ? (spentMap[b.id] || 0) / b.budget : -1;
+        return ratioB - ratioA || a.name.localeCompare(b.name, 'pt-BR');
+      });
+  }, [filter, projects, query, spentMap]);
+
+  if (authLoading) return <PageLoadingSkeleton title="Carregando projetos" />;
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
@@ -136,29 +172,79 @@ export default function ProjectsPage() {
         <div className="flex-1 flex flex-col min-w-0">
           <DashboardHeader />
           <main className="flex-1 p-3 sm:p-4 lg:p-8 pb-32 space-y-4 sm:space-y-6 overflow-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Projetos</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Centros de custo para organizar as tuas despesas</p>
+            <PageHeader
+              eyebrow="Planejamento"
+              title="Projetos"
+              description="Centros de custo para organizar despesas por objetivo."
+              actions={<Button onClick={() => setModalOpen(true)} className="gap-2 rounded-full h-11 px-5 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                <PlusCircle className="h-5 w-5" /> Novo projeto
+              </Button>}
+            />
+
+            {error && (
+              <StatePanel
+                tone="error"
+                icon={<AlertTriangle className="h-5 w-5" />}
+                title="Não foi possível carregar os projetos"
+                description="Os valores podem estar desatualizados. Verifique a conexão e tente novamente."
+                actionLabel="Tentar novamente"
+                onAction={fetchProjects}
+                className="min-h-0 rounded-3xl py-6"
+              />
+            )}
+
+            <div className="surface-base space-y-3 rounded-3xl p-3 sm:p-4">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                  placeholder="Buscar projeto"
+                  aria-label="Buscar projeto"
+                  className="h-12 rounded-full pl-11"
+                />
               </div>
-              <Button onClick={() => setModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                <PlusCircle className="h-5 w-5" /> Novo Projeto
-              </Button>
+              <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar projetos">
+                {([['all', 'Todos'], ['attention', 'Exigem atenção'], ['without-limit', 'Sem limite']] as const).map(([value, label]) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant={filter === value ? 'default' : 'outline'}
+                    size="sm"
+                    aria-pressed={filter === value}
+                    onClick={() => setFilter(value)}
+                    className="shrink-0"
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {loading ? (
-              <p className="text-muted-foreground text-center py-12">Carregando...</p>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Carregando projetos">
+                {[0, 1, 2].map(item => <Skeleton key={item} className="h-48 rounded-2xl" />)}
+                <span className="sr-only">Carregando projetos</span>
+              </div>
             ) : projects.length === 0 ? (
-              <Card className="rounded-2xl">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <FolderKanban className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                  <p className="font-medium">Nenhum projeto criado</p>
-                  <p className="text-sm mt-1">Cria projetos para agrupar despesas por viagem, evento ou objetivo.</p>
-                </CardContent>
-              </Card>
+              <StatePanel
+                icon={<FolderKanban className="h-5 w-5" />}
+                title="Nenhum projeto criado"
+                description="Crie um projeto para acompanhar despesas de uma viagem, evento ou objetivo específico."
+                actionLabel="Criar projeto"
+                onAction={() => setModalOpen(true)}
+              />
+            ) : visibleProjects.length === 0 ? (
+              <StatePanel
+                icon={<Search className="h-5 w-5" />}
+                title="Nenhum projeto encontrado"
+                description="Altere a busca ou remova o filtro para visualizar outros projetos."
+                actionLabel="Limpar filtros"
+                onAction={() => { setQuery(''); setFilter('all'); }}
+              />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {projects.map(project => {
+                {visibleProjects.map(project => {
                   const spent = spentMap[project.id] || 0;
                   const hasBudget = project.budget !== null && project.budget > 0;
                   const pct = hasBudget ? Math.min((spent / project.budget!) * 100, 100) : 0;
@@ -204,7 +290,7 @@ export default function ProjectsPage() {
                           {hasBudget && (
                             <>
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>Orçamento: {formatCurrency(project.budget!)}</span>
+                                <span>Limite: {formatCurrency(project.budget!)}</span>
                                 <span className="flex items-center gap-1">
                                   {overBudget && <AlertTriangle className="h-3 w-3 text-destructive" />}
                                   {pct.toFixed(0)}%
@@ -244,7 +330,7 @@ export default function ProjectsPage() {
               <Input placeholder="Ex: Viagem a Lisboa, Reforma da casa" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="rounded-xl h-11" />
             </div>
             <div className="space-y-2">
-              <Label>Orçamento (opcional)</Label>
+              <Label>Orçamento do projeto (opcional)</Label>
               <Input type="number" step="0.01" min="0" placeholder="0,00" value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))} className="rounded-xl h-11" />
             </div>
             <div className="space-y-2">
@@ -290,7 +376,7 @@ export default function ProjectsPage() {
                 </div>
                 {selectedProject.budget !== null && selectedProject.budget > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Orçamento</span>
+                    <span className="text-muted-foreground">Orçamento do projeto</span>
                     <span className="font-semibold">{formatCurrency(selectedProject.budget)}</span>
                   </div>
                 )}

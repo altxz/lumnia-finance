@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
 import { Progress } from '@/components/ui/progress';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Props {
   cards: { id: string; name: string; limit_amount: number }[];
@@ -13,7 +14,7 @@ export function CreditUsageChart({ cards, unpaidExpenses }: Props) {
   const data = useMemo(() => {
     const usedByCard: Record<string, number> = {};
     unpaidExpenses.forEach((e) => {
-      usedByCard[e.credit_card_id] = (usedByCard[e.credit_card_id] || 0) + e.value;
+      usedByCard[e.credit_card_id] = (usedByCard[e.credit_card_id] || 0) + transactionAmount(e.value);
     });
     return cards.map((c) => ({
       name: c.name,

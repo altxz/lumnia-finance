@@ -11,6 +11,46 @@ import { extendedTools, executeExtendedTool } from "./_shared/extendedTools.ts";
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+function transactionAmount(value: unknown): number {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.abs(amount) : 0;
+}
+
+async function getDerivedWalletSnapshot(userId: string, supabase: ReturnType<typeof createClient>) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [{ data: wallets }, { data: expenses }, { data: settings }] = await Promise.all([
+    supabase.from("wallets").select("id, name, initial_balance, current_balance, currency, asset_type, crypto_symbol, crypto_amount").eq("user_id", userId).order("name"),
+    supabase.from("expenses").select("value, type, date, wallet_id, destination_wallet_id, credit_card_id, invoice_month, is_paid, description").eq("user_id", userId).lte("date", today),
+    supabase.from("user_settings").select("default_wallet_id").eq("user_id", userId).maybeSingle(),
+  ]);
+  const allWallets = wallets || [];
+  const cashWalletIds = new Set(allWallets.filter(wallet => wallet.asset_type !== "investment").map(wallet => wallet.id));
+  const defaultWalletId = settings?.default_wallet_id || allWallets.find(wallet => wallet.asset_type === "checking_account")?.id || allWallets[0]?.id;
+  const balances = new Map(allWallets.map(wallet => [wallet.id, transactionAmount(wallet.initial_balance)]));
+
+  for (const expense of expenses || []) {
+    if (!expense.is_paid) continue;
+    const amount = transactionAmount(expense.value);
+    const description = String(expense.description || "").toLowerCase();
+    const isInvoicePayment = description.startsWith("pagamento fatura") || Boolean(expense.invoice_month && !expense.credit_card_id && description.includes("fatura"));
+    if (expense.type === "transfer") {
+      const origin = expense.wallet_id || defaultWalletId;
+      if (origin && cashWalletIds.has(origin)) balances.set(origin, (balances.get(origin) || 0) - amount);
+      if (expense.destination_wallet_id && cashWalletIds.has(expense.destination_wallet_id)) balances.set(expense.destination_wallet_id, (balances.get(expense.destination_wallet_id) || 0) + amount);
+      continue;
+    }
+    if (expense.credit_card_id && !isInvoicePayment) continue;
+    const walletId = expense.wallet_id || defaultWalletId;
+    if (!walletId || !cashWalletIds.has(walletId)) continue;
+    balances.set(walletId, (balances.get(walletId) || 0) + (expense.type === "income" ? amount : -amount));
+  }
+
+  return allWallets.map(wallet => ({
+    ...wallet,
+    calculated_balance: wallet.asset_type === "investment" ? transactionAmount(wallet.current_balance) : (balances.get(wallet.id) || 0),
+  }));
+}
+
 const tools = [
   {
     type: "function",
@@ -429,8 +469,8 @@ function getMonthSummary(expenses: Array<{ value: number; type: string }>) {
   let totalIncome = 0;
   let totalExpense = 0;
   for (const e of expenses) {
-    if (e.type === "income") totalIncome += Number(e.value);
-    else if (e.type !== "transfer") totalExpense += Number(e.value);
+    if (e.type === "income") totalIncome += transactionAmount(e.value);
+    else if (e.type !== "transfer") totalExpense += transactionAmount(e.value);
   }
   return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
 }
@@ -514,7 +554,7 @@ async function executeTool(
 
       const spentByCategory: Record<string, number> = {};
       for (const e of expenses || []) {
-        spentByCategory[e.final_category] = (spentByCategory[e.final_category] || 0) + Number(e.value);
+        spentByCategory[e.final_category] = (spentByCategory[e.final_category] || 0) + transactionAmount(e.value);
       }
       const result = (budgets || []).map((b) => ({
         categoria: b.category,
@@ -595,8 +635,8 @@ async function executeTool(
       const excSet = new Set(((exceptions as any[]) || []).map(e => `${e.template_id}|${e.occurrence_date}`));
 
       // Histórico pago (débito real, sem CC e sem pagamento de fatura, sem transferências)
-      const histIncome = historicalArr.filter(e => e.type === "income" && e.is_paid).reduce((s, e) => s + Number(e.value), 0);
-      const histDebit = historicalArr.filter(e => e.type !== "income" && e.type !== "transfer" && !isCCPayment(e) && e.is_paid).reduce((s, e) => s + Number(e.value), 0);
+      const histIncome = historicalArr.filter(e => e.type === "income" && e.is_paid).reduce((s, e) => s + transactionAmount(e.value), 0);
+      const histDebit = historicalArr.filter(e => e.type !== "income" && e.type !== "transfer" && !isCCPayment(e) && e.is_paid).reduce((s, e) => s + transactionAmount(e.value), 0);
 
       // Recorrentes virtuais de meses passados (sem match real)
       const realByMonthLoose = new Set<string>();
@@ -632,8 +672,8 @@ async function executeTool(
           const dim = new Date(yr, mo + 1, 0).getDate();
           const occ = `${monthKey}-${String(Math.min(origDay, dim)).padStart(2, "0")}`;
           if (excSet.has(`${t.id}|${occ}`)) continue;
-          if (t.type === "income") virtualPastBalance += Number(t.value);
-          else virtualPastBalance -= Number(t.value);
+          if (t.type === "income") virtualPastBalance += transactionAmount(t.value);
+          else virtualPastBalance -= transactionAmount(t.value);
         }
       });
 
@@ -647,8 +687,8 @@ async function executeTool(
         const cardMap = invoicesByCard.get(e.credit_card_id)!;
         if (!cardMap.has(e.invoice_month)) cardMap.set(e.invoice_month, { total: 0, byCat: {} });
         const inv = cardMap.get(e.invoice_month)!;
-        inv.total += Number(e.value);
-        inv.byCat[e.final_category || "Outros"] = (inv.byCat[e.final_category || "Outros"] || 0) + Number(e.value);
+        inv.total += transactionAmount(e.value);
+        inv.byCat[e.final_category || "Outros"] = (inv.byCat[e.final_category || "Outros"] || 0) + transactionAmount(e.value);
       });
 
       let ccPastCash = 0;
@@ -676,8 +716,8 @@ async function executeTool(
       const startingBalance = walletSum + histIncome - histDebit + virtualPastBalance - ccPastCash;
 
       // Mês atual: receitas e despesas reais (pagas + pendentes)
-      const monthIncome = monthArr.filter(e => e.type === "income").reduce((s, e) => s + Number(e.value), 0);
-      const monthDebit = monthArr.filter(e => e.type !== "income" && e.type !== "transfer" && !e.credit_card_id && !isCCPayment(e)).reduce((s, e) => s + Number(e.value), 0);
+      const monthIncome = monthArr.filter(e => e.type === "income").reduce((s, e) => s + transactionAmount(e.value), 0);
+      const monthDebit = monthArr.filter(e => e.type !== "income" && e.type !== "transfer" && !e.credit_card_id && !isCCPayment(e)).reduce((s, e) => s + transactionAmount(e.value), 0);
 
       // Recorrentes virtuais para o mês atual (sem match real)
       let virtualIncomeMonth = 0;
@@ -690,8 +730,8 @@ async function executeTool(
         const d = new Date(t.date + "T12:00:00");
         const occ = `${month}-${String(Math.min(d.getDate(), daysInMonth)).padStart(2, "0")}`;
         if (excSet.has(`${t.id}|${occ}`)) return;
-        if (t.type === "income") virtualIncomeMonth += Number(t.value);
-        else virtualDebitMonth += Number(t.value);
+        if (t.type === "income") virtualIncomeMonth += transactionAmount(t.value);
+        else virtualDebitMonth += transactionAmount(t.value);
       });
 
       const totalIncome = monthIncome + virtualIncomeMonth;
@@ -778,7 +818,7 @@ async function executeTool(
         }
       }
 
-      const total = all.reduce((s, e) => s + Number(e.value), 0);
+      const total = all.reduce((s, e) => s + transactionAmount(e.value), 0);
       return JSON.stringify({
         termo_busca: categoria,
         mes: monthStr,
@@ -808,7 +848,7 @@ async function executeTool(
           .eq("credit_card_id", card.id)
           .eq("invoice_month", monthStr);
 
-        const total = (expenses || []).reduce((s, e) => s + Number(e.value), 0);
+        const total = (expenses || []).reduce((s, e) => s + transactionAmount(e.value), 0);
         results.push({
           cartao: card.name,
           limite: card.limit_amount,
@@ -839,7 +879,7 @@ async function executeTool(
       if (!data || data.length === 0)
         return JSON.stringify({ message: "Nenhuma conta pendente encontrada para este mês. 🎉" });
 
-      const total = data.reduce((s, e) => s + Number(e.value), 0);
+      const total = data.reduce((s, e) => s + transactionAmount(e.value), 0);
       return JSON.stringify({
         mes: monthStr,
         total_pendente: total,
@@ -857,21 +897,17 @@ async function executeTool(
     // ---- NEW TOOLS ----
 
     case "listar_carteiras": {
-      const { data: wallets } = await supabase
-        .from("wallets")
-        .select("id, name, current_balance, initial_balance, currency, asset_type, crypto_symbol, crypto_amount")
-        .eq("user_id", userId)
-        .order("name");
+      const wallets = await getDerivedWalletSnapshot(userId, supabase);
 
       if (!wallets || wallets.length === 0)
         return JSON.stringify({ message: "Nenhuma carteira cadastrada." });
 
-      const total = wallets.reduce((s, w) => s + Number(w.current_balance), 0);
+      const total = wallets.reduce((s, w) => s + w.calculated_balance, 0);
       return JSON.stringify({
         total_geral: total,
         carteiras: wallets.map(w => ({
           nome: w.name,
-          saldo_atual: w.current_balance,
+          saldo_atual: w.calculated_balance,
           saldo_inicial: w.initial_balance,
           moeda: w.currency,
           tipo: w.asset_type,
@@ -987,7 +1023,7 @@ async function executeTool(
 
       const byCategory: Record<string, number> = {};
       for (const e of expenses || []) {
-        byCategory[e.final_category] = (byCategory[e.final_category] || 0) + Number(e.value);
+        byCategory[e.final_category] = (byCategory[e.final_category] || 0) + transactionAmount(e.value);
       }
 
       const totalGeral = Object.values(byCategory).reduce((s, v) => s + v, 0);
@@ -1023,7 +1059,7 @@ async function executeTool(
         .gte("date", start)
         .lte("date", end);
 
-      const total = (expenses || []).reduce((s, e) => s + Number(e.value), 0);
+      const total = (expenses || []).reduce((s, e) => s + transactionAmount(e.value), 0);
       const mediaDiaria = daysElapsed > 0 ? total / daysElapsed : 0;
       const projecaoMes = mediaDiaria * daysInMonth;
 
@@ -1054,7 +1090,7 @@ async function executeTool(
       if (!data || data.length === 0)
         return JSON.stringify({ message: "Nenhuma receita pendente para este mês." });
 
-      const total = data.reduce((s, e) => s + Number(e.value), 0);
+      const total = data.reduce((s, e) => s + transactionAmount(e.value), 0);
       return JSON.stringify({
         mes: monthStr,
         total_pendente: total,
@@ -1099,18 +1135,15 @@ async function executeTool(
       const despesasFixas = unique.filter(e => e.type !== "income");
 
       return JSON.stringify({
-        total_receitas_fixas: receitasFixas.reduce((s, e) => s + Number(e.value), 0),
-        total_despesas_fixas: despesasFixas.reduce((s, e) => s + Number(e.value), 0),
+        total_receitas_fixas: receitasFixas.reduce((s, e) => s + transactionAmount(e.value), 0),
+        total_despesas_fixas: despesasFixas.reduce((s, e) => s + transactionAmount(e.value), 0),
         receitas: receitasFixas.map(e => ({ descricao: e.description, valor: e.value, frequencia: e.frequency, categoria: e.final_category })),
         despesas: despesasFixas.map(e => ({ descricao: e.description, valor: e.value, frequencia: e.frequency, categoria: e.final_category, cartao: !!e.credit_card_id })),
       });
     }
 
     case "consultar_patrimonio": {
-      const { data: wallets } = await supabase
-        .from("wallets")
-        .select("name, current_balance, asset_type")
-        .eq("user_id", userId);
+      const wallets = await getDerivedWalletSnapshot(userId, supabase);
 
       const { data: debtsOwed } = await supabase
         .from("debts")
@@ -1131,10 +1164,10 @@ async function executeTool(
         .not("credit_card_id", "is", null)
         .eq("is_paid", false);
 
-      const totalAtivos = (wallets || []).reduce((s, w) => s + Number(w.current_balance), 0);
-      const totalAReceber = (debtsToMe || []).reduce((s, d) => s + Number(d.remaining_amount), 0);
-      const totalDividas = (debtsOwed || []).reduce((s, d) => s + Number(d.remaining_amount), 0);
-      const totalFaturasPendentes = (ccExpenses || []).reduce((s, e) => s + Number(e.value), 0);
+      const totalAtivos = wallets.reduce((s, w) => s + w.calculated_balance, 0);
+      const totalAReceber = (debtsToMe || []).reduce((s, d) => s + transactionAmount(d.remaining_amount), 0);
+      const totalDividas = (debtsOwed || []).reduce((s, d) => s + transactionAmount(d.remaining_amount), 0);
+      const totalFaturasPendentes = (ccExpenses || []).reduce((s, e) => s + transactionAmount(e.value), 0);
 
       const patrimonioLiquido = totalAtivos + totalAReceber - totalDividas - totalFaturasPendentes;
 
@@ -1144,7 +1177,7 @@ async function executeTool(
         dividas: totalDividas,
         faturas_pendentes: totalFaturasPendentes,
         patrimonio_liquido: patrimonioLiquido,
-        carteiras: (wallets || []).map(w => ({ nome: w.name, saldo: w.current_balance, tipo: w.asset_type })),
+        carteiras: wallets.map(w => ({ nome: w.name, saldo: w.calculated_balance, tipo: w.asset_type })),
       });
     }
 
@@ -1292,18 +1325,18 @@ async function executeTool(
       const curByCategory: Record<string, number> = {};
       let totalExpense = 0, totalIncome = 0;
       for (const e of curExpenses || []) {
-        if (e.type === "income") { totalIncome += Number(e.value); continue; }
+        if (e.type === "income") { totalIncome += transactionAmount(e.value); continue; }
         if (e.type === "transfer") continue;
-        totalExpense += Number(e.value);
-        curByCategory[e.final_category] = (curByCategory[e.final_category] || 0) + Number(e.value);
+        totalExpense += transactionAmount(e.value);
+        curByCategory[e.final_category] = (curByCategory[e.final_category] || 0) + transactionAmount(e.value);
       }
 
       // Previous month breakdown
       const prevByCategory: Record<string, number> = {};
       let prevTotal = 0;
       for (const e of prevExpenses || []) {
-        prevTotal += Number(e.value);
-        prevByCategory[e.final_category] = (prevByCategory[e.final_category] || 0) + Number(e.value);
+        prevTotal += transactionAmount(e.value);
+        prevByCategory[e.final_category] = (prevByCategory[e.final_category] || 0) + transactionAmount(e.value);
       }
 
       // Top categories with comparison
@@ -1338,7 +1371,7 @@ async function executeTool(
         if (seen.has(key)) return false;
         seen.add(key); return true;
       });
-      const totalRecorrente = uniqueRecurring.reduce((s, e) => s + Number(e.value), 0);
+      const totalRecorrente = uniqueRecurring.reduce((s, e) => s + transactionAmount(e.value), 0);
 
       // Daily average & projection
       const mediaDiaria = daysElapsed > 0 ? totalExpense / daysElapsed : 0;
@@ -1404,13 +1437,13 @@ async function executeTool(
       ]);
 
       // Income
-      const totalIncome = (curIncome || []).reduce((s, e) => s + Number(e.value), 0);
+      const totalIncome = (curIncome || []).reduce((s, e) => s + transactionAmount(e.value), 0);
 
       // Spending by category (current month)
       const curByCategory: Record<string, number> = {};
       (curExpenses || []).forEach((e: any) => {
         if (e.type !== "income" && e.type !== "transfer") {
-          curByCategory[e.final_category] = (curByCategory[e.final_category] || 0) + Number(e.value);
+          curByCategory[e.final_category] = (curByCategory[e.final_category] || 0) + transactionAmount(e.value);
         }
       });
 
@@ -1418,7 +1451,7 @@ async function executeTool(
       const prevByCategory: Record<string, number> = {};
       (prevExpenses || []).forEach((e: any) => {
         if (e.type !== "income" && e.type !== "transfer") {
-          prevByCategory[e.final_category] = (prevByCategory[e.final_category] || 0) + Number(e.value);
+          prevByCategory[e.final_category] = (prevByCategory[e.final_category] || 0) + transactionAmount(e.value);
         }
       });
 
@@ -1464,7 +1497,7 @@ async function executeTool(
           valor: e.value,
           categoria: e.final_category,
         })),
-        total_fixo: uniqueRecurring.reduce((s, e: any) => s + Number(e.value), 0),
+        total_fixo: uniqueRecurring.reduce((s, e: any) => s + transactionAmount(e.value), 0),
       });
     }
 

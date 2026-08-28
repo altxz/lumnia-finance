@@ -13,6 +13,7 @@ import { CategoryPicker } from '@/components/CategoryPicker';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { buildImportFingerprint } from '@/lib/importFingerprint';
 
 interface ParsedTransaction {
   date: string;
@@ -219,7 +220,7 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
 
   useEffect(() => { if (!open) reset(); }, [open]);
 
-  const processFile = (file: File) => {
+  const processFile = useCallback((file: File) => {
     const lowerName = file.name.toLowerCase();
     const isOFX = lowerName.endsWith('.ofx');
     const isCSV = lowerName.endsWith('.csv');
@@ -249,14 +250,14 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
       setStep('preview');
     };
     reader.readAsText(file);
-  };
+  }, [rules, toast]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) processFile(file);
-  }, [rules]);
+  }, [processFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -306,38 +307,84 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
 
   const handleImport = async () => {
     if (!user) return;
-    const selected = transactions.filter(t => t.selected);
+    const selected = transactions
+      .map((transaction, rowIndex) => ({ transaction, rowIndex }))
+      .filter(({ transaction }) => transaction.selected);
     if (selected.length === 0) return;
 
-    if (!selected.every(t => t.destId)) {
+    if (!selected.every(({ transaction }) => transaction.destId)) {
       toast({ title: 'Destino obrigatório', description: 'Selecione uma conta ou cartão para todas as transações.', variant: 'destructive' });
       return;
     }
 
     setImporting(true);
 
-    const rows = selected.map(t => ({
-      user_id: user.id,
-      date: t.date,
-      description: t.description,
-      value: t.value,
-      type: t.type,
-      final_category: t.category,
-      ...(t.originType === 'credit_card'
-        ? { credit_card_id: t.destId, invoice_month: t.invoiceMonth || null }
-        : { wallet_id: t.destId }
-      ),
-    }));
+    try {
+      const prepared = selected.map(({ transaction, rowIndex }) => ({
+        transaction,
+        fingerprint: buildImportFingerprint({
+          fileName,
+          rowIndex,
+          date: transaction.date,
+          description: transaction.description,
+          value: transaction.value,
+          type: transaction.type,
+          originType: transaction.originType,
+          destinationId: transaction.destId,
+          invoiceMonth: transaction.invoiceMonth,
+        }),
+      }));
 
-    const { error } = await supabase.from('expenses').insert(rows);
-    setImporting(false);
+      const fingerprints = prepared.map(item => item.fingerprint);
+      const { data: existingRows, error: lookupError } = await supabase
+        .from('expenses')
+        .select('tags')
+        .eq('user_id', user.id)
+        .overlaps('tags', fingerprints);
 
-    if (error) {
-      toast({ title: 'Erro na importação', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Importação concluída', description: `${selected.length} transações importadas com sucesso.` });
+      if (lookupError) throw lookupError;
+      const existingFingerprints = new Set((existingRows || []).flatMap(row => row.tags || []));
+      const newItems = prepared.filter(item => !existingFingerprints.has(item.fingerprint));
+      const duplicateCount = prepared.length - newItems.length;
+
+      if (newItems.length === 0) {
+        toast({ title: 'Arquivo já importado', description: 'As transações selecionadas já existem no Lumnia.' });
+        return;
+      }
+
+      const rows = newItems.map(({ transaction: t, fingerprint }) => ({
+        user_id: user.id,
+        date: t.date,
+        description: t.description,
+        value: t.value,
+        type: t.type,
+        final_category: t.category,
+        payment_method: t.originType === 'credit_card' ? 'credit' : 'debit',
+        is_paid: true,
+        is_recurring: false,
+        tags: [fingerprint],
+        ...(t.originType === 'credit_card'
+          ? { credit_card_id: t.destId, invoice_month: t.invoiceMonth || null }
+          : { wallet_id: t.destId }
+        ),
+      }));
+
+      const { error } = await supabase.from('expenses').insert(rows);
+      if (error) throw error;
+
+      toast({
+        title: 'Importação concluída',
+        description: duplicateCount > 0
+          ? `${newItems.length} importadas e ${duplicateCount} duplicadas ignoradas.`
+          : `${newItems.length} transações importadas com sucesso.`,
+      });
       onImported();
       onOpenChange(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Não foi possível concluir a importação.';
+      toast({ title: 'Erro na importação', description: message, variant: 'destructive' });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -629,17 +676,17 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85dvh] flex flex-col">
+        <DrawerContent className="max-h-[92dvh] flex flex-col">
           <DrawerHeader className="pb-2">
             <DrawerTitle className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5 text-primary" />
-              Importar Transações
+              Importar transações
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto px-4 min-h-0">
             {innerContent}
           </div>
-          <DrawerFooter>
+          <DrawerFooter className="border-t border-border bg-card/95 backdrop-blur-xl">
             {footerButtons}
           </DrawerFooter>
         </DrawerContent>
@@ -650,11 +697,11 @@ export function ImportTransactionsModal({ open, onOpenChange, onImported }: Impo
   // ── DESKTOP: Dialog ──
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[85dvh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
-            Importar Transações
+            Importar transações
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto min-h-0 -mx-6 px-6">

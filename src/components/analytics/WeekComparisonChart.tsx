@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { formatCurrency } from '@/lib/constants';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface Props {
   expenses: any[];
@@ -30,10 +31,11 @@ export function WeekComparisonChart({ expenses }: Props) {
       if (e.type === 'income' || e.type === 'transfer' || e.credit_card_id) return;
       if (isBalanceAdjustment(e)) return;
       const d = new Date(e.date + 'T12:00:00');
+      const amount = transactionAmount(e.value);
       if (d >= thisWeekStart) {
-        thisWeek[d.getDay()] = (thisWeek[d.getDay()] || 0) + e.value;
+        thisWeek[d.getDay()] = (thisWeek[d.getDay()] || 0) + amount;
       } else if (d >= lastWeekStart && d < thisWeekStart) {
-        lastWeek[d.getDay()] = (lastWeek[d.getDay()] || 0) + e.value;
+        lastWeek[d.getDay()] = (lastWeek[d.getDay()] || 0) + amount;
       }
     });
 

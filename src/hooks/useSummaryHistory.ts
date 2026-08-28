@@ -99,10 +99,10 @@ export function useSummaryHistory(startingBalance?: number): SummaryHistory {
     },
   });
 
-  const rows = data?.rows ?? [];
-  const invoiceExpenses = data?.invoiceExpenses ?? [];
-  const creditCards = data?.creditCards ?? [];
-  const templates = data?.templates ?? [];
+  const rows = useMemo(() => data?.rows ?? [], [data?.rows]);
+  const invoiceExpenses = useMemo(() => data?.invoiceExpenses ?? [], [data?.invoiceExpenses]);
+  const creditCards = useMemo(() => data?.creditCards ?? [], [data?.creditCards]);
+  const templates = useMemo(() => data?.templates ?? [], [data?.templates]);
   const exceptionSet = useMemo(
     () => new Set((data?.exceptions ?? []).map((e) => buildRecurringExceptionSignature(e.template_id, e.occurrence_date))),
     [data?.exceptions],

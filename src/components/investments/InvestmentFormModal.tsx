@@ -88,7 +88,7 @@ export function InvestmentFormModal({ open, onOpenChange, wallets, investment, o
       setMaturityDate(format(addMonths(new Date(), 12), 'yyyy-MM-dd'));
       setNotes('');
     }
-  }, [open, investment]);
+  }, [open, investment, today, wallets]);
 
   useEffect(() => {
     if (term === 'none') setMaturityDate('');

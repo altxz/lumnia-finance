@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/constants';
 import { useSelectedDate } from '@/contexts/DateContext';
 import type { Expense } from '@/components/ExpenseTable';
 import { InfoPopover } from '@/components/ui/info-popover';
+import { transactionAmount } from '@/lib/transactionAmount';
 
 interface SpendingHeatmapProps {
   expenses: Expense[];
@@ -34,8 +35,9 @@ export function SpendingHeatmap({ expenses }: SpendingHeatmapProps) {
       const d = new Date(e.date + 'T12:00:00');
       if (d.getMonth() === m && d.getFullYear() === y) {
         const day = d.getDate();
-        byDay[day] = (byDay[day] || 0) + e.value;
-        byWeekday[d.getDay()] += e.value;
+        const amount = transactionAmount(e.value);
+        byDay[day] = (byDay[day] || 0) + amount;
+        byWeekday[d.getDay()] += amount;
       }
     });
 

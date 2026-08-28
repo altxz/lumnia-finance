@@ -7,6 +7,7 @@ import {
   type InvoicePeriod,
 } from './invoiceHelpers';
 import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
+import { transactionAmount } from './transactionAmount';
 
 type InvoiceCashExpense = Pick<
   Expense,
@@ -127,7 +128,7 @@ export function buildInvoiceCashEvents(
 
         // Regra: quando existe pagamento lançado, o caixa do mês é o valor pago.
         // Sem pagamento, a fatura entra projetada na data de vencimento.
-        const amount = paymentRecord ? Number(paymentRecord.value) || 0 : invoice.total;
+        const amount = paymentRecord ? transactionAmount(paymentRecord.value) : transactionAmount(invoice.total);
         if (amount <= 0) return;
 
         events.push({
