@@ -3,8 +3,18 @@ import { Drawer as DrawerPrimitive } from "vaul";
 
 import { cn } from "@/lib/utils";
 
-const Drawer = ({ shouldScaleBackground = true, ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
-  <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />
+const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+
+const Drawer = ({ shouldScaleBackground = true, repositionInputs, ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
+  <DrawerPrimitive.Root
+    shouldScaleBackground={shouldScaleBackground}
+    // Vaul 0.9.x writes an inline height while the Android keyboard is open
+    // and can leave the drawer shortened after it closes. Android already
+    // resizes the WebView, so letting Vaul reposition it is both redundant
+    // and the source of the persistent small modal.
+    repositionInputs={isAndroid ? false : repositionInputs}
+    {...props}
+  />
 );
 Drawer.displayName = "Drawer";
 
@@ -31,13 +41,15 @@ const DrawerContent = React.forwardRef<
       <DrawerPrimitive.Content
         ref={ref}
         className={cn(
-          "glass-modal fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[85dvh] flex-col overflow-y-auto rounded-t-xl pb-safe shadow-float",
+          "glass-modal fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[85dvh] flex-col overflow-hidden rounded-t-xl pb-safe shadow-float",
           className,
         )}
         {...props}
       >
-      <div className="mx-auto mt-3 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
-      {children}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+        <div className="mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
+        {children}
+      </div>
     </DrawerPrimitive.Content>
   </DrawerPortal>
 ));
