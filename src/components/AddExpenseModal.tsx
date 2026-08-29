@@ -68,23 +68,6 @@ function advanceInvoiceMonth(ym: string, months: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function formatInvoiceLabel(ym: string): string {
-  const [y, m] = ym.split('-');
-  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  return `${months[parseInt(m) - 1]} ${y}`;
-}
-
-function generateInvoiceOptions(): string[] {
-  const options: string[] = [];
-  const now = new Date();
-  for (let i = -2; i <= 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const m = d.getMonth() + 1;
-    options.push(`${d.getFullYear()}-${String(m).padStart(2, '0')}`);
-  }
-  return options;
-}
-
 const TYPE_STYLES = {
   expense: {
     bg: 'bg-destructive/10',
@@ -186,8 +169,6 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
       setInvoiceMonth(calcInvoiceMonth(selectedCard, date));
     }
   }, [paymentMethod, selectedCard, date]);
-
-  const invoiceOptions = useMemo(() => generateInvoiceOptions(), []);
 
   /** Preenche o formulário a partir de um lançamento anterior parecido. */
   const applySuggestion = (s: DescriptionSuggestion) => {
@@ -592,13 +573,17 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                   </div>
                   {creditCardId && (
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fatura</Label>
-                      <Select value={invoiceMonth} onValueChange={setInvoiceMonth}>
-                        <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Mês da fatura" /></SelectTrigger>
-                        <SelectContent>
-                          {invoiceOptions.map(ym => <SelectItem key={ym} value={ym}>{formatInvoiceLabel(ym)}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="expense-invoice-month" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fatura</Label>
+                      <Input
+                        id="expense-invoice-month"
+                        type="month"
+                        value={invoiceMonth}
+                        onChange={event => setInvoiceMonth(event.target.value)}
+                        className="rounded-xl h-11"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Calculada pela data da compra e pelo fechamento do cartão. Você pode ajustar inclusive faturas antigas.
+                      </p>
                     </div>
                   )}
                 </>
