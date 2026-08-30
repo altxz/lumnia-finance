@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -315,14 +315,13 @@ export function CategoriesSection() {
       </Button>
 
       {/* Category Modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen} className="sm:max-w-md rounded-2xl">
+        <ResponsiveModalHeader className="p-4 pb-2">
+          <ResponsiveModalTitle className="text-xl font-bold">
+            {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+          </ResponsiveModalTitle>
+        </ResponsiveModalHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-2">
             {/* Type selector */}
             <div className="space-y-2">
               <Label>Tipo</Label>
@@ -423,20 +422,19 @@ export function CategoriesSection() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
-            >
-              {saving ? 'Salvando...' : editingCategory ? 'Atualizar' : 'Criar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <ResponsiveModalFooter className="p-4 pt-2">
+          <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
+          >
+            {saving ? 'Salvando...' : editingCategory ? 'Atualizar' : 'Criar'}
+          </Button>
+        </ResponsiveModalFooter>
+      </ResponsiveModal>
     </div>
   );
 }

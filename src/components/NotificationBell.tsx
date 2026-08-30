@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Bell, CreditCard, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/lib/supabase';
@@ -325,14 +325,13 @@ export function NotificationBell() {
       )}
 
       {/* Quick pay/receive dialog for individual transactions */}
-      <Dialog open={quickPayOpen} onOpenChange={(o) => { if (!o) { setQuickPayOpen(false); setQuickPayApplyScope(null); } }}>
-        <DialogContent className="rounded-2xl max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {quickPayExpense?.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <ResponsiveModal open={quickPayOpen} onOpenChange={(o) => { if (!o) { setQuickPayOpen(false); setQuickPayApplyScope(null); } }} className="rounded-2xl max-w-md max-h-[90dvh]">
+        <ResponsiveModalHeader className="p-5 pb-3">
+          <ResponsiveModalTitle>
+            {quickPayExpense?.type === 'income' ? 'Confirmar recebimento' : 'Confirmar pagamento'}
+          </ResponsiveModalTitle>
+        </ResponsiveModalHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-2">
             <p className="text-sm text-muted-foreground font-medium">{quickPayExpense?.description}</p>
 
             {/* Editable value */}
@@ -389,26 +388,25 @@ export function NotificationBell() {
 
             <p className="text-sm text-muted-foreground">Deseja manter a data original ou alterar para a data de hoje?</p>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="ghost" onClick={() => setQuickPayOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              disabled={quickPaying || (quickPayValueChanged && !!quickPayExpense?.installment_group_id && !quickPayExpense?.is_recurring && !quickPayApplyScope) || (!!quickPayExpense?.is_recurring && quickPayValueChanged && !quickPayApplyScope)}
-              onClick={() => handleConfirmQuickPay(true)}
-            >
-              Manter data ({quickPayExpense ? new Date(quickPayExpense.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''})
-            </Button>
-            <Button
-              className="rounded-xl bg-success text-success-foreground hover:bg-success/90"
-              disabled={quickPaying || (quickPayValueChanged && !!quickPayExpense?.installment_group_id && !quickPayExpense?.is_recurring && !quickPayApplyScope) || (!!quickPayExpense?.is_recurring && quickPayValueChanged && !quickPayApplyScope)}
-              onClick={() => handleConfirmQuickPay(false)}
-            >
-              {quickPaying ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processando...</> : `Mudar para hoje (${todayFormatted})`}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <ResponsiveModalFooter className="flex-col sm:flex-row gap-2 p-5 pt-3">
+          <Button variant="ghost" onClick={() => setQuickPayOpen(false)} className="rounded-xl">Cancelar</Button>
+          <Button
+            variant="outline"
+            className="rounded-xl"
+            disabled={quickPaying || (quickPayValueChanged && !!quickPayExpense?.installment_group_id && !quickPayExpense?.is_recurring && !quickPayApplyScope) || (!!quickPayExpense?.is_recurring && quickPayValueChanged && !quickPayApplyScope)}
+            onClick={() => handleConfirmQuickPay(true)}
+          >
+            Manter data ({quickPayExpense ? new Date(quickPayExpense.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''})
+          </Button>
+          <Button
+            className="rounded-xl bg-success text-success-foreground hover:bg-success/90"
+            disabled={quickPaying || (quickPayValueChanged && !!quickPayExpense?.installment_group_id && !quickPayExpense?.is_recurring && !quickPayApplyScope) || (!!quickPayExpense?.is_recurring && quickPayValueChanged && !quickPayApplyScope)}
+            onClick={() => handleConfirmQuickPay(false)}
+          >
+            {quickPaying ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processando...</> : `Mudar para hoje (${todayFormatted})`}
+          </Button>
+        </ResponsiveModalFooter>
+      </ResponsiveModal>
     </>
   );
 }

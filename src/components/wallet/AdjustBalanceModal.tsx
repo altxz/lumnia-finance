@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalDescription, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,14 +78,13 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100vh-2rem)] w-[calc(100%-1rem)] max-w-md flex-col gap-0 rounded-3xl p-0 sm:w-full">
-        <DialogHeader className="p-6 pb-3">
-          <DialogTitle className="break-words">Ajustar saldo{wallet ? `: ${wallet.name}` : ''}</DialogTitle>
-          <DialogDescription className="text-pretty">
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-h-[calc(100vh-2rem)] w-[calc(100%-1rem)] max-w-md rounded-3xl sm:w-full">
+        <ResponsiveModalHeader className="p-6 pb-3">
+          <ResponsiveModalTitle className="break-words">Ajustar saldo{wallet ? `: ${wallet.name}` : ''}</ResponsiveModalTitle>
+          <ResponsiveModalDescription className="text-pretty">
             Registre somente a diferença entre o saldo calculado e o saldo conferido no banco.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveModalDescription>
+        </ResponsiveModalHeader>
 
         <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4">
           <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-4">
@@ -134,13 +133,12 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
           </div>
         </div>
 
-        <DialogFooter className="flex-col-reverse gap-2 border-t p-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:flex-row">
+        <ResponsiveModalFooter className="flex-col-reverse gap-2 border-t p-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:flex-row">
           <Button variant="outline" className="w-full rounded-xl sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button className="w-full rounded-xl whitespace-normal sm:min-w-32 sm:w-auto" onClick={handleSave} disabled={saving || diff === 0}>
             {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : 'Ajustar saldo'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveModalFooter>
+    </ResponsiveModal>
   );
 }

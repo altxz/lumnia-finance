@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalDescription } from '@/components/ui/responsive-modal';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -266,16 +266,14 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90dvh] gap-0 p-0 rounded-2xl overflow-hidden flex flex-col">
-        <DialogHeader className="p-5 pb-1 shrink-0">
-          <DialogTitle className="text-lg font-semibold">Detalhes da fatura</DialogTitle>
-          <DialogDescription className="sr-only">
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-w-lg max-h-[90dvh] rounded-2xl">
+        <ResponsiveModalHeader className="p-5 pb-1 shrink-0">
+          <ResponsiveModalTitle className="text-lg font-semibold">Detalhes da fatura</ResponsiveModalTitle>
+          <ResponsiveModalDescription className="sr-only">
             Visualize as transações da fatura, valores por categoria e ações de pagamento.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveModalDescription>
+        </ResponsiveModalHeader>
         {content}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveModal>
   );
 }

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -319,12 +319,11 @@ export default function ProjectsPage() {
       </div>
 
       {/* Add Project Modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Novo Projeto</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen} className="sm:max-w-md rounded-2xl">
+        <ResponsiveModalHeader className="p-4 pb-2">
+          <ResponsiveModalTitle className="text-xl font-bold">Novo Projeto</ResponsiveModalTitle>
+        </ResponsiveModalHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-2">
             <div className="space-y-2">
               <Label>Nome do projeto</Label>
               <Input placeholder="Ex: Viagem a Lisboa, Reforma da casa" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="rounded-xl h-11" />
@@ -348,14 +347,13 @@ export default function ProjectsPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleAddProject} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {saving ? 'Salvando...' : 'Criar Projeto'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <ResponsiveModalFooter className="p-4 pt-2">
+          <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleAddProject} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            {saving ? 'Salvando...' : 'Criar Projeto'}
+          </Button>
+        </ResponsiveModalFooter>
+      </ResponsiveModal>
 
       {/* Project Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

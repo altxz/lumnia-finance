@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -219,11 +219,10 @@ export function InvestmentFormModal({ open, onOpenChange, wallets, investment, o
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl max-h-[85dvh] flex flex-col p-0 gap-0">
-        <DialogHeader className="p-5 pb-3 border-b">
-          <DialogTitle>{isEdit ? 'Editar investimento' : 'Novo investimento'}</DialogTitle>
-        </DialogHeader>
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} className="sm:max-w-lg rounded-2xl max-h-[85dvh]">
+        <ResponsiveModalHeader className="p-5 pb-3 border-b">
+          <ResponsiveModalTitle>{isEdit ? 'Editar investimento' : 'Novo investimento'}</ResponsiveModalTitle>
+        </ResponsiveModalHeader>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div className="space-y-2">
@@ -317,13 +316,12 @@ export function InvestmentFormModal({ open, onOpenChange, wallets, investment, o
           </div>
         </div>
 
-        <DialogFooter className="p-5 pt-3 border-t pb-[max(1.25rem,env(safe-area-inset-bottom))] gap-2">
+        <ResponsiveModalFooter className="p-5 pt-3 border-t pb-[max(1.25rem,env(safe-area-inset-bottom))] gap-2">
           <Button variant="outline" className="rounded-xl h-11" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button className="min-w-40 rounded-xl h-11 font-semibold" onClick={handleSave} disabled={saving}>
             {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : isEdit ? 'Salvar alterações' : 'Criar investimento'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveModalFooter>
+    </ResponsiveModal>
   );
 }

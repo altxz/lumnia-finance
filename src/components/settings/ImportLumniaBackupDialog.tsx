@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, Loader2, Upload } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalDescription, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { readLumniaBackup, importLumniaBackup, type BackupPreview, type ImportProgress, type ImportResult } from '@/lib/importLumniaBackup';
 import { clearPersistedCache, queryClient } from '@/lib/queryClient';
@@ -60,17 +60,12 @@ export function ImportLumniaBackupDialog({ userId, open, onOpenChange }: Props) 
   };
   const totals = result ? Object.values(result.imported).reduce((sum, value) => sum + value, 0) : 0;
 
-  return <Dialog open={open} onOpenChange={close}>
-    <DialogContent
-      className="max-w-lg rounded-3xl"
-      onInteractOutside={(event) => event.preventDefault()}
-      onPointerDownOutside={(event) => event.preventDefault()}
-      onFocusOutside={(event) => event.preventDefault()}
-    >
-      <DialogHeader>
-        <DialogTitle>Importar dados do Lumnia</DialogTitle>
-        <DialogDescription>Reconhece o backup JSON e a planilha Excel exportados pelo Lumnia.</DialogDescription>
-      </DialogHeader>
+  return <ResponsiveModal open={open} onOpenChange={close} className="max-w-lg max-h-[90dvh] rounded-3xl" dismissible={false}>
+      <ResponsiveModalHeader className="p-5 pb-3">
+        <ResponsiveModalTitle>Importar dados do Lumnia</ResponsiveModalTitle>
+        <ResponsiveModalDescription>Reconhece o backup JSON e a planilha Excel exportados pelo Lumnia.</ResponsiveModalDescription>
+      </ResponsiveModalHeader>
+      <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-2">
       {!preview && !result && <div className="space-y-3 rounded-2xl border border-dashed p-5 text-center">
         <FileSpreadsheet className="mx-auto h-8 w-8 text-primary" />
         <p className="text-sm text-muted-foreground">Selecione <strong>meus-dados-lumnia.json</strong> ou a planilha <strong>lumnia-export.xlsx</strong>.</p>
@@ -99,7 +94,7 @@ export function ImportLumniaBackupDialog({ userId, open, onOpenChange }: Props) 
       </div>}
       {result && <div className="space-y-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4"><div className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-500" /><div><p className="font-semibold">Importação concluída</p><p className="text-sm text-muted-foreground">{totals} registros gravados no novo banco.</p></div></div>{Object.entries(result.imported).map(([table, count]) => <p key={table} className="text-sm">{table.replace('_', ' ')}: <strong>{count}</strong></p>)}{result.warnings.map(warning => <p key={warning} className="text-xs text-muted-foreground">{warning}</p>)}</div>}
       {error && <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
-      <DialogFooter>{result ? <Button className="rounded-xl" onClick={() => close(false)}>Concluir</Button> : preview ? <Button className="rounded-xl" onClick={runImport} disabled={loading}>{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importando...</> : 'Importar agora'}</Button> : null}</DialogFooter>
-    </DialogContent>
-  </Dialog>;
+      </div>
+      <ResponsiveModalFooter className="p-5 pt-3">{result ? <Button className="rounded-xl" onClick={() => close(false)}>Concluir</Button> : preview ? <Button className="rounded-xl" onClick={runImport} disabled={loading}>{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importando...</> : 'Importar agora'}</Button> : null}</ResponsiveModalFooter>
+  </ResponsiveModal>;
 }

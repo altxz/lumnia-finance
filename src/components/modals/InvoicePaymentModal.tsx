@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarIcon, CheckCircle2, Loader2, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalDescription, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -65,16 +65,15 @@ export function InvoicePaymentModal({
   const canConfirm = !!walletId && !!paymentDate && invoice.total > 0 && !submitting;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100%-1rem)] max-w-md rounded-2xl sm:w-full">
-        <DialogHeader>
-          <DialogTitle>Confirmar pagamento</DialogTitle>
-          <DialogDescription className="text-pretty">
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} className="max-w-md w-[calc(100%-1rem)] max-h-[90dvh] rounded-2xl sm:w-full">
+        <ResponsiveModalHeader className="p-5 pb-3">
+          <ResponsiveModalTitle>Confirmar pagamento</ResponsiveModalTitle>
+          <ResponsiveModalDescription className="text-pretty">
             Escolha a conta debitada e a data em que o pagamento foi realizado.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveModalDescription>
+        </ResponsiveModalHeader>
 
-        <div className="space-y-5">
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-2">
           <div className="rounded-2xl bg-muted/70 px-4 py-5 text-center">
             <p className="text-sm text-muted-foreground">Valor da fatura</p>
             <p className="mt-1 text-3xl font-semibold tracking-tight">{formatCurrency(invoice.total)}</p>
@@ -157,7 +156,7 @@ export function InvoicePaymentModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
+        <ResponsiveModalFooter className="flex-col-reverse gap-2 p-5 pt-3 sm:flex-row sm:gap-2">
           <Button type="button" variant="outline" className="w-full rounded-xl sm:w-auto" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancelar
           </Button>
@@ -173,8 +172,7 @@ export function InvoicePaymentModal({
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
             {submitting ? 'Registrando...' : 'Confirmar pagamento'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveModalFooter>
+    </ResponsiveModal>
   );
 }

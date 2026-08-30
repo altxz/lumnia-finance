@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -993,12 +993,11 @@ export default function WalletPage() {
       </div>
 
       {/* Add Wallet Modal */}
-      <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Novo Ativo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      <ResponsiveModal open={walletModalOpen} onOpenChange={setWalletModalOpen} className="sm:max-w-md rounded-2xl">
+        <ResponsiveModalHeader className="p-4 pb-2">
+          <ResponsiveModalTitle className="text-xl font-bold">Novo Ativo</ResponsiveModalTitle>
+        </ResponsiveModalHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-2">
             <div className="space-y-2">
               <Label>Tipo de ativo</Label>
               <Select value={walletForm.asset_type} onValueChange={v => setWalletForm(f => ({ ...f, asset_type: v }))}>
@@ -1058,22 +1057,20 @@ export default function WalletPage() {
               </>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { resetWalletForm(); setWalletModalOpen(false); }} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleAddWallet} disabled={walletSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {walletSaving ? 'Salvando...' : 'Adicionar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <ResponsiveModalFooter className="p-4 pt-2">
+          <Button variant="outline" onClick={() => { resetWalletForm(); setWalletModalOpen(false); }} className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleAddWallet} disabled={walletSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            {walletSaving ? 'Salvando...' : 'Adicionar'}
+          </Button>
+        </ResponsiveModalFooter>
+      </ResponsiveModal>
 
       {/* Add/Edit Card Modal */}
-      <Dialog open={cardModalOpen} onOpenChange={(open) => { if (!open) resetCardForm(); setCardModalOpen(open); }}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">{editingCardId ? 'Editar Cartão' : 'Novo Cartão de Crédito'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
+      <ResponsiveModal open={cardModalOpen} onOpenChange={(open) => { if (!open) resetCardForm(); setCardModalOpen(open); }} className="sm:max-w-md rounded-2xl">
+        <ResponsiveModalHeader className="p-4 pb-2">
+          <ResponsiveModalTitle className="text-xl font-bold">{editingCardId ? 'Editar Cartão' : 'Novo Cartão de Crédito'}</ResponsiveModalTitle>
+        </ResponsiveModalHeader>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-2">
             <div className="space-y-2">
               <Label>Nome do cartão</Label>
               <Input placeholder="Ex: Nubank, Inter" value={cardForm.name} onChange={e => setCardForm(f => ({ ...f, name: e.target.value }))} className="rounded-xl h-11" />
@@ -1129,14 +1126,13 @@ export default function WalletPage() {
               </p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { resetCardForm(); setCardModalOpen(false); }} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleSubmitCard} disabled={cardSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {cardSaving ? 'Salvando...' : editingCardId ? 'Salvar Alterações' : 'Adicionar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <ResponsiveModalFooter className="p-4 pt-2">
+          <Button variant="outline" onClick={() => { resetCardForm(); setCardModalOpen(false); }} className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleSubmitCard} disabled={cardSaving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            {cardSaving ? 'Salvando...' : editingCardId ? 'Salvar Alterações' : 'Adicionar'}
+          </Button>
+        </ResponsiveModalFooter>
+      </ResponsiveModal>
 
       {/* Recalculate Invoices Dialog */}
       <AlertDialog open={recalcDialogOpen} onOpenChange={setRecalcDialogOpen}>

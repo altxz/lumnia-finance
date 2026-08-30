@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -141,11 +141,10 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl max-h-[85dvh] flex flex-col p-0 gap-0">
-        <DialogHeader className="p-5 pb-3 border-b">
-          <DialogTitle>{mode === 'deposit' ? 'Novo aporte' : 'Resgatar investimento'}</DialogTitle>
-        </DialogHeader>
+    <ResponsiveModal open={open} onOpenChange={onOpenChange} className="sm:max-w-md rounded-2xl max-h-[85dvh]">
+        <ResponsiveModalHeader className="p-5 pb-3 border-b">
+          <ResponsiveModalTitle>{mode === 'deposit' ? 'Novo aporte' : 'Resgatar investimento'}</ResponsiveModalTitle>
+        </ResponsiveModalHeader>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div className="rounded-xl bg-foreground/[0.04] border border-border p-4 space-y-1">
@@ -194,13 +193,12 @@ export function InvestmentMovementModal({ open, onOpenChange, mode, investment, 
           )}
         </div>
 
-        <DialogFooter className="p-5 pt-3 border-t border-border pb-[max(1.25rem,env(safe-area-inset-bottom))] gap-2">
+        <ResponsiveModalFooter className="p-5 pt-3 border-t border-border pb-[max(1.25rem,env(safe-area-inset-bottom))] gap-2">
           <Button variant="outline" className="rounded-xl h-11 border-border bg-foreground/[0.04] text-foreground hover:bg-foreground/10 hover:text-foreground" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button className="rounded-xl h-11 font-semibold" onClick={handleSave} disabled={saving}>
             {saving ? 'Salvando...' : 'Confirmar'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveModalFooter>
+    </ResponsiveModal>
   );
 }

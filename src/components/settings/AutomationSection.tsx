@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { PlusCircle, Trash2, Zap } from 'lucide-react';
 import { useCategories } from '@/hooks/useStaticData';
@@ -141,45 +141,43 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
         </CardContent>
       </Card>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Nova Regra de Importação</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Quando a descrição</Label>
-              <Select value={form.condition_operator} onValueChange={v => setForm(f => ({ ...f, condition_operator: v }))}>
-                <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="contains">Contém</SelectItem>
-                  <SelectItem value="starts_with">Começa com</SelectItem>
-                  <SelectItem value="equals">É igual a</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Valor</Label>
-              <Input value={form.condition_value} onChange={e => setForm(f => ({ ...f, condition_value: e.target.value }))} placeholder="Ex: uber, ifood, mercado" className="rounded-xl h-11" />
-            </div>
-            <div className="space-y-2">
-              <Label>Categorizar como</Label>
-              <Select value={form.target_category} onValueChange={v => setForm(f => ({ ...f, target_category: v }))}>
-                <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecionar categoria" /></SelectTrigger>
-                <SelectContent>
-                  {categories.filter(c => c.active).map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+      <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen} className="sm:max-w-md rounded-2xl">
+        <ResponsiveModalHeader className="p-4 pb-2">
+          <ResponsiveModalTitle className="text-xl font-bold">Nova Regra de Importação</ResponsiveModalTitle>
+        </ResponsiveModalHeader>
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-2">
+          <div className="space-y-2">
+            <Label>Quando a descrição</Label>
+            <Select value={form.condition_operator} onValueChange={v => setForm(f => ({ ...f, condition_operator: v }))}>
+              <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="contains">Contém</SelectItem>
+                <SelectItem value="starts_with">Começa com</SelectItem>
+                <SelectItem value="equals">É igual a</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleCreate} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {saving ? 'Salvando...' : 'Criar Regra'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-2">
+            <Label>Valor</Label>
+            <Input value={form.condition_value} onChange={e => setForm(f => ({ ...f, condition_value: e.target.value }))} placeholder="Ex: uber, ifood, mercado" className="rounded-xl h-11" />
+          </div>
+          <div className="space-y-2">
+            <Label>Categorizar como</Label>
+            <Select value={form.target_category} onValueChange={v => setForm(f => ({ ...f, target_category: v }))}>
+              <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecionar categoria" /></SelectTrigger>
+              <SelectContent>
+                {categories.filter(c => c.active).map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <ResponsiveModalFooter className="p-4 pt-2">
+          <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">Cancelar</Button>
+          <Button onClick={handleCreate} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            {saving ? 'Salvando...' : 'Criar Regra'}
+          </Button>
+        </ResponsiveModalFooter>
+      </ResponsiveModal>
     </div>
   );
 }
