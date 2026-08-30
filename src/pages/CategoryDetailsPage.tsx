@@ -40,7 +40,9 @@ import { ptBR } from 'date-fns/locale';
 import { hideMaterializedRecurringTemplates } from '@/lib/recurringProjection';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, LineChart, Line, CartesianGrid } from 'recharts';
 import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useBudgetData } from '@/hooks/useBudgetData';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 import { transactionAmount } from '@/lib/transactionAmount';
 
@@ -89,6 +91,7 @@ export default function CategoryDetailsPage() {
   const [trendData, setTrendData] = useState<{ month: string; total: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isOnline = useOnlineStatus();
   const [budgetDraft, setBudgetDraft] = useState('');
   const { tree: budgetTree, saveBudget, savingId } = useBudgetData();
 
@@ -370,16 +373,18 @@ export default function CategoryDetailsPage() {
               </div>
             </div>
 
+            {!isOnline && <OfflineBanner />}
+
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : error ? (
               <StatePanel
-                tone="error"
+                tone={isOnline ? 'error' : 'offline'}
                 icon={<TriangleAlert className="h-5 w-5" />}
-                title="Não foi possível carregar a categoria"
-                description="Os indicadores não foram atualizados. Verifique a conexão e tente novamente."
+                title={isOnline ? 'Não foi possível carregar a categoria' : 'Categoria indisponível offline'}
+                description={isOnline ? 'Os indicadores não foram atualizados. Verifique a conexão e tente novamente.' : 'Reconecte-se para atualizar os indicadores desta categoria.'}
                 actionLabel="Tentar novamente"
                 onAction={fetchData}
               />

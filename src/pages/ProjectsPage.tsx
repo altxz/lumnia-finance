@@ -20,8 +20,10 @@ import { useToast } from '@/hooks/use-toast';
 import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { transactionAmount } from '@/lib/transactionAmount';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface Project {
   id: string;
@@ -47,6 +49,7 @@ type ProjectFilter = 'all' | 'attention' | 'without-limit';
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const isOnline = useOnlineStatus();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -181,12 +184,14 @@ export default function ProjectsPage() {
               </Button>}
             />
 
+            {!isOnline && <OfflineBanner />}
+
             {error && (
               <StatePanel
-                tone="error"
+                tone={isOnline ? 'error' : 'offline'}
                 icon={<AlertTriangle className="h-5 w-5" />}
-                title="Não foi possível carregar os projetos"
-                description="Os valores podem estar desatualizados. Verifique a conexão e tente novamente."
+                title={isOnline ? 'Não foi possível carregar os projetos' : 'Projetos indisponíveis offline'}
+                description={isOnline ? 'Os valores podem estar desatualizados. Verifique a conexão e tente novamente.' : 'Reconecte-se para atualizar seus projetos.'}
                 actionLabel="Tentar novamente"
                 onAction={fetchProjects}
                 className="min-h-0 rounded-3xl py-6"

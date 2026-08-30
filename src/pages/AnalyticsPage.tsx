@@ -14,6 +14,11 @@ import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { StaggerItem } from '@/components/ui/stagger';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { TriangleAlert } from 'lucide-react';
 
 const FinancialOverview = lazyNamedWithRetry(() => import('@/components/analytics/FinancialOverview'), m => m.FinancialOverview);
 const CategoryCharts = lazyNamedWithRetry(() => import('@/components/analytics/CategoryCharts'), m => m.CategoryCharts);
@@ -24,6 +29,7 @@ const NetWorthChart = lazyNamedWithRetry(() => import('@/components/analytics/Ne
 
 export default function AnalyticsPage() {
   const { user, loading: authLoading } = useAuth();
+  const isOnline = useOnlineStatus();
   const [filters, setFilters] = useState<AnalyticsFilters>({ period: '6', compare: false });
   const [showSecondarySections, setShowSecondarySections] = useState(false);
   const data = useAnalyticsData(filters);
@@ -79,6 +85,8 @@ export default function AnalyticsPage() {
               </>}
             />
 
+            {!isOnline && <OfflineBanner />}
+
             {data.loading ? (
               <div className="space-y-6">
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -89,13 +97,15 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             ) : data.error ? (
-              <Card className="rounded-2xl border-border/60">
-                <CardContent className="p-6 space-y-3">
-                  <h2 className="text-lg font-semibold">Não foi possível carregar as análises</h2>
-                  <p className="text-sm text-muted-foreground">{data.error}</p>
-                  <Button type="button" onClick={() => void data.refetch()}>Tentar novamente</Button>
-                </CardContent>
-              </Card>
+              <StatePanel
+                tone={isOnline ? 'error' : 'offline'}
+                icon={<TriangleAlert className="h-5 w-5" />}
+                title={isOnline ? 'Não foi possível carregar as análises' : 'Análises indisponíveis offline'}
+                description={isOnline ? data.error : 'Reconecte-se para atualizar suas análises.'}
+                actionLabel="Tentar novamente"
+                onAction={() => void data.refetch()}
+                className="min-h-0 rounded-3xl py-6"
+              />
             ) : !data.hasData ? (
               <Card className="rounded-2xl border-border/60">
                 <CardContent className="p-6 space-y-2">
@@ -105,26 +115,30 @@ export default function AnalyticsPage() {
               </Card>
             ) : (
               <Suspense fallback={<div className="space-y-4"><Skeleton className="h-[130px] rounded-2xl" /><Skeleton className="h-[320px] rounded-2xl" /></div>}>
-                <FinancialOverview
-                  monthlyData={data.monthlyData}
-                  totalIncome={data.totalIncomePeriod}
-                  totalExpense={data.totalCurrentPeriod}
-                  previousIncome={data.totalPreviousIncomePeriod}
-                  previousExpense={data.totalPreviousPeriod}
-                  comparisonAvailable={data.period.comparisonAvailable}
-                />
-                <InsightsSection
-                  totalCurrentPeriod={data.totalCurrentPeriod}
-                  avgMonthly={data.avgMonthly}
-                  categoryStats={data.categoryStats}
-                  weekdayAnalysis={data.weekdayAnalysis}
-                  predictedNextMonth={data.predictedNextMonth}
-                />
+                <StaggerItem index={0}>
+                  <FinancialOverview
+                    monthlyData={data.monthlyData}
+                    totalIncome={data.totalIncomePeriod}
+                    totalExpense={data.totalCurrentPeriod}
+                    previousIncome={data.totalPreviousIncomePeriod}
+                    previousExpense={data.totalPreviousPeriod}
+                    comparisonAvailable={data.period.comparisonAvailable}
+                  />
+                </StaggerItem>
+                <StaggerItem index={1}>
+                  <InsightsSection
+                    totalCurrentPeriod={data.totalCurrentPeriod}
+                    avgMonthly={data.avgMonthly}
+                    categoryStats={data.categoryStats}
+                    weekdayAnalysis={data.weekdayAnalysis}
+                    predictedNextMonth={data.predictedNextMonth}
+                  />
+                </StaggerItem>
                 {showSecondarySections ? <>
-                  <CategoryCharts categoryStats={data.categoryStats} compare={filters.compare} />
-                  <TrendsCharts monthlyData={data.monthlyData} forecast={data.forecast} />
-                  <EmergencyFundCard />
-                  <NetWorthChart />
+                  <StaggerItem index={0}><CategoryCharts categoryStats={data.categoryStats} compare={filters.compare} /></StaggerItem>
+                  <StaggerItem index={1}><TrendsCharts monthlyData={data.monthlyData} forecast={data.forecast} /></StaggerItem>
+                  <StaggerItem index={2}><EmergencyFundCard /></StaggerItem>
+                  <StaggerItem index={3}><NetWorthChart /></StaggerItem>
                 </> : (
                   <div className="grid gap-4 grid-cols-1 lg:grid-cols-2" aria-label="Carregando análises complementares">
                     <Skeleton className="h-[280px] rounded-2xl" />

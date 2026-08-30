@@ -24,8 +24,10 @@ import { icons } from 'lucide-react';
 import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
 import { Progress } from '@/components/ui/progress';
 import { useBudgetData } from '@/hooks/useBudgetData';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 import { transactionAmount } from '@/lib/transactionAmount';
 
@@ -83,6 +85,7 @@ export default function CategoriesPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { startDate, endDate, label } = useSelectedDate();
+  const isOnline = useOnlineStatus();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [form, setForm] = useState({ name: '', icon: 'tag', color: '#612CFA', keywords: '', parent_id: '' });
@@ -277,12 +280,14 @@ export default function CategoriesPage() {
               </>}
             />
 
+            {!isOnline && <OfflineBanner />}
+
             {queryError && (
               <StatePanel
-                tone="error"
+                tone={isOnline ? 'error' : 'offline'}
                 icon={<TriangleAlert className="h-5 w-5" />}
-                title="Não foi possível carregar as categorias"
-                description="Os dados podem estar desatualizados. Tente novamente quando a conexão estiver estável."
+                title={isOnline ? 'Não foi possível carregar as categorias' : 'Categorias indisponíveis offline'}
+                description={isOnline ? 'Os dados podem estar desatualizados. Tente novamente quando a conexão estiver estável.' : 'Reconecte-se para atualizar suas categorias.'}
                 actionLabel="Tentar novamente"
                 onAction={() => refetch()}
                 className="min-h-0 rounded-3xl py-6"

@@ -21,6 +21,9 @@ import type { Expense } from '@/components/ExpenseTable';
 import { useCategories } from '@/hooks/useStaticData';
 import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { StaggerItem } from '@/components/ui/stagger';
 
 
 
@@ -32,8 +35,7 @@ export default function HistoryPage() {
 
   const projected = useProjectedTotals();
   const { data: categories = [] } = useCategories();
-  const [isOnline, setIsOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
-
+  const isOnline = useOnlineStatus();
 
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState(() => ({
@@ -45,54 +47,6 @@ export default function HistoryPage() {
   const [subItems, setSubItems] = useState<Expense[]>([]);
   const [subLoading, setSubLoading] = useState(true);
   const [subError, setSubError] = useState<string | null>(null);
-
-  const checkConnectivity = useCallback(async () => {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setIsOnline(false);
-      return;
-    }
-
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      setIsOnline(typeof navigator === 'undefined' || navigator.onLine);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 5000);
-
-    try {
-      await fetch(`${supabaseUrl}/auth/v1/health`, {
-        cache: 'no-store',
-        signal: controller.signal,
-      });
-      setIsOnline(true);
-    } catch {
-      setIsOnline(false);
-    } finally {
-      window.clearTimeout(timeout);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleOnline = () => { void checkConnectivity(); };
-    const handleOffline = () => setIsOnline(false);
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') void checkConnectivity();
-    };
-
-    void checkConnectivity();
-    const interval = window.setInterval(() => { void checkConnectivity(); }, 15000);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [checkConnectivity]);
 
   const fetchSubscriptions = useCallback(async () => {
     if (!user) return;
@@ -176,15 +130,7 @@ export default function HistoryPage() {
           <DashboardHeader />
           <main className="flex-1 overflow-auto bg-background">
             <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-32 space-y-7 sm:space-y-8">
-              {!isOnline && (
-                <StatePanel
-                  tone="offline"
-                  icon={<WifiOff className="h-5 w-5" />}
-                  title="Você está offline"
-                  description="Os dados já carregados continuam visíveis, mas alterações e atualizações exigem conexão."
-                  className="min-h-0 rounded-3xl py-6"
-                />
-              )}
+              {!isOnline && <OfflineBanner />}
 
               {projected.error && (
                 <StatePanel
@@ -198,25 +144,28 @@ export default function HistoryPage() {
                 />
               )}
 
-              <header className="space-y-5">
-                <div>
-                  <p className="text-sm font-semibold text-primary">Atividade</p>
-                  <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-[-0.04em] text-foreground">
-                    Movimentações do mês
-                  </h1>
-                  <p className="mt-2 max-w-2xl text-sm sm:text-base text-muted-foreground">
-                    Consulte, encontre e ajuste cada lançamento em um único lugar.
-                  </p>
-                </div>
-                <MonthSelector />
-                <TransactionSummaryHeader
-                  totalIncome={projected.totalIncome}
-                  totalExpense={projected.totalExpense}
-                  projectedBalance={projected.projectedBalance}
-                  loading={projected.loading}
-                />
-              </header>
+              <StaggerItem index={0}>
+                <header className="space-y-5">
+                  <div>
+                    <p className="text-sm font-semibold text-primary">Atividade</p>
+                    <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-[-0.04em] text-foreground">
+                      Movimentações do mês
+                    </h1>
+                    <p className="mt-2 max-w-2xl text-sm sm:text-base text-muted-foreground">
+                      Consulte, encontre e ajuste cada lançamento em um único lugar.
+                    </p>
+                  </div>
+                  <MonthSelector />
+                  <TransactionSummaryHeader
+                    totalIncome={projected.totalIncome}
+                    totalExpense={projected.totalExpense}
+                    projectedBalance={projected.projectedBalance}
+                    loading={projected.loading}
+                  />
+                </header>
+              </StaggerItem>
 
+            <StaggerItem index={1}>
             <section className="surface-card p-4 sm:p-6 space-y-6">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -378,6 +327,7 @@ export default function HistoryPage() {
                   </TabsContent>
                 </Tabs>
             </section>
+            </StaggerItem>
             </div>
           </main>
         </div>

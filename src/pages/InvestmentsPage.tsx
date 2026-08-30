@@ -13,14 +13,17 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { PlusCircle, TrendingUp, PiggyBank, Wallet, Target, Pencil, Trash2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { PlusCircle, TrendingUp, PiggyBank, Wallet, Target, Pencil, Trash2, ArrowDownToLine, ArrowUpFromLine, TriangleAlert } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -35,8 +38,9 @@ import {
 export default function InvestmentsPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const isOnline = useOnlineStatus();
   const { data: wallets = [] } = useWalletsList();
-  const { data: investments = [], isLoading, invalidate } = useInvestments();
+  const { data: investments = [], isLoading, error, refetch, invalidate } = useInvestments();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Investment | null>(null);
@@ -122,7 +126,19 @@ export default function InvestmentsPage() {
               <SummaryCard icon={Target} label="No vencimento" value={totals.projected} />
             </div>
 
-            {isLoading ? (
+            {!isOnline && <OfflineBanner />}
+
+            {error ? (
+              <StatePanel
+                tone={isOnline ? 'error' : 'offline'}
+                icon={<TriangleAlert className="h-5 w-5" />}
+                title={isOnline ? 'Não foi possível carregar seus investimentos' : 'Investimentos indisponíveis offline'}
+                description={isOnline ? 'Os valores podem estar desatualizados. Verifique a conexão e tente novamente.' : 'Reconecte-se para atualizar seus investimentos.'}
+                actionLabel="Tentar novamente"
+                onAction={() => void refetch()}
+                className="min-h-0 rounded-3xl py-6"
+              />
+            ) : isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-[300px] rounded-3xl" />
                 <Skeleton className="h-[200px] rounded-3xl" />

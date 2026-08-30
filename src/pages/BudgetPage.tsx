@@ -16,6 +16,8 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 type BudgetFilter = 'all' | 'attention' | 'monitored' | 'unconfigured';
 
@@ -42,6 +44,7 @@ function getNodeStatus(node: ReturnType<typeof useBudgetData>['tree'][number]) {
 export default function BudgetPage() {
   const { user, loading: authLoading } = useAuth();
   const { label: monthLabel } = useSelectedDate();
+  const isOnline = useOnlineStatus();
   const { tree, totalAllocated, monitoredSpent, monitoredCount, exceededCount, loading, error, refetch, savingId, saveBudget } = useBudgetData();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<BudgetFilter>('all');
@@ -98,12 +101,14 @@ export default function BudgetPage() {
                 exceededCount={exceededCount}
               />
 
+              {!isOnline && <OfflineBanner />}
+
               {error && (
                 <StatePanel
-                  tone="error"
+                  tone={isOnline ? 'error' : 'offline'}
                   icon={<TriangleAlert className="h-5 w-5" />}
-                  title="Não foi possível carregar o orçamento"
-                  description="Os valores não foram atualizados. Verifique a conexão e tente novamente."
+                  title={isOnline ? 'Não foi possível carregar o orçamento' : 'Orçamento indisponível offline'}
+                  description={isOnline ? 'Os valores não foram atualizados. Verifique a conexão e tente novamente.' : 'Reconecte-se para atualizar os valores do orçamento.'}
                   actionLabel="Tentar novamente"
                   onAction={refetch}
                   className="min-h-0 rounded-3xl py-6"

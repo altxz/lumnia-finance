@@ -16,10 +16,13 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { StaggerItem } from '@/components/ui/stagger';
 import { PageLoadingSkeleton } from '@/components/ui/loading-state';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { useAnomalyAlerts } from '@/hooks/useAnomalyAlerts';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { useCategories } from '@/hooks/useStaticData';
 import { useSummaryHistory } from '@/hooks/useSummaryHistory';
@@ -54,6 +57,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { startDate, label: selectedPeriodLabel } = useSelectedDate();
+  const isOnline = useOnlineStatus();
   const projected = useProjectedTotals();
   const summaryHistory = useSummaryHistory(projected.startingBalance);
   const anomalyAlerts = useAnomalyAlerts();
@@ -163,12 +167,14 @@ export default function Dashboard() {
                 <MonthSelector />
               </div>
 
+              {!isOnline && <OfflineBanner />}
+
               {loadError ? (
                 <StatePanel
-                  tone="error"
+                  tone={isOnline ? 'error' : 'offline'}
                   icon={<CircleAlert className="h-5 w-5" />}
-                  title="Não foi possível carregar seu resumo"
-                  description="Os dados financeiros não foram alterados. Tente carregar novamente quando a conexão estiver estável."
+                  title={isOnline ? 'Não foi possível carregar seu resumo' : 'Resumo indisponível offline'}
+                  description={isOnline ? 'Os dados financeiros não foram alterados. Tente carregar novamente quando a conexão estiver estável.' : 'Reconecte-se para atualizar seu resumo financeiro.'}
                   actionLabel="Tentar novamente"
                   onAction={retry}
                   className="min-h-[360px]"
@@ -176,54 +182,64 @@ export default function Dashboard() {
               ) : isLoading ? (
                 <DashboardSkeleton />
               ) : (
-                <div className="space-y-7 sm:space-y-8 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                  <SummaryCards
-                    balance={projected.projectedBalance}
-                    totalIncome={projected.totalIncome}
-                    totalExpense={projected.totalExpense}
-                    largestCategory={projected.largestCategory}
-                    prevBalance={projected.startingBalance}
-                    prevIncome={projected.previousMonth.totalIncome}
-                    prevExpense={projected.previousMonth.totalExpense}
-                    debitExpense={projected.debitExpense}
-                    invoiceExpense={projected.invoiceTotal}
-                    cardPurchases={projected.cardPurchases}
-                    pendingInStartingBalance={projected.pendingInStartingBalance}
-                    balanceHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.balance }))}
-                    incomeHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.income }))}
-                    expenseHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.expense }))}
-                    categoryHistory={summaryHistory.categorySeries(projected.largestCategory?.categoryKey).map(point => ({ label: point.label, value: point.expense }))}
-                  />
+                <div className="space-y-7 sm:space-y-8">
+                  <StaggerItem index={0}>
+                    <SummaryCards
+                      balance={projected.projectedBalance}
+                      totalIncome={projected.totalIncome}
+                      totalExpense={projected.totalExpense}
+                      largestCategory={projected.largestCategory}
+                      prevBalance={projected.startingBalance}
+                      prevIncome={projected.previousMonth.totalIncome}
+                      prevExpense={projected.previousMonth.totalExpense}
+                      debitExpense={projected.debitExpense}
+                      invoiceExpense={projected.invoiceTotal}
+                      cardPurchases={projected.cardPurchases}
+                      pendingInStartingBalance={projected.pendingInStartingBalance}
+                      balanceHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.balance }))}
+                      incomeHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.income }))}
+                      expenseHistory={summaryHistory.points.map(point => ({ label: point.label, value: point.expense }))}
+                      categoryHistory={summaryHistory.categorySeries(projected.largestCategory?.categoryKey).map(point => ({ label: point.label, value: point.expense }))}
+                    />
+                  </StaggerItem>
 
-                  <SmartAlertsCarousel alerts={alerts} />
+                  <StaggerItem index={1}>
+                    <SmartAlertsCarousel alerts={alerts} />
+                  </StaggerItem>
 
-                  <section aria-labelledby="cash-flow-title" className="space-y-3">
-                    <div className="flex items-end justify-between gap-4">
-                      <div>
-                        <h2 id="cash-flow-title" className="type-title-2">Ritmo do caixa</h2>
-                        <p className="mt-1 text-sm text-muted-foreground">Realizado e previsto ao longo do mês.</p>
+                  <StaggerItem index={2}>
+                    <section aria-labelledby="cash-flow-title" className="space-y-3">
+                      <div className="flex items-end justify-between gap-4">
+                        <div>
+                          <h2 id="cash-flow-title" className="type-title-2">Ritmo do caixa</h2>
+                          <p className="mt-1 text-sm text-muted-foreground">Realizado e previsto ao longo do mês.</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/analytics')} className="rounded-full text-primary">
+                          <BarChart3 className="mr-1.5 h-4 w-4" /> Análises
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => navigate('/analytics')} className="rounded-full text-primary">
-                        <BarChart3 className="mr-1.5 h-4 w-4" /> Análises
+                      <div className="h-[390px] sm:h-[430px]">
+                        <Suspense fallback={<Skeleton className="h-full rounded-xl" />}>
+                          <CashFlowChart />
+                        </Suspense>
+                      </div>
+                    </section>
+                  </StaggerItem>
+
+                  <StaggerItem index={3}>
+                    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,.78fr)_minmax(0,1.22fr)]">
+                      <DashboardInsight categories={budgetSummary.statuses} />
+                      <DashboardRecentActivity expenses={projected.monthExpenses} categories={dbCategories} />
+                    </div>
+                  </StaggerItem>
+
+                  <StaggerItem index={4}>
+                    <div className="flex justify-center pt-1">
+                      <Button variant="outline" className="rounded-full" onClick={() => navigate('/analytics')}>
+                        Explorar todas as análises <BarChart3 className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="h-[390px] sm:h-[430px]">
-                      <Suspense fallback={<Skeleton className="h-full rounded-xl" />}>
-                        <CashFlowChart />
-                      </Suspense>
-                    </div>
-                  </section>
-
-                  <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,.78fr)_minmax(0,1.22fr)]">
-                    <DashboardInsight categories={budgetSummary.statuses} />
-                    <DashboardRecentActivity expenses={projected.monthExpenses} categories={dbCategories} />
-                  </div>
-
-                  <div className="flex justify-center pt-1">
-                    <Button variant="outline" className="rounded-full" onClick={() => navigate('/analytics')}>
-                      Explorar todas as análises <BarChart3 className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                  </StaggerItem>
                 </div>
               )}
             </div>

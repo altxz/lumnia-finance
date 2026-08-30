@@ -17,11 +17,14 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
-import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft, Pencil, PiggyBank } from 'lucide-react';
+import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft, Pencil, PiggyBank, TriangleAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { PageLoadingSkeleton } from '@/components/ui/loading-state';
+import { StatePanel } from '@/components/ui/state-panel';
+import { OfflineBanner } from '@/components/ui/offline-banner';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useExchangeRates, convertToBRL, formatForeignCurrency, type ExchangeRates } from '@/hooks/useExchangeRates';
 import { useProjectedTotals } from '@/hooks/useProjectedTotals';
 import { useSelectedDate } from '@/contexts/DateContext';
@@ -120,6 +123,7 @@ interface CreditCardRow {
 export default function WalletPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const isOnline = useOnlineStatus();
   const { data: rates } = useExchangeRates();
   const { startDate, endDate, selectedMonth, selectedYear } = useSelectedDate();
   const projected = useProjectedTotals();
@@ -130,6 +134,7 @@ export default function WalletPage() {
   // ─── Wallets state ───
   const [wallets, setWallets] = useState<WalletRow[]>([]);
   const [walletsLoading, setWalletsLoading] = useState(true);
+  const [walletsError, setWalletsError] = useState<string | null>(null);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [walletSaving, setWalletSaving] = useState(false);
   const [walletForm, setWalletForm] = useState({
@@ -151,6 +156,7 @@ export default function WalletPage() {
   // ─── Credit Cards state ───
   const [cards, setCards] = useState<CreditCardRow[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
   const [cardModalOpen, setCardModalOpen] = useState(false);
   const [cardSaving, setCardSaving] = useState(false);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
@@ -169,8 +175,14 @@ export default function WalletPage() {
   const fetchWallets = useCallback(async () => {
     if (!user) return;
     setWalletsLoading(true);
-    const { data: walletsData } = await supabase
+    setWalletsError(null);
+    const { data: walletsData, error } = await supabase
       .from('wallets').select('*').eq('user_id', user.id).order('asset_type');
+    if (error) {
+      setWalletsError(error.message || 'Não foi possível carregar as contas.');
+      setWalletsLoading(false);
+      return;
+    }
     setWallets((walletsData || []) as WalletRow[]);
     setWalletsLoading(false);
   }, [user]);
@@ -179,8 +191,14 @@ export default function WalletPage() {
   const fetchCards = useCallback(async () => {
     if (!user) return;
     setCardsLoading(true);
-    const { data: cardsData } = await supabase
+    setCardsError(null);
+    const { data: cardsData, error } = await supabase
       .from('credit_cards').select('*').eq('user_id', user.id).order('name');
+    if (error) {
+      setCardsError(error.message || 'Não foi possível carregar os cartões.');
+      setCardsLoading(false);
+      return;
+    }
     setCards((cardsData || []) as CreditCardRow[]);
     setCardsLoading(false);
   }, [user]);
@@ -536,6 +554,20 @@ export default function WalletPage() {
               title="Carteira"
               description="Contas, saldos e cartões de crédito em uma visão consolidada."
             />
+
+            {!isOnline && <OfflineBanner />}
+
+            {(walletsError || cardsError) && (
+              <StatePanel
+                tone={isOnline ? 'error' : 'offline'}
+                icon={<TriangleAlert className="h-5 w-5" />}
+                title={isOnline ? 'Não foi possível carregar sua carteira' : 'Carteira indisponível offline'}
+                description={isOnline ? 'Os saldos podem estar desatualizados. Verifique a conexão e tente novamente.' : 'Reconecte-se para atualizar contas e cartões.'}
+                actionLabel="Tentar novamente"
+                onAction={() => { fetchWallets(); fetchCards(); }}
+                className="min-h-0 rounded-3xl py-6"
+              />
+            )}
 
             <Tabs defaultValue="accounts" className="w-full">
               <TabsList className="w-full max-w-md">
