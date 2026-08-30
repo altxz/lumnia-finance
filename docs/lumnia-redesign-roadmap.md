@@ -145,13 +145,13 @@ Cada página deve ser validada por:
 
 ### Etapa 8: movimento e estados
 
-- [ ] Transições discretas.
-- [ ] Bottom sheets.
-- [ ] Feedback de toque.
-- [ ] Skeletons estruturais.
-- [ ] Carregamento escalonado.
-- [ ] Estado offline e retry.
-- [ ] `prefers-reduced-motion`.
+- [x] Transições discretas. Já em uso amplo (78 arquivos com `transition-`/`animate-`).
+- [x] Bottom sheets. Auditoria de 30/08 encontrou que o padrão `ResponsiveModal` (bottom sheet no celular, dialog no desktop) só era usado em 2 de 15 modais. Estendido com `className` e `ResponsiveModalDescription`, e uma prop `dismissible` para fluxos que não podem ser fechados sem confirmação (ex.: importação). Migrados os 12 modais restantes: Automação, Categorias (configurações e página), Projetos, Carteira, Ajuste de saldo, Investimentos, Fatura (detalhes e pagamento), confirmação rápida de pagamento, importação de backup. `ImportTransactionsModal` já implementava o padrão manualmente. Validado visualmente alternando o viewport com o mesmo modal aberto.
+- [x] Feedback de toque. Já coberto por padrão no componente `Button` (`active:scale-[0.98]`).
+- [x] Skeletons estruturais. Já usados em 14 páginas/componentes.
+- [ ] Carregamento escalonado. Gap real: só existe uma animação de "bolinhas carregando"; não há um padrão de revelar seções progressivamente.
+- [ ] Estado offline e retry. Gap real: o padrão existe (`StatePanel` com `tone="offline"`), mas só está ligado em uma página (Histórico).
+- [x] `prefers-reduced-motion`. Já tratado em `index.css` e `App.css`.
 
 ### Etapa 9: auditoria final
 
@@ -194,7 +194,7 @@ Atualizar esta seção ao iniciar e encerrar cada etapa.
 | 5. Patrimônio | Concluída e validada pelo usuário em 30/08/2026 | TypeScript e 97 testes aprovados. Build web, sincronização Capacitor e APK debug reconstruído SHA-256 `9A85C354064E9CF7CD71662974CD5A5B1CC42940D63BDBBE8F70CBF83CCF1B72` concluídos. O APK contém o bundle `NetWorthChart-DwpOsr4k.js` com a nova evolução patrimonial, foi instalado e aberto no Galaxy S22 Ultra às 14:00 sem exceção fatal. | Nenhuma nesta etapa. |
 | 6. Analytics | Concluída e validada fisicamente pelo usuário em 30/08/2026 | Modelo único de período, comparação real, previsão com base explícita, estados de erro e vazio, carregamento escalonado, remoção do treemap, gráfico principal de receitas, despesas e resultado, ranking de categorias, acompanhamento de orçamentos e cobertura de caixa derivada de movimentações. A auditoria de cálculo eliminou interpretação de sinal invertido e leitura de caixa persistido desatualizado. TypeScript, build web e 14 testes financeiros focados aprovados. [`financial-calculation-audit.md`](financial-calculation-audit.md) | Nenhuma |
 | 7. Configurações | Concluída em 30/08/2026 | Todas as 5 abas reais classificadas e funcionais: Conta, Automação, Notificações, Categorias, Dados e segurança (`Módulos`, `Planos` e `IA` eram órfãos e foram removidos). Auditoria de 30/08 encontrou e corrigiu dois bugs reais que auditorias anteriores diziam ter corrigido mas não tinham: "senha atual" nunca era validada, e as regras de Automação usavam uma lista de categorias genérica em vez das categorias reais do usuário. Importação completa validada fisicamente pelo usuário. [`financial-calculation-audit.md`](financial-calculation-audit.md) | Nenhuma |
-| 8. Movimento e estados | Pendente | | |
+| 8. Movimento e estados | Em andamento em 30/08/2026 | 5 de 7 itens já estavam prontos ou foram corrigidos: transições, feedback de toque, skeletons e `prefers-reduced-motion` já cobertos; bottom sheets migrados para os 12 modais restantes (commit `ffb6b52`) | Carregamento escalonado (só existe uma animação de loading, sem padrão real) e estado offline+retry (só implementado no Histórico, falta espalhar para as outras páginas). |
 | 9. Auditoria final | Pendente | | |
 | MCP | Conectado e validado no Claude em 30/08/2026 | Decisão do usuário: manter a integração só no Claude (Custom Connector, plano Pro), abandonando o ChatGPT. Função `lumnia-mcp` v2 publicada no projeto Supabase, bundle portátil validado sem caminhos locais, 97 testes automatizados aprovados. A causa raiz do erro inicial de conexão ("unauthorized request origin") não foi falta de redirect URL (já estavam corretas) nem problema no servidor MCP (o `project_id` já estava correto) — era o site em produção da Vercel, que hospeda a tela de consentimento OAuth, ainda compilado contra o Supabase antigo. Corrigido com a atualização das variáveis de ambiente na Vercel e um novo deploy; conector testado com sucesso em seguida. | Nenhuma. O antigo conector MCP do ChatGPT pode ser desconectado manualmente pelo usuário nas configurações do ChatGPT, se desejado (não é urgente). |
 | Migração Supabase (projeto novo) | Concluída em 30/08/2026 | Confirmado com o usuário: `ulszjqppxceqbeoyyqbb` ("Lumnia") é o projeto Supabase correto e atual, com os 666 lançamentos, 96 categorias, 2 carteiras, 2 cartões, 23 orçamentos e 1 projeto reconciliados. `supabase/config.toml` e o bundle de `lumnia-mcp` já apontavam para ele. Publicadas e validadas de ponta a ponta: `delete-account` (teste com usuário descartável: transação e usuário removidos, confirmado por SQL), `generate-recurring`, `chat-genius` (corrigida e testada) e `check-due-bills` (criou uma notificação real e válida no teste). O bundle web publicado na Vercel foi corrigido e um novo deploy confirmado sem nenhuma referência ao projeto antigo (`nvskvrgsfzaynotdgzoy`). | `send-push` e o envio de push de `check-due-bills` continuam inoperantes por falta do secret `VAPID_PRIVATE_KEY` — sem uso enquanto não houver decisão sobre reativar notificações push. `categorize-expense` está publicada mas foi descontinuada por decisão do usuário (ver `chat-genius`), não precisa de correção. |
