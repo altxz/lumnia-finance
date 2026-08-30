@@ -11,7 +11,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalFooter } from '@/components/ui/responsive-modal';
 import { PlusCircle, Tag, TrendingUp, TrendingDown, Search, TriangleAlert } from 'lucide-react';
 import { MonthSelector } from '@/components/MonthSelector';
@@ -36,7 +35,6 @@ interface Category {
   name: string;
   icon: string;
   color: string;
-  keywords: string[];
   active: boolean;
   sort_order: number;
   parent_id?: string | null;
@@ -87,8 +85,7 @@ export default function CategoriesPage() {
   const { startDate, endDate, label } = useSelectedDate();
   const isOnline = useOnlineStatus();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: '', icon: 'tag', color: '#612CFA', keywords: '', parent_id: '' });
+  const [form, setForm] = useState({ name: '', icon: 'tag', color: '#612CFA', parent_id: '' });
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
   const budgetData = useBudgetData();
@@ -187,8 +184,7 @@ export default function CategoriesPage() {
 
 
   const openCreateModal = () => {
-    setEditingCategory(null);
-    setForm({ name: '', icon: 'tag', color: '#612CFA', keywords: '', parent_id: '' });
+    setForm({ name: '', icon: 'tag', color: '#612CFA', parent_id: '' });
     setModalOpen(true);
   };
 
@@ -198,31 +194,18 @@ export default function CategoriesPage() {
       return;
     }
     setSaving(true);
-    const keywords = form.keywords.split(',').map(k => k.trim()).filter(Boolean);
 
-    if (editingCategory) {
-      const { error } = await supabase.from('categories').update({
-        name: form.name.trim(),
-        icon: form.icon,
-        color: form.color,
-        keywords,
-        parent_id: form.parent_id || null,
-      }).eq('id', editingCategory.id);
-      if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-      else toast({ title: 'Categoria atualizada!' });
-    } else {
-      const { error } = await supabase.from('categories').insert({
-        user_id: user!.id,
-        name: form.name.trim(),
-        icon: form.icon,
-        color: form.color,
-        keywords,
-        sort_order: categories.length,
-        parent_id: form.parent_id || null,
-      });
-      if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-      else toast({ title: 'Categoria criada!' });
-    }
+    const { error } = await supabase.from('categories').insert({
+      user_id: user!.id,
+      name: form.name.trim(),
+      icon: form.icon,
+      color: form.color,
+      sort_order: categories.length,
+      parent_id: form.parent_id || null,
+    });
+    if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    else toast({ title: 'Categoria criada!' });
+
     setSaving(false);
     setModalOpen(false);
     fetchCategories();
@@ -333,7 +316,12 @@ export default function CategoriesPage() {
             <section className="space-y-4" aria-labelledby="category-structure-title">
               <div>
                 <h2 id="category-structure-title" className="type-title-2">Estrutura de categorias</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Organize categorias principais e subcategorias sem perder o histórico dos lançamentos.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Organize categorias principais e subcategorias sem perder o histórico dos lançamentos. Para editar ou excluir uma categoria existente, acesse{' '}
+                  <button type="button" onClick={() => navigate('/configuracoes')} className="font-medium text-primary underline-offset-2 hover:underline">
+                    Configurações → Categorias
+                  </button>.
+                </p>
               </div>
               <div className="surface-base rounded-3xl p-3 sm:p-4">
                 <div className="relative">
@@ -421,10 +409,10 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* Create Modal */}
       <ResponsiveModal open={modalOpen} onOpenChange={setModalOpen} className="sm:max-w-md rounded-2xl">
         <ResponsiveModalHeader className="p-4 pb-2">
-          <ResponsiveModalTitle className="text-xl font-bold">{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</ResponsiveModalTitle>
+          <ResponsiveModalTitle className="text-xl font-bold">Nova Categoria</ResponsiveModalTitle>
         </ResponsiveModalHeader>
           <div className="flex-1 space-y-4 overflow-y-auto px-4 py-2">
             <div className="space-y-2">
@@ -435,7 +423,7 @@ export default function CategoriesPage() {
                 className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">Nenhuma (Categoria Principal)</option>
-                {categories.filter(c => !c.parent_id && c.id !== editingCategory?.id).map(c => (
+                {categories.filter(c => !c.parent_id).map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
@@ -476,17 +464,6 @@ export default function CategoriesPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Palavras-chave para IA</Label>
-              <Textarea
-                value={form.keywords}
-                onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))}
-                placeholder="restaurante, lanche, comida, delivery"
-                className="rounded-xl min-h-[60px]"
-              />
-              <p className="text-xs text-muted-foreground">Separe por vírgula. Ajuda a IA a categorizar melhor.</p>
-            </div>
-
             {/* Preview */}
             <div className="space-y-2">
               <Label>Preview</Label>
@@ -502,7 +479,7 @@ export default function CategoriesPage() {
         <ResponsiveModalFooter className="p-4 pt-2">
           <Button variant="outline" onClick={() => setModalOpen(false)} className="rounded-xl">Cancelar</Button>
           <Button onClick={handleSave} disabled={saving} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-            {saving ? 'Salvando...' : editingCategory ? 'Atualizar' : 'Criar Categoria'}
+            {saving ? 'Salvando...' : 'Criar Categoria'}
           </Button>
         </ResponsiveModalFooter>
       </ResponsiveModal>
