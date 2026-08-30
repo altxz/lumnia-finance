@@ -48,8 +48,12 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
 
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) {
-      toast({ title: 'Erro', description: 'A nova senha deve ter pelo menos 6 caracteres.', variant: 'destructive' });
+    if (!currentPassword) {
+      toast({ title: 'Erro', description: 'Informe a senha atual.', variant: 'destructive' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({ title: 'Erro', description: 'A nova senha deve ter pelo menos 8 caracteres.', variant: 'destructive' });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -57,6 +61,15 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
       return;
     }
     setChangingPassword(true);
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: user?.email,
+      password: currentPassword,
+    });
+    if (reauthError) {
+      toast({ title: 'Erro', description: 'Senha atual incorreta.', variant: 'destructive' });
+      setChangingPassword(false);
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     else {
@@ -96,7 +109,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Nova senha</Label>
-              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="rounded-xl h-11" placeholder="Mínimo 6 caracteres" />
+              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="rounded-xl h-11" placeholder="Mínimo 8 caracteres" />
             </div>
             <div className="space-y-2">
               <Label>Confirmar nova senha</Label>
@@ -106,7 +119,7 @@ export function SecuritySection({ user, onDeleteAccount }: SecuritySectionProps)
           {newPassword && confirmPassword && newPassword !== confirmPassword && (
             <p className="text-xs text-destructive">As senhas não conferem</p>
           )}
-          <Button onClick={handleChangePassword} disabled={changingPassword || !newPassword || !confirmPassword} className="w-full rounded-xl sm:w-auto">
+          <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword} className="w-full rounded-xl sm:w-auto">
             {changingPassword ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Alterando...</> : 'Alterar Senha'}
           </Button>
         </CardContent>

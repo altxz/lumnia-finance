@@ -5,11 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { PlusCircle, Trash2, Zap } from 'lucide-react';
-import { CATEGORIES, getCategoryInfo } from '@/lib/constants';
+import { useCategories } from '@/hooks/useStaticData';
+import { findCategoryByName } from '@/lib/categoryMatch';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +20,6 @@ interface Rule {
   condition_value: string;
   target_category: string;
   active: boolean;
-  applied_count: number;
 }
 
 interface AutomationSectionProps {
@@ -31,13 +30,18 @@ interface AutomationSectionProps {
 
 export function AutomationSection({ rules, onRulesChange, userId }: AutomationSectionProps) {
   const { toast } = useToast();
+  const { data: categories = [] } = useCategories();
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ condition_value: '', target_category: 'alimentacao', condition_operator: 'contains' });
+  const [form, setForm] = useState({ condition_value: '', target_category: '', condition_operator: 'contains' });
   const [saving, setSaving] = useState(false);
 
   const handleCreate = async () => {
     if (!form.condition_value.trim()) {
       toast({ title: 'Erro', description: 'Preencha o valor da condição.', variant: 'destructive' });
+      return;
+    }
+    if (!form.target_category) {
+      toast({ title: 'Erro', description: 'Selecione a categoria de destino.', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -49,7 +53,7 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
       target_category: form.target_category,
     });
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Regra criada!' }); setModalOpen(false); setForm({ condition_value: '', target_category: 'alimentacao', condition_operator: 'contains' }); onRulesChange(); }
+    else { toast({ title: 'Regra criada!' }); setModalOpen(false); setForm({ condition_value: '', target_category: '', condition_operator: 'contains' }); onRulesChange(); }
     setSaving(false);
   };
 
@@ -98,17 +102,20 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
           ) : (
             <div className="space-y-3">
               {rules.map(rule => {
-                const catInfo = getCategoryInfo(rule.target_category);
+                const category = findCategoryByName(categories, rule.target_category);
                 return (
                   <div key={rule.id} className="flex items-center gap-3 p-3 rounded-xl border bg-secondary/20">
                     <Switch checked={rule.active} onCheckedChange={v => toggleRule(rule.id, v)} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">
-                        Se descrição <span className="text-ai font-semibold">{operatorLabel(rule.condition_operator)}</span> "{rule.condition_value}"
+                        Se descrição <span className="text-primary font-semibold">{operatorLabel(rule.condition_operator)}</span> "{rule.condition_value}"
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">→</span>
-                        <Badge variant={catInfo.variant} className="text-xs">{catInfo.label}</Badge>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category?.color ?? '#94a3b8' }} />
+                          {category?.name ?? rule.target_category}
+                        </span>
                       </div>
                     </div>
                     <AlertDialog>
@@ -158,9 +165,9 @@ export function AutomationSection({ rules, onRulesChange, userId }: AutomationSe
             <div className="space-y-2">
               <Label>Categorizar como</Label>
               <Select value={form.target_category} onValueChange={v => setForm(f => ({ ...f, target_category: v }))}>
-                <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecionar categoria" /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {categories.filter(c => c.active).map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

@@ -33,7 +33,6 @@ interface AutomationRule {
   condition_value: string;
   target_category: string;
   active: boolean;
-  applied_count: number;
 }
 
 export default function SettingsPage() {
