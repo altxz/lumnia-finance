@@ -4,7 +4,6 @@ import { Bell, CreditCard, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
+import { InvoicePaymentModal } from '@/components/modals/InvoicePaymentModal';
 
 type ExpenseUpdate = Database['public']['Tables']['expenses']['Update'];
 
@@ -38,7 +38,6 @@ export function NotificationBell() {
   // Pay invoice from notification (credit card)
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [payNotification, setPayNotification] = useState<Notification | null>(null);
-  const [payWalletId, setPayWalletId] = useState('');
   const [paying, setPaying] = useState(false);
   const [payCardInfo, setPayCardInfo] = useState<{ cardId: string; cardName: string; total: number; invoiceMonth: string } | null>(null);
 
@@ -116,13 +115,12 @@ export function NotificationBell() {
     const invoiceMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     setPayCardInfo({ cardId: card.id, cardName: card.name, total, invoiceMonth });
     setPayNotification(n);
-    setPayWalletId('');
     setPayDialogOpen(true);
     setOpen(false);
   };
 
-  const handleConfirmPay = async () => {
-    if (!user || !payCardInfo || !payWalletId) return;
+  const handleConfirmPay = async (walletId: string, paymentDate: string) => {
+    if (!user || !payCardInfo || !walletId) return;
     setPaying(true);
     const { error } = await supabase.from('expenses').insert({
       user_id: user.id,
@@ -130,8 +128,8 @@ export function NotificationBell() {
       value: payCardInfo.total,
       type: 'expense',
       final_category: 'Cartão de Crédito',
-      date: new Date().toISOString().split('T')[0],
-      wallet_id: payWalletId,
+      date: paymentDate,
+      wallet_id: walletId,
       credit_card_id: payCardInfo.cardId,
       payment_method: 'debit',
       is_paid: true,
@@ -145,6 +143,10 @@ export function NotificationBell() {
       const fmtTotal = payCardInfo.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       toast({ title: 'Fatura paga!', description: `${fmtTotal} debitado da conta.` });
       setPayDialogOpen(false);
+      await queryClient.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey?.[0];
+        return typeof key === 'string' && (key.startsWith('projected-') || key.startsWith('analytics') || key === 'expenses' || key === 'history');
+      }, refetchType: 'active' });
     } else {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     }
@@ -311,36 +313,16 @@ export function NotificationBell() {
         </PopoverContent>
       </Popover>
 
-      {/* Pay invoice dialog (credit card) */}
-      <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent className="rounded-2xl max-w-md">
-          <DialogHeader><DialogTitle>Pagar Fatura</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center p-4 rounded-xl bg-muted">
-              <p className="text-sm text-muted-foreground">Valor da fatura</p>
-              <p className="text-3xl font-bold mt-1">
-                {payCardInfo ? payCardInfo.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">{payCardInfo?.cardName}</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Debitar de qual conta?</Label>
-              <Select value={payWalletId} onValueChange={setPayWalletId}>
-                <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
-                <SelectContent>
-                  {wallets.map(w => (<SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPayDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleConfirmPay} disabled={paying || !payWalletId} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {paying ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Pagando...</> : 'Confirmar Pagamento'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {payCardInfo && (
+        <InvoicePaymentModal
+          open={payDialogOpen}
+          onOpenChange={setPayDialogOpen}
+          invoice={{ cardName: payCardInfo.cardName, monthLabel: payCardInfo.invoiceMonth, total: payCardInfo.total }}
+          wallets={wallets}
+          submitting={paying}
+          onConfirm={handleConfirmPay}
+        />
+      )}
 
       {/* Quick pay/receive dialog for individual transactions */}
       <Dialog open={quickPayOpen} onOpenChange={(o) => { if (!o) { setQuickPayOpen(false); setQuickPayApplyScope(null); } }}>

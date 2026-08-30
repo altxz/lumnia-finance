@@ -2,11 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { CreditCard, Clock, Lock, AlertTriangle, Wallet, Receipt, Loader2, CalendarCheck, Eye, ShoppingBag, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { CreditCard, Clock, Lock, AlertTriangle, Wallet, Receipt, CalendarCheck, Eye, ShoppingBag, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSelectedDate } from '@/contexts/DateContext';
 import { supabase } from '@/lib/supabase';
@@ -19,6 +16,7 @@ import { CreditCardStack } from '@/components/analytics/CreditCardStack';
 import { EditExpenseModal } from '@/components/EditExpenseModal';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { InvoicePaymentModal } from '@/components/modals/InvoicePaymentModal';
 
 const STATUS_MAP = {
   open: { label: 'Aberta', icon: Clock, className: 'text-success', bg: 'bg-success/15' },
@@ -68,7 +66,6 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
   const [selectedInvoice, setSelectedInvoice] = useState<InvoicePeriod | null>(null);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [payingInvoice, setPayingInvoice] = useState<InvoicePeriod | null>(null);
-  const [payWalletId, setPayWalletId] = useState('');
   const [paying, setPaying] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
@@ -87,7 +84,6 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
 
   const openPayDialog = (inv: InvoicePeriod) => {
     setPayingInvoice(inv);
-    setPayWalletId('');
     setPayDialogOpen(true);
   };
 
@@ -121,8 +117,8 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
     }
   };
 
-  const handlePayInvoice = async () => {
-    if (!user || !payingInvoice || !payWalletId) return;
+  const handlePayInvoice = async (walletId: string, paymentDate: string) => {
+    if (!user || !payingInvoice || !walletId) return;
     setPaying(true);
     const { error } = await supabase.from('expenses').insert({
       user_id: user.id,
@@ -130,8 +126,8 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
       value: payingInvoice.total,
       type: 'expense',
       final_category: 'Cartão de Crédito',
-      date: new Date().toISOString().split('T')[0],
-      wallet_id: payWalletId,
+      date: paymentDate,
+      wallet_id: walletId,
       credit_card_id: payingInvoice.cardId,
       payment_method: 'debit',
       is_paid: true,
@@ -342,40 +338,16 @@ export function CreditCardSummary({ cards, allExpenses, wallets, refetch }: Cred
         />
       )}
 
-      {/* Pay Invoice Dialog */}
-      <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent className="rounded-2xl max-w-md">
-          <DialogHeader>
-            <DialogTitle>Pagar Fatura</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center p-4 rounded-xl bg-muted">
-              <p className="text-sm text-muted-foreground">Valor da fatura</p>
-              <p className="text-3xl font-bold mt-1">{payingInvoice ? formatCurrency(payingInvoice.total) : ''}</p>
-              <p className="text-xs text-muted-foreground mt-1">{payingInvoice?.cardName} — {payingInvoice?.monthLabel}</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Debitar de qual conta?</Label>
-              <Select value={payWalletId} onValueChange={setPayWalletId}>
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue placeholder="Selecione a conta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {wallets.map(w => (
-                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPayDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handlePayInvoice} disabled={paying || !payWalletId} className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-              {paying ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Pagando...</> : 'Confirmar Pagamento'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {payingInvoice && (
+        <InvoicePaymentModal
+          open={payDialogOpen}
+          onOpenChange={setPayDialogOpen}
+          invoice={payingInvoice}
+          wallets={wallets}
+          submitting={paying}
+          onConfirm={handlePayInvoice}
+        />
+      )}
 
       {/* Edit modal */}
       {editingExpense && (

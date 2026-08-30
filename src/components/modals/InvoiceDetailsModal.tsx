@@ -17,6 +17,7 @@ import { InvoiceHeader } from './invoice/InvoiceHeader';
 import { InvoiceTransactionList } from './invoice/InvoiceTransactionList';
 import { InvoicePaymentFooter } from './invoice/InvoicePaymentFooter';
 import { DeleteConfirmDialog } from './invoice/DeleteConfirmDialog';
+import { InvoicePaymentModal } from './InvoicePaymentModal';
 
 interface InvoiceDetailsModalProps {
   open: boolean;
@@ -52,6 +53,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
     return `${new Date().getFullYear()}-${new Date().getMonth()}`;
   });
   const [paying, setPaying] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
   const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
@@ -134,7 +136,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
     }
   };
 
-  const handlePayInvoice = async (walletId: string, dateMode: 'due' | 'today' | 'custom', customDate?: Date) => {
+  const handlePayInvoice = async (walletId: string, paymentDate: string) => {
     if (!user || !walletId || activeInvoice.total <= 0) return;
     setPaying(true);
 
@@ -156,25 +158,13 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
         return;
       }
 
-      const dateStr = (() => {
-        if (dateMode === 'today') {
-          const today = new Date();
-          return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        }
-        if (dateMode === 'custom' && customDate) {
-          return `${customDate.getFullYear()}-${String(customDate.getMonth() + 1).padStart(2, '0')}-${String(customDate.getDate()).padStart(2, '0')}`;
-        }
-        const dueDate = activeInvoice.dueDate;
-        return `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`;
-      })();
-
       const { error: insertError } = await supabase.from('expenses').insert({
         user_id: user.id,
         description: `Pagamento fatura ${activeInvoice.cardName} - ${activeInvoice.monthLabel}`,
         value: activeInvoice.total,
         final_category: 'cartao',
         type: 'expense',
-        date: dateStr,
+        date: paymentDate,
         wallet_id: walletId,
         credit_card_id: activeInvoice.cardId,
         is_paid: true,
@@ -186,6 +176,7 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
       toast({ title: 'Fatura paga!', description: `Pagamento de R$ ${activeInvoice.total.toFixed(2)} registrado.` });
       refetch?.();
       onPaid?.();
+      setPaymentDialogOpen(false);
       onOpenChange(false);
     } catch (err: any) {
       showFriendlyError(err, 'Erro ao pagar fatura');
@@ -223,11 +214,17 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
         isPaid={isPaid}
         total={activeInvoice.total}
         hasTransactions={activeInvoice.transactions.length > 0}
-        dueDate={activeInvoice.dueDate}
-        wallets={wallets}
-        paying={paying}
-        onPay={handlePayInvoice}
+        onOpenPayment={() => setPaymentDialogOpen(true)}
         onUnpay={handleUnpayInvoice}
+      />
+
+      <InvoicePaymentModal
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        invoice={activeInvoice}
+        wallets={wallets}
+        submitting={paying}
+        onConfirm={handlePayInvoice}
       />
 
       <DeleteConfirmDialog

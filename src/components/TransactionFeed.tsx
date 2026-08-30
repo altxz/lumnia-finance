@@ -22,6 +22,7 @@ import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceH
 import type { Expense } from '@/components/ExpenseTable';
 import { deleteSingleRecurringOccurrence } from '@/lib/recurringExceptions';
 import { getCreditCardPaymentCardId, isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
+import { buildInvoiceCashEvents } from '@/lib/invoiceCashFlow';
 import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceMath';
 import { DynamicCategoryIcon } from '@/components/DynamicCategoryIcon';
 import { resolveTransactionCategory } from '@/lib/categoryMatch';
@@ -318,14 +319,36 @@ export function TransactionFeed({
   const targetYear = currentMonth ? parseInt(currentMonth.slice(0, 4)) : new Date().getFullYear();
   const targetMonth = currentMonth ? parseInt(currentMonth.slice(5, 7)) - 1 : new Date().getMonth();
 
-  // getInvoicePeriod now expects the DUE month directly
-  // Build invoice periods using ALL CC expenses (from any month)
+  // getInvoicePeriod recebe o mês do vencimento. Além da fatura que vence no
+  // mês selecionado, a lista precisa montar toda fatura paga dentro desse mês,
+  // mesmo que o vencimento pertença ao mês seguinte ou anterior.
   const invoicePeriods = useMemo(() => {
     if (creditCards.length === 0) return [];
     const ccPool = invoiceExpenses && invoiceExpenses.length > 0 ? invoiceExpenses : (allExpenses || expenses);
-    return creditCards.map(card => {
-      const period = getInvoicePeriod(card, targetYear, targetMonth);
-      return matchExpensesToInvoice(ccPool, period);
+    const monthStartKey = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
+    const monthEndKey = toDateKey(new Date(targetYear, targetMonth + 1, 0));
+    const requestedPeriods = new Map<string, { card: CreditCardType; monthLabel: string }>();
+
+    const addPeriod = (card: CreditCardType, monthLabel: string) => {
+      if (!/^\d{4}-\d{2}$/.test(monthLabel)) return;
+      requestedPeriods.set(`${card.id}|${monthLabel}`, { card, monthLabel });
+    };
+
+    // Mantém as faturas que vencem no mês escolhido, pagas ou não.
+    creditCards.forEach((card) => addPeriod(card, `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`));
+
+    // Inclui faturas pagas na janela atual pela sua data efetiva de pagamento.
+    // Sem isso, uma fatura de setembro paga em 29/08 desaparece de setembro
+    // pelo vencimento e de agosto por não ter sido criada naquele mês.
+    buildInvoiceCashEvents(creditCards, ccPool).forEach((event) => {
+      if (!event.paid || event.date < monthStartKey || event.date > monthEndKey) return;
+      const card = creditCards.find((candidate) => candidate.id === event.cardId);
+      if (card) addPeriod(card, event.monthLabel);
+    });
+
+    return Array.from(requestedPeriods.values()).map(({ card, monthLabel }) => {
+      const [year, month] = monthLabel.split('-').map(Number);
+      return matchExpensesToInvoice(ccPool, getInvoicePeriod(card, year, month - 1));
     });
   }, [creditCards, invoiceExpenses, allExpenses, expenses, targetYear, targetMonth]);
 
@@ -352,17 +375,16 @@ export function TransactionFeed({
       const ensureDay = (key: string) => { if (!dayMap[key]) dayMap[key] = []; };
       const isInSelectedMonth = (dateKey: string) => dateKey >= monthStart && dateKey <= monthEnd;
 
-      // For paid invoices, find the actual payment date from the payment record
-      const allTxnPool = allExpenses || expenses;
+      // A data exibida da fatura usa o mesmo evento de caixa que atualiza o saldo.
+      // Isso impede que a lista fique no vencimento quando o pagamento foi feito em outro dia.
+      const invoiceCashPool = invoiceExpenses && invoiceExpenses.length > 0
+        ? invoiceExpenses
+        : (allExpenses || expenses);
       const paymentDateMap = new Map<string, string>(); // cardId|invoice_month -> payment date
-      if (groupCards) {
-        allTxnPool.forEach(exp => {
-          if (!isTrackedCreditCardPayment(exp, creditCards)) return;
-          if (!exp.wallet_id) return;
-          const cardId = getCreditCardPaymentCardId(exp, creditCards);
-          if (cardId && exp.invoice_month) paymentDateMap.set(`${cardId}|${exp.invoice_month}`, exp.date);
-        });
-      }
+      buildInvoiceCashEvents(creditCards, invoiceCashPool).forEach((event) => {
+        if (!event.paid) return;
+        paymentDateMap.set(`${event.cardId}|${event.monthLabel}`, event.date);
+      });
 
       // Build a set of paid invoice card names to hide their "Pagamento fatura" records
       const paidInvoiceCardNames = new Set<string>();
@@ -394,7 +416,7 @@ export function TransactionFeed({
       invoicePeriods.forEach(inv => {
         const dueKey = toDateKey(inv.dueDate);
         const paymentDate = paymentDateMap.get(`${inv.cardId}|${inv.monthLabel}`);
-        const displayKey = (inv.status === 'paid' && paymentDate) ? paymentDate : dueKey;
+        const displayKey = paymentDate ?? dueKey;
         if (!isInSelectedMonth(displayKey)) return;
 
         const visibleTransactions = invoiceDisplayFilter

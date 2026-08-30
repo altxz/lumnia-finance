@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,15 +79,18 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-2xl max-h-[85dvh] flex flex-col p-0 gap-0">
+      <DialogContent className="flex max-h-[calc(100vh-2rem)] w-[calc(100%-1rem)] max-w-md flex-col gap-0 rounded-3xl p-0 sm:w-full">
         <DialogHeader className="p-6 pb-3">
-          <DialogTitle>Ajustar saldo{wallet ? ` — ${wallet.name}` : ''}</DialogTitle>
+          <DialogTitle className="break-words">Ajustar saldo{wallet ? `: ${wallet.name}` : ''}</DialogTitle>
+          <DialogDescription className="text-pretty">
+            Registre somente a diferença entre o saldo calculado e o saldo conferido no banco.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4">
-          <div className="rounded-xl bg-foreground/[0.04] border border-border px-4 py-3">
+          <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-4">
             <p className="text-xs text-muted-foreground">Saldo atual calculado</p>
-            <p className="text-xl font-bold text-foreground">{formatCurrency(currentBalance)}</p>
+            <p className="break-words text-xl font-semibold text-foreground">{formatCurrency(currentBalance)}</p>
           </div>
 
           <div className="space-y-1.5">
@@ -104,7 +107,7 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
               <QuickCalculator onSelect={v => setRealBalance(String(v))} />
             </div>
             {Number.isFinite(parsed) && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-pretty text-xs leading-relaxed text-muted-foreground">
                 {diff === 0
                   ? 'Nenhuma diferença a registrar.'
                   : diff > 0
@@ -131,9 +134,9 @@ export function AdjustBalanceModal({ open, onOpenChange, wallet, currentBalance,
           </div>
         </div>
 
-        <DialogFooter className="p-6 pt-3 border-t gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button className="min-w-32 rounded-xl" onClick={handleSave} disabled={saving || diff === 0}>
+        <DialogFooter className="flex-col-reverse gap-2 border-t p-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:flex-row">
+          <Button variant="outline" className="w-full rounded-xl sm:w-auto" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button className="w-full rounded-xl whitespace-normal sm:min-w-32 sm:w-auto" onClick={handleSave} disabled={saving || diff === 0}>
             {saving ? <><Loader2 className="animate-spin" /> Salvando...</> : 'Ajustar saldo'}
           </Button>
         </DialogFooter>

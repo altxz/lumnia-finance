@@ -74,6 +74,14 @@ const asDate = (value: unknown) => {
   if (parts.length === 3 && parts[2]?.length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
   return '';
 };
+const asInvoiceMonth = (value: unknown) => {
+  const text = asText(value);
+  if (/^\d{4}-\d{2}$/.test(text)) return text;
+  const brazilianMonth = text.match(/^(\d{1,2})\/(\d{4})$/);
+  if (brazilianMonth) return `${brazilianMonth[2]}-${brazilianMonth[1].padStart(2, '0')}`;
+  const date = asDate(value);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.slice(0, 7) : null;
+};
 const chunks = <T,>(items: T[], size = 100) => Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, index * size + size));
 
 function getSheet(sheets: Record<string, Row[]>, name: string) {
@@ -256,7 +264,7 @@ async function importExcelOrLegacy(userId: string, backup: ParsedBackup, result:
       category_ai: asText(backup.kind === 'excel' ? row['Categoria sugerida (IA)'] : row.category_ai) || null,
       wallet_id: walletMap.get(normalize(walletName)) ?? null, destination_wallet_id: walletMap.get(normalize(destinationWalletName)) ?? null, credit_card_id: cardMap.get(normalize(cardName)) ?? null,
       payment_method: asText(backup.kind === 'excel' ? row['Forma de pagamento'] : row.payment_method) || null,
-      invoice_month: asText(backup.kind === 'excel' ? row['Mês da fatura'] : row.invoice_month) || null,
+      invoice_month: asInvoiceMonth(backup.kind === 'excel' ? row['Mês da fatura'] : row.invoice_month),
       is_paid: backup.kind === 'excel' ? asBoolean(row.Status, true) : asBoolean(row.is_paid, true), is_recurring: backup.kind === 'excel' ? asBoolean(row.Recorrente) : asBoolean(row.is_recurring),
       frequency: normalize(backup.kind === 'excel' ? row.Frequência : row.frequency).startsWith('anual') ? 'annual' : normalize(backup.kind === 'excel' ? row.Frequência : row.frequency).startsWith('mensal') || normalize(backup.kind === 'excel' ? row.Frequência : row.frequency) === 'monthly' ? 'monthly' : null,
       installments: Math.max(1, Math.round(asNumber(backup.kind === 'excel' ? row.Parcelas : row.installments)) || 1), installment_info: asText(backup.kind === 'excel' ? row['Info parcela'] : row.installment_info) || null,

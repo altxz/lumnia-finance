@@ -19,8 +19,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency, getCategoryInfo } from '@/lib/constants';
 import { PlusCircle, Wallet, Landmark, TrendingUp, Bitcoin, Trash2, CreditCard, Calendar, ChevronLeft, ChevronRight, ArrowLeft, Pencil, PiggyBank } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { CHART_SERIES } from '@/lib/chartPalette';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { PageLoadingSkeleton } from '@/components/ui/loading-state';
@@ -34,6 +32,8 @@ import { useUserSettingsRow, useInvalidateUserSettings } from '@/hooks/useUserSe
 import { MonthSelector } from '@/components/MonthSelector';
 import { PageHeader } from '@/components/ui/page-header';
 import { AdjustBalanceModal } from '@/components/wallet/AdjustBalanceModal';
+import { InvoicePaymentModal } from '@/components/modals/InvoicePaymentModal';
+import { NetWorthChart } from '@/components/analytics/NetWorthChart';
 import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Wallet types ───
@@ -66,8 +66,6 @@ const ASSET_ICONS: Record<string, typeof Wallet> = {
   crypto: Bitcoin,
   investment: PiggyBank,
 };
-
-const CHART_COLORS = CHART_SERIES;
 
 const CURRENCY_OPTIONS = [
   { value: 'BRL', label: 'Real (BRL)' },
@@ -166,7 +164,6 @@ export default function WalletPage() {
     () => `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`,
   );
   const [payInvoiceOpen, setPayInvoiceOpen] = useState(false);
-  const [payWalletId, setPayWalletId] = useState('');
   const [payingSaving, setPayingSaving] = useState(false);
   // ─── Fetch wallets ───
   const fetchWallets = useCallback(async () => {
@@ -418,32 +415,30 @@ export default function WalletPage() {
   }, [cardForm.due_day, cardForm.closing_day, cardForm.closing_strategy, cardForm.closing_days_before_due]);
 
   // ─── Pay Invoice handler ───
-  const handlePayInvoice = async () => {
-    if (!user || !selectedCard || !payWalletId || invoiceTotal <= 0) return;
+  const handlePayInvoice = async (walletId: string, paymentDate: string) => {
+    if (!user || !selectedInvoice || !walletId || selectedInvoice.total <= 0) return;
     setPayingSaving(true);
-    const payDate = new Date();
     const { error } = await supabase.from('expenses').insert({
       user_id: user.id,
-      description: `Pagamento fatura ${selectedCard.name} - ${formatMonthLabel(invoiceMonth)}`,
-      value: invoiceTotal,
+      description: `Pagamento fatura ${selectedInvoice.cardName} - ${selectedInvoice.monthLabel}`,
+      value: selectedInvoice.total,
       type: 'expense',
       final_category: 'Cartão de Crédito',
-      date: `${payDate.getFullYear()}-${String(payDate.getMonth() + 1).padStart(2, '0')}-${String(payDate.getDate()).padStart(2, '0')}`,
-      wallet_id: payWalletId,
-      credit_card_id: selectedCard.id,
+      date: paymentDate,
+      wallet_id: walletId,
+      credit_card_id: selectedInvoice.cardId,
       payment_method: 'debit',
       is_paid: true,
-      invoice_month: invoiceMonth,
-      notes: `Pagamento automático da fatura do cartão ${selectedCard.name}`,
+      invoice_month: selectedInvoice.monthLabel,
+      notes: `Pagamento da fatura do cartão ${selectedInvoice.cardName}`,
     });
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } else {
       // Mark all invoice transactions as paid
-      await supabase.from('expenses').update({ is_paid: true }).eq('user_id', user.id).eq('credit_card_id', selectedCardId!).eq('invoice_month', invoiceMonth);
-      toast({ title: 'Fatura paga!', description: `${formatCurrency(invoiceTotal)} debitado da conta.` });
+      await supabase.from('expenses').update({ is_paid: true }).eq('user_id', user.id).eq('credit_card_id', selectedInvoice.cardId).eq('invoice_month', selectedInvoice.monthLabel);
+      toast({ title: 'Fatura paga!', description: `${formatCurrency(selectedInvoice.total)} debitado da conta.` });
       setPayInvoiceOpen(false);
-      setPayWalletId('');
       projected.refetch();
       fetchWallets();
     }
@@ -490,12 +485,12 @@ export default function WalletPage() {
   const totalWealth = useMemo(() => wallets.reduce((s, w) => s + getWalletValueBRL(w, rates), 0), [wallets, rates]);
 
   const liquidBalance = useMemo(
-    () => wallets.filter(w => w.asset_type !== 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
+    () => wallets.filter(w => w.asset_type === 'checking_account' || w.asset_type === 'savings').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
     [wallets, rates],
   );
 
   const investedBalance = useMemo(
-    () => wallets.filter(w => w.asset_type === 'investment').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
+    () => wallets.filter(w => w.asset_type === 'investment' || w.asset_type === 'stocks' || w.asset_type === 'crypto').reduce((s, w) => s + getWalletValueBRL(w, rates), 0),
     [wallets, rates],
   );
 
@@ -507,7 +502,9 @@ export default function WalletPage() {
   const byType = useMemo(() => {
     const map: Record<string, number> = {};
     wallets.forEach(w => { map[w.asset_type] = (map[w.asset_type] || 0) + getWalletValueBRL(w, rates); });
-    return Object.entries(map).map(([type, value]) => ({ name: ASSET_LABELS[type] || type, value }));
+    return Object.entries(map)
+      .map(([type, value]) => ({ type, name: ASSET_LABELS[type] || type, value }))
+      .sort((a, b) => b.value - a.value);
   }, [wallets, rates]);
 
   const grouped = useMemo(() => {
@@ -575,70 +572,72 @@ export default function WalletPage() {
                   </Button>
                 </div>
 
-                {/* Total Net Worth */}
-                <Card className="rounded-2xl border-0 shadow-float gradient-primary text-primary-foreground">
-                  <CardContent className="p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
-                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary-foreground/20 flex items-center justify-center shrink-0">
-                      <Wallet className="h-5 w-5 sm:h-7 sm:w-7" />
+                {/* Visão consolidada dos ativos. Passivos de cartão permanecem
+                    separados até a etapa específica de patrimônio líquido. */}
+                <Card className="overflow-hidden rounded-3xl border-border/70 bg-card shadow-card">
+                  <CardContent className="p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Total em ativos</p>
+                        <p className="break-words text-3xl font-semibold tracking-tight sm:text-4xl">{formatCurrency(totalWealth)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {wallets.length} ativo{wallets.length !== 1 ? 's' : ''} cadastrado{wallets.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Wallet className="h-5 w-5" />
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-medium opacity-80">Património Líquido Total</p>
-                      <p className="text-xl sm:text-3xl font-bold tracking-tight">{formatCurrency(totalWealth)}</p>
-                      <p className="text-[10px] sm:text-xs opacity-60 mt-0.5">
-                        {wallets.length} ativo{wallets.length !== 1 ? 's' : ''} · previsto no fim do mês {formatCurrency(projectedTotalWealth)}
-                      </p>
-                    </div>
-                  </CardContent>
-                  <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-primary-foreground/10 p-3">
-                      <p className="text-[10px] sm:text-xs font-medium opacity-80">Saldo atual</p>
-                      <p className="text-base sm:text-xl font-bold tracking-tight">{formatCurrency(liquidBalance)}</p>
-                    </div>
-                    <div className="rounded-xl bg-primary-foreground/10 p-3">
-                      <p className="text-[10px] sm:text-xs font-medium opacity-80">Saldo em investimentos</p>
-                      <p className="text-base sm:text-xl font-bold tracking-tight">{formatCurrency(investedBalance)}</p>
+                    <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
+                        <p className="text-xs font-medium text-muted-foreground">Em contas</p>
+                        <p className="mt-1 break-words text-lg font-semibold">{formatCurrency(liquidBalance)}</p>
+                      </div>
+                      <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
+                        <p className="text-xs font-medium text-muted-foreground">Em investimentos</p>
+                        <p className="mt-1 break-words text-lg font-semibold">{formatCurrency(investedBalance)}</p>
+                      </div>
+                      <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
+                        <p className="text-xs font-medium text-muted-foreground">Previsão do mês</p>
+                        <p className="mt-1 break-words text-lg font-semibold">{formatCurrency(projectedTotalWealth)}</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Charts */}
+                {/* Composição substitui gráficos redundantes: é mais legível em
+                    tela estreita e permite comparar valores completos. */}
                 {wallets.length > 0 && (
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <Card className="rounded-2xl">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold">Distribuição por Tipo</CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex justify-center">
-                        <ResponsiveContainer width="100%" height={250}>
-                          <PieChart>
-                            <Pie data={byType} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                              {byType.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                            </Pie>
-                            <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                    <Card className="rounded-2xl">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold">Valor por Categoria</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={byType}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                            <YAxis tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
-                            <Tooltip formatter={(v: number) => formatCurrency(v)} cursor={{ fill: 'hsl(var(--foreground))', opacity: 0.06 }} />
-                            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                              {byType.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  </div>
+                  <Card className="rounded-3xl border-border/70 bg-card">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-semibold">Composição dos ativos</CardTitle>
+                      <p className="text-sm text-muted-foreground">Valores atuais por tipo de ativo.</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {byType.map(({ type, name, value }) => {
+                        const Icon = ASSET_ICONS[type] || Wallet;
+                        const percentage = totalWealth > 0 ? (value / totalWealth) * 100 : 0;
+                        return (
+                          <div key={type} className="space-y-2">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-primary">
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <p className="min-w-0 flex-1 break-words text-sm font-medium">{name}</p>
+                              <div className="shrink-0 text-right">
+                                <p className="text-sm font-semibold">{formatCurrency(value)}</p>
+                                <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}%</p>
+                              </div>
+                            </div>
+                            <Progress value={percentage} className="h-1.5" />
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
                 )}
+
+                <NetWorthChart />
 
                 {/* Asset sections */}
                 {walletsLoading ? (
@@ -658,13 +657,13 @@ export default function WalletPage() {
                     const pct = totalWealth > 0 ? (typeTotal / totalWealth) * 100 : 0;
                     return (
                       <div key={type} className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex items-center gap-2">
                             <Icon className="h-5 w-5 text-primary" />
-                            <h2 className="text-lg font-semibold">{ASSET_LABELS[type]}</h2>
-                            <Badge variant="secondary" className="text-xs">{pct.toFixed(0)}%</Badge>
+                            <h2 className="break-words text-lg font-semibold">{ASSET_LABELS[type]}</h2>
+                            <Badge variant="secondary" className="shrink-0 text-xs">{pct.toFixed(0)}%</Badge>
                           </div>
-                          <span className="font-bold text-lg">{formatCurrency(typeTotal)}</span>
+                          <span className="shrink-0 text-right font-bold text-lg">{formatCurrency(typeTotal)}</span>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           {items.map(w => {
@@ -673,11 +672,11 @@ export default function WalletPage() {
                             const projectedVal = getWalletProjectedValue(w);
                             const isForeign = w.currency !== 'BRL';
                             return (
-                              <Card key={w.id} className="rounded-2xl hover:shadow-card transition-shadow">
+                              <Card key={w.id} className="rounded-3xl border-border/70 bg-card transition-shadow hover:shadow-card">
                                 <CardContent className="p-5">
                                   <div className="flex items-start justify-between">
                                     <div className="min-w-0">
-                                      <p className="font-semibold truncate">{w.name}</p>
+                                      <p className="break-words font-semibold">{w.name}</p>
                                       {w.asset_type === 'crypto' && w.crypto_symbol && (
                                         <p className="text-xs text-muted-foreground mt-0.5">
                                           {w.crypto_amount} {w.crypto_symbol} × {formatCurrency(w.crypto_price || 0)}
@@ -753,15 +752,15 @@ export default function WalletPage() {
 
               {/* ════════ TAB: Cartões de Crédito ════════ */}
               <TabsContent value="cards" className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   {selectedCardId && (
                     <Button variant="ghost" onClick={() => setSelectedCardId(null)} className="gap-2 rounded-xl">
                       <ArrowLeft className="h-4 w-4" />
                       Voltar aos cartões
                     </Button>
                   )}
-                  <div className={selectedCardId ? '' : 'ml-auto'}>
-                    <Button onClick={() => setCardModalOpen(true)} className="gap-2 rounded-xl h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                  <div className="ml-auto">
+                    <Button onClick={() => setCardModalOpen(true)} className="gap-2 rounded-xl h-11 px-5 sm:px-6 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
                       <PlusCircle className="h-5 w-5" />
                       Novo Cartão
                     </Button>
@@ -772,25 +771,25 @@ export default function WalletPage() {
                   /* ─── Invoice View ─── */
                   <div className="space-y-5">
                     {/* Card header */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                         <CreditCard className="h-5 w-5 text-primary" />
                       </div>
-                      <div>
-                        <h2 className="text-xl font-bold">{selectedCard.name}</h2>
-                        <p className="text-sm text-muted-foreground">Limite: {formatCurrency(selectedCard.limit_amount)}</p>
+                      <div className="min-w-0">
+                        <h2 className="break-words text-xl font-bold">{selectedCard.name}</h2>
+                        <p className="break-words text-sm text-muted-foreground">Limite: {formatCurrency(selectedCard.limit_amount)}</p>
                       </div>
                     </div>
 
                     {/* Month Navigator */}
                     <Card className="rounded-2xl">
                       <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-3">
                           <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(-1)} className="rounded-xl">
                             <ChevronLeft className="h-5 w-5" />
                           </Button>
-                          <div className="text-center">
-                            <p className="text-lg font-bold">{formatMonthLabel(invoiceMonth)}</p>
+                          <div className="min-w-0 flex-1 text-center">
+                            <p className="break-words text-lg font-bold">{formatMonthLabel(invoiceMonth)}</p>
                             <p className="text-xs text-muted-foreground">Fatura</p>
                           </div>
                           <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(1)} className="rounded-xl">
@@ -801,21 +800,21 @@ export default function WalletPage() {
                     </Card>
 
                     {/* Invoice Summary */}
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <Card className="rounded-2xl">
-                        <CardContent className="p-5 text-center">
+                    <div className="grid gap-3 min-[480px]:grid-cols-3">
+                      <Card className="rounded-2xl border-border/70 bg-card">
+                        <CardContent className="p-4 text-center">
                           <p className="text-sm text-muted-foreground mb-1">Valor Total</p>
-                          <p className="text-2xl font-bold">{formatCurrency(invoiceTotal)}</p>
+                          <p className="break-words text-2xl font-bold">{formatCurrency(invoiceTotal)}</p>
                         </CardContent>
                       </Card>
-                      <Card className="rounded-2xl">
-                        <CardContent className="p-5 text-center">
+                      <Card className="rounded-2xl border-border/70 bg-card">
+                        <CardContent className="p-4 text-center">
                           <p className="text-sm text-muted-foreground mb-1">Transações</p>
                           <p className="text-2xl font-bold">{invoiceTransactions.length}</p>
                         </CardContent>
                       </Card>
-                      <Card className="rounded-2xl">
-                        <CardContent className="p-5 text-center">
+                      <Card className="rounded-2xl border-border/70 bg-card">
+                        <CardContent className="p-4 text-center">
                           <p className="text-sm text-muted-foreground mb-1">Status</p>
                           {(() => {
                             const status = INVOICE_STATUS_LABELS[selectedInvoice?.status ?? 'open'];
@@ -828,15 +827,16 @@ export default function WalletPage() {
                     {/* Pay Invoice Button */}
                     {invoiceTotal > 0 && selectedInvoice?.status !== 'paid' && (
                       <div className="flex justify-center">
-                        <Button onClick={() => setPayInvoiceOpen(true)} className="gap-2 rounded-xl h-12 px-8 bg-success text-success-foreground hover:bg-success/90 font-semibold text-base">
+                        <Button onClick={() => setPayInvoiceOpen(true)} className="h-auto min-h-12 w-full max-w-md gap-2 rounded-xl px-5 py-3 text-center font-semibold whitespace-normal bg-success text-success-foreground hover:bg-success/90 sm:w-auto sm:text-base">
                           <Wallet className="h-5 w-5" />
-                          Pagar Fatura — {formatCurrency(invoiceTotal)}
+                          <span>Pagar fatura</span>
+                          <span className="font-bold">{formatCurrency(invoiceTotal)}</span>
                         </Button>
                       </div>
                     )}
 
                     {/* Invoice Transactions */}
-                    <Card className="rounded-2xl">
+                    <Card className="rounded-3xl border-border/70 bg-card">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base font-semibold">Transações da Fatura</CardTitle>
                       </CardHeader>
@@ -852,29 +852,29 @@ export default function WalletPage() {
                             {invoiceTransactions.map(tx => {
                               const cat = getCategoryInfo(tx.final_category);
                               return (
-                                <div key={tx.id} className="flex items-start justify-between gap-2 py-2 border-b last:border-0">
+                                <div key={tx.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-3 border-b last:border-0">
                                   <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium truncate">{tx.description}</p>
+                                    <p className="break-words text-sm font-medium leading-snug">{tx.description}</p>
                                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                       <span className="text-xs text-muted-foreground">{format(new Date(tx.date + 'T12:00:00'), 'dd/MM/yyyy')}</span>
                                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{cat.label}</Badge>
                                       {tx.installments > 1 && <span className="text-[10px] text-muted-foreground">{tx.installments}x</span>}
                                     </div>
                                   </div>
-                                  <span className="text-sm font-semibold shrink-0">{formatCurrency(tx.value)}</span>
+                                  <span className="shrink-0 text-right text-sm font-semibold">{formatCurrency(tx.value)}</span>
                                 </div>
                               );
                             })}
                           </div>
                           {/* Desktop table view for invoice */}
                           <div className="hidden md:block">
-                            <Table>
+                            <Table className="table-fixed">
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>Data</TableHead>
-                                  <TableHead>Descrição</TableHead>
-                                  <TableHead>Categoria</TableHead>
-                                  <TableHead>Parcelas</TableHead>
+                                  <TableHead className="w-[34%]">Descrição</TableHead>
+                                  <TableHead className="w-[22%]">Categoria</TableHead>
+                                  <TableHead className="w-[12%]">Parcelas</TableHead>
                                   <TableHead className="text-right">Valor</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -884,8 +884,8 @@ export default function WalletPage() {
                                   return (
                                     <TableRow key={tx.id}>
                                       <TableCell className="text-sm">{format(new Date(tx.date + 'T12:00:00'), 'dd/MM/yyyy')}</TableCell>
-                                      <TableCell className="font-medium">{tx.description}</TableCell>
-                                      <TableCell><Badge variant="secondary" className="text-xs">{cat.label}</Badge></TableCell>
+                                      <TableCell className="break-words font-medium">{tx.description}</TableCell>
+                                      <TableCell className="break-words"><Badge variant="secondary" className="max-w-full whitespace-normal break-words text-xs">{cat.label}</Badge></TableCell>
                                       <TableCell className="text-sm text-muted-foreground">{tx.installments > 1 ? `${tx.installments}x` : '—'}</TableCell>
                                       <TableCell className="text-right font-semibold">{formatCurrency(tx.value)}</TableCell>
                                     </TableRow>
@@ -919,20 +919,20 @@ export default function WalletPage() {
                           const pct = card.limit_amount > 0 ? Math.min((used / card.limit_amount) * 100, 100) : 0;
                           const available = Math.max(card.limit_amount - used, 0);
                           return (
-                            <Card key={card.id} className="rounded-2xl overflow-hidden cursor-pointer hover:shadow-float transition-shadow" onClick={() => setSelectedCardId(card.id)}>
+                            <Card key={card.id} className="cursor-pointer overflow-hidden rounded-3xl border-border/70 bg-card transition-shadow hover:shadow-card" onClick={() => setSelectedCardId(card.id)}>
                               <div className={`h-2 ${pct > 80 ? 'bg-destructive' : pct > 50 ? 'bg-yellow-500' : 'bg-green-500'}`} />
                               <CardContent className="p-5 space-y-4">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex items-center gap-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0 flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                                       <CreditCard className="h-5 w-5 text-primary" />
                                     </div>
-                                    <div>
-                                      <p className="font-semibold">{card.name}</p>
-                                      <p className="text-xs text-muted-foreground">Limite: {formatCurrency(card.limit_amount)}</p>
+                                    <div className="min-w-0">
+                                      <p className="break-words font-semibold leading-snug">{card.name}</p>
+                                      <p className="break-words text-xs text-muted-foreground">Limite: {formatCurrency(card.limit_amount)}</p>
                                     </div>
                                   </div>
-                                   <div className="flex items-center gap-1">
+                                   <div className="flex shrink-0 items-center gap-1">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl" onClick={e => { e.stopPropagation(); openEditCard(card); }}>
                                       <Pencil className="h-4 w-4" />
                                     </Button>
@@ -956,26 +956,26 @@ export default function WalletPage() {
                                    </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Fatura {formatMonthLabel(`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`)}</span>
-                                    <span className="font-semibold">{formatCurrency(used)}</span>
+                                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
+                                    <span className="break-words text-muted-foreground">Fatura {formatMonthLabel(`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`)}</span>
+                                    <span className="text-right font-semibold">{formatCurrency(used)}</span>
                                   </div>
                                   <Progress value={pct} className="h-2.5" />
-                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                  <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 text-xs text-muted-foreground">
                                     <span>{pct.toFixed(0)}% utilizado</span>
-                                    <span>Disponível: {formatCurrency(available)}</span>
+                                    <span className="text-right break-words">Disponível: {formatCurrency(available)}</span>
                                   </div>
                                 </div>
-                                <div className="flex gap-4 text-xs text-muted-foreground pt-1 border-t">
-                                  <div className="flex items-center gap-1">
+                                <div className="grid gap-2 border-t pt-3 text-xs text-muted-foreground min-[480px]:grid-cols-2">
+                                  <div className="flex min-w-0 items-center gap-1">
                                     <Calendar className="h-3 w-3" />
-                                    {card.closing_strategy === 'relative'
+                                    <span className="break-words">{card.closing_strategy === 'relative'
                                       ? `Fecha ${card.closing_days_before_due}d antes`
-                                      : `Fecha dia ${card.closing_day}`}
+                                      : `Fecha dia ${card.closing_day}`}</span>
                                   </div>
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex min-w-0 items-center gap-1">
                                     <Calendar className="h-3 w-3" />
-                                    Vence dia {card.due_day}
+                                    <span className="break-words">Vence dia {card.due_day}</span>
                                   </div>
                                 </div>
                               </CardContent>
@@ -1158,42 +1158,20 @@ export default function WalletPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ═══ Pay Invoice Dialog ═══ */}
-      <Dialog open={payInvoiceOpen} onOpenChange={setPayInvoiceOpen}>
-        <DialogContent className="rounded-2xl max-w-md">
-          <DialogHeader>
-            <DialogTitle>Pagar Fatura</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center p-4 rounded-xl bg-muted">
-              <p className="text-sm text-muted-foreground">Valor da fatura</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(invoiceTotal)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{selectedCard?.name} — {formatMonthLabel(invoiceMonth)}</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Debitar de qual conta?</Label>
-              <Select value={payWalletId} onValueChange={setPayWalletId}>
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue placeholder="Selecione a conta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {wallets.map(w => (
-                    <SelectItem key={w.id} value={w.id}>
-                      {w.name} — {formatCurrency(getWalletValue(w))}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPayInvoiceOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handlePayInvoice} disabled={payingSaving || !payWalletId} className="rounded-xl bg-success text-success-foreground hover:bg-success/90 font-semibold">
-              {payingSaving ? 'Pagando...' : 'Confirmar Pagamento'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {selectedInvoice && (
+        <InvoicePaymentModal
+          open={payInvoiceOpen}
+          onOpenChange={setPayInvoiceOpen}
+          invoice={selectedInvoice}
+          wallets={wallets.map((wallet) => ({
+            id: wallet.id,
+            name: wallet.name,
+            detail: formatCurrency(getWalletValue(wallet)),
+          }))}
+          submitting={payingSaving}
+          onConfirm={handlePayInvoice}
+        />
+      )}
 
       {/* ─── Ajustar saldo da conta ─── */}
       <AdjustBalanceModal

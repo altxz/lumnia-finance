@@ -23,9 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { CHART_SERIES } from '@/lib/chartPalette';
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { InvestmentFormModal } from '@/components/investments/InvestmentFormModal';
 import { InvestmentMovementModal } from '@/components/investments/InvestmentMovementModal';
@@ -33,8 +31,6 @@ import {
   computeStats, buildGrowthSeries, rateLabel, investmentTypeLabel,
   type Investment, type InvestmentMovement,
 } from '@/lib/investmentMath';
-
-const PIE_COLORS = CHART_SERIES;
 
 export default function InvestmentsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -72,8 +68,12 @@ export default function InvestmentsPage() {
       const label = investmentTypeLabel(i.inv.investment_type);
       map[label] = (map[label] || 0) + computeStats(i.inv, i.movements).currentValue;
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
+    return Object.entries(map)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }, [active]);
+
+  const hasGrowthData = growth.length > 1;
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -108,14 +108,14 @@ export default function InvestmentsPage() {
               eyebrow="Patrimônio"
               title="Investimentos"
               description="Aplicações, rendimentos e projeções de vencimento."
-              actions={<Button onClick={() => { setEditing(null); setFormOpen(true); }} className="gap-2 rounded-full h-11 px-5 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+              actions={<Button onClick={() => { setEditing(null); setFormOpen(true); }} className="w-full gap-2 rounded-full h-11 px-5 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold sm:w-auto">
                 <PlusCircle className="h-5 w-5" />
                 Novo investimento
               </Button>}
             />
 
             {/* Resumo */}
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
               <SummaryCard icon={PiggyBank} label="Total aportado" value={totals.invested} />
               <SummaryCard icon={Wallet} label="Valor atual" value={totals.current} highlight />
               <SummaryCard icon={TrendingUp} label="Rendimento" value={totals.earnings} positive />
@@ -124,11 +124,11 @@ export default function InvestmentsPage() {
 
             {isLoading ? (
               <div className="space-y-4">
-                <Skeleton className="h-[300px] rounded-2xl" />
-                <Skeleton className="h-[200px] rounded-2xl" />
+                <Skeleton className="h-[300px] rounded-3xl" />
+                <Skeleton className="h-[200px] rounded-3xl" />
               </div>
             ) : investments.length === 0 ? (
-              <Card className="rounded-2xl">
+              <Card className="rounded-3xl border-border/70 bg-card">
                 <CardContent className="py-14 text-center text-muted-foreground">
                   <PiggyBank className="h-10 w-10 mx-auto mb-3 opacity-40" />
                   <p className="font-medium">Nenhum investimento cadastrado</p>
@@ -137,46 +137,59 @@ export default function InvestmentsPage() {
               </Card>
             ) : (
               <>
-                {/* Gráficos */}
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <Card className="rounded-2xl lg:col-span-2">
+                <div className="grid gap-4 lg:grid-cols-5">
+                  <Card className="rounded-3xl border-border/70 bg-card lg:col-span-3">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base font-semibold">Evolução do patrimônio investido</CardTitle>
+                      <p className="text-sm text-muted-foreground">Aportado e valor estimado ao longo do tempo.</p>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={260}>
-                        <AreaChart data={growth}>
-                          <defs>
-                            <linearGradient id="invGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                          <YAxis domain={['auto', 'auto']} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(1)}k`} tick={{ fontSize: 11 }} />
-                          <Tooltip formatter={(v: number, n: string) => [formatCurrency(v), n === 'value' ? 'Valor com juros' : 'Aportado']} />
-                          <Area type="monotone" dataKey="invested" stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" fill="none" name="invested" />
-                          <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#invGrad)" name="value" />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      {hasGrowthData ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <AreaChart data={growth} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="invGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.22} />
+                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 5" vertical={false} />
+                            <XAxis axisLine={false} tickLine={false} dataKey="label" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                            <YAxis axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(1)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                            <Tooltip formatter={(v: number, n: string) => [formatCurrency(v), n === 'value' ? 'Valor estimado' : 'Aportado']} />
+                            <Area type="monotone" dataKey="invested" stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" fill="none" name="invested" />
+                            <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2.25} fill="url(#invGrad)" name="value" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex h-[260px] items-center justify-center rounded-2xl bg-muted/30 px-6 text-center text-sm text-muted-foreground">
+                          A evolução aparecerá quando houver pelo menos dois movimentos ou marcos de investimento.
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 
-                  <Card className="rounded-2xl">
+                  <Card className="rounded-3xl border-border/70 bg-card lg:col-span-2">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-semibold">Distribuição por tipo</CardTitle>
+                      <CardTitle className="text-base font-semibold">Composição da carteira</CardTitle>
+                      <p className="text-sm text-muted-foreground">Valor atual por tipo de investimento.</p>
                     </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={260}>
-                        <PieChart>
-                          <Pie data={allocation} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={45} outerRadius={80} paddingAngle={3}>
-                            {allocation.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                          </Pie>
-                          <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                        </PieChart>
-                      </ResponsiveContainer>
+                    <CardContent className="space-y-4">
+                      {allocation.map(({ name, value }) => {
+                        const percentage = totals.current > 0 ? (value / totals.current) * 100 : 0;
+                        return (
+                          <div key={name} className="space-y-2">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                              <p className="break-words text-sm font-medium">{name}</p>
+                              <div className="shrink-0 text-right">
+                                <p className="text-sm font-semibold">{formatCurrency(value)}</p>
+                                <p className="text-xs text-muted-foreground">{percentage.toFixed(1)}%</p>
+                              </div>
+                            </div>
+                            <Progress value={percentage} className="h-1.5" />
+                          </div>
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 </div>
@@ -192,12 +205,12 @@ export default function InvestmentsPage() {
                     const elapsed = totalDays ? Math.min(100, Math.max(0, ((totalDays - (s.daysRemaining ?? 0)) / totalDays) * 100)) : null;
                     const wallet = wallets.find((w: { id: string }) => w.id === inv.wallet_id) as { name?: string } | undefined;
                     return (
-                      <Card key={inv.id} className="rounded-2xl">
+                      <Card key={inv.id} className="rounded-3xl border-border/70 bg-card">
                         <CardContent className="p-4 sm:p-5 space-y-4">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-semibold truncate">{inv.name}</p>
+                                <p className="break-words font-semibold">{inv.name}</p>
                                 <Badge variant="secondary" className="text-[10px]">{investmentTypeLabel(inv.investment_type)}</Badge>
                                 {s.daysRemaining !== null && s.daysRemaining <= 0 && <Badge className="text-[10px]">Vencido</Badge>}
                               </div>
@@ -208,7 +221,7 @@ export default function InvestmentsPage() {
                                 {wallet?.name ? ` · Origem: ${wallet.name}` : ''}
                               </p>
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex shrink-0 items-center gap-1">
                               <Button size="icon" variant="ghost" className="rounded-xl" onClick={() => setMovementTarget({ inv, movements, mode: 'deposit' })} title="Novo aporte">
                                 <ArrowDownToLine className="h-4 w-4" />
                               </Button>
@@ -224,7 +237,7 @@ export default function InvestmentsPage() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
                             <Metric label="Aportado" value={formatCurrency(s.invested)} />
                             <Metric label="Valor atual" value={formatCurrency(s.currentValue)} strong />
                             <Metric label="Rendimento" value={`${formatCurrency(s.earnings)} (${s.earningsPct.toFixed(2)}%)`} accent />
@@ -233,9 +246,9 @@ export default function InvestmentsPage() {
 
                           {elapsed !== null && (
                             <div className="space-y-1">
-                              <div className="flex justify-between text-[11px] text-muted-foreground">
+                              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-[11px] text-muted-foreground">
                                 <span>Prazo decorrido</span>
-                                <span>{s.daysRemaining! > 0 ? `${s.daysRemaining} dias restantes` : 'Prazo concluído'}</span>
+                                <span className="text-right">{s.daysRemaining! > 0 ? `${s.daysRemaining} dias restantes` : 'Prazo concluído'}</span>
                               </div>
                               <Progress value={elapsed} className="h-2" />
                             </div>
@@ -252,11 +265,11 @@ export default function InvestmentsPage() {
                         const withdrawn = movements.filter(m => m.kind === 'withdrawal').reduce((s, m) => s + m.amount, 0);
                         const deposited = movements.filter(m => m.kind === 'deposit').reduce((s, m) => s + m.amount, 0);
                         return (
-                          <Card key={inv.id} className="rounded-2xl opacity-80">
+                          <Card key={inv.id} className="rounded-3xl border-border/70 bg-card opacity-80">
                             <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
-                              <div>
-                                <p className="font-medium">{inv.name}</p>
-                                <p className="text-xs text-muted-foreground">
+                              <div className="min-w-0">
+                                <p className="break-words font-medium">{inv.name}</p>
+                                <p className="break-words text-xs text-muted-foreground">
                                   Aportado {formatCurrency(deposited)} · Resgatado {formatCurrency(withdrawn)}
                                 </p>
                               </div>
@@ -318,13 +331,13 @@ export default function InvestmentsPage() {
 
 function SummaryCard({ icon: Icon, label, value, highlight, positive }: { icon: typeof Wallet; label: string; value: number; highlight?: boolean; positive?: boolean }) {
   return (
-    <Card className={`rounded-2xl border-0 shadow-soft ${highlight ? 'gradient-primary text-primary-foreground' : ''}`}>
+    <Card className={`rounded-3xl border-border/70 bg-card ${highlight ? 'ring-1 ring-primary/25' : ''}`}>
       <CardContent className="p-4 space-y-1">
         <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${highlight ? 'opacity-80' : 'text-muted-foreground'}`} />
-          <p className={`text-xs font-medium ${highlight ? 'opacity-80' : 'text-muted-foreground'}`}>{label}</p>
+          <Icon className={`h-4 w-4 ${highlight ? 'text-primary' : 'text-muted-foreground'}`} />
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
         </div>
-        <p className={`text-lg sm:text-xl font-bold tracking-tight ${!highlight && positive ? 'text-accent' : ''}`}>{formatCurrency(value)}</p>
+        <p className={`break-words text-lg font-bold tracking-tight sm:text-xl ${!highlight && positive ? 'text-success' : ''}`}>{formatCurrency(value)}</p>
       </CardContent>
     </Card>
   );
@@ -332,9 +345,9 @@ function SummaryCard({ icon: Icon, label, value, highlight, positive }: { icon: 
 
 function Metric({ label, value, strong, accent }: { label: string; value: string; strong?: boolean; accent?: boolean }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className={`text-sm ${strong ? 'font-bold' : 'font-semibold'} ${accent ? 'text-accent' : ''}`}>{value}</p>
+      <p className={`break-words text-sm ${strong ? 'font-bold' : 'font-semibold'} ${accent ? 'text-success' : ''}`}>{value}</p>
     </div>
   );
 }
