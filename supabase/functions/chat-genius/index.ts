@@ -1557,11 +1557,19 @@ serve(async (req) => {
   }
 
   try {
-    const { message, user_id, history } = await req.json();
-    if (!message || !user_id) {
+    const { message, history } = await req.json();
+    if (!message) {
       return new Response(
-        JSON.stringify({ error: "message e user_id são obrigatórios" }),
+        JSON.stringify({ error: "message é obrigatória" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const authorization = req.headers.get("Authorization");
+    if (!authorization) {
+      return new Response(
+        JSON.stringify({ error: "Sessão não encontrada." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -1569,7 +1577,23 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // O gateway MCP roda com verify_jwt=false, então a autenticação precisa
+    // ser feita aqui dentro — nunca confiar em um user_id vindo do corpo.
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Sessão inválida ou expirada." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const user_id = user.id;
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const systemPrompt = `Você é a Lumnia, uma assistente financeira pessoal inteligente e autônoma. Responda sempre em português do Brasil.

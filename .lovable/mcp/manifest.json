@@ -4,7 +4,7 @@
   "path": "/functions/v1/lumnia-mcp",
   "auth": {
     "type": "oauth",
-    "issuer": "https://nvskvrgsfzaynotdgzoy.supabase.co/auth/v1",
+    "issuer": "https://ulszjqppxceqbeoyyqbb.supabase.co/auth/v1",
     "require_oauth_client_claim": false,
     "accepted_audiences": [
       "authenticated"
