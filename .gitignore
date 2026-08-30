@@ -7,10 +7,22 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# O projeto usa pnpm. Evita lockfiles concorrentes de npm e Bun.
+package-lock.json
+bun.lock
+bun.lockb
+
 node_modules
 dist
 dist-ssr
 *.local
+
+# Segredos locais e estado do CLI do Supabase, nunca versionados.
+.env
+supabase/.temp/
+
+# Scripts de desenvolvimento locais (caminhos específicos desta máquina).
+.claude/
 
 # Editor directories and files
 .vscode/*

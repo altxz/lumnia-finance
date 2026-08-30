@@ -1,73 +1,57 @@
-# Welcome to your Lovable project
+# Lumnia
 
-## Project info
+Aplicativo pessoal de finanças com versão web em Vite/React e aplicativo Android empacotado com Capacitor.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+- React, TypeScript, Vite e Tailwind CSS
+- Supabase para autenticação, dados e funções de servidor
+- Capacitor para Android
+- pnpm `11.19.0` como gerenciador de pacotes oficial
 
-There are several ways of editing your application.
+## Estrutura do projeto
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```text
+android/     Projeto nativo Android e recursos do aplicativo
+design/      Fontes de design, identidade visual e materiais de publicação
+docs/        Roadmap, auditorias, evidências de validação e histórico
+public/      Arquivos estáticos usados pela aplicação web e PWA
+scripts/     Scripts de manutenção e build do MCP
+src/         Aplicação React
+supabase/    Migrações e funções de servidor
 ```
 
-**Edit a file directly in GitHub**
+## Desenvolvimento local
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Requisitos: Node.js 22 ou superior e pnpm 11.19.0.
 
-**Use GitHub Codespaces**
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Validações principais:
 
-## What technologies are used for this project?
+```sh
+pnpm typecheck
+pnpm test
+pnpm quality
+```
 
-This project is built with:
+## Android
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+As instruções completas estão em [ANDROID.md](ANDROID.md). Para preparar o projeto nativo após uma alteração web:
 
-## How can I deploy this project?
+```sh
+pnpm android:prepare
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+O fluxo de publicação e validação do redesign está em [docs/lumnia-redesign-roadmap.md](docs/lumnia-redesign-roadmap.md).
 
-## Can I connect a custom domain to my Lovable project?
+## Continuidade para IAs
 
-Yes, you can!
+A memória operacional, regras, incidentes e procedimentos de entrega ficam em [docs/ai-memory/](docs/ai-memory/README.md). Qualquer agente deve ler essa pasta e o roadmap antes de alterar o projeto.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Observação sobre integrações legadas
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+O banco e a autenticação do aplicativo estão no Supabase próprio. Há dependências `@lovable` preservadas temporariamente no MCP e em integrações específicas; elas não devem ser removidas sem uma migração validada dessas funções.
