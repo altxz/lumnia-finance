@@ -41,7 +41,7 @@ supabase/    funções e migrações
 | 4. Planejamento | Concluída e validada |
 | 5. Patrimônio | Concluída e validada pelo usuário em 30/08/2026 |
 | 6. Analytics | Concluída e validada fisicamente pelo usuário em 30/08/2026 |
-| 7. Configurações | Diagnóstico e correções parciais; importação Android já validada. Falta classificar as abas restantes (Perfil, Automação, Notificações, Categorias, Módulos, Planos) |
+| 7. Configurações | Concluída em 30/08/2026. Todas as 5 abas reais (Conta, Automação, Notificações, Categorias, Dados e segurança) classificadas e funcionais; `IA`/`Módulos`/`Planos` eram órfãos e foram removidos |
 | 8. Movimento e estados | Pendente |
 | 9. Auditoria final | Pendente |
 
@@ -60,6 +60,6 @@ supabase/    funções e migrações
 
 ## Pendências que não podem ser omitidas
 
-1. Etapa 7: finalizar a classificação funcional, incompleta, futura ou removível das abas de Configurações restantes (Perfil, Automação, Notificações, Categorias, Módulos, Planos).
-2. Etapas 8 e 9 do roadmap (movimento/estados e auditoria final) ainda não começaram.
-3. Publicação na Play Store segue fora de escopo por decisão do usuário (conta do Google Play Console ainda não criada).
+1. Etapas 8 e 9 do roadmap (movimento/estados e auditoria final) ainda não começaram.
+2. Publicação na Play Store segue fora de escopo por decisão do usuário (conta do Google Play Console ainda não criada).
+3. Levar as correções da Etapa 7 (validação de senha atual, categorias reais em Automação, remoção de abas órfãs) para um novo build Android — ainda não instaladas no Galaxy S22 Ultra.
