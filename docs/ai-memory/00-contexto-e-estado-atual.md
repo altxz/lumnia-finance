@@ -60,6 +60,6 @@ supabase/    funções e migrações
 
 ## Pendências que não podem ser omitidas
 
-1. Etapas 8 e 9 do roadmap (movimento/estados e auditoria final) ainda não começaram.
+1. Etapa 8 do roadmap (movimento/estados) tem o escopo implementado (bottom sheets, carregamento escalonado, offline/retry) e validado no navegador, mas falta a validação física no Galaxy S22 Ultra exigida pela regra de conclusão do roadmap. Etapa 9 (auditoria final) ainda não começou.
 2. Publicação na Play Store segue fora de escopo por decisão do usuário (conta do Google Play Console ainda não criada).
-3. Levar as correções da Etapa 7 (validação de senha atual, categorias reais em Automação, remoção de abas órfãs) para um novo build Android — ainda não instaladas no Galaxy S22 Ultra.
+3. Levar as correções da Etapa 7 (validação de senha atual, categorias reais em Automação, remoção de abas órfãs) e da Etapa 8 para um novo build Android — ainda não instaladas no Galaxy S22 Ultra.
