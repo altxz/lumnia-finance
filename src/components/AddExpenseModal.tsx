@@ -11,11 +11,11 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Sparkles, Loader2, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Repeat, Hash, CreditCard, WalletCards } from 'lucide-react';
+import { Loader2, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, X, Repeat, Hash, CreditCard, WalletCards } from 'lucide-react';
 import { QuickCalculator } from '@/components/QuickCalculator';
 import { DescriptionAutocomplete } from '@/components/DescriptionAutocomplete';
 import type { DescriptionSuggestion } from '@/hooks/useDescriptionSuggestions';
-import { CATEGORIES, getCategoryInfo } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/constants';
 import { getPaymentDate } from '@/lib/invoiceHelpers';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -113,9 +113,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
   const [projects, setProjects] = useState<{ id: string; name: string; color: string }[]>([]);
   const [projectId, setProjectId] = useState<string>('');
   const [dbCategories, setDbCategories] = useState<{ id: string; name: string; parent_id: string | null; icon: string; color: string }[]>([]);
-  const [categoryAi, setCategoryAi] = useState('');
   const [finalCategory, setFinalCategory] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isPaid, setIsPaid] = useState(true);
   const [notes, setNotes] = useState('');
@@ -199,30 +197,6 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
   };
 
 
-  const handleAiCategorize = async () => {
-    if (!description.trim()) {
-      toast({ title: 'Erro', description: 'Preencha a descrição antes de categorizar.', variant: 'destructive' });
-      return;
-    }
-    setAiLoading(true);
-    try {
-      const response = await supabase.functions.invoke('categorize-expense', {
-        body: { description: description.trim() },
-      });
-      if (response.error) throw response.error;
-      const category = response.data?.category || 'outros';
-      setCategoryAi(category);
-      setFinalCategory(category);
-    } catch (err) {
-      console.error('AI categorization error:', err);
-      setCategoryAi('outros');
-      setFinalCategory('outros');
-      toast({ title: 'Aviso', description: 'Não foi possível categorizar com IA. Categoria definida como "Outros".' });
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   const handleAddTag = () => {
     const t = tagInput.trim().toLowerCase();
     if (t && !tags.includes(t)) {
@@ -292,7 +266,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
           user_id: user?.id,
           description: description.trim(),
           value: installmentValues[i],
-          category_ai: categoryAi || null,
+          category_ai: null,
           final_category: finalCategory,
           type,
           payment_method: type === 'expense' ? paymentMethod : 'debit',
@@ -343,7 +317,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
         date,
         description: isTransfer ? 'Transferência entre contas' : description.trim(),
         value: numericValue,
-        category_ai: isTransfer ? null : (categoryAi || null),
+        category_ai: null,
         final_category: isTransfer ? 'transferencia' : finalCategory,
         type,
         payment_method: isTransfer ? null : (type === 'expense' ? paymentMethod : 'debit'),
@@ -389,7 +363,6 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
     setInstallmentValueType('total');
     setWalletId('');
     setDestinationWalletId('');
-    setCategoryAi('');
     setFinalCategory('');
     setInvoiceMonth('');
     setIsPaid(true);
@@ -404,7 +377,6 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
     onOpenChange(nextOpen);
   };
 
-  const aiCategoryInfo = categoryAi ? getCategoryInfo(categoryAi) : null;
   const isTransfer = type === 'transfer';
   const isCredit = type === 'expense' && paymentMethod === 'credit';
 
@@ -589,36 +561,14 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                 </>
               )}
 
-              {/* Category with AI */}
+              {/* Category */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categoria</Label>
-                  <Button
-                    variant="ai"
-                    size="sm"
-                    onClick={handleAiCategorize}
-                    disabled={aiLoading || !description.trim()}
-                    className="gap-1.5 rounded-xl h-7 text-xs"
-                  >
-                    {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {aiLoading ? 'Analisando...' : 'IA'}
-                  </Button>
-                </div>
-                {aiLoading && (
-                  <div className="flex items-center gap-2 text-xs text-ai">
-                    <div className="w-1.5 h-1.5 rounded-full bg-ai animate-pulse" />
-                    Analisando despesa...
-                  </div>
-                )}
-                {aiCategoryInfo && !aiLoading && (
-                  <Badge variant={aiCategoryInfo.variant} className="mb-1">{aiCategoryInfo.label}</Badge>
-                )}
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categoria</Label>
                 <CategoryPicker
                   categories={dbCategories}
                   value={finalCategory}
                   onValueChange={setFinalCategory}
                   type={type}
-                  fallbackValue={categoryAi}
                   placeholder="Selecione a categoria"
                 />
               </div>
