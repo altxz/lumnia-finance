@@ -60,6 +60,6 @@ supabase/    funções e migrações
 
 ## Pendências que não podem ser omitidas
 
-1. Etapa 8 do roadmap (movimento/estados) tem o escopo implementado (bottom sheets, carregamento escalonado, offline/retry) e validado no navegador, mas falta a validação física no Galaxy S22 Ultra exigida pela regra de conclusão do roadmap. Etapa 9 (auditoria final) ainda não começou.
+1. Etapa 8 do roadmap (movimento/estados) concluída em 30/08/2026, incluindo validação física no Galaxy S22 Ultra. Etapa 9 (auditoria final) ainda não começou.
 2. Publicação na Play Store segue fora de escopo por decisão do usuário (conta do Google Play Console ainda não criada).
-3. Levar as correções da Etapa 7 (validação de senha atual, categorias reais em Automação, remoção de abas órfãs) e da Etapa 8 para um novo build Android — ainda não instaladas no Galaxy S22 Ultra.
+3. Correção do agendamento de `generate-recurring`/`check-due-bills` (ver `04-dados-financeiros-e-integracoes.md`) é uma mudança só de infraestrutura Supabase — não depende de novo build Android para funcionar, mas ainda não foi observada de fato materializando uma recorrência de mês futuro em produção (só testada por invocação manual logo após o agendamento).
