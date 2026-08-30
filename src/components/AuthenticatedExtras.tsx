@@ -7,7 +7,6 @@ import { BankTransactionCapture } from './BankTransactionCapture';
 import { MobileBottomNav } from './MobileBottomNav';
 
 const FloatingActionButton = lazyNamedWithRetry(() => import('./FloatingActionButton'), m => m.FloatingActionButton);
-const GeniusChatbot = lazyNamedWithRetry(() => import('./GeniusChatbot'), m => m.GeniusChatbot);
 
 export function AuthenticatedExtras() {
   const { user } = useAuth();
@@ -16,7 +15,6 @@ export function AuthenticatedExtras() {
   return (
     <Suspense fallback={null}>
       <FloatingActionButton />
-      <GeniusChatbot />
       <MobileBottomNav />
       <UpdateBanner />
       <BankTransactionCapture />

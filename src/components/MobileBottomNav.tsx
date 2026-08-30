@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeftRight, Home, PiggyBank, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeftRight, Home, PiggyBank, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavigationItem {
@@ -39,7 +39,7 @@ export function MobileBottomNav() {
 
   return (
     <nav className="mobile-bottom-shell fixed inset-x-3 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-[60] md:hidden" aria-label="Navegação principal">
-      <div className="mobile-bottom-nav grid h-[70px] grid-cols-5 items-center rounded-[24px] px-1.5">
+      <div className="mobile-bottom-nav grid h-[70px] grid-cols-4 items-center rounded-[24px] px-1.5">
         {renderItem(items[0])}
         {renderItem(items[1])}
         <button
@@ -49,15 +49,6 @@ export function MobileBottomNav() {
           aria-label="Adicionar nova transação"
         >
           <Plus className="h-6 w-6" strokeWidth={2.2} />
-        </button>
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('lumnia:toggle-ai'))}
-          className="mobile-nav-item"
-          aria-label="Abrir inteligência Lumnia"
-        >
-          <span className="mobile-nav-icon"><Sparkles className="h-[20px] w-[20px]" strokeWidth={1.8} /></span>
-          <span>IA</span>
         </button>
         {renderItem(items[2])}
       </div>

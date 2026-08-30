@@ -1,4 +1,4 @@
-import { ArrowLeftRight, PiggyBank, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeftRight, PiggyBank, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { Surface } from '@/components/ui/surface';
@@ -14,17 +14,12 @@ export function DashboardQuickActions() {
     },
     { label: 'Atividade', icon: ArrowLeftRight, onClick: () => navigate('/historico') },
     { label: 'Planejar', icon: PiggyBank, onClick: () => navigate('/categorias') },
-    {
-      label: 'Perguntar',
-      icon: Sparkles,
-      onClick: () => window.dispatchEvent(new CustomEvent('lumnia:toggle-ai')),
-    },
   ];
 
   return (
     <section aria-labelledby="quick-actions-title">
       <h2 id="quick-actions-title" className="sr-only">Ações rápidas</h2>
-      <Surface variant="base" padding="sm" className="grid grid-cols-4 gap-1 sm:gap-3">
+      <Surface variant="base" padding="sm" className="grid grid-cols-3 gap-1 sm:gap-3">
         {actions.map(({ label, icon: Icon, onClick, primary }) => (
           <button
             key={label}

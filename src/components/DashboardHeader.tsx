@@ -1,7 +1,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { BarChart3, FolderKanban, LogOut, Menu, Moon, Monitor, Plus, Settings, Sparkles, Sun, TrendingUp, Wallet } from 'lucide-react';
+import { BarChart3, FolderKanban, LogOut, Menu, Moon, Monitor, Plus, Settings, Sun, TrendingUp, Wallet } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { lazyNamedWithRetry } from '@/lib/lazyWithRetry';
 
@@ -130,16 +130,6 @@ export function DashboardHeader() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          onClick={() => window.dispatchEvent(new CustomEvent('lumnia:toggle-ai'))}
-          aria-label="Abrir inteligência Lumnia"
-        >
-          <Sparkles className="h-4 w-4" />
-        </Button>
 
         {/* Desktop add button */}
         <Button
