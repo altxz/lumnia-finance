@@ -1,5 +1,14 @@
-import * as XLSX from 'xlsx';
+import type * as XLSXType from 'xlsx';
 import { supabase } from '@/lib/supabase';
+
+// xlsx (SheetJS) é pesado (~500 kB minificado) e só é necessário quando o
+// usuário efetivamente importa um arquivo .xlsx — carregado sob demanda para
+// não inflar o chunk de Configurações, que qualquer visita à página paga.
+let xlsxRef: typeof XLSXType | null = null;
+async function ensureXLSX() {
+  if (!xlsxRef) xlsxRef = await import('xlsx');
+  return xlsxRef;
+}
 
 type Row = Record<string, unknown>;
 type SourceKind = 'complete-json' | 'legacy-json' | 'excel';
@@ -64,7 +73,10 @@ const asBoolean = (value: unknown, fallback = false) => {
 const asDate = (value: unknown) => {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
   if (typeof value === 'number') {
-    const parsed = XLSX.SSF.parse_date_code(value);
+    // xlsxRef já está carregado neste ponto: só existe um valor numérico de
+    // data vindo de uma planilha, e readLumniaBackup carrega o xlsx antes de
+    // processar qualquer linha de um arquivo .xlsx.
+    const parsed = xlsxRef?.SSF.parse_date_code(value);
     if (parsed) return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
   }
   const text = asText(value);
@@ -116,6 +128,7 @@ export async function readLumniaBackup(file: File): Promise<BackupPreview> {
   }
 
   if (!fileName.endsWith('.xlsx')) throw new Error('Use um arquivo JSON ou a planilha Excel exportada pelo Lumnia.');
+  const XLSX = await ensureXLSX();
   const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
   const sheets = Object.fromEntries(workbook.SheetNames.map(name => [name, XLSX.utils.sheet_to_json<Row>(workbook.Sheets[name], { defval: null, raw: true })]));
   const transactions = getSheet(sheets, 'Transações');

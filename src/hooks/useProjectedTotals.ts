@@ -279,7 +279,7 @@ export function useProjectedTotals(): ProjectedTotals {
       totalExpense: totals.totalExpense,
       balance: totals.balance,
     };
-  }, [selectedMonth, selectedYear, historicalExpenses, recurringTemplates, exceptionSet, creditCards, invoiceExpenses, isCCPayment, investmentWalletIds, startingBalance]);
+  }, [selectedMonth, selectedYear, historicalExpenses, recurringTemplates, exceptionSet, creditCards, invoiceExpenses, isCCPayment, investmentWalletIds]);
 
   const refetch = () => {
     queryClient.invalidateQueries({ queryKey });

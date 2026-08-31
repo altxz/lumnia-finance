@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import type * as XLSXType from 'xlsx';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
 import { getPaymentDate, type CreditCard } from '@/lib/invoiceHelpers';
@@ -47,7 +47,7 @@ function autoWidth(rows: Record<string, any>[]) {
   });
 }
 
-function addSheet(wb: XLSX.WorkBook, name: string, rows: Record<string, any>[], empty: Record<string, any>) {
+function addSheet(XLSX: typeof XLSXType, wb: XLSXType.WorkBook, name: string, rows: Record<string, any>[], empty: Record<string, any>) {
   const data = rows.length ? rows : [empty];
   const ws = XLSX.utils.json_to_sheet(data);
   ws['!cols'] = autoWidth(data);
@@ -57,6 +57,7 @@ function addSheet(wb: XLSX.WorkBook, name: string, rows: Record<string, any>[], 
 }
 
 export async function exportFinancialWorkbook(userId: string) {
+  const XLSX = await import('xlsx');
   const [
     { data: expenses },
     { data: categories },
@@ -134,7 +135,7 @@ export async function exportFinancialWorkbook(userId: string) {
       ID: t.id,
     };
   });
-  addSheet(wb, 'Transações', txRows, { Data: '', 'Descrição': 'Sem transações' });
+  addSheet(XLSX, wb, 'Transações', txRows, { Data: '', 'Descrição': 'Sem transações' });
 
   // ---------- 2. Cartão de crédito (transações por cartão) ----------
   const cardTx = tx
@@ -168,7 +169,7 @@ export async function exportFinancialWorkbook(userId: string) {
       };
     })
     .sort((a, b) => (a['Cartão'] + a['Mês da fatura']).localeCompare(b['Cartão'] + b['Mês da fatura']));
-  addSheet(wb, 'Cartões de Crédito', cardTx, { 'Cartão': '', 'Descrição': 'Sem transações de cartão' });
+  addSheet(XLSX, wb, 'Cartões de Crédito', cardTx, { 'Cartão': '', 'Descrição': 'Sem transações de cartão' });
 
   // ---------- 3. Faturas (resumo por cartão/mês) ----------
   const invoiceMap = new Map<string, any>();
@@ -194,6 +195,7 @@ export async function exportFinancialWorkbook(userId: string) {
     invoiceMap.set(key, current);
   });
   addSheet(
+    XLSX,
     wb,
     'Faturas',
     Array.from(invoiceMap.values()).sort((a, b) => (a['Cartão'] as string).localeCompare(b['Cartão'])),
@@ -225,6 +227,7 @@ export async function exportFinancialWorkbook(userId: string) {
     monthMap.set(key, row);
   });
   addSheet(
+    XLSX,
     wb,
     'Resumo Mensal',
     Array.from(monthMap.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v),
@@ -248,6 +251,7 @@ export async function exportFinancialWorkbook(userId: string) {
     catMap.set(key, row);
   });
   addSheet(
+    XLSX,
     wb,
     'Por Categoria',
     Array.from(catMap.values()).sort((a, b) => b.Total - a.Total),
@@ -256,6 +260,7 @@ export async function exportFinancialWorkbook(userId: string) {
 
   // ---------- 6. Carteiras ----------
   addSheet(
+    XLSX,
     wb,
     'Carteiras',
     (wallets || []).map((w: any) => ({
@@ -274,6 +279,7 @@ export async function exportFinancialWorkbook(userId: string) {
 
   // ---------- 7. Cartões (cadastro) ----------
   addSheet(
+    XLSX,
     wb,
     'Cadastro de Cartões',
     cardList.map((c: any) => ({
@@ -291,6 +297,7 @@ export async function exportFinancialWorkbook(userId: string) {
   // ---------- 8. Categorias ----------
   const catById = new Map((categories || []).map((c: any) => [c.id, c]));
   addSheet(
+    XLSX,
     wb,
     'Categorias',
     (categories || []).map((c: any) => ({
@@ -307,6 +314,7 @@ export async function exportFinancialWorkbook(userId: string) {
 
   // ---------- 9. Orçamentos ----------
   addSheet(
+    XLSX,
     wb,
     'Orçamentos',
     (budgets || []).map((b: any) => ({
@@ -321,6 +329,7 @@ export async function exportFinancialWorkbook(userId: string) {
 
   // ---------- 10. Dívidas ----------
   addSheet(
+    XLSX,
     wb,
     'Dívidas',
     (debts || []).map((d: any) => ({
@@ -336,6 +345,7 @@ export async function exportFinancialWorkbook(userId: string) {
 
   // ---------- 11. Projetos ----------
   addSheet(
+    XLSX,
     wb,
     'Projetos',
     (projects || []).map((p: any) => ({
