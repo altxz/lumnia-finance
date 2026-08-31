@@ -69,7 +69,7 @@ export function InstallPwaPrompt() {
             Instalar
           </Button>
         )}
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDismissed(true)}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDismissed(true)} aria-label="Dispensar sugestão de instalação">
           <X className="h-4 w-4" />
         </Button>
       </div>

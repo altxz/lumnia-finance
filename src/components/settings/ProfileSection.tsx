@@ -117,16 +117,16 @@ export function ProfileSection({ settings, onChange, onAvatarSaved, user }: Prof
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 sm:gap-6">
-            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <button type="button" className="relative group cursor-pointer rounded-full" onClick={() => fileInputRef.current?.click()} aria-label="Alterar foto de perfil">
               <Avatar className="h-20 w-20 border-2 border-border">
-                <AvatarImage src={previewUrl || ''} />
+                <AvatarImage src={previewUrl || ''} alt={settings.full_name || 'Foto de perfil'} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">{initials}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full bg-foreground/40 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center">
                 <Camera className="h-6 w-6 text-background" />
               </div>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-            </div>
+            </button>
             <div className="min-w-0 flex-1">
               <p className="font-semibold">{settings.full_name || 'Sem nome'}</p>
               <p className="break-all text-sm text-muted-foreground">{user?.email}</p>

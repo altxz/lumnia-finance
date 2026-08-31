@@ -733,7 +733,7 @@ export default function WalletPage() {
                                     )}
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" aria-label={`Excluir ${w.name}`}>
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
                                       </AlertDialogTrigger>
@@ -817,14 +817,14 @@ export default function WalletPage() {
                     <Card className="rounded-2xl">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between gap-3">
-                          <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(-1)} className="rounded-xl">
+                          <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(-1)} className="rounded-xl" aria-label="Fatura anterior">
                             <ChevronLeft className="h-5 w-5" />
                           </Button>
                           <div className="min-w-0 flex-1 text-center">
                             <p className="break-words text-lg font-bold">{formatMonthLabel(invoiceMonth)}</p>
                             <p className="text-xs text-muted-foreground">Fatura</p>
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(1)} className="rounded-xl">
+                          <Button variant="ghost" size="icon" onClick={() => navigateInvoiceMonth(1)} className="rounded-xl" aria-label="Próxima fatura">
                             <ChevronRight className="h-5 w-5" />
                           </Button>
                         </div>
@@ -965,12 +965,12 @@ export default function WalletPage() {
                                     </div>
                                   </div>
                                    <div className="flex shrink-0 items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl" onClick={e => { e.stopPropagation(); openEditCard(card); }}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl" onClick={e => { e.stopPropagation(); openEditCard(card); }} aria-label={`Editar ${card.name}`}>
                                       <Pencil className="h-4 w-4" />
                                     </Button>
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={e => e.stopPropagation()}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={e => e.stopPropagation()} aria-label={`Excluir ${card.name}`}>
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
                                       </AlertDialogTrigger>

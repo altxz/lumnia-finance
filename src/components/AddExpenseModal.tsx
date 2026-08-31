@@ -734,7 +734,7 @@ export function AddExpenseModal({ open, onOpenChange, onExpenseAdded, initialDat
                             {tags.map(tag => (
                               <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-foreground/10 text-foreground border-border hover:bg-foreground/10">
                                 {tag}
-                                <button onClick={() => handleRemoveTag(tag)} className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5">
+                                <button onClick={() => handleRemoveTag(tag)} className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5" aria-label={`Remover tag ${tag}`}>
                                   <X className="h-3 w-3" />
                                 </button>
                               </Badge>

@@ -338,7 +338,7 @@ export default function CategoryDetailsPage() {
             {/* Header */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 sm:gap-3">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/categorias')} className="rounded-xl h-10 w-10 shrink-0">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/categorias')} className="rounded-xl h-10 w-10 shrink-0" aria-label="Voltar para categorias">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 {category ? (

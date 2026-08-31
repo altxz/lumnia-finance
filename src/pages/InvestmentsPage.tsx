@@ -238,16 +238,16 @@ export default function InvestmentsPage() {
                               </p>
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
-                              <Button size="icon" variant="ghost" className="rounded-xl" onClick={() => setMovementTarget({ inv, movements, mode: 'deposit' })} title="Novo aporte">
+                              <Button size="icon" variant="ghost" className="rounded-xl" onClick={() => setMovementTarget({ inv, movements, mode: 'deposit' })} title="Novo aporte" aria-label={`Novo aporte em ${inv.name}`}>
                                 <ArrowDownToLine className="h-4 w-4" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="rounded-xl" onClick={() => setMovementTarget({ inv, movements, mode: 'withdrawal' })} title="Resgatar">
+                              <Button size="icon" variant="ghost" className="rounded-xl" onClick={() => setMovementTarget({ inv, movements, mode: 'withdrawal' })} title="Resgatar" aria-label={`Resgatar ${inv.name}`}>
                                 <ArrowUpFromLine className="h-4 w-4" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="rounded-xl" onClick={() => { setEditing(inv); setFormOpen(true); }} title="Editar">
+                              <Button size="icon" variant="ghost" className="rounded-xl" onClick={() => { setEditing(inv); setFormOpen(true); }} title="Editar" aria-label={`Editar ${inv.name}`}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="rounded-xl text-destructive" onClick={() => setDeleteTarget(inv)} title="Excluir">
+                              <Button size="icon" variant="ghost" className="rounded-xl text-destructive" onClick={() => setDeleteTarget(inv)} title="Excluir" aria-label={`Excluir ${inv.name}`}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -289,7 +289,7 @@ export default function InvestmentsPage() {
                                   Aportado {formatCurrency(deposited)} · Resgatado {formatCurrency(withdrawn)}
                                 </p>
                               </div>
-                              <Button size="icon" variant="ghost" className="rounded-xl text-destructive" onClick={() => setDeleteTarget(inv)}>
+                              <Button size="icon" variant="ghost" className="rounded-xl text-destructive" onClick={() => setDeleteTarget(inv)} aria-label={`Excluir ${inv.name}`}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </CardContent>

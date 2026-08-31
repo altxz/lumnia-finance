@@ -216,12 +216,12 @@ export function CategoriesSection() {
                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-primary" onClick={(e) => { e.stopPropagation(); openAddSub(parent.id); }} title="Adicionar subcategoria">
                           <PlusCircle className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={(e) => { e.stopPropagation(); openEdit(parent); }}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={(e) => { e.stopPropagation(); openEdit(parent); }} aria-label={`Editar ${parent.name}`}>
                           <Pencil className="h-3 w-3" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive" aria-label={`Excluir ${parent.name}`}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </AlertDialogTrigger>
@@ -266,12 +266,12 @@ export function CategoriesSection() {
                               <span className="min-w-0 flex-1 truncate text-sm">{sub.name}</span>
                               <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: sub.color }} />
                               <div className="flex shrink-0 gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover/sub:opacity-100">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg" onClick={() => openEdit(sub)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg" onClick={() => openEdit(sub)} aria-label={`Editar ${sub.name}`}>
                                   <Pencil className="h-2.5 w-2.5" />
                                 </Button>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg text-muted-foreground hover:text-destructive">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg text-muted-foreground hover:text-destructive" aria-label={`Excluir ${sub.name}`}>
                                       <Trash2 className="h-2.5 w-2.5" />
                                     </Button>
                                   </AlertDialogTrigger>

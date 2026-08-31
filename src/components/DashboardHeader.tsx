@@ -89,7 +89,7 @@ export function DashboardHeader() {
   return (
     <header className="sticky top-0 z-30 grid h-24 grid-cols-[40px_minmax(0,1fr)_120px] items-center border-b border-border/55 bg-background/88 px-4 pt-6 backdrop-blur-xl md:flex md:h-16 md:justify-between md:pt-0 lg:px-8">
       <div className="flex min-w-0 items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden rounded-full md:inline-flex">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="hidden rounded-full md:inline-flex" aria-label="Abrir ou fechar menu lateral">
           <Menu className="h-5 w-5" />
         </Button>
         <div className="md:hidden"><ProfileDropdown avatarUrl={avatarUrl} displayName={displayName} initials={initials} signOut={signOut} /></div>

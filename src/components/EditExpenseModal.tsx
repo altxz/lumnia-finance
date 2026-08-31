@@ -784,7 +784,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
                             {tags.map(tag => (
                               <Badge key={tag} variant="secondary" className="gap-1 pr-1 bg-foreground/10 text-foreground border-border hover:bg-foreground/10">
                                 {tag}
-                                <button onClick={() => setTags(tags.filter(t => t !== tag))} className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"><X className="h-3 w-3" /></button>
+                                <button onClick={() => setTags(tags.filter(t => t !== tag))} className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5" aria-label={`Remover tag ${tag}`}><X className="h-3 w-3" /></button>
                               </Badge>
                             ))}
                           </div>
@@ -801,7 +801,7 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
         <ResponsiveModalFooter className="border-t border-border bg-card/95 p-4 gap-2 flex-row items-center backdrop-blur-xl">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive rounded-xl">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive rounded-xl" aria-label="Excluir transação">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>

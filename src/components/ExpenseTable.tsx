@@ -148,7 +148,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
                     <span className={`text-sm font-bold ${exp.type === 'income' ? 'text-green-600' : ''}`}>
                       {exp.type === 'income' ? '+' : ''}{formatCurrency(exp.value)}
                     </span>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive rounded-lg" onClick={() => handleDeleteClick(exp)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive rounded-lg" onClick={() => handleDeleteClick(exp)} aria-label={`Excluir ${exp.description}`}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -205,7 +205,7 @@ export function ExpenseTable({ expenses, loading, onDeleted, filters, onFilterCh
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={() => handleDeleteClick(exp)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl" onClick={() => handleDeleteClick(exp)} aria-label={`Excluir ${exp.description}`}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
