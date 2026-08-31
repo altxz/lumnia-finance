@@ -67,6 +67,21 @@ export function buildVirtualCardOccurrence(template: Expense, dueLabel: string, 
 }
 
 /**
+ * Cutoff de fatura para o fluxo "editar > todas as recorrências" quando o
+ * molde é de cartão. Espelha a semântica de cutoff usada no lado débito
+ * (menor entre a ocorrência clicada e a data do novo molde), mas em termos
+ * de invoice_month (fatura) — recorrências de cartão avançam por fatura, não
+ * por data de calendário (ver shouldProjectCardRecurringInLabel).
+ */
+export function resolveCardSplitSeriesCutoffLabel(
+  oldOccurrenceLabel: string,
+  newTemplateLabel?: string | null,
+): string {
+  if (!newTemplateLabel) return oldOccurrenceLabel;
+  return monthsBetweenLabels(oldOccurrenceLabel, newTemplateLabel) < 0 ? newTemplateLabel : oldOccurrenceLabel;
+}
+
+/**
  * Remove a ocorrência de uma recorrência fixa de cartão de UMA fatura
  * específica, sem apagar o molde nem afetar as demais faturas.
  *

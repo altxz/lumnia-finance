@@ -21,6 +21,7 @@ import { showFriendlyError } from '@/lib/errorHandler';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Expense } from '@/components/ExpenseTable';
 import { buildFutureRecurringExceptionDates, resolveRecurringEditAction } from '@/lib/recurringProjection';
+import { resolveCardSplitSeriesCutoffLabel } from '@/lib/recurringCardProjection';
 import { distributeInstallmentValues } from '@/lib/installmentMath';
 
 interface EditExpenseModalProps {
@@ -349,6 +350,77 @@ export function EditExpenseModal({ open, expense, onOpenChange, onExpenseUpdated
 
           if (templateError) throw templateError;
           if (!templateRow) throw new Error('Template recorrente não encontrado.');
+
+          if (templateRow.credit_card_id) {
+            // Recorrências de cartão avançam por FATURA (invoice_month), não
+            // por data de calendário — generate-recurring, matchExpensesToInvoice
+            // e deleteSingleCardRecurringOccurrence usam esse mesmo modelo.
+            // A lógica de data de calendário abaixo (buildFutureRecurringExceptionDates)
+            // não se aplica aqui.
+            const oldOccurrenceLabel = expense.invoice_month || templateRow.invoice_month;
+            if (!oldOccurrenceLabel) throw new Error('Fatura não identificada para esta recorrência de cartão.');
+            const cutoffLabel = resolveCardSplitSeriesCutoffLabel(oldOccurrenceLabel, isCredit ? invoiceMonth : null);
+
+            // Deactivate the old template so the background job and the
+            // invoice-matching engine stop projecting it into future faturas.
+            const { error: deactivateError } = await supabase
+              .from('expenses')
+              .update({ is_recurring: false, frequency: null })
+              .eq('id', templateRow.id);
+            if (deactivateError) throw deactivateError;
+
+            // Clean up any UNPAID materialized copies (from the daily job)
+            // that fall on/after the cutoff fatura. Paid copies are preserved
+            // — they represent real historical activity.
+            const { error: cleanupError } = await supabase
+              .from('expenses')
+              .delete()
+              .eq('user_id', user!.id)
+              .eq('credit_card_id', templateRow.credit_card_id)
+              .eq('description', templateRow.description)
+              .eq('type', templateRow.type)
+              .eq('is_recurring', false)
+              .eq('is_paid', false)
+              .gte('invoice_month', cutoffLabel);
+            if (cleanupError) throw cleanupError;
+
+            if (wantInstallment) {
+              const newTemplate = {
+                user_id: user!.id,
+                description: description.trim(),
+                value: parsedValue,
+                type: expense.type,
+                final_category: finalCategory,
+                category_ai: expense.category_ai,
+                credit_card_id: creditCardId || null,
+                wallet_id: walletId || null,
+                destination_wallet_id: expense.destination_wallet_id,
+                debt_id: expense.debt_id,
+                project_id: expense.project_id,
+                is_paid: false,
+                is_recurring: true,
+                frequency,
+                installments: 1,
+                installment_group_id: null,
+                installment_info: null,
+                payment_method: expense.payment_method,
+                notes: notes.trim() || null,
+                tags: tags.length > 0 ? tags : null,
+                date,
+                invoice_month: isCredit ? (invoiceMonth || cutoffLabel) : null,
+              };
+
+              const { error: insertTemplateError } = await supabase.from('expenses').insert(newTemplate);
+              if (insertTemplateError) throw insertTemplateError;
+              toast({ title: 'Próximas recorrências atualizadas!' });
+            } else {
+              toast({ title: 'Próximas recorrências encerradas!' });
+            }
+            queryClient.invalidateQueries({ queryKey: ['projected-totals'] });
+            onExpenseUpdated();
+            setSaving(false);
+            return;
+          }
 
           // The cutoff date is the EARLIEST of:
           //  - the occurrence the user clicked on (expense.date)

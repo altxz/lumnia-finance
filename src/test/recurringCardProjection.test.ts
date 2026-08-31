@@ -4,6 +4,7 @@ import {
   buildVirtualCardOccurrence,
   getCardRecurringTemplates,
   monthsBetweenLabels,
+  resolveCardSplitSeriesCutoffLabel,
   shouldProjectCardRecurringInLabel,
 } from '@/lib/recurringCardProjection';
 import { getCardRecurringPurchaseDate, getPaymentDate, getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
@@ -142,5 +143,37 @@ describe('label arithmetic', () => {
     expect(addMonthsToLabel('2026-10', 1)).toBe('2026-11');
     expect(addMonthsToLabel('2026-12', 1)).toBe('2027-01');
     expect(monthsBetweenLabels('2026-10', '2027-01')).toBe(3);
+  });
+});
+
+/**
+ * resolveCardSplitSeriesCutoffLabel powers the "editar > todas as
+ * recorrências" flow in EditExpenseModal for card-linked templates. It must
+ * mirror the debit-side cutoff semantics (min of clicked occurrence and new
+ * template start) but in invoice_month terms, since card recurring rows are
+ * tracked by fatura, not calendar date.
+ */
+describe('resolveCardSplitSeriesCutoffLabel', () => {
+  it('uses the clicked occurrence label when no new label is provided', () => {
+    expect(resolveCardSplitSeriesCutoffLabel('2026-10', null)).toBe('2026-10');
+    expect(resolveCardSplitSeriesCutoffLabel('2026-10', undefined)).toBe('2026-10');
+    expect(resolveCardSplitSeriesCutoffLabel('2026-10', '')).toBe('2026-10');
+  });
+
+  it('keeps the clicked occurrence label when the new label is the same fatura', () => {
+    expect(resolveCardSplitSeriesCutoffLabel('2026-10', '2026-10')).toBe('2026-10');
+  });
+
+  it('keeps the clicked occurrence label when the new label is LATER (moving forward never exposes earlier faturas)', () => {
+    expect(resolveCardSplitSeriesCutoffLabel('2026-10', '2026-12')).toBe('2026-10');
+  });
+
+  it('picks the new label when it is EARLIER than the clicked occurrence', () => {
+    expect(resolveCardSplitSeriesCutoffLabel('2026-10', '2026-08')).toBe('2026-08');
+  });
+
+  it('handles a year rollover correctly', () => {
+    expect(resolveCardSplitSeriesCutoffLabel('2027-01', '2026-12')).toBe('2026-12');
+    expect(resolveCardSplitSeriesCutoffLabel('2026-12', '2027-01')).toBe('2026-12');
   });
 });
