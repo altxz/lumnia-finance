@@ -1,6 +1,12 @@
 import type { Expense } from '../components/ExpenseTable';
 import { getCreditCardPaymentLabelCardName, isCreditCardPaymentLabel } from './creditCardPayments';
 import { transactionAmount } from './transactionAmount';
+import {
+  buildVirtualCardOccurrence,
+  getCardRecurringTemplates,
+  normalizeDesc,
+  shouldProjectCardRecurringInLabel,
+} from './recurringCardProjection';
 
 export interface CreditCard {
   id: string;
@@ -34,7 +40,7 @@ export interface InvoicePeriod {
 /**
  * Get the effective closing day for a card in a given month.
  */
-function getClosingDay(card: CreditCard): number {
+export function getClosingDay(card: Pick<CreditCard, 'closing_day' | 'closing_strategy' | 'due_day' | 'closing_days_before_due'>): number {
   if (card.closing_strategy === 'relative') {
     let cd = card.due_day - card.closing_days_before_due;
     if (cd <= 0) cd += 30;
@@ -93,6 +99,28 @@ export function getPaymentDate(
   const dueLastDay = new Date(dueYear, dueMonth + 1, 0).getDate();
 
   return new Date(dueYear, dueMonth, Math.min(dueDay, dueLastDay));
+}
+
+/**
+ * Data de compra representativa para uma recorrência fixa de cartão que
+ * projeta na fatura `dueLabel`. Inverte `getPaymentDate`: mantém o mesmo dia
+ * do molde e recua 1 ou 2 meses a partir do vencimento, dependendo de esse
+ * dia cair antes ou depois do fechamento (mesma regra de fechamento usada
+ * para decidir a fatura de uma compra nova).
+ */
+export function getCardRecurringPurchaseDate(
+  templateDay: number,
+  card: Pick<CreditCard, 'closing_day' | 'closing_strategy' | 'due_day' | 'closing_days_before_due'>,
+  dueLabel: string,
+): Date {
+  const closingDay = getClosingDay(card);
+  const [dueYear, dueMonth] = dueLabel.split('-').map(Number);
+  const offset = templateDay > closingDay ? 2 : 1;
+  const index = dueYear * 12 + (dueMonth - 1) - offset;
+  const year = Math.floor(index / 12);
+  const month = ((index % 12) + 12) % 12;
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(templateDay, lastDay));
 }
 
 /**
@@ -174,10 +202,31 @@ export function matchExpensesToInvoice(
     return resolveLabel(e) === dueLabel;
   });
 
-  // A fatura contém apenas lançamentos efetivamente gravados para o período.
-  // Um registro recorrente de cartão é a ocorrência da sua própria fatura, não
-  // uma autorização para criar cobranças virtuais nos meses seguintes.
-  const transactions = matched;
+  // Projeta virtualmente recorrências fixas de cartão cuja fatura ainda não
+  // foi materializada em banco pelo job diário (generate-recurring roda uma
+  // vez por dia; sem isso a fatura pareceria vazia até ele rodar). Nunca
+  // duplica: se já existe um lançamento real para essa descrição+tipo nesta
+  // fatura, a projeção é descartada.
+  const materializedSignatures = new Set(
+    matched.filter(e => !e.is_recurring).map(e => `${e.type}|${normalizeDesc(e.description)}`),
+  );
+  const cardTemplates = getCardRecurringTemplates(expenses, period.cardId);
+  const virtualOccurrences = cardTemplates
+    .filter(template => !!template.invoice_month && shouldProjectCardRecurringInLabel(template, template.invoice_month, dueLabel))
+    .filter(template => !materializedSignatures.has(`${template.type}|${normalizeDesc(template.description)}`))
+    .map(template => {
+      const templateDay = new Date(`${template.date}T12:00:00`).getDate();
+      const purchaseDate = getCardRecurringPurchaseDate(templateDay, {
+        closing_day: period.closingDay,
+        due_day: period.dueDay,
+        closing_strategy: 'fixed',
+        closing_days_before_due: 0,
+      }, dueLabel);
+      const purchaseDateStr = `${purchaseDate.getFullYear()}-${String(purchaseDate.getMonth() + 1).padStart(2, '0')}-${String(purchaseDate.getDate()).padStart(2, '0')}`;
+      return buildVirtualCardOccurrence(template, dueLabel, purchaseDateStr);
+    });
+
+  const transactions = [...matched, ...virtualOccurrences];
   const total = transactions.reduce((s, e) => s + transactionAmount(e.value), 0);
 
   // Check if there's a payment record for this specific card + invoice

@@ -1,11 +1,6 @@
 import type { Expense } from '../components/ExpenseTable';
 import { isCreditCardPaymentLabel } from './creditCardPayments';
-
-export const VIRTUAL_CARD_RECURRING_PREFIX = 'virtual-card-rec:';
-
-export function isVirtualCardRecurring(id?: string | null) {
-  return !!id && id.startsWith(VIRTUAL_CARD_RECURRING_PREFIX);
-}
+import { supabase } from './supabase';
 
 export function normalizeDesc(description?: string | null) {
   return (description ?? '').trim().toLowerCase();
@@ -51,24 +46,64 @@ export function getCardRecurringTemplates(expenses: Expense[], cardId: string) {
     e.credit_card_id === cardId &&
     e.is_recurring &&
     e.type === 'expense' &&
-    !isVirtualCardRecurring(e.id) &&
     !isCreditCardPaymentLabel(e.description)
   );
 }
 
-export function buildVirtualCardOccurrence(template: Expense, dueLabel: string): Expense {
+/**
+ * Ocorrência virtual de uma recorrência fixa de cartão numa fatura futura.
+ * Mantém o MESMO id do molde (como já é feito para recorrência de débito em
+ * `buildEffectiveMonthExpenses`), só sobrescrevendo `invoice_month`, `date` e
+ * `is_paid`. Isso garante que editar/excluir essa ocorrência sempre atue
+ * sobre o molde real, nunca sobre um id fantasma sem linha no banco.
+ */
+export function buildVirtualCardOccurrence(template: Expense, dueLabel: string, purchaseDate?: string): Expense {
   return {
     ...template,
-    id: `${VIRTUAL_CARD_RECURRING_PREFIX}${template.id}:${dueLabel}`,
     invoice_month: dueLabel,
-    is_recurring: false,
     is_paid: false,
+    ...(purchaseDate ? { date: purchaseDate } : {}),
   };
 }
 
-/** Devolve o id do template original a partir de uma ocorrência virtual. */
-export function resolveVirtualCardTemplateId(id?: string | null) {
-  if (!isVirtualCardRecurring(id)) return null;
-  const rest = id!.slice(VIRTUAL_CARD_RECURRING_PREFIX.length);
-  return rest.slice(0, rest.lastIndexOf(':')) || null;
+/**
+ * Remove a ocorrência de uma recorrência fixa de cartão de UMA fatura
+ * específica, sem apagar o molde nem afetar as demais faturas.
+ *
+ * Sempre registra uma exceção (`template_id` + fatura) para que o job diário
+ * nunca materialize essa fatura. Só toca no molde se a fatura removida for a
+ * que ele hoje representa (`invoice_month` atual do molde) — nesse caso
+ * avança o molde para a próxima fatura, preservando a série. Se for uma
+ * fatura futura ainda não alcançada pelo molde, a exceção já basta: o molde
+ * nunca é apagado.
+ */
+export async function deleteSingleCardRecurringOccurrence(params: {
+  userId: string;
+  templateId: string;
+  invoiceLabel: string;
+}) {
+  const { userId, templateId, invoiceLabel } = params;
+
+  const exceptionPayload = {
+    user_id: userId,
+    template_id: templateId,
+    occurrence_date: invoiceLabel,
+  };
+  const { error: excErr } = await (supabase.from as any)('recurring_exceptions').insert(exceptionPayload);
+  if (excErr && !`${excErr.message}`.toLowerCase().includes('duplicate')) throw excErr;
+
+  const { data: dbRow } = await supabase
+    .from('expenses')
+    .select('id, invoice_month, is_recurring, frequency')
+    .eq('id', templateId)
+    .maybeSingle();
+
+  if (!dbRow || !(dbRow as any).is_recurring) return;
+
+  if ((dbRow as any).invoice_month === invoiceLabel) {
+    const frequency = (dbRow as any).frequency;
+    const nextLabel = addMonthsToLabel(invoiceLabel, frequency === 'yearly' || frequency === 'annual' ? 12 : 1);
+    const { error: updErr } = await supabase.from('expenses').update({ invoice_month: nextLabel }).eq('id', templateId);
+    if (updErr) throw updErr;
+  }
 }

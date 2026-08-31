@@ -1,7 +1,13 @@
 import { useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { ResponsiveModal, ResponsiveModalHeader, ResponsiveModalTitle, ResponsiveModalDescription } from '@/components/ui/responsive-modal';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceHelpers';
@@ -11,7 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { showFriendlyError } from '@/lib/errorHandler';
-import { resolveVirtualCardTemplateId } from '@/lib/recurringCardProjection';
+import { deleteSingleCardRecurringOccurrence } from '@/lib/recurringCardProjection';
 
 import { InvoiceHeader } from './invoice/InvoiceHeader';
 import { InvoiceTransactionList } from './invoice/InvoiceTransactionList';
@@ -57,6 +63,8 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
   const [deleteMode, setDeleteMode] = useState<'single' | 'all' | null>(null);
+  const [removeOccurrenceTarget, setRemoveOccurrenceTarget] = useState<Expense | null>(null);
+  const [removingOccurrence, setRemovingOccurrence] = useState(false);
 
   const currentCard = cards.find(c => c.id === invoice.cardId);
 
@@ -70,12 +78,36 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   const monthOptions = useMemo(() => generateMonthOptions(), []);
   const isPaid = activeInvoice.status === 'paid';
 
-  // Ocorrências projetadas de recorrências fixas do cartão não existem no banco —
-  // qualquer ação deve agir sobre o registro original (template).
+  // Ocorrências projetadas de uma recorrência fixa de cartão reaproveitam o id
+  // do molde (mesma convenção do lado débito), mas com `invoice_month`/`date`
+  // sobrescritos para a fatura em questão. Editar sempre deve carregar o
+  // registro real do molde no banco, nunca a cópia projetada.
   const resolveRealExpense = (tx: Expense): Expense => {
-    const templateId = resolveVirtualCardTemplateId(tx.id);
-    if (!templateId) return tx;
-    return allExpenses.find(e => e.id === templateId) ?? tx;
+    if (!tx.is_recurring) return tx;
+    return allExpenses.find(e => e.id === tx.id) ?? tx;
+  };
+
+  // Uma recorrência de cartão nunca deve ser apagada direto pelo id a partir
+  // da fatura — isso apagaria o molde inteiro. "Remover desta fatura" só
+  // registra uma exceção (ou avança o molde, se for a fatura atual dele).
+  const handleRemoveOccurrence = async () => {
+    if (!user || !removeOccurrenceTarget?.invoice_month) return;
+    setRemovingOccurrence(true);
+    try {
+      await deleteSingleCardRecurringOccurrence({
+        userId: user.id,
+        templateId: removeOccurrenceTarget.id,
+        invoiceLabel: removeOccurrenceTarget.invoice_month,
+      });
+      toast({ title: 'Removido desta fatura', description: 'As demais faturas dessa recorrência continuam normalmente.' });
+      refetch?.();
+      onPaid?.();
+    } catch (err: any) {
+      showFriendlyError(err);
+    } finally {
+      setRemovingOccurrence(false);
+      setRemoveOccurrenceTarget(null);
+    }
   };
 
   const handleDelete = async (expense: Expense, mode: 'single' | 'all') => {
@@ -103,9 +135,12 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
   };
 
   const onDeleteClick = (tx: Expense) => {
-    const real = resolveRealExpense(tx);
-    setDeleteTarget(real);
-    setDeleteMode(real.installment_group_id ? null : 'single');
+    if (tx.is_recurring) {
+      setRemoveOccurrenceTarget(tx);
+      return;
+    }
+    setDeleteTarget(tx);
+    setDeleteMode(tx.installment_group_id ? null : 'single');
   };
 
   const handleUnpayInvoice = async () => {
@@ -233,6 +268,28 @@ export function InvoiceDetailsModal({ open, onOpenChange, invoice, allExpenses, 
         onClose={() => { setDeleteTarget(null); setDeleteMode(null); }}
         onDelete={handleDelete}
       />
+
+      <AlertDialog open={!!removeOccurrenceTarget} onOpenChange={(v) => { if (!v) setRemoveOccurrenceTarget(null); }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover desta fatura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso remove "{removeOccurrenceTarget?.description}" apenas da fatura de {activeInvoice.monthLabel}. A recorrência continua normalmente nas próximas faturas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="rounded-xl"
+              disabled={removingOccurrence}
+              onClick={handleRemoveOccurrence}
+            >
+              {removingOccurrence ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Remover'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {editingExpense && (
         <EditExpenseModal

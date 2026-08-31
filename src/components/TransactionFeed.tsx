@@ -21,6 +21,7 @@ import { getInvoicePeriod, matchExpensesToInvoice } from '@/lib/invoiceHelpers';
 import type { CreditCard as CreditCardType, InvoicePeriod } from '@/lib/invoiceHelpers';
 import type { Expense } from '@/components/ExpenseTable';
 import { deleteSingleRecurringOccurrence } from '@/lib/recurringExceptions';
+import { deleteSingleCardRecurringOccurrence } from '@/lib/recurringCardProjection';
 import { getCreditCardPaymentCardId, isTrackedCreditCardPayment } from '@/lib/creditCardPayments';
 import { buildInvoiceCashEvents } from '@/lib/invoiceCashFlow';
 import { buildDailyBalanceMap, transferCashDelta } from '@/lib/projectedBalanceMath';
@@ -286,6 +287,17 @@ export function TransactionFeed({
           .eq('is_recurring', true);
         if (error) throw error;
         toast({ title: 'Todas as recorrências excluídas', description: 'Todos os lançamentos recorrentes foram removidos.' });
+      } else if (deletingExpense.is_recurring && deletingExpense.credit_card_id) {
+        // Recorrência de cartão avança por fatura (invoice_month), não por
+        // data de calendário — usa a exceção equivalente para cartão.
+        if (!user) throw new Error('Sessão expirada');
+        if (!deletingExpense.invoice_month) throw new Error('Fatura não identificada para esta recorrência.');
+        await deleteSingleCardRecurringOccurrence({
+          userId: user.id,
+          templateId: deletingExpense.id,
+          invoiceLabel: deletingExpense.invoice_month,
+        });
+        toast({ title: 'Removido desta fatura', description: 'As demais faturas dessa recorrência continuam normalmente.' });
       } else if (deletingExpense.is_recurring) {
         // "Apenas esta": skip a single occurrence without breaking the series
         if (!user) throw new Error('Sessão expirada');
